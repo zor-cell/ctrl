@@ -1,10 +1,13 @@
 spring:
   application:
     name: ctrl
+  config:
+    import: "optional:configtree:/run/secrets/"
   datasource:
-    url=jdbc:postgresql://${DB_HOST}/${DB_NAME}
-    username=${DB_USERNAME}
-    password=${DB_PASSWORD}
+    url: jdbc:postgresql://db:5432/${DB_NAME}
+    username: ${db_username}
+    password: ${db_password}
+    driver-class-name: org.postgresql.Driver
 
 management:
   endpoints:

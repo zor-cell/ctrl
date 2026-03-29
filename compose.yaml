@@ -3,6 +3,10 @@ name: ctrl
 services:
   backend:
     build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_NAME=${DB_NAME}
     secrets:
       - db_username
       - db_password
@@ -30,11 +34,13 @@ services:
 
   db:
     image: pgvector/pgvector:pg18-trixie
+    ports:
+      - "127.0.0.1:5433:5432"
     secrets:
       - db_username
       - db_password
     environment:
-      POSTGRES_DB: ctrl_db
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER_FILE: /run/secrets/db_username
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     restart: on-failure:3
@@ -44,9 +50,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - db_data:/var/lib/postgresql
+
+volumes:
+  db_data:
 
 secrets:
     db_username:
-        file: ./db_username.txt
+        environment: "DB_USERNAME"
     db_password:
-        file: ./db_password.txt
+        environment: "DB_PASSWORD"
