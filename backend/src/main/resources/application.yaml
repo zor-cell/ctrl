@@ -8,6 +8,15 @@ spring:
     username: ${db_username}
     password: ${db_password}
     driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: 86400000 #1 day in ms
 
 management:
   endpoints:
