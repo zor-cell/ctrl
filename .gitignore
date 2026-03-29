@@ -1,2 +1,6 @@
 /.idea/
 .env
+
+#db_credentials
+db_password.txt
+db_username.txt

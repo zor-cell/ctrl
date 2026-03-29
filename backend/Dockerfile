@@ -18,4 +18,6 @@ COPY --from=build /backend/target/*.jar backend.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "backend.jar"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
