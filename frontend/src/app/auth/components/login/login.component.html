@@ -6,7 +6,6 @@
         </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="login()" class="login-form">
-
             <div>
                 <p-floatlabel variant="on">
                     <input pInputText id="username" formControlName="username" />
@@ -29,7 +28,11 @@
                 }
             </div>
 
-            <p-button type="submit" label="Log In"></p-button>
+            <p-button type="submit" label="Log In" [disabled]="loginForm.invalid"></p-button>
+            <div class="register-link">
+                Don't have an account?
+                <a routerLink="/register">Register here</a>
+            </div>
         </form>
     </div>
 

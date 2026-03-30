@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import {LoginComponent} from "./user/components/login/login.component";
+import {LoginComponent} from "./auth/components/login/login.component";
 
 
 @Component({

@@ -1,0 +1,46 @@
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>Welcome</h2>
+            <p>Register a new account</p>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="login()" class="login-form">
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText id="username" formControlName="username" />
+                    <label for="username">Username</label>
+                </p-floatlabel>
+
+                @if (registerForm.controls.username.invalid && registerForm.controls.username.touched && registerForm.controls.username.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
+                }
+            </div>
+
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText type="email" id="email" formControlName="email" />
+                    <label for="email">Email</label>
+                </p-floatlabel>
+
+                @if (registerForm.controls.email.invalid && registerForm.controls.email.touched && registerForm.controls.email.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Email is required.</p-message>
+                }
+            </div>
+
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText type="password" id="password" formControlName="password" />
+                    <label for="password">Password</label>
+                </p-floatlabel>
+
+                @if (registerForm.controls.password.invalid && registerForm.controls.password.touched && registerForm.controls.password.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Password is required.</p-message>
+                }
+            </div>
+
+            <p-button type="submit" label="Register" [disabled]="registerForm.invalid"></p-button>
+        </form>
+    </div>
+
+</div>

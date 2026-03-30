@@ -1,7 +1,7 @@
 import {Component, inject, signal} from '@angular/core';
 
-import {AuthService} from '../../../auth/auth.service'
-import {LoginRequest} from "../../../auth/dto/LoginRequest";
+import {AuthService} from '../../auth.service'
+import {LoginRequest} from "../../dto/LoginRequest";
 import {form, FormField, required} from "@angular/forms/signals";
 import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {Password} from "primeng/password";
@@ -9,6 +9,7 @@ import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {FloatLabel} from "primeng/floatlabel";
 import {Message} from "primeng/message";
+import {RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,8 @@ import {Message} from "primeng/message";
     InputText,
     FloatLabel,
     ReactiveFormsModule,
-    Message
+    Message,
+    RouterLink
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
