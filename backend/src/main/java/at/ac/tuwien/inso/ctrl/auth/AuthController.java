@@ -50,9 +50,4 @@ public class AuthController {
 
         return new AuthResponse(token);
     }
-
-    @PostMapping("/logout")
-    public void logout() {
-
-    }
 }

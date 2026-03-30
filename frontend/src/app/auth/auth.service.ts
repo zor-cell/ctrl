@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import {Injectable, inject, signal} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
@@ -6,23 +6,33 @@ import {UserDetails} from '../user/dto/UserDetails'
 import {RegisterRequest} from './dto/RegisterRequest'
 import {LoginRequest} from './dto/LoginRequest'
 import {AuthResponse} from './dto/AuthResponse'
+import {tap} from "rxjs";
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly TOKEN_KEY = 'AUTH_TOKEN';
   private readonly baseUri: string = environment.apiUrl + '/auth';
   private httpClient = inject(HttpClient);
+
+  public token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY))
 
   public register(registerRequest: RegisterRequest) {
     return this.httpClient.post<void>(this.baseUri + '/register', registerRequest);
   }
 
   public login(loginRequest: LoginRequest) {
-    return this.httpClient.post<AuthResponse>(this.baseUri + '/login', loginRequest);
+    return this.httpClient.post<AuthResponse>(this.baseUri + '/login', loginRequest).pipe(
+      tap(res => {
+        localStorage.setItem(this.TOKEN_KEY, res.token);
+        this.token.set(res.token);
+      })
+    );
   }
 
   public logout() {
-    return this.httpClient.post<void>(this.baseUri + '/logout', null);
+    localStorage.removeItem(this.TOKEN_KEY);
+    this.token.set(null);
   }
 }
