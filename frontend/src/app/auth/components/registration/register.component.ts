@@ -41,7 +41,6 @@ export class RegisterComponent {
 
     const registerRequest: RegisterRequest = this.registerForm.getRawValue();
     this.authService.register(registerRequest).subscribe(res => {
-      console.log(res);
       this.router.navigate(['/login']);
     });
   }
