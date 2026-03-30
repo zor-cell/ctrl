@@ -7,6 +7,7 @@ import {RegisterRequest} from './dto/RegisterRequest'
 import {LoginRequest} from './dto/LoginRequest'
 import {AuthResponse} from './dto/AuthResponse'
 import {tap} from "rxjs";
+import {UserService} from "../user/user.service";
 
 @Injectable({
   providedIn: 'root',
@@ -15,6 +16,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'AUTH_TOKEN';
   private readonly baseUri: string = environment.apiUrl + '/auth';
   private httpClient = inject(HttpClient);
+  private userService = inject(UserService);
 
   public token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY))
 
@@ -27,6 +29,8 @@ export class AuthService {
       tap(res => {
         localStorage.setItem(this.TOKEN_KEY, res.token);
         this.token.set(res.token);
+
+        this.userService.loadUser().subscribe(res => {});
       })
     );
   }

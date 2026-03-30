@@ -27,8 +27,8 @@ public class AuthController {
     @PostMapping("/register")
     public void register(@RequestBody AuthRequest authRequest) {
         var user = User.builder()
-                .username(authRequest.getUsername())
-                .password(passwordEncoder.encode(authRequest.getPassword()))
+                .username(authRequest.username())
+                .password(passwordEncoder.encode(authRequest.password()))
                 .build();
 
         userRepository.save(user);
@@ -38,12 +38,12 @@ public class AuthController {
     public AuthResponse login(@RequestBody AuthRequest authRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        authRequest.getUsername(),
-                        authRequest.getPassword()
+                        authRequest.username(),
+                        authRequest.password()
                 )
         );
 
-        var user = userRepository.findByUsername(authRequest.getUsername())
+        var user = userRepository.findByUsername(authRequest.username())
                 .orElseThrow();
 
         var token = jwtService.generateToken(user);
