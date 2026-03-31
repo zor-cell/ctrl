@@ -1,14 +1,12 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import {LoginComponent} from "./auth/components/login/login.component";
-import {AuthService} from "./auth/auth.service";
 import {UserService} from "./user/user.service";
+import {Toast} from "primeng/toast";
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LoginComponent],
+  imports: [RouterOutlet, Toast],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

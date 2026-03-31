@@ -5,19 +5,22 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import {Noir} from "../app-theme";
 import {provideHttpClient, withInterceptors} from "@angular/common/http";
-import {authInterceptor} from "./auth/auth.interceptor";
+import {authInterceptor, errorInterceptor} from "./core/interceptors";
+import {provideAnimationsAsync} from "@angular/platform-browser/animations/async";
+import {MessageService} from "primeng/api";
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    provideHttpClient(
+      withInterceptors([authInterceptor, errorInterceptor])
+    ),
     providePrimeNG({
       theme: {
         preset: Noir
       }
     }),
-    provideHttpClient(
-      withInterceptors([authInterceptor])
-    )
+    MessageService
   ]
 };

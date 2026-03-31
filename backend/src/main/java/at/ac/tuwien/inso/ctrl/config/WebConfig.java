@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.security;
+package at.ac.tuwien.inso.ctrl.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.RestController;

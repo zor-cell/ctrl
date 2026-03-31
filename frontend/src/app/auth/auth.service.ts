@@ -8,6 +8,7 @@ import {LoginRequest} from './dto/LoginRequest'
 import {AuthResponse} from './dto/AuthResponse'
 import {tap} from "rxjs";
 import {UserService} from "../user/user.service";
+import {NotificationService} from "../core/services/notification.service";
 
 @Injectable({
   providedIn: 'root',
@@ -17,11 +18,16 @@ export class AuthService {
   private readonly baseUri: string = environment.apiUrl + '/auth';
   private httpClient = inject(HttpClient);
   private userService = inject(UserService);
+  private notificationService = inject(NotificationService);
 
   public token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY))
 
   public register(registerRequest: RegisterRequest) {
-    return this.httpClient.post<void>(this.baseUri + '/register', registerRequest);
+    return this.httpClient.post<void>(this.baseUri + '/register', registerRequest).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Registered user');
+      })
+    );
   }
 
   public login(loginRequest: LoginRequest) {
