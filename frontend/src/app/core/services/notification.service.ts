@@ -34,7 +34,7 @@ export class NotificationService {
       message = error.message;
     }
 
-    this.messageService.add({ severity: 'error', summary: title, detail: `${status}: ${message}` });
+    this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message });
   }
 
   showInfo(message: string, title: string = 'Information') {
