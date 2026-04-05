@@ -1,0 +1,30 @@
+package at.ac.tuwien.inso.ctrl.source.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "sources")
+public class Source {
+    @Id
+    @Column(name = "source_id", nullable = false, unique = true)
+    private String sourceId;
+
+    private Integer upvotes;
+
+    private Integer downvotes;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SingleSource> singleSources;
+}
