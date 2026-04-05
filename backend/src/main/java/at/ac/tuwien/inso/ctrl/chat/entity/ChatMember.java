@@ -21,7 +21,7 @@ public class ChatMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("chatId")
     @JoinColumn(name = "chat_id", nullable = false)
-    private Chat chatId;
+    private Chat chat;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("username")
