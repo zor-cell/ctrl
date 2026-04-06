@@ -18,23 +18,24 @@ public class TopicSeeder {
         return args -> {
             var now = LocalDateTime.now();
             var defaultTopics = List.of(
-                    "trusted",
-                    "unverified",
-                    "disputed",
-                    "popular",
-                    "highly discussed",
-                    "reshared",
-                    "recent",
-                    "old post",
-                    "from followed creator",
-                    "AI generated content",
+                    new DefaultTopic("trusted", "✅"),
+                    new DefaultTopic("unverified", "❓"),
+                    new DefaultTopic("disputed", "⚠️"),
+                    new DefaultTopic("popular", "🔥"),
+                    new DefaultTopic("highly discussed", "💬"),
+                    new DefaultTopic("reshared", "🔁"),
+                    new DefaultTopic("recent", "🕒"),
+                    new DefaultTopic("old post", "🗂️"),
+                    new DefaultTopic("from followed creator", "❤️"),
+                    new DefaultTopic("AI generated content", "🤖")
             );
 
             var topicsToCreate = defaultTopics.stream()
-                    .filter(name -> !topicRepository.existsByName(name))
-                    .map(name -> Topic.builder()
-                            .topicId(toTopicId(name))
-                            .name(name)
+                    .filter(topic -> !topicRepository.existsByName(topic.name()))
+                    .map(topic -> Topic.builder()
+                            .topicId(toTopicId(topic.name()))
+                            .name(topic.name())
+                            .emoji(topic.emoji())
                             .createdAt(now)
                             .build())
                     .toList();
@@ -48,5 +49,8 @@ public class TopicSeeder {
     private String toTopicId(String name) {
         return name.toLowerCase(Locale.ROOT)
                 .replace(" ", "_");
+    }
+
+    private record DefaultTopic(String name, String emoji) {
     }
 }

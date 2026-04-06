@@ -1,11 +1,13 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +16,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Builder
 @Getter
@@ -31,8 +35,9 @@ public class Comment {
     @JoinColumn(name = "post_id", referencedColumnName = "post_id", nullable = false)
     private Post post;
 
-    @Column(nullable = false)
-    private String username;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String content;
@@ -40,6 +45,11 @@ public class Comment {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "parent_comment_id")
-    private String parentCommentId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "parent_comment_id", referencedColumnName = "comment_id")
+    private Comment parentComment;
+
+    @OneToMany(mappedBy = "parentComment")
+    @Builder.Default
+    private Set<Comment> replies = new LinkedHashSet<>();
 }

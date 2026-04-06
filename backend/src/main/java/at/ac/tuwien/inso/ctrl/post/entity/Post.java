@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,8 +21,9 @@ public class Post {
     @Column(name = "post_id", nullable = false, unique = true)
     private String postId;
 
-    @Column(nullable = false)
-    private String username;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+    private User user;
 
     @OneToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id")

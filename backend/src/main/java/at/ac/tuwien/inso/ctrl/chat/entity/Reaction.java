@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.chat.entity;
 
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -33,8 +34,10 @@ public class Reaction {
     @JoinColumn(name = "message_id", referencedColumnName = "message_id", nullable = false)
     private Message message;
 
-    @Column(name = "from_username", nullable = false, insertable = false, updatable = false)
-    private String fromUsername;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("fromUsername")
+    @JoinColumn(name = "from_username", referencedColumnName = "username", nullable = false)
+    private User fromUser;
 
     @Column(nullable = false)
     private String content;

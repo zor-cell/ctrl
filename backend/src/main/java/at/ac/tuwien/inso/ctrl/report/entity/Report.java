@@ -1,8 +1,13 @@
 package at.ac.tuwien.inso.ctrl.report.entity;
 
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,14 +32,17 @@ public class Report {
     @Column(nullable = false)
     private String content;
 
-    @Column(name = "from_user", nullable = false)
-    private String fromUser;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_user", referencedColumnName = "username", nullable = false)
+    private User fromUser;
 
-    @Column(name = "username_reported", nullable = false)
-    private String usernameReported;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "username_reported", referencedColumnName = "username", nullable = false)
+    private User usernameReported;
 
-    @Column(name = "post_id_reported")
-    private String postIdReported;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id_reported", referencedColumnName = "post_id")
+    private Post postReported;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

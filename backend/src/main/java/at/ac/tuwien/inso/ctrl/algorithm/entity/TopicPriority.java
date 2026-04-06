@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -26,8 +27,10 @@ public class TopicPriority {
     @EmbeddedId
     private TopicPriorityId id;
 
-    @Column(name = "username", nullable = false, insertable = false, updatable = false)
-    private String username;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("username")
+    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("topicId")

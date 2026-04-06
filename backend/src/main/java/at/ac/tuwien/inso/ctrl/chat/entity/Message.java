@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.chat.entity;
 
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -31,8 +32,9 @@ public class Message {
     @Column(name = "message_id", nullable = false, unique = true)
     private String messageId;
 
-    @Column(name = "from_username", nullable = false)
-    private String fromUsername;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_username", referencedColumnName = "username", nullable = false)
+    private User fromUser;
 
     @Column(nullable = false)
     private String content;
