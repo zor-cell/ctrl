@@ -41,7 +41,7 @@ public class User implements UserDetails {
     @Column(name = "birthdate")
     private LocalDate birthdate;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "username", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMember> chatMembers;
 
     @Override
