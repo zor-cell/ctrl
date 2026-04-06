@@ -2,7 +2,8 @@
 
 # App starten
 start:
-	docker compose up
+	docker compose up -d
+	cd frontend && ng serve
 
 # App im Hintergrund starten
 start-detached:
