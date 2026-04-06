@@ -49,7 +49,4 @@ public class Comment {
     @JoinColumn(name = "parent_comment_id", referencedColumnName = "comment_id")
     private Comment parentComment;
 
-    @OneToMany(mappedBy = "parentComment")
-    @Builder.Default
-    private Set<Comment> replies = new LinkedHashSet<>();
 }
