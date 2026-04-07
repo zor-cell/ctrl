@@ -16,7 +16,7 @@ public class TopicSeeder {
     @Bean
     CommandLineRunner seedTopics(TopicRepository topicRepository) {
         return args -> {
-            var now = LocalDateTime.now();
+            /*var now = LocalDateTime.now();
             var defaultTopics = List.of(
                     new DefaultTopic("trusted", "✅"),
                     new DefaultTopic("unverified", "❓"),
@@ -42,7 +42,7 @@ public class TopicSeeder {
 
             if (!topicsToCreate.isEmpty()) {
                 topicRepository.saveAll(topicsToCreate);
-            }
+            }*/
         };
     }
 
