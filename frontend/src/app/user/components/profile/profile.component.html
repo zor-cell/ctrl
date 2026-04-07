@@ -1,6 +1,4 @@
-@if(user() === null) {
-    <div>Login to see your profile</div>
-} @else {
+@if(currentUser(); as user) {
     <div class="profile-container">
         <div class="card profile-card">
             <h3 class="h3 profile-card__title">Profile Details</h3>
@@ -35,6 +33,22 @@
                     }
                 </div>
 
+                <div class="setting-info">
+                    <div class="flex items-center gap-2 mt-1">
+                        @if (user.isVerified) {
+                            <p-message severity="success" variant="simple" size="small">Verified via ID Austria</p-message>
+                        } @else {
+                            <p-message severity="warn" variant="simple" size="small">Your account is unverified</p-message>
+
+                            <p-button
+                                    label="Verify Now"
+                                    size="small"
+                                    severity="secondary">
+                            </p-button>
+                        }
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <p-button
                             type="submit"
@@ -54,7 +68,22 @@
             <div class="settings-list">
                 <div class="setting-row">
                     <p-floatlabel variant="on">
-                        <input pInputText id="username" [value]="user()?.username" disabled  />
+                        <p-date-picker
+                                inputId="createdAt"
+                                [maxDate]="maxDate"
+                                [showIcon]="true"
+                                [ngModel]="createdAt()"
+                                disabled
+                                dateFormat="dd.mm.yy">
+                        </p-date-picker>
+
+                        <label for="createdAt">Account Created</label>
+                    </p-floatlabel>
+                </div>
+
+                <div class="setting-row">
+                    <p-floatlabel variant="on">
+                        <input pInputText id="username" [value]="user.username" disabled  />
                         <label for="username">Username</label>
                     </p-floatlabel>
                     <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()"></p-button>
@@ -70,6 +99,8 @@
             </div>
         </div>
     </div>
+} @else {
+    <div>Login to see your profile</div>
 }
 
 <p-dialog header="Change Password" [modal]="true" [(visible)]="isPasswordDialogOpen" [style]="{ width: '25rem' }">

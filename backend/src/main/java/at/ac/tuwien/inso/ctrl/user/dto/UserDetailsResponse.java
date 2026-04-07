@@ -9,5 +9,6 @@ public record UserDetailsResponse(
         String username,
         String name,
         LocalDate birthdate,
-        Instant createdAt
+        Instant createdAt,
+        boolean isVerified
 ) { }
