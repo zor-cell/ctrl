@@ -1,5 +1,5 @@
-import {Component, effect, inject, signal} from '@angular/core';
-import {FormBuilder, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {Component, computed, effect, inject, signal} from '@angular/core';
+import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {UserService} from "../../user.service";
 import {Message} from "primeng/message";
 import {DatePicker} from "primeng/datepicker";
@@ -21,7 +21,8 @@ import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
     ReactiveFormsModule,
     Button,
     InputText,
-    Dialog
+    Dialog,
+    FormsModule
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -30,9 +31,15 @@ export class ProfileComponent {
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
 
-  protected user = this.userService.user;
+  protected currentUser = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
   protected isUsernameDialogOpen = signal(false);
+
+  protected createdAt = computed(() => {
+    const dateString = this.currentUser()?.createdAt;
+    return dateString ? new Date(dateString) : null;
+  });
+  protected maxDate = new Date();
 
   protected profileForm = this.fb.group({
     name: ['', Validators.required],
@@ -49,11 +56,11 @@ export class ProfileComponent {
     newUsername: ['', Validators.required]
   });
 
-  protected maxDate = new Date();
+
 
   constructor() {
     effect(() => {
-      const currentUser = this.user();
+      const currentUser = this.currentUser();
 
       if (currentUser) {
         this.profileForm.patchValue({
@@ -121,7 +128,7 @@ export class ProfileComponent {
 
   protected openUsernameDialog() {
     this.usernameForm.reset({
-      newUsername: this.user()?.username ?? ''
+      newUsername: this.currentUser()?.username ?? ''
     });
     this.isUsernameDialogOpen.set(true);
   }

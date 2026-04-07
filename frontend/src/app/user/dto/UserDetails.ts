@@ -4,4 +4,5 @@ export interface UserDetails {
   name: string;
   birthdate: string;
   createdAt: string;
+  isVerified: boolean;
 }
