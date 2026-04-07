@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,20 +23,25 @@ import lombok.Setter;
 @Entity
 @Table(name = "time_management")
 public class TimeManagement {
-    @Id
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+  @Id
+  @Column(name = "user_id", nullable = false, unique = true)
+  private UUID userId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false, insertable = false, updatable = false)
-    private User user;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(
+      name = "user_id",
+      referencedColumnName = "id",
+      nullable = false,
+      insertable = false,
+      updatable = false)
+  private User user;
 
-    @Column(name = "is_day_hardcutted")
-    private Boolean isDayHardcutted;
+  @Column(name = "is_day_hardcutted")
+  private Boolean isDayHardcutted;
 
-    @Column(name = "duration_per_day")
-    private Integer durationPerDay;
+  @Column(name = "duration_per_day")
+  private Integer durationPerDay;
 
-    @Column(name = "posts_per_day")
-    private Integer postsPerDay;
+  @Column(name = "posts_per_day")
+  private Integer postsPerDay;
 }

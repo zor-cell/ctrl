@@ -8,13 +8,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Builder
 @Getter
@@ -25,19 +24,18 @@ import java.time.LocalDateTime;
 @Table(name = "follow_relations")
 public class FollowRelation {
 
-    @EmbeddedId
-    private FollowRelationId id;
+  @EmbeddedId private FollowRelationId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("followerUsername")
-    @JoinColumn(name = "follower_username", referencedColumnName = "username", nullable = false)
-    private User follower;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("followerId")
+  @JoinColumn(name = "follower_id", referencedColumnName = "id", nullable = false)
+  private User follower;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("followingUsername")
-    @JoinColumn(name = "following_username", referencedColumnName = "username", nullable = false)
-    private User following;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("followingId")
+  @JoinColumn(name = "following_id", referencedColumnName = "id", nullable = false)
+  private User following;
 
-    @Column(name = "since")
-    private LocalDateTime since;
+  @Column(name = "since")
+  private LocalDateTime since;
 }

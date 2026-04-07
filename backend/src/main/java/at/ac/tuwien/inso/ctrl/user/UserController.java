@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
-    @GetMapping("/me")
-    public UserDetailsResponse getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        return new UserDetailsResponse(userDetails.getUsername());
-    }
+  @GetMapping("/me")
+  public UserDetailsResponse getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+    return new UserDetailsResponse(userDetails.getUsername());
+  }
 }
