@@ -9,7 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Builder
@@ -43,6 +45,14 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "username", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMember> chatMembers;
+
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<FollowRelation> followingRelations = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<FollowRelation> followerRelations = new LinkedHashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
