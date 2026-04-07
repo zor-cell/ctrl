@@ -8,6 +8,7 @@ import {FloatLabel} from "primeng/floatlabel";
 import {InputText} from "primeng/inputtext";
 import {Message} from "primeng/message";
 import {Router} from "@angular/router";
+import {DatePicker} from "primeng/datepicker";
 
 @Component({
   selector: 'app-registration',
@@ -16,7 +17,8 @@ import {Router} from "@angular/router";
     FloatLabel,
     InputText,
     Message,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    DatePicker
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -29,10 +31,12 @@ export class RegisterComponent {
   protected registerForm = this.fb.group({
     username: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
+    password: ['', Validators.required],
+    name: ['', Validators.required],
+    birthdate: ['', Validators.required]
   });
 
-  public login() {
+  public register() {
     if(this.registerForm.invalid) {
       this.registerForm.markAllAsDirty();
       this.registerForm.markAllAsTouched();
