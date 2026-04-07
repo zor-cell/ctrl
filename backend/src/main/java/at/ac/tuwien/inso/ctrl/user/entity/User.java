@@ -2,6 +2,13 @@ package at.ac.tuwien.inso.ctrl.user.entity;
 
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.time.Instant;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -36,8 +43,9 @@ public class User implements UserDetails {
   @Column(name = "is_verified")
   private boolean isVerified;
 
-  @Column(name = "created_at")
-  private LocalDateTime createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private Instant createdAt;
 
   @Column(name = "birthdate")
   private LocalDate birthdate;
