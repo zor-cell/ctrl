@@ -61,13 +61,6 @@
 			<artifactId>postgresql</artifactId>
 		</dependency>
 
-		<!-- S3 driver for MinIO file storage -->
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-			<version>2.24.0</version>
-		</dependency>
-
 		<!-- Lombok to avoid java boilerplate -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -100,6 +93,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Mapping from entity to dto to avoid boilerplate -->
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>1.6.0.Beta1</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -108,18 +108,29 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- Annotation processing order like mapstruct or lombok -->
 			<plugin>
-  			<groupId>com.diffplug.spotless</groupId>
-  			<artifactId>spotless-maven-plugin</artifactId>
-  			<version>2.43.0</version>
-  			<configuration>
-    			<java>
-      			<googleJavaFormat>
-        			<version>1.22.0</version>
-        			<style>GOOGLE</style>
-      			</googleJavaFormat>
-    			</java>
-  			</configuration>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>1.6.0.Beta1</version>
+						</path>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok-mapstruct-binding</artifactId>
+							<version>0.2.0</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
