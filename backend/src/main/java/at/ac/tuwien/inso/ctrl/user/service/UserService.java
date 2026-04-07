@@ -7,6 +7,7 @@ import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +19,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private final UserMapper userMapper;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
     public UserDetailsResponse getProfile(UUID userId) {
         var user = userRepository.findById(userId).orElseThrow();
-        return mapToResponse(user);
+        return userMapper.toUserDetailsResponse(user);
     }
 
     @Transactional
@@ -36,7 +38,7 @@ public class UserService {
 
         userRepository.save(user);
 
-        return mapToResponse(user);
+        return userMapper.toUserDetailsResponse(user);
     }
 
     @Transactional
@@ -66,15 +68,5 @@ public class UserService {
 
         String newToken = jwtService.generateToken(user);
         return new AuthResponse(newToken);
-    }
-
-    private UserDetailsResponse mapToResponse(User user) {
-        return new UserDetailsResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getName(),
-                user.getBirthdate(),
-                user.getCreatedAt()
-        );
     }
 }
