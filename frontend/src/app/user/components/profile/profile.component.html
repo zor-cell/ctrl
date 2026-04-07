@@ -12,7 +12,7 @@
                         <input pInputText id="username" [value]="user()?.username" disabled  />
                         <label for="username">Username</label>
                     </p-floatlabel>
-                    <p-button label="Change" variant="text" size="small"></p-button>
+                    <p-button label="Change" variant="text" size="small" (onClick)="openUsernameDialog()"></p-button>
                 </div>
 
                 <div class="setting-row">
@@ -100,6 +100,22 @@
         <div class="flex justify-end gap-2 mt-4">
             <p-button label="Cancel" severity="secondary" (onClick)="isPasswordDialogOpen.set(false)"></p-button>
             <p-button label="Update Password" type="submit" severity="danger" [disabled]="passwordForm.invalid"></p-button>
+        </div>
+    </form>
+</p-dialog>
+
+<p-dialog header="Change Username" [modal]="true" [(visible)]="isUsernameDialogOpen" [style]="{ width: '25rem' }">
+    <form [formGroup]="usernameForm" (ngSubmit)="updateUsername()">
+        <div class="field p-fluid">
+            <p-floatlabel variant="on">
+                <input pInputText id="newUsername" formControlName="newUsername" />
+                <label for="newUsername">Username</label>
+            </p-floatlabel>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+            <p-button label="Cancel" severity="secondary" (onClick)="isUsernameDialogOpen.set(false)"></p-button>
+            <p-button label="Update Username" type="submit" severity="danger" [disabled]="usernameForm.invalid"></p-button>
         </div>
     </form>
 </p-dialog>
