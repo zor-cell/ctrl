@@ -1,0 +1,71 @@
+<div class="profile-container">
+
+    <div class="card profile-card">
+        <h3 class="h3 profile-card__title">Account Settings</h3>
+
+        <div class="settings-list">
+
+            <div class="setting-row">
+                <p-floatlabel variant="on">
+                    <input pInputText id="username" [value]="user()?.username" disabled  />
+                    <label for="username">Username</label>
+                </p-floatlabel>
+                <p-button label="Change" variant="text" size="small"></p-button>
+            </div>
+
+            <div class="setting-row">
+                <p-floatlabel variant="on">
+                    <input pInputText id="password" value="********" disabled  />
+                    <label for="password">Password</label>
+                </p-floatlabel>
+                <p-button label="Change" variant="text" size="small"></p-button>
+            </div>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="card profile-card">
+        <h3 class="h3 profile-card__title">Profile Details</h3>
+
+        <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
+
+            <div class="field p-fluid">
+                <p-floatlabel variant="on">
+                    <input pInputText id="name" formControlName="name" />
+                    <label for="name">Full Name</label>
+                </p-floatlabel>
+
+                @if (profileForm.controls.name.invalid && profileForm.controls.name.touched) {
+                    <p-message severity="error" size="small" variant="simple">Name is required.</p-message>
+                }
+            </div>
+
+            <div class="field p-fluid">
+                <p-floatlabel variant="on">
+                    <p-date-picker
+                            inputId="birthdate"
+                            formControlName="birthdate"
+                            [maxDate]="maxDate"
+                            [showIcon]="true"
+                            dateFormat="dd.mm.yy">
+                    </p-date-picker>
+                    <label for="birthdate">Birthdate</label>
+                </p-floatlabel>
+
+                @if (profileForm.controls.birthdate.invalid && profileForm.controls.birthdate.touched) {
+                    <p-message severity="error" size="small" variant="simple">Birthdate is required.</p-message>
+                }
+            </div>
+
+            <div class="form-actions">
+                <p-button
+                        type="submit"
+                        label="Save Changes"
+                        icon="pi pi-check"
+                        [disabled]="profileForm.invalid || profileForm.pristine">
+                </p-button>
+            </div>
+        </form>
+    </div>
+</div>
