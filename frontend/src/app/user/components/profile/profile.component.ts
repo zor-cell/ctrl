@@ -1,5 +1,5 @@
 import {Component, effect, inject, signal} from '@angular/core';
-import {FormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {FormBuilder, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {UserService} from "../../user.service";
 import {Message} from "primeng/message";
 import {DatePicker} from "primeng/datepicker";
@@ -10,6 +10,7 @@ import {form} from "@angular/forms/signals";
 import {Dialog} from "primeng/dialog";
 import {passwordMatchValidator} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
+import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 
 @Component({
   selector: 'app-profile',
@@ -27,7 +28,7 @@ import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 })
 export class ProfileComponent {
   private userService = inject(UserService);
-  private fb = inject(FormBuilder);
+  private fb = inject(NonNullableFormBuilder);
 
   protected user = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
@@ -35,7 +36,7 @@ export class ProfileComponent {
 
   protected profileForm = this.fb.group({
     name: ['', Validators.required],
-    birthdate: [null as Date | null, Validators.required],
+    birthdate: [new Date(), Validators.required],
   });
 
   protected passwordForm = this.fb.group({
@@ -57,7 +58,7 @@ export class ProfileComponent {
       if (currentUser) {
         this.profileForm.patchValue({
           name: currentUser.name,
-          birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : null
+          birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date()
         });
       }
     });
@@ -67,7 +68,7 @@ export class ProfileComponent {
     this.userService.loadUser().subscribe();
   }
 
-  updateProfile() {
+  protected updateProfile() {
     if (this.profileForm.invalid) return;
 
     const formValues = this.profileForm.value;
@@ -86,15 +87,15 @@ export class ProfileComponent {
     });
   }
 
-  updatePassword() {
+  protected updatePassword() {
     if(this.passwordForm.invalid) {
       return;
     }
 
-    const {currentPassword, newPassword} = this.passwordForm.value;
+    const {currentPassword, newPassword} = this.passwordForm.getRawValue();
     const request: UpdatePasswordRequest = {
-      currentPassword: currentPassword ?? '',
-      newPassword: newPassword ?? ''
+      currentPassword: currentPassword,
+      newPassword: newPassword
     }
 
     this.userService.updatePassword(request).subscribe(res => {
@@ -102,8 +103,26 @@ export class ProfileComponent {
     });
   }
 
-  openPasswordDialog() {
+  protected updateUsername() {
+    if(this.usernameForm.invalid) {
+      return;
+    }
+
+    const request: UpdateUsernameRequest = this.usernameForm.getRawValue();
+    this.userService.updateUsername(request).subscribe(res => {
+      this.isUsernameDialogOpen.set(false);
+    })
+  }
+
+  protected openPasswordDialog() {
     this.passwordForm.reset();
     this.isPasswordDialogOpen.set(true);
+  }
+
+  protected openUsernameDialog() {
+    this.usernameForm.reset({
+      newUsername: this.user()?.username ?? ''
+    });
+    this.isUsernameDialogOpen.set(true);
   }
 }
