@@ -1,5 +1,5 @@
 .profile-container {
-  max-width: 42rem; /* Roughly 670px */
+  max-width: 42rem;
   margin: var(--space-6) auto 0;
   padding: var(--space-4);
   display: flex;
@@ -15,7 +15,6 @@
   }
 }
 
-/* Account Settings Layout */
 .settings-list {
   display: flex;
   flex-direction: column;
@@ -57,4 +56,10 @@
   display: flex;
   justify-content: flex-end;
   margin-top: var(--space-2);
+}
+
+p-floatlabel,
+.p-inputtext,
+.p-datepicker {
+  width: 100% !important;
 }
