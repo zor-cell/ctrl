@@ -41,3 +41,23 @@
     font-size: 0.875rem;
   }
 }
+
+.register-link {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--p-surface-500);
+
+  a {
+    color: var(--p-primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.25rem;
+    transition: color 0.2s;
+
+    &:hover {
+      text-decoration: underline;
+      filter: brightness(1.2);
+    }
+  }
+}

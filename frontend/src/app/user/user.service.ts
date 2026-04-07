@@ -4,6 +4,7 @@ import { tap } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { UserDetails } from './dto/UserDetails';
+import {UpdateProfileRequest} from "./dto/UpdateProfileRequest";
 
 @Injectable({
   providedIn: 'root',
@@ -12,11 +13,18 @@ export class UserService {
   private readonly baseUri: string = environment.apiUrl + '/users';
   private httpClient = inject(HttpClient);
 
-  public user = signal<UserDetails | null>(null);
+  private _user = signal<UserDetails | null>(null);
+  public user = this._user.asReadonly();
 
   public loadUser() {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me').pipe(
-      tap(user => this.user.set(user))
+      tap(user => this._user.set(user))
+    );
+  }
+
+  public updateUser(updateRequest: UpdateProfileRequest) {
+    return this.httpClient.put<UserDetails>(this.baseUri + '/me', updateRequest).pipe(
+      tap(user => this._user.set(user))
     );
   }
 }

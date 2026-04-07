@@ -7,7 +7,7 @@ import {Button} from "primeng/button";
 import {FloatLabel} from "primeng/floatlabel";
 import {InputText} from "primeng/inputtext";
 import {Message} from "primeng/message";
-import {Router} from "@angular/router";
+import {Router, RouterLink} from "@angular/router";
 import {DatePicker} from "primeng/datepicker";
 
 @Component({
@@ -18,7 +18,8 @@ import {DatePicker} from "primeng/datepicker";
     InputText,
     Message,
     ReactiveFormsModule,
-    DatePicker
+    DatePicker,
+    RouterLink
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',

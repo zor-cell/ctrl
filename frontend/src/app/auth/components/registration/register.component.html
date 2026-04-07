@@ -5,7 +5,7 @@
             <p>Register a new account</p>
         </div>
 
-        <form [formGroup]="registerForm" (ngSubmit)="register()" class="login-form p-fluid">
+        <form [formGroup]="registerForm" (ngSubmit)="register()" class="login-form">
             <div>
                 <p-floatlabel variant="on">
                     <input pInputText id="username" formControlName="username" />
@@ -69,6 +69,11 @@
             </div>
 
             <p-button type="submit" label="Register"></p-button>
+
+            <div class="register-link">
+                Already have an account?
+                <a routerLink="/login">Login here</a>
+            </div>
         </form>
     </div>
 
