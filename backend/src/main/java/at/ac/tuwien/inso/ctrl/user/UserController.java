@@ -35,7 +35,6 @@ public class UserController {
     }
 
     @PutMapping("/me/username")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public AuthResponse updateUsername(@AuthenticationPrincipal User currentUser, @RequestBody UpdateUsernameRequest request) {
         return userService.updateUsername(currentUser, request);
     }
