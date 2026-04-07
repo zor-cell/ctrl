@@ -1,4 +1,4 @@
-import {Component, effect, inject} from '@angular/core';
+import {Component, effect, inject, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {UserService} from "../../user.service";
 import {Message} from "primeng/message";
@@ -6,6 +6,10 @@ import {DatePicker} from "primeng/datepicker";
 import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
+import {form} from "@angular/forms/signals";
+import {Dialog} from "primeng/dialog";
+import {passwordMatchValidator} from "../../validators";
+import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 
 @Component({
   selector: 'app-profile',
@@ -15,7 +19,8 @@ import {InputText} from "primeng/inputtext";
     FloatLabel,
     ReactiveFormsModule,
     Button,
-    InputText
+    InputText,
+    Dialog
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -25,10 +30,22 @@ export class ProfileComponent {
   private fb = inject(FormBuilder);
 
   protected user = this.userService.user;
+  protected isPasswordDialogOpen = signal(false);
+  protected isUsernameDialogOpen = signal(false);
 
   protected profileForm = this.fb.group({
     name: ['', Validators.required],
     birthdate: [null as Date | null, Validators.required],
+  });
+
+  protected passwordForm = this.fb.group({
+    currentPassword: ['', Validators.required],
+    newPassword: ['', Validators.required],
+    confirmPassword: ['', Validators.required]
+  }, {validators: passwordMatchValidator});
+
+  protected usernameForm = this.fb.group({
+    newUsername: ['', Validators.required]
   });
 
   protected maxDate = new Date();
@@ -47,18 +64,15 @@ export class ProfileComponent {
   }
 
   ngOnInit() {
-    // Trigger the HTTP call. The effect() will handle populating the form
-    // once the tap() in your service updates the signal.
     this.userService.loadUser().subscribe();
   }
 
-  onSubmit() {
+  updateProfile() {
     if (this.profileForm.invalid) return;
 
     const formValues = this.profileForm.value;
     const dateObj = formValues.birthdate as Date;
 
-    // Format the date back to ISO-8601 string for PostgreSQL/Spring Boot
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -67,14 +81,29 @@ export class ProfileComponent {
     this.userService.updateUser({
       name: formValues.name!,
       birthdate: formattedDate
-    }).subscribe({
-      next: () => {
-        // You could trigger a PrimeNG Toast service here to say "Saved!"
-        console.log('Profile updated successfully!');
-      },
-      error: (err) => {
-        console.error('Failed to update profile', err);
-      }
+    }).subscribe(res => {
+
     });
+  }
+
+  updatePassword() {
+    if(this.passwordForm.invalid) {
+      return;
+    }
+
+    const {currentPassword, newPassword} = this.passwordForm.value;
+    const request: UpdatePasswordRequest = {
+      currentPassword: currentPassword ?? '',
+      newPassword: newPassword ?? ''
+    }
+
+    this.userService.updatePassword(request).subscribe(res => {
+      this.isPasswordDialogOpen.set(false);
+    });
+  }
+
+  openPasswordDialog() {
+    this.passwordForm.reset();
+    this.isPasswordDialogOpen.set(true);
   }
 }
