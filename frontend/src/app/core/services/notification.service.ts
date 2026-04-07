@@ -7,41 +7,53 @@ import {MessageService} from "primeng/api";
 export class NotificationService {
   private messageService = inject(MessageService);
 
-  showSuccess(message: string, title: string = 'Success') {
+  showSuccess(message: string, title = 'Success') {
     this.messageService.add({ severity: 'success', summary: title, detail: message });
   }
 
-  showError(error: any, title: string = 'Error') {
+  showError(error: unknown, title = 'Error') {
+    const httpError = error as {
+      status?: number;
+      message?: string;
+      error?: unknown;
+    };
     const e = error instanceof Object ? error.error : error;
-    const status: number = error.status;
+    const status = httpError.status ?? 0;
 
-    let message = e instanceof ProgressEvent ? error.message : e;
+    let message = e instanceof ProgressEvent ? httpError.message : e;
     if (status === 0) {
       // backend unreachable
       message = 'Cannot connect to the server. Please check your internet connection or try again later'
-    } else if (error.error && typeof error.error === 'string') {
+    } else if (typeof httpError.error === 'string') {
       // text error
-      message = error.error;
-    } else if(error.error && Array.isArray(error.error)) {
+      message = httpError.error;
+    } else if(Array.isArray(httpError.error)) {
       //array error
-      message = error.error;
-    } else if (error.error && error.error.message) {
+      message = httpError.error;
+    } else if (isRecordWithKey(httpError.error, 'message')) {
       // JSON error
-      message = error.error.message;
-    } else if(error.error && error.error.detail) {
-      message = error.error.detail;
-    } else if (error.message) {
-      message = error.message;
+      message = httpError.error.message;
+    } else if (isRecordWithKey(httpError.error, 'detail')) {
+      message = httpError.error.detail;
+    } else if (httpError.message) {
+      message = httpError.message;
     }
 
     this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message });
   }
 
-  showInfo(message: string, title: string = 'Information') {
+  showInfo(message: string, title = 'Information') {
     this.messageService.add({ severity: 'info', summary: title, detail: message });
   }
 
-  showWarning(message: string, title: string = 'Warning') {
+  showWarning(message: string, title = 'Warning') {
     this.messageService.add({ severity: 'warn', summary: title, detail: message });
   }
+}
+
+function isRecordWithKey<T extends string>(
+  value: unknown,
+  key: T
+): value is Record<T, string> {
+  return typeof value === 'object' && value !== null && key in value;
 }
