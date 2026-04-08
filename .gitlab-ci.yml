@@ -44,7 +44,16 @@ test:backend:
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
   before_script:
-    - sleep 10  # Wait for PostgreSQL service container to start
+    - apt-get update && apt-get install -y postgresql-client
+    - |
+      for i in {1..30}; do
+        if pg_isready -h db -p 5432 -U test 2>/dev/null; then
+          echo "PostgreSQL is ready!"
+          break
+        fi
+        echo "Waiting for PostgreSQL... attempt $i/30"
+        sleep 2
+      done
   script:
     - mvn test -f ./backend
   artifacts:
