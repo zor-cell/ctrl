@@ -37,7 +37,7 @@ test:backend:
     paths:
       - .m2/repository
   services:
-    - name: pgvector/pgvector:pg18-trixie
+    - name: postgres:18.3-trixie
       alias: db
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
