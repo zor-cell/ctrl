@@ -1,7 +1,6 @@
 import {Component, inject} from '@angular/core';
 import {AuthService} from "../../auth.service";
 import {NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {LoginRequest} from "../../dto/LoginRequest";
 import {RegisterRequest} from "../../dto/RegisterRequest";
 import {Button} from "primeng/button";
 import {FloatLabel} from "primeng/floatlabel";
@@ -40,7 +39,7 @@ export class RegisterComponent {
     }
 
     const registerRequest: RegisterRequest = this.registerForm.getRawValue();
-    this.authService.register(registerRequest).subscribe(res => {
+    this.authService.register(registerRequest).subscribe(() => {
       this.router.navigate(['/login']);
     });
   }
