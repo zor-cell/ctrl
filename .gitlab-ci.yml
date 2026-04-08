@@ -39,21 +39,12 @@ test:backend:
   services:
     - name: pgvector/pgvector:pg18-trixie
       alias: db
+      variables:
+        HEALTHCHECK_TCP_PORT: "5432"
   variables:
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
-  before_script:
-    - |
-      for i in {1..30}; do
-        if (echo > /dev/tcp/db/5432) 2>/dev/null; then
-          echo "PostgreSQL is ready!"
-          break
-        fi
-        echo "Waiting for PostgreSQL... attempt $i/30"
-        sleep 2
-      done
-    - sleep 5  # Additional buffer after connection is available
   script:
     - mvn test -f ./backend
   artifacts:
