@@ -7,6 +7,7 @@ import {provideRouter} from "@angular/router";
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
+    /* eslint-disable @typescript-eslint/no-empty-function */
     value: (query: string) => ({
       matches: false,
       media: query,
@@ -17,6 +18,7 @@ if (!window.matchMedia) {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }),
+    /* eslint-enable @typescript-eslint/no-empty-function */
   });
 }
 
