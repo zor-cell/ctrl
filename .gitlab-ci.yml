@@ -43,10 +43,6 @@ test:backend:
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
-    DB_NAME: testdb
-    DB_USERNAME: test
-    DB_PASSWORD: test
-    JWT_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   script:
     - mvn test -f ./backend
   artifacts:
