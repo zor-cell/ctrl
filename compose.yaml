@@ -65,7 +65,16 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
       - minio_data:/data
-    command: server /data --console-address ":9001"
+    # create a minio bucket for media files with public permissions on startup
+    entrypoint: >
+      /bin/sh -c "
+      minio server /data --console-address ':9001' & 
+      sleep 3;
+      mc alias set local http://localhost:9000 ${MINIO_USER} ${MINIO_PASSWORD};
+      mc mb local/ctrl-dev-media --ignore-existing;
+      mc anonymous set download local/ctrl-dev-media;
+      wait
+      "
     restart: on-failure:3
 
 volumes:

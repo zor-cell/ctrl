@@ -23,7 +23,7 @@ public class FileStorageService {
         //generate unique object key
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
-        String uniqueFileName = "posts/" + UUID.randomUUID().toString() + extension;
+        String uniqueFileName = UUID.randomUUID().toString() + extension;
 
         //build upload request
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
