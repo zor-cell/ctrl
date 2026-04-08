@@ -42,6 +42,7 @@ test:backend:
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
   variables:
+    CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
