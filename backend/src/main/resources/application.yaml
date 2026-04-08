@@ -5,8 +5,8 @@ spring:
     import: "optional:configtree:/run/secrets/"
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
-    username: ${db_username}
-    password: ${db_password}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

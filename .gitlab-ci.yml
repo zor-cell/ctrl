@@ -38,14 +38,12 @@ test:backend:
       - .m2/repository
   services:
     - name: pgvector/pgvector:pg18-trixie
-      alias: postgres
+      alias: db
   variables:
-    POSTGRES_DB: testdb
-    POSTGRES_USER: test
-    POSTGRES_PASSWORD: test
-    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
-    SPRING_DATASOURCE_USERNAME: test
-    SPRING_DATASOURCE_PASSWORD: test
+    DB_NAME: testdb
+    DB_USERNAME: test
+    DB_PASSWORD: test
+    JWT_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   script:
     - mvn test -f ./backend
   artifacts:
