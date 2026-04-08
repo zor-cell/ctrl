@@ -1,5 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {MessageService} from "primeng/api";
+import {HttpErrorResponse} from "@angular/common/http";
 
 @Injectable({
   providedIn: 'root',
@@ -17,7 +18,9 @@ export class NotificationService {
       message?: string;
       error?: unknown;
     };
-    const e = error instanceof Object ? error.error : error;
+
+    const e = error instanceof HttpErrorResponse ? error.error :
+      (error instanceof Error ? error.message : String(error));
     const status = httpError.status ?? 0;
 
     let message = e instanceof ProgressEvent ? httpError.message : e;

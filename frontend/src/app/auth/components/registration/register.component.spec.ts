@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { RegisterComponent } from './register.component';
+import {MessageService} from "primeng/api";
 
 describe('RegistrationComponent', () => {
   let component: RegisterComponent;
@@ -8,6 +9,7 @@ describe('RegistrationComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [MessageService,],
       imports: [RegisterComponent],
     }).compileComponents();
 
