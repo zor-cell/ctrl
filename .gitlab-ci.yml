@@ -43,6 +43,8 @@ test:backend:
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
+  before_script:
+    - sleep 10  # Wait for PostgreSQL service container to start
   script:
     - mvn test -f ./backend
   artifacts:
