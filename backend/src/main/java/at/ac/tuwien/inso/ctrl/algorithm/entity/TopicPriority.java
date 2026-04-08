@@ -24,19 +24,18 @@ import lombok.Setter;
 @Table(name = "topic_priorities")
 public class TopicPriority {
 
-    @EmbeddedId
-    private TopicPriorityId id;
+  @EmbeddedId private TopicPriorityId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("username")
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("username")
+  @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+  private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("topicId")
-    @JoinColumn(name = "topic_id", referencedColumnName = "topic_id", nullable = false)
-    private Topic topic;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("topicId")
+  @JoinColumn(name = "topic_id", referencedColumnName = "topic_id", nullable = false)
+  private Topic topic;
 
-    @Column(nullable = false)
-    private Integer rank;
+  @Column(nullable = false)
+  private Integer rank;
 }

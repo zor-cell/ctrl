@@ -18,10 +18,10 @@ import lombok.Setter;
 @Entity
 @Table(name = "labels")
 public class Label {
-    @Id
-    @Column(name = "label_id", nullable = false, unique = true)
-    private String labelId;
+  @Id
+  @Column(name = "label_id", nullable = false, unique = true)
+  private String labelId;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 }

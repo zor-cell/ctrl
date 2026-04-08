@@ -22,20 +22,25 @@ import lombok.Setter;
 @Entity
 @Table(name = "time_management")
 public class TimeManagement {
-    @Id
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+  @Id
+  @Column(name = "username", nullable = false, unique = true)
+  private String username;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false, insertable = false, updatable = false)
-    private User user;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(
+      name = "username",
+      referencedColumnName = "username",
+      nullable = false,
+      insertable = false,
+      updatable = false)
+  private User user;
 
-    @Column(name = "is_day_hardcutted")
-    private Boolean isDayHardcutted;
+  @Column(name = "is_day_hardcutted")
+  private Boolean isDayHardcutted;
 
-    @Column(name = "duration_per_day")
-    private Integer durationPerDay;
+  @Column(name = "duration_per_day")
+  private Integer durationPerDay;
 
-    @Column(name = "posts_per_day")
-    private Integer postsPerDay;
+  @Column(name = "posts_per_day")
+  private Integer postsPerDay;
 }
