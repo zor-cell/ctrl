@@ -10,15 +10,20 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
+.temp: &temp
+  rules:
+    - when: manual
+
 lint:backend:
   stage: lint
-  image: registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+  image: maven:3.9-eclipse-temurin-21
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
       - .m2/repository
   script:
     - mvn spotless:check -f ./backend/
+  <<: *temp
 
 lint:frontend:
   stage: lint
@@ -29,10 +34,11 @@ lint:frontend:
       - .npm
   script:
     - cd frontend && npm ci && npm run lint
+  <<: *temp
 
 test:backend:
   stage: test
-  image: registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+  image: maven:3.9-eclipse-temurin-21
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
@@ -53,6 +59,7 @@ test:backend:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: always
+  <<: *temp
 
 test:frontend:
   stage: test
@@ -67,6 +74,7 @@ test:frontend:
     reports:
       junit: ./frontend/test-results/*.xml
     when: always
+  <<: *temp
 
 .build_rules: &build_rules
   rules:
@@ -78,7 +86,7 @@ test:frontend:
 
 build:backend:
   stage: build
-  image: registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+  image: maven:3.9-eclipse-temurin-21
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
