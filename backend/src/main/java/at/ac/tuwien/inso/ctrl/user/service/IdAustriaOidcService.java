@@ -15,16 +15,16 @@ import org.springframework.web.client.RestClient;
 @Service
 @RequiredArgsConstructor
 public class IdAustriaOidcService {
-    @Value("${id-austria.client-id}")
+    @Value("${application.security.id-austria.client-id}")
     private String clientId;
 
-    @Value("${id-austria.client-secret}")
+    @Value("${application.security.id-austria.client-secret}")
     private String clientSecret;
 
-    @Value("${id-austria.token-uri}")
+    @Value("${application.security.id-austria.token-uri}")
     private String tokenUri;
 
-    @Value("${id-austria.redirect-uri}")
+    @Value("${application.security.id-austria.redirect-uri}")
     private String redirectUri;
 
     private final RestClient restClient = RestClient.create();

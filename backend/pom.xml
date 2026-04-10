@@ -100,7 +100,7 @@
 			<version>1.6.0.Beta1</version>
 		</dependency>
 
-		<!-- Keycloak OAUTH2 -->
+		<!-- Keycloak JWT verification -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
