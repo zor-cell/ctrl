@@ -27,13 +27,13 @@ public class FollowRelation {
   @EmbeddedId private FollowRelationId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("followerUsername")
-  @JoinColumn(name = "follower_username", referencedColumnName = "username", nullable = false)
+  @MapsId("followerId")
+  @JoinColumn(name = "follower_id", referencedColumnName = "id", nullable = false)
   private User follower;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("followingUsername")
-  @JoinColumn(name = "following_username", referencedColumnName = "username", nullable = false)
+  @MapsId("followingId")
+  @JoinColumn(name = "following_id", referencedColumnName = "id", nullable = false)
   private User following;
 
   @Column(name = "since")

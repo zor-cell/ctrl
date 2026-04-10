@@ -27,8 +27,8 @@ public class TopicPriority {
   @EmbeddedId private TopicPriorityId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("username")
-  @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+  @MapsId("userId")
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
   private User user;
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -33,8 +33,8 @@ public class Reaction {
   private Message message;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("fromUsername")
-  @JoinColumn(name = "from_username", referencedColumnName = "username", nullable = false)
+  @MapsId("fromUserId")
+  @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
   @Column(nullable = false)

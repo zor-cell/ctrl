@@ -1,9 +1,31 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import {MessageService} from "primeng/api";
+import {provideRouter} from "@angular/router";
+
+//polyfill for mocking web context objects
+if (!window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    /* eslint-disable @typescript-eslint/no-empty-function */
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+    /* eslint-enable @typescript-eslint/no-empty-function */
+  });
+}
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideRouter([]), MessageService],
       imports: [AppComponent],
     }).compileComponents();
   });
@@ -18,6 +40,6 @@ describe('App', () => {
     const fixture = TestBed.createComponent(AppComponent);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, frontend');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });

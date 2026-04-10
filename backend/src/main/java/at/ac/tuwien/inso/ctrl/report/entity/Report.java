@@ -32,11 +32,11 @@ public class Report {
   private String content;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "from_user", referencedColumnName = "username", nullable = false)
+  @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "username_reported", referencedColumnName = "username", nullable = false)
+  @JoinColumn(name = "reported_user_id", referencedColumnName = "id", nullable = false)
   private User usernameReported;
 
   @ManyToOne(fetch = FetchType.LAZY)

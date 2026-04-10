@@ -28,7 +28,7 @@ public class SessionHistory {
   private String sessionId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
   private User user;
 
   @Column(name = "start")

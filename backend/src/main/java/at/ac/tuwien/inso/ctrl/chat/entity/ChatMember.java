@@ -22,9 +22,9 @@ public class ChatMember {
   private Chat chat;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("username")
-  @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
-  private User username;
+  @MapsId("userId")
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+  private User user;
 
   @Column(name = "joined_at")
   private LocalDateTime joinedAt;

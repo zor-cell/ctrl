@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,13 +24,13 @@ import lombok.Setter;
 @Table(name = "algorithm_management")
 public class AlgorithmManagement {
   @Id
-  @Column(name = "username", nullable = false, unique = true)
-  private String username;
+  @Column(name = "user_id", nullable = false, unique = true)
+  private UUID userId;
 
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(
-      name = "username",
-      referencedColumnName = "username",
+      name = "user_id",
+      referencedColumnName = "id",
       nullable = false,
       insertable = false,
       updatable = false)

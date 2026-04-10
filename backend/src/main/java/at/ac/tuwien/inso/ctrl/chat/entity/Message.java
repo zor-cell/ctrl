@@ -32,7 +32,7 @@ public class Message {
   private String messageId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "from_username", referencedColumnName = "username", nullable = false)
+  @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
   @Column(nullable = false)

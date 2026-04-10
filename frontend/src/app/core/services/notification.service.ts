@@ -1,5 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {MessageService} from "primeng/api";
+import {HttpErrorResponse} from "@angular/common/http";
 
 @Injectable({
   providedIn: 'root',
@@ -12,22 +13,32 @@ export class NotificationService {
   }
 
   showError(error: unknown, title = 'Error') {
-    const e = error instanceof Object ? (error as {error: unknown}).error : error;
-    const status: number = (error as {status: number}).status;
+    const httpError = error as {
+      status?: number;
+      message?: string;
+      error?: unknown;
+    };
 
-    let message = e instanceof ProgressEvent ? (error as {message: string}).message : e;
+    const e = error instanceof HttpErrorResponse ? error.error :
+      (error instanceof Error ? error.message : String(error));
+    const status = httpError.status ?? 0;
+
+    let message = e instanceof ProgressEvent ? httpError.message : e;
     if (status === 0) {
       message = 'Cannot connect to the server. Please check your internet connection or try again later'
-    } else if ((error as {error: unknown}).error && typeof (error as {error: unknown}).error === 'string') {
-      message = (error as {error: string}).error;
-    } else if((error as {error: unknown}).error && Array.isArray((error as {error: unknown}).error)) {
-      message = (error as {error: unknown[]}).error;
-    } else if ((error as {error: {message: string}}).error?.message) {
-      message = (error as {error: {message: string}}).error.message;
-    } else if((error as {error: {detail: unknown}}).error?.detail) {
-      message = (error as {error: {detail: unknown}}).error.detail;
-    } else if ((error as {message: string}).message) {
-      message = (error as {message: string}).message;
+    } else if (typeof httpError.error === 'string') {
+      // text error
+      message = httpError.error;
+    } else if(Array.isArray(httpError.error)) {
+      //array error
+      message = httpError.error;
+    } else if (isRecordWithKey(httpError.error, 'message')) {
+      // JSON error
+      message = httpError.error.message;
+    } else if (isRecordWithKey(httpError.error, 'detail')) {
+      message = httpError.error.detail;
+    } else if (httpError.message) {
+      message = httpError.message;
     }
 
     this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message as string });
@@ -40,4 +51,11 @@ export class NotificationService {
   showWarning(message: string, title = 'Warning') {
     this.messageService.add({ severity: 'warn', summary: title, detail: message });
   }
+}
+
+function isRecordWithKey<T extends string>(
+  value: unknown,
+  key: T
+): value is Record<T, string> {
+  return typeof value === 'object' && value !== null && key in value;
 }

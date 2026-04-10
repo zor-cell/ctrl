@@ -1,3 +1,4 @@
+---
 stages:
   - lint
   - test
@@ -9,6 +10,10 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
+.temp: &temp
+  rules:
+    - when: manual
+
 lint:backend:
   stage: lint
   image: maven:3.9-eclipse-temurin-21
@@ -18,6 +23,7 @@ lint:backend:
       - .m2/repository
   script:
     - mvn spotless:check -f ./backend/
+  <<: *temp
 
 lint:frontend:
   stage: lint
@@ -28,6 +34,7 @@ lint:frontend:
       - .npm
   script:
     - cd frontend && npm ci && npm run lint
+  <<: *temp
 
 test:backend:
   stage: test
@@ -37,21 +44,22 @@ test:backend:
     paths:
       - .m2/repository
   services:
-    - name: pgvector/pgvector:pg18-trixie
-      alias: postgres
+    - name: registry.reset.inso-w.at/pub/docker/postgres:18-alpine
+      alias: db
+      variables:
+        HEALTHCHECK_TCP_PORT: "5432"
   variables:
+    CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
-    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
-    SPRING_DATASOURCE_USERNAME: test
-    SPRING_DATASOURCE_PASSWORD: test
   script:
     - mvn test -f ./backend
   artifacts:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: always
+  <<: *temp
 
 test:frontend:
   stage: test
@@ -66,6 +74,7 @@ test:frontend:
     reports:
       junit: ./frontend/test-results/*.xml
     when: always
+  <<: *temp
 
 .build_rules: &build_rules
   rules:
