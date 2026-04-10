@@ -18,6 +18,11 @@ minio:
   secret-key: ${MINIO_PASSWORD}
   bucket-name: ctrl-prod-media
 
+infinity:
+  url: http://infinity:7997
+  model: BAAI/bge-small-en-v1.5
+  dimensions: 384
+
 application:
   security:
     jwt:

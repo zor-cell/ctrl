@@ -77,6 +77,23 @@ services:
       "
     restart: on-failure:3
 
+  infinity:
+    platform: linux/amd64
+    image: michaelfeil/infinity:latest-cpu
+    ports:
+      - "7997:7997"
+    environment:
+      - INFINITY_MODEL_ID=sentence-transformers/clip-ViT-B-32
+      - INFINITY_BATCH_SIZE=32
+    restart: on-failure:3
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7997/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - infinity_cache:/app/.cache
+
 volumes:
   db_data:
   minio_data:
