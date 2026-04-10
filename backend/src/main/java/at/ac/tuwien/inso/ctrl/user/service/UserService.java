@@ -87,7 +87,7 @@ public class UserService {
 
         String firstName = jwt.getClaimAsString("given_name");
         String lastName = jwt.getClaimAsString("family_name");
-        if(firstName != null &&  lastName != null) {
+        if(firstName != null && lastName != null) {
             currentUser.setName(firstName + " " + lastName);
         }
 

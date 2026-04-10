@@ -1,5 +1,10 @@
 export const environment = {
   production: true,
   apiUrl: 'http://localhost:8080/api',
-  fileStorageUrl: 'http://localhost:9000/ctrl-prod-media/'
+  idAustria: {
+    clientId: 'http://localhost:8080',
+    redirectUri: 'http://localhost:4200/verification-callback',
+    authUrl: 'http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/auth',
+    scope: 'openid profile'
+  }
 };

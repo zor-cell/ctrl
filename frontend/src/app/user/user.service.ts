@@ -26,7 +26,6 @@ export class UserService {
   public loadUser() {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me').pipe(
       tap(user => {
-        console.log(user)
         this._user.set(user)
       })
     );
@@ -52,11 +51,19 @@ export class UserService {
   public updateUsername(request: UpdateUsernameRequest) {
     return this.httpClient.put<AuthResponse>(this.baseUri + '/me/username', request).pipe(
       tap(res => {
-        console.log(res.token)
         this.authService.updateToken(res.token);
         this.notificationService.showSuccess('Updated username');
 
         this.loadUser().subscribe();
+      })
+    );
+  }
+
+  public verifyUser(code: string) {
+    return this.httpClient.put<UserDetails>(this.baseUri + '/me/verify', {code}).pipe(
+      tap(user => {
+        this._user.set(user);
+        this.notificationService.showSuccess('Verified Identity');
       })
     );
   }
