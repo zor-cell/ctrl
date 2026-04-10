@@ -31,8 +31,13 @@ export class VerificationCallbackComponent {
       return;
     }
 
-    this.userService.verifyUser(code).subscribe(res => {
+    this.userService.verifyUser(code).subscribe({
+      next: res => {
         this.goHome();
+      },
+      error: err => {
+        this.isError.set(true);
+      }
     });
   }
 
