@@ -18,6 +18,7 @@ application:
       secret-key: ${JWT_SECRET}
       expiration: 86400000 #1 day in ms
     id-austria:
+      issuer-uri: "http://keycloak:8080/realms/id-austria-mock"
       client-id: "http://localhost:8080"
       client-secret: ${ID_AUSTRIA_SECRET}
       token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"

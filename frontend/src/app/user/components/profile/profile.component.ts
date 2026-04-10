@@ -11,6 +11,7 @@ import {Dialog} from "primeng/dialog";
 import {passwordMatchValidator} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
+import {environment} from "../../../../environments/environment";
 
 @Component({
   selector: 'app-profile',
@@ -131,5 +132,21 @@ export class ProfileComponent {
       newUsername: this.currentUser()?.username ?? ''
     });
     this.isUsernameDialogOpen.set(true);
+  }
+
+  /**
+   * Open IDAustria login page to verify user
+   */
+  protected initiateVerification() {
+    const config = environment.idAustria;
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      scope: config.scope
+    });
+
+    window.location.href = `${config.authUrl}?${params.toString()}`;
   }
 }

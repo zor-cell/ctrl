@@ -5,4 +5,5 @@ spring:
 application:
   security:
     id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"

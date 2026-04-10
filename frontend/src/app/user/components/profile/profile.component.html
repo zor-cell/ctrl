@@ -43,7 +43,9 @@
                             <p-button
                                     label="Verify Now"
                                     size="small"
-                                    severity="secondary">
+                                    severity="secondary"
+                                    (onClick)="initiateVerification()"
+                            >
                             </p-button>
                         }
                     </div>
@@ -59,8 +61,6 @@
                 </div>
             </form>
         </div>
-
-        <hr class="divider">
 
         <div class="card profile-card">
             <h3 class="h3 profile-card__title">Account Settings</h3>
