@@ -42,6 +42,7 @@ public class UserService {
         User user = userRepository.findById(currentUser.getId()).orElseThrow();
 
         user.setName(request.name());
+        user.setEmail(request.email());
         user.setBirthdate(request.birthdate());
 
         User updatedUser = userRepository.save(user);

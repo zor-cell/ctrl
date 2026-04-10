@@ -25,6 +25,7 @@ public class AuthService {
                 .username(registerRequest.username())
                 .password(passwordEncoder.encode(registerRequest.password()))
                 .name(registerRequest.name())
+                .email(registerRequest.email())
                 .birthdate(registerRequest.birthdate())
                 .build();
 

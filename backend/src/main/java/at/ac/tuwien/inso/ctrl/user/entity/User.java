@@ -36,6 +36,8 @@ public class User implements UserDetails {
 
     private String name;
 
+    private String email;
+
     @Column(name = "is_verified")
     private boolean isVerified;
 

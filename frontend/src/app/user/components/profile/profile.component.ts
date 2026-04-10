@@ -45,6 +45,7 @@ export class ProfileComponent {
   protected profileForm = this.fb.group({
     name: ['', Validators.required],
     birthdate: [new Date(), Validators.required],
+    email: ['', Validators.required]
   });
 
   protected passwordForm = this.fb.group({
@@ -66,6 +67,7 @@ export class ProfileComponent {
       if (currentUser) {
         this.profileForm.patchValue({
           name: currentUser.name,
+          email: currentUser.email,
           birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date()
         });
       }
@@ -89,6 +91,7 @@ export class ProfileComponent {
 
     this.userService.updateUser({
       name: formValues.name!,
+      email: formValues.email!,
       birthdate: formattedDate
     }).subscribe(res => {
 
