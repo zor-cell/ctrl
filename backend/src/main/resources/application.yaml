@@ -17,6 +17,11 @@ application:
     jwt:
       secret-key: ${JWT_SECRET}
       expiration: 86400000 #1 day in ms
+    id-austria:
+      client-id: "http:localhost//8080"
+      client-secret: ${ID_AUSTRIA_SECRET}
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
 
 management:
   endpoints:

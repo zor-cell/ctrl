@@ -1,10 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
-import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
-import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
-import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +17,12 @@ public class UserController {
 
     @GetMapping("/me")
     public UserDetailsResponse getUser(@AuthenticationPrincipal User currentUser) {
-        return userService.getProfile(currentUser.getId());
+        return userService.getUser(currentUser.getId());
     }
 
     @PutMapping("/me")
     public UserDetailsResponse updateUser(@AuthenticationPrincipal User currentUser, @RequestBody UpdateProfileRequest request) {
-        return userService.updateProfile(currentUser, request);
+        return userService.updateUser(currentUser, request);
     }
 
     @PutMapping("/me/password")
@@ -37,5 +34,10 @@ public class UserController {
     @PutMapping("/me/username")
     public AuthResponse updateUsername(@AuthenticationPrincipal User currentUser, @RequestBody UpdateUsernameRequest request) {
         return userService.updateUsername(currentUser, request);
+    }
+
+    @PutMapping("/me/verify")
+    public UserDetailsResponse verifyUser(@AuthenticationPrincipal User currentUser, @RequestBody VerifyIdentityRequest request) {
+        return userService.verifyUser(currentUser, request);
     }
 }

@@ -11,6 +11,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
     depends_on:
       db:
         condition: service_healthy
@@ -52,5 +53,17 @@ services:
     volumes:
       - db_data:/var/lib/postgresql
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
+    ports:
+      - "8081:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
 volumes:
   db_data:
+  keycloak_data:
