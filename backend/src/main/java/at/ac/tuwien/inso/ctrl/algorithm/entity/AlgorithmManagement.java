@@ -22,26 +22,31 @@ import lombok.Setter;
 @Entity
 @Table(name = "algorithm_management")
 public class AlgorithmManagement {
-    @Id
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
+  @Id
+  @Column(name = "username", nullable = false, unique = true)
+  private String username;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false, insertable = false, updatable = false)
-    private User user;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(
+      name = "username",
+      referencedColumnName = "username",
+      nullable = false,
+      insertable = false,
+      updatable = false)
+  private User user;
 
-    @Column(name = "weight_recency")
-    private Integer weightRecency;
+  @Column(name = "weight_recency")
+  private Integer weightRecency;
 
-    @Column(name = "weight_known_vs_new")
-    private Integer weightKnownVsNew;
+  @Column(name = "weight_known_vs_new")
+  private Integer weightKnownVsNew;
 
-    @Column(name = "weight_source_quality")
-    private Integer weightSourceQuality;
+  @Column(name = "weight_source_quality")
+  private Integer weightSourceQuality;
 
-    @Column(name = "weight_trending_boost")
-    private Integer weightTrendingBoost;
+  @Column(name = "weight_trending_boost")
+  private Integer weightTrendingBoost;
 
-    @Column(name = "weight_topic_interest")
-    private Integer weightTopicInterest;
+  @Column(name = "weight_topic_interest")
+  private Integer weightTopicInterest;
 }

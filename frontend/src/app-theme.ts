@@ -16,6 +16,14 @@ export const Noir = definePreset(Aura, {
             900: '{zinc.900}',
             950: '{zinc.950}'
         },
+      borderRadius: {
+        none: '0',
+        xs: '2px',
+        sm: '4px',
+        md: '6px',
+        lg: '8px',
+        xl: '12px'
+      },
         colorScheme: {
             light: {
                 primary: {

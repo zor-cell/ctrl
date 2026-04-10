@@ -1,10 +1,8 @@
-import {Component, inject, signal} from '@angular/core';
+import {Component, inject} from '@angular/core';
 
 import {AuthService} from '../../auth.service'
 import {LoginRequest} from "../../dto/LoginRequest";
-import {form, FormField, required} from "@angular/forms/signals";
-import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {Password} from "primeng/password";
+import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {FloatLabel} from "primeng/floatlabel";
@@ -42,8 +40,6 @@ export class LoginComponent {
     }
 
     const loginRequest: LoginRequest = this.loginForm.getRawValue();
-    this.authService.login(loginRequest).subscribe(res => {
-
-      });
+    this.authService.login(loginRequest).subscribe();
   }
 }

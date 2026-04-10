@@ -2,7 +2,6 @@ import {Injectable, inject, signal} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
-import {UserDetails} from '../user/dto/UserDetails'
 import {RegisterRequest} from './dto/RegisterRequest'
 import {LoginRequest} from './dto/LoginRequest'
 import {AuthResponse} from './dto/AuthResponse'
@@ -36,7 +35,7 @@ export class AuthService {
         localStorage.setItem(this.TOKEN_KEY, res.token);
         this.token.set(res.token);
 
-        this.userService.loadUser().subscribe(res => {});
+        this.userService.loadUser().subscribe();
       })
     );
   }
