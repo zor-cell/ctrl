@@ -12,8 +12,8 @@ public class KeyCloakConfig {
     private String issuerUri;
 
     @Bean
-    public JwtDecoder keycloakJwtDecoder() {
-        // This automatically fetches the public keys from Keycloak to verify token signatures
+    public JwtDecoder idAustriaJwtDecoder() {
+        //fetches public keys from issuer to verify tokens
         return JwtDecoders.fromIssuerLocation(issuerUri);
     }
 }

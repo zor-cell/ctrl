@@ -1,7 +1,9 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
+import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.UsernameExistsException;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
@@ -28,7 +30,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final JwtDecoder keycloakJwtDecoder;
     private final IdAustriaOidcService idAustriaOidcService;
 
     public UserDetailsResponse getUser(UUID userId) {
@@ -37,20 +38,19 @@ public class UserService {
     }
 
     @Transactional
-    public UserDetailsResponse updateUser(User principal, UpdateProfileRequest request) {
-        var user = userRepository.findById(principal.getId()).orElseThrow();
+    public UserDetailsResponse updateUser(User currentUser, UpdateProfileRequest request) {
+        User user = userRepository.findById(currentUser.getId()).orElseThrow();
 
         user.setName(request.name());
         user.setBirthdate(request.birthdate());
 
-        userRepository.save(user);
-
-        return userMapper.toUserDetailsResponse(user);
+        User updatedUser = userRepository.save(user);
+        return userMapper.toUserDetailsResponse(updatedUser);
     }
 
     @Transactional
-    public void updatePassword(User principal, UpdatePasswordRequest request) {
-        var user = userRepository.findById(principal.getId()).orElseThrow();
+    public void updatePassword(User currentUser, UpdatePasswordRequest request) {
+        User user = userRepository.findById(currentUser.getId()).orElseThrow();
 
         if(!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new InvalidPasswordException("Current password is incorrect");
@@ -62,14 +62,14 @@ public class UserService {
     }
 
     @Transactional
-    public AuthResponse updateUsername(User principal, UpdateUsernameRequest request) {
+    public AuthResponse updateUsername(User currentUser, UpdateUsernameRequest request) {
         String newUsername = request.newUsername().trim();
 
         if (userRepository.findByUsername(newUsername).isPresent()) {
             throw new UsernameExistsException("Username is already taken");
         }
 
-        var user = userRepository.findById(principal.getId()).orElseThrow();
+        User user = userRepository.findById(currentUser.getId()).orElseThrow();
         user.setUsername(newUsername);
         userRepository.save(user);
 
@@ -80,42 +80,25 @@ public class UserService {
     @Transactional
     public UserDetailsResponse verifyUser(User currentUser, VerifyIdentityRequest request) {
         if (request.code() == null || request.code().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Keycloak token is missing");
+            throw new InvalidRequestException("Authorization code is missing");
         }
 
-        try {
-            // 1. Exchange the Authorization Code for Tokens
-            IdAustriaTokenResponse tokenResponse = idAustriaOidcService.exchangeCodeForToken(request.code());
+        Jwt jwt = idAustriaOidcService.getTokenFromCode(request.code());
 
-            if (tokenResponse == null || tokenResponse.idToken() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to retrieve token from ID Austria");
-            }
-
-            // 2. Decode and securely validate the id_token
-            Jwt jwt = keycloakJwtDecoder.decode(tokenResponse.idToken());
-
-            // 3. Extract ID Austria specific claims
-            // The bPK is the only reliable way to uniquely identify the user across sessions
-            String bpk = jwt.getClaimAsString("urn:pvpgvat:oidc.bpk");
-
-            // Extract birthdate (format: YYYY-MM-DD)
-            String birthdateStr = jwt.getClaimAsString("birthdate");
-
-            LocalDate birthdate = null;
-            if (birthdateStr != null) {
-                birthdate = LocalDate.parse(birthdateStr);
-            }
-
-            currentUser.setVerified(true);
-            currentUser.setBirthdate(birthdate);
-
-            User updatedUser = userRepository.save(currentUser);
-
-            return userMapper.toUserDetailsResponse(updatedUser);
-        } catch (JwtException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid ID token: " + e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Verification failed: " + e.getMessage());
+        String firstName = jwt.getClaimAsString("given_name");
+        String lastName = jwt.getClaimAsString("family_name");
+        if(firstName != null &&  lastName != null) {
+            currentUser.setName(firstName + " " + lastName);
         }
+
+        String birthdateStr = jwt.getClaimAsString("birthdate");
+        if(birthdateStr != null) {
+            currentUser.setBirthdate(LocalDate.parse(birthdateStr));
+        }
+
+        currentUser.setVerified(true);
+
+        User updatedUser = userRepository.save(currentUser);
+        return userMapper.toUserDetailsResponse(updatedUser);
     }
 }
