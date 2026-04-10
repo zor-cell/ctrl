@@ -33,6 +33,9 @@ public class Post {
   @Column(name = "media_ref")
   private String mediaRef;
 
+  @Column(name = "is_public", nullable = false)
+  private boolean isPublic;
+
   private Integer upvotes;
 
   private Integer downvotes;

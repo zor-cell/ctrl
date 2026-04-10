@@ -5,7 +5,11 @@
     <p-tabs [value]="activeRoute()">
       <p-tablist>
         @for (item of items; track item.route) {
-          <p-tab [value]="item.route" [routerLink]="item.route">
+          <p-tab
+            [value]="item.route"
+            [disabled]="item.requiresAuth && !isLoggedIn()"
+            (click)="navigate(item)"
+          >
             <span>{{ item.icon }}</span>
             <span>{{ item.label }}</span>
           </p-tab>

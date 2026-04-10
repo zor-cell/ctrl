@@ -1,3 +1,3 @@
 package at.ac.tuwien.inso.ctrl.user.dto;
 
-public record UserDetailsResponse(String username) {}
+public record UserDetailsResponse(String username, boolean isVerified) {}

@@ -28,6 +28,7 @@ public class AuthController {
         User.builder()
             .username(authRequest.username())
             .password(passwordEncoder.encode(authRequest.password()))
+            .isVerified(false)
             .build();
 
     userRepository.save(user);

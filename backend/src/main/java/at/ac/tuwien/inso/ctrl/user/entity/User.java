@@ -33,8 +33,9 @@ public class User implements UserDetails {
 
   private String name;
 
-  @Column(name = "is_verified")
-  private boolean isVerified;
+  @Builder.Default
+  @Column(name = "is_verified", nullable = false)
+  private boolean isVerified = false;
 
   @Column(name = "created_at")
   private LocalDateTime createdAt;

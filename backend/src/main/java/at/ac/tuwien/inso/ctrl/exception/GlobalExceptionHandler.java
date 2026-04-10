@@ -34,4 +34,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return handleExceptionInternal(
         ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
   }
+
+  @ExceptionHandler(value = {ResourceNotFoundException.class})
+  protected ResponseEntity<Object> handleResourceNotFound(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(value = {BusinessRuleViolationException.class})
+  protected ResponseEntity<Object> handleBusinessRuleViolation(
+      RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+  }
 }

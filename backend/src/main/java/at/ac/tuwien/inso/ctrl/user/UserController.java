@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,8 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
+  private final UserService userService;
+
   @GetMapping("/me")
   public UserDetailsResponse getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-    return new UserDetailsResponse(userDetails.getUsername());
+    return userService.getCurrentUserDetails(userDetails.getUsername());
   }
 }
