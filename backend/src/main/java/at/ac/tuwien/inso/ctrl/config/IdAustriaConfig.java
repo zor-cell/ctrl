@@ -7,7 +7,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 
 @Configuration
-public class KeyCloakConfig {
+public class IdAustriaConfig {
     @Value("${application.security.id-austria.issuer-uri}")
     private String issuerUri;
 

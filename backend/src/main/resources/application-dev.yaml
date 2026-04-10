@@ -1,5 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+
+application:
+  security:
+    id-austria:
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
