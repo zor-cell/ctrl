@@ -18,6 +18,17 @@
 
                 <div class="field p-fluid">
                     <p-floatlabel variant="on">
+                        <input pInputText type="email" id="name" formControlName="email" />
+                        <label for="name">Email</label>
+                    </p-floatlabel>
+
+                    @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) {
+                        <p-message severity="error" size="small" variant="simple">Email is required.</p-message>
+                    }
+                </div>
+
+                <div class="field p-fluid">
+                    <p-floatlabel variant="on">
                         <p-date-picker
                                 inputId="birthdate"
                                 formControlName="birthdate"

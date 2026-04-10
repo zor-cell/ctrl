@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public record UpdateProfileRequest(
         String name,
+        String email,
         LocalDate birthdate
 ) {
 }
