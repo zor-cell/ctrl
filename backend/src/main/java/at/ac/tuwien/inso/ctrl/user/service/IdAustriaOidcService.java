@@ -1,9 +1,12 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.user.dto.IdAustriaTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -26,11 +29,13 @@ public class IdAustriaOidcService {
 
     private final RestClient restClient = RestClient.create();
 
+    private final JwtDecoder idAustriaJwtDecoder;
+
     /**
      * Makes an HTTP call to the IDAustria OIDC endpoint specified in their specification:
      * <a href="https://www.id-austria.gv.at/de/developer/anbinden/anbindung-mit-openid-connect">ID Austria OIDC Spezifikation</a>
      */
-    public IdAustriaTokenResponse exchangeCodeForToken(String code) {
+    private IdAustriaTokenResponse exchangeCodeForToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", code);
         formData.add("grant_type", "authorization_code");
@@ -44,5 +49,15 @@ public class IdAustriaOidcService {
                 .body(formData)
                 .retrieve()
                 .body(IdAustriaTokenResponse.class);
+    }
+
+    public Jwt getTokenFromCode(String code) {
+        IdAustriaTokenResponse tokenResponse = exchangeCodeForToken(code);
+
+        if (tokenResponse == null || tokenResponse.idToken() == null) {
+            throw new CommunicationException("Failed to retrieve token from ID Austria");
+        }
+
+        return idAustriaJwtDecoder.decode(tokenResponse.idToken());
     }
 }
