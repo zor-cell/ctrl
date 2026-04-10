@@ -83,7 +83,7 @@ services:
     ports:
       - "7997:7997"
     environment:
-      - INFINITY_MODEL_ID=sentence-transformers/clip-ViT-B-32
+      - INFINITY_MODEL_ID=jinaai/jina-clip-v1
       - INFINITY_BATCH_SIZE=32
     restart: on-failure:3
     healthcheck:

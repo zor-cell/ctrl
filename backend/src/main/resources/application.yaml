@@ -20,7 +20,7 @@ minio:
 
 infinity:
   url: http://infinity:7997
-  model: BAAI/bge-small-en-v1.5
+  model: jinaai/jina-clip-v1
   dimensions: 384
 
 application:
