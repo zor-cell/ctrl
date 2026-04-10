@@ -147,7 +147,8 @@ export class ProfileComponent {
       response_type: 'code',
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
-      scope: config.scope
+      scope: config.scope,
+      prompt: 'login'
     });
 
     window.location.href = `${config.authUrl}?${params.toString()}`;

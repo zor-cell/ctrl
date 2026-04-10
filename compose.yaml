@@ -55,14 +55,19 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
+      - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_RELATIVE_PATH=/
     ports:
       - "8081:8080"
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./backend/keycloak-config:/opt/keycloak/data/import/ # import test dataset
 
 volumes:
   db_data:

@@ -22,7 +22,7 @@ application:
       client-id: "http://localhost:8080"
       client-secret: ${ID_AUSTRIA_SECRET}
       token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"
-      redirect-uri: "http://localhost:4200/verification-callback"
+      redirect-uri: "http://localhost:80/verification-callback"
 
 management:
   endpoints:
