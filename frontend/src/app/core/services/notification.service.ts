@@ -25,7 +25,6 @@ export class NotificationService {
 
     let message = e instanceof ProgressEvent ? httpError.message : e;
     if (status === 0) {
-      // backend unreachable
       message = 'Cannot connect to the server. Please check your internet connection or try again later'
     } else if (typeof httpError.error === 'string') {
       // text error
@@ -42,7 +41,7 @@ export class NotificationService {
       message = httpError.message;
     }
 
-    this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message });
+    this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message as string });
   }
 
   showInfo(message: string, title = 'Information') {

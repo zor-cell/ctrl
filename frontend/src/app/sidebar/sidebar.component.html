@@ -2,24 +2,22 @@
 
   <header class="topbar">
 
-    <nav class="topbar__nav">
-      @for (item of devItems; track item.route) {
-        <a
-          [routerLink]="item.route"
-          routerLinkActive="nav-link--active"
-          class="nav-link"
-          [title]="item.label"
-        >
-          <span class="nav-link__icon">{{ item.icon }}</span>
-          <span class="nav-link__label">{{ item.label }}</span>
-        </a>
-      }
-    </nav>
+    <p-tabs [value]="activeRoute()">
+      <p-tablist>
+        @for (item of items; track item.route) {
+          <p-tab [value]="item.route" [routerLink]="item.route">
+            <span>{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </p-tab>
+        }
+      </p-tablist>
+    </p-tabs>
 
-    <button class="theme-toggle" (click)="themeService.toggle()">
-      <span>{{ themeService.theme() === 'dark' ? '☀️' : '🌙' }}</span>
-      <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
-    </button>
+
+    <p-button
+      [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+      (onClick)="theme.toggle()"
+    />
 
   </header>
 
