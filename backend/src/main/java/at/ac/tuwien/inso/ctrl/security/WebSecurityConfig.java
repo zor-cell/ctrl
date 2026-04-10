@@ -35,7 +35,7 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/**", "/actuator/health")
+                auth.requestMatchers("/api/auth/**", "/api/labels", "/actuator/health")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
 import { UserDetails } from './dto/UserDetails';
 import {UpdateProfileRequest} from "./dto/UpdateProfileRequest";
 import {NotificationService} from "../core/services/notification.service";

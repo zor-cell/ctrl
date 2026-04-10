@@ -1,0 +1,295 @@
+<section class="post-page">
+  <div class="post-page__hero">
+    <p class="post-page__eyebrow">Create</p>
+    <h1>Create a post to inspire others.</h1>
+    <p class="post-page__intro">
+      Share something meaningful with a strong visual, a thoughtful caption,
+      and the right context.
+    </p>
+
+    <p-button
+      label="Create Post"
+      icon="pi pi-plus"
+      size="large"
+      (onClick)="openCreateDialog()"
+    />
+  </div>
+</section>
+
+<input
+  #mediaInput
+  type="file"
+  accept="image/*,video/*"
+  class="sr-only"
+  (change)="onMediaSelected($event)"
+/>
+
+<p-dialog
+  [visible]="dialogVisible()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: 'min(56rem, 92vw)' }"
+  header="Create Post"
+  (visibleChange)="dialogVisible.set($event)"
+  (onHide)="closeCreateDialog()"
+>
+  @if (currentStep() === 1) {
+    <div class="composer-step">
+      <div class="composer-step__header">
+        <span class="composer-step__number">1</span>
+        <div>
+          <h2>Choose an image or video</h2>
+          <p>
+            Start with the media for your post. You can change it again before
+            you submit.
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="media-dropzone"
+        (click)="openMediaPicker()"
+      >
+        @if (previewUrl() && previewKind() === 'image') {
+          <img
+            [src]="previewUrl()!"
+            alt="Selected image preview"
+            class="media-dropzone__preview"
+          />
+        } @else if (previewUrl() && previewKind() === 'video') {
+          <video
+            [src]="previewUrl()!"
+            controls
+            class="media-dropzone__preview"
+          ></video>
+        } @else {
+          <span class="media-dropzone__icon">🖼️</span>
+          <span class="media-dropzone__title">Select image or video</span>
+          <span class="media-dropzone__text">
+            Click to choose a file from your device.
+          </span>
+        }
+      </button>
+
+      @if (selectedFileName()) {
+        <p class="media-file-name">Selected file: {{ selectedFileName() }}</p>
+      }
+
+      <div class="composer-actions">
+        <p-button
+          label="Choose Media"
+          severity="secondary"
+          (onClick)="openMediaPicker()"
+        />
+        <p-button
+          label="Weiter"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          [disabled]="!canContinueToDetails()"
+          (onClick)="continueToDetails()"
+        />
+      </div>
+    </div>
+  } @else {
+    <form class="composer-form" [formGroup]="postForm">
+      <div class="composer-step__header">
+        <span class="composer-step__number">2</span>
+        <div>
+          <h2>Add post details</h2>
+          <p>
+            Write your caption, decide on visibility, add sources, and choose
+            labels.
+          </p>
+        </div>
+      </div>
+
+      <div class="composer-preview">
+        @if (previewUrl() && previewKind() === 'image') {
+          <img
+            [src]="previewUrl()!"
+            alt="Selected image preview"
+            class="composer-preview__media"
+          />
+        } @else if (previewUrl() && previewKind() === 'video') {
+          <video
+            [src]="previewUrl()!"
+            controls
+            class="composer-preview__media"
+          ></video>
+        }
+      </div>
+
+      <div class="composer-form__grid">
+        <div class="field">
+          <p-floatlabel variant="on">
+            <textarea
+              pTextarea
+              inputId="caption"
+              formControlName="caption"
+              rows="5"
+              [maxlength]="maxCaptionLength"
+              class="field__textarea"
+            ></textarea>
+            <label for="caption">Caption</label>
+          </p-floatlabel>
+          <p class="field__hint">
+            {{ captionLength() }} / {{ maxCaptionLength }} characters
+          </p>
+        </div>
+
+        @if (isVerifiedUser()) {
+          <div class="visibility-card">
+            <div>
+              <h3>Visibility</h3>
+              <p>Choose whether this post should be public or private.</p>
+            </div>
+            <div class="visibility-toggle">
+              <span>Private</span>
+              <p-toggleswitch formControlName="isPublic" inputId="isPublic" />
+              <span>Public</span>
+            </div>
+          </div>
+        } @else {
+          <div class="visibility-card visibility-card--locked">
+            <div>
+              <h3>Visibility</h3>
+              <p>
+                Because your account is not verified, this post will be saved as
+                private.
+              </p>
+            </div>
+          </div>
+        }
+
+        <div class="field">
+          <p-floatlabel variant="on">
+            <p-multiselect
+              inputId="labelIds"
+              formControlName="labelIds"
+              [options]="labelOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [showToggleAll]="false"
+              [filter]="true"
+              display="chip"
+              [loading]="loadingLabels()"
+              [disabled]="loadingLabels()"
+              class="field__multiselect"
+            />
+            <label for="labelIds">Labels</label>
+          </p-floatlabel>
+          @if (selectedLabelsSummary()) {
+            <p class="field__hint">Selected: {{ selectedLabelsSummary() }}</p>
+          } @else if (!loadingLabels() && labelOptions().length === 0) {
+            <p class="field__hint">
+              No labels were returned by the backend.
+            </p>
+          }
+        </div>
+      </div>
+
+      <section class="sources-section">
+        <div class="sources-section__header">
+          <div>
+            <h3>Sources</h3>
+            <p>Add one or more sources for this post.</p>
+          </div>
+
+          <p-button
+            label="Add Source"
+            icon="pi pi-plus"
+            severity="secondary"
+            (onClick)="addSource()"
+          />
+        </div>
+
+        <div formArrayName="sources" class="sources-list">
+          @for (source of sources.controls; track $index) {
+            <div class="source-card" [formGroupName]="$index">
+              <div class="source-card__title-row">
+                <h4>Source {{ $index + 1 }}</h4>
+                <p-button
+                  label="Remove"
+                  severity="contrast"
+                  size="small"
+                  (onClick)="removeSource($index)"
+                />
+              </div>
+
+              <div class="source-card__grid">
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="journal-{{$index}}"
+                    formControlName="journal"
+                  />
+                  <label for="journal-{{$index}}">Journal</label>
+                </p-floatlabel>
+
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="author-{{$index}}"
+                    formControlName="author"
+                  />
+                  <label for="author-{{$index}}">Author</label>
+                </p-floatlabel>
+
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="title-{{$index}}"
+                    formControlName="title"
+                  />
+                  <label for="title-{{$index}}">Title</label>
+                </p-floatlabel>
+
+                <p-floatlabel variant="on">
+                  <input
+                    pInputText
+                    id="url-{{$index}}"
+                    formControlName="url"
+                  />
+                  <label for="url-{{$index}}">URL</label>
+                </p-floatlabel>
+
+                <div class="source-card__date-field">
+                  <p-floatlabel variant="on">
+                    <p-datepicker
+                      inputId="date-{{$index}}"
+                      formControlName="date"
+                      dateFormat="dd.mm.yy"
+                      [showIcon]="false"
+                      appendTo="body"
+                      class="source-card__date-picker"
+                    />
+                    <label for="date-{{$index}}">Date</label>
+                  </p-floatlabel>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <div class="composer-actions">
+        <p-button
+          label="Back"
+          severity="secondary"
+          icon="pi pi-arrow-left"
+          (onClick)="goBackToMedia()"
+        />
+        <p-button
+          label="Create Post"
+          icon="pi pi-check"
+          [loading]="submitting()"
+          [disabled]="postForm.invalid"
+          (onClick)="submitPost()"
+        />
+      </div>
+    </form>
+  }
+</p-dialog>

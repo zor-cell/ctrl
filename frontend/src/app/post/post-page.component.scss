@@ -1,0 +1,294 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.post-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 5rem);
+  padding: 2rem;
+}
+
+.post-page__hero {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: center;
+  width: min(100%, 44rem);
+  padding: 3rem;
+  border-radius: 2rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at top, rgba(255, 189, 89, 0.34), transparent 38%),
+    linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(45, 55, 72, 0.96));
+  color: #f8fafc;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.post-page__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  opacity: 0.76;
+}
+
+.post-page__hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  line-height: 1.02;
+}
+
+.post-page__intro {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.88;
+}
+
+.composer-step,
+.composer-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.composer-step__header {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+}
+
+.composer-step__header h2 {
+  margin: 0;
+}
+
+.composer-step__header p {
+  margin: 0.35rem 0 0;
+  color: var(--p-text-muted-color);
+}
+
+.composer-step__number {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+}
+
+.media-dropzone {
+  display: grid;
+  place-items: center;
+  gap: 0.6rem;
+  min-height: 20rem;
+  border: 2px dashed rgba(148, 163, 184, 0.7);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(255, 247, 237, 0.95));
+  cursor: pointer;
+}
+
+.media-dropzone__icon {
+  font-size: 2rem;
+}
+
+.media-dropzone__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.media-dropzone__text {
+  color: var(--p-text-muted-color);
+}
+
+.media-dropzone__preview,
+.composer-preview__media {
+  width: 100%;
+  max-height: 24rem;
+  object-fit: cover;
+  border-radius: 1rem;
+}
+
+.media-file-name {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--p-text-muted-color);
+}
+
+.composer-preview {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.composer-form__grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field__textarea,
+.field__multiselect {
+  width: 100%;
+}
+
+.field__hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--p-text-muted-color);
+}
+
+.visibility-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.visibility-card h3,
+.sources-section__header h3,
+.source-card__title-row h4 {
+  margin: 0;
+}
+
+.visibility-card p,
+.sources-section__header p {
+  margin: 0.35rem 0 0;
+  color: var(--p-text-muted-color);
+}
+
+.visibility-card--locked {
+  border-left: 4px solid #f59e0b;
+}
+
+.visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+.sources-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.sources-section__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.sources-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.source-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+}
+
+.source-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.source-card__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.source-card__grid > * {
+  min-width: 0;
+}
+
+.source-card__grid p-floatlabel {
+  width: 100%;
+}
+
+.source-card__grid p-floatlabel input {
+  width: 100%;
+}
+
+.source-card__date-field {
+  grid-column: 1 / 2;
+  justify-self: start;
+  width: min(100%, 7rem);
+  max-width: 14rem;
+}
+
+.source-card__date-field p-floatlabel,
+.source-card__date-picker {
+  width: 100%;
+}
+
+:host ::ng-deep .source-card__date-picker .p-inputtext {
+  width: 100%;
+  min-height: 2.2rem;
+  height: 2.2rem;
+  padding-top: 1.1rem;
+  padding-bottom: 0.9rem;
+  padding-inline: 1rem;
+  font-size: 1rem;
+}
+
+:host ::ng-deep .source-card__date-field .p-floatlabel label {
+  color: var(--p-text-muted-color);
+}
+
+.composer-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .post-page {
+    padding: 1rem;
+  }
+
+  .post-page__hero,
+  .post-grid,
+  .sources-section__header,
+  .source-card__title-row,
+  .visibility-card {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .source-card__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-actions {
+    justify-content: stretch;
+  }
+}
