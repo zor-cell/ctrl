@@ -45,9 +45,19 @@ export class FeedComponent implements OnInit {
   protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
   protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
 
-  ngOnInit() {
+  async ngOnInit() {
     this.userService.loadUser();
-    this.allPosts.set(this.feedService.getMockPosts());
+
+    const mockPosts = this.feedService.getMockPosts();
+    const [tagesschauPosts, bbcPosts] = await Promise.all([
+      this.feedService.getTagesschauPosts(),
+      this.feedService.getBBCNewsPosts(),
+    ]);
+
+    this.allPosts.set(
+      [...tagesschauPosts, ...bbcPosts, ...mockPosts]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    );
   }
 
   timeAgo(createdAt: string): string {
