@@ -40,21 +40,34 @@ public class EmbeddingService {
         return callEmbeddings(request);
     }
 
+    /**
+     * Makes an HTTP call to the embedding server according to OpenAI specifications:
+     * <a href="https://developers.openai.com/api/reference/resources/embeddings/methods/create">OpenAI Specs</a>
+     */
     public float[] embedTextWithImage(String text, String imageUrl) {
-        //average the embeddings from text and image
         float[] textVec = embedText(text);
         float[] imageVec = embedImage(imageUrl);
 
+        //average embeddings from text and image
+        float sumSquares = 0f;
         float[] fused = new float[textVec.length];
         for (int i = 0; i < textVec.length; i++) {
             fused[i] = (textVec[i] + imageVec[i]) / 2.0f;
+            sumSquares += fused[i] * fused[i];
         }
+
+        //normalize vector
+        float magnitude = (float) Math.sqrt(sumSquares);
+        for (int i = 0; i < fused.length; i++) {
+            fused[i] /= magnitude;
+        }
+
         return fused;
     }
 
     private float[] callEmbeddings(Map<String, Object> request) {
         var response = restClient.post()
-                .uri(baseUrl + "/v1/embeddings")
+                .uri(baseUrl + "/embeddings")
                 .body(request)
                 .retrieve()
                 .body(EmbeddingResponse.class);
