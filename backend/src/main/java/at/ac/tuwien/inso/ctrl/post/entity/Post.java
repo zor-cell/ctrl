@@ -36,6 +36,10 @@ public class Post {
   @Column(name = "is_public", nullable = false)
   private boolean isPublic;
 
+  @Builder.Default
+  @Column(name = "is_ai_generated")
+  private Boolean isAiGenerated = false;
+
   private Integer upvotes;
 
   private Integer downvotes;
@@ -49,5 +53,13 @@ public class Post {
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
+  private Set<PostTopic> postTopics = new LinkedHashSet<>();
+
+  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
   private Set<Comment> comments = new LinkedHashSet<>();
+
+  public boolean isAiGenerated() {
+    return Boolean.TRUE.equals(isAiGenerated);
+  }
 }

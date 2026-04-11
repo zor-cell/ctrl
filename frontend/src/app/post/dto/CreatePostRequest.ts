@@ -4,6 +4,7 @@ export interface CreatePostRequest {
   caption: string;
   mediaRef: string | null;
   isPublic: boolean;
-  labelIds: string[];
+  isAiGenerated: boolean;
+  topicIds: string[];
   source: CreateSourceRequest | null;
 }
