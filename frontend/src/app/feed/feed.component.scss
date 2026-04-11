@@ -1,10 +1,6 @@
 // ─── Tokens ───────────────────────────────────────────
-$surface:     #1a1a1a;
-$surface-2:   #242424;
 $border:      var(--border);
-$text-primary: #f0f0f0;
 $text-muted:   #888;
-$accent:       #ffffff;
 $upvote:       #5bc97a;
 $downvote:     #e05858;
 $radius:       16px;
@@ -96,10 +92,6 @@ $radius-sm:    10px;
   border-color: $border !important;
   color: $text-muted !important;
 
-  &:hover {
-    border-color: rgba(255,255,255,0.3) !important;
-    color: $text-primary !important;
-  }
 }
 
 // ─── Post Image ───────────────────────────────────────

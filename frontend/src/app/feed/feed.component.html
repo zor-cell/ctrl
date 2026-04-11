@@ -121,7 +121,6 @@
       @if (!post.isPublic) {
         <button class="action-btn">
           <i class="pi pi-heart"></i>
-          <span>{{ post.likes }}</span>
         </button>
       }
 
@@ -137,8 +136,10 @@
         </button>
       }
 
-      <button class="action-btn">
+      <!-- Comments -->
+      <button class="action-btn" (click)="openCommentsDialog(post)">
         <i class="pi pi-comment"></i>
+        <span>{{ post.comments.length }}</span>
       </button>
     </div>
 
@@ -174,3 +175,10 @@
     />
   </ng-template>
 </p-dialog>
+
+<!-- ─── Comments Dialog ─── -->
+<app-comments
+  [post]="selectedPostForComments()"
+  [visible]="commentsDialogVisible()"
+  (visibleChange)="commentsDialogVisible.set($event)"
+/>
