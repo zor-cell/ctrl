@@ -12,7 +12,9 @@ public record PostResponse(
     String caption,
     String mediaRef,
     boolean isPublic,
+    boolean isAiGenerated,
     List<String> labelIds,
+    List<String> topicIds,
     Integer upvotes,
     Integer downvotes,
     LocalDateTime createdAt) {}

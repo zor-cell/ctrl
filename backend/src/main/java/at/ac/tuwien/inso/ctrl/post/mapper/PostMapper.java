@@ -15,6 +15,11 @@ public class PostMapper {
             .map(postLabel -> postLabel.getLabel().getLabelId())
             .sorted(Comparator.naturalOrder())
             .toList();
+    List<String> topicIds =
+        post.getPostTopics().stream()
+            .map(postTopic -> postTopic.getTopic().getTopicId())
+            .sorted(Comparator.naturalOrder())
+            .toList();
 
     return new PostResponse(
         post.getPostId(),
@@ -24,7 +29,9 @@ public class PostMapper {
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
+        post.isAiGenerated(),
         labelIds,
+        topicIds,
         post.getUpvotes(),
         post.getDownvotes(),
         post.getCreatedAt());

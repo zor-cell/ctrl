@@ -3,8 +3,8 @@ import { inject, Injectable } from '@angular/core';
 
 import { environment } from '../../environments/environment';
 import { CreatePostRequest } from './dto/CreatePostRequest';
-import { LabelResponse } from './dto/LabelResponse';
 import { PostResponse } from './dto/PostResponse';
+import { TopicResponse } from './dto/TopicResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -12,13 +12,13 @@ import { PostResponse } from './dto/PostResponse';
 export class PostService {
   private readonly httpClient = inject(HttpClient);
   private readonly baseUri = `${environment.apiUrl}/posts`;
-  private readonly labelUri = `${environment.apiUrl}/labels`;
+  private readonly topicUri = `${environment.apiUrl}/topics`;
 
   createPost(request: CreatePostRequest) {
     return this.httpClient.post<PostResponse>(this.baseUri, request);
   }
 
-  getLabels() {
-    return this.httpClient.get<LabelResponse[]>(this.labelUri);
+  getTopics() {
+    return this.httpClient.get<TopicResponse[]>(this.topicUri);
   }
 }

@@ -12,5 +12,6 @@ public record CreatePostRequest(
         String caption,
     String mediaRef,
     Boolean isPublic,
-    List<@NotBlank(message = "must not be blank") String> labelIds,
+    Boolean isAiGenerated,
+    List<@NotBlank(message = "must not be blank") String> topicIds,
     @Valid CreateSourceRequest source) {}
