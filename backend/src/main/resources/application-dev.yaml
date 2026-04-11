@@ -9,3 +9,5 @@ application:
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:4200/verification-callback"
 
+infinity:
+  url: http://localhost:7997

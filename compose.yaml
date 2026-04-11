@@ -55,6 +55,7 @@ services:
       start_period: 10s
     volumes:
       - db_data:/var/lib/postgresql
+      - ./setup/init.sql:/docker-entrypoint-initdb.d/init.sql # start setup
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0

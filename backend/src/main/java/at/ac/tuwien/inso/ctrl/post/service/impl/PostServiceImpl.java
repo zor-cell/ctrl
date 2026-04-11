@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.service.impl;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,7 @@ public class PostServiceImpl implements PostService {
   private final UserRepository userRepository;
   private final SourceService sourceService;
   private final PostMapper postMapper;
+  private final EmbeddingService embeddingService;
 
   @Override
   @Transactional
@@ -60,6 +63,10 @@ public class PostServiceImpl implements PostService {
             .createdAt(LocalDateTime.now())
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
+
+    //embed post information (only text for now, image when file storage service is up)
+    float[] embedding = embeddingService.embedText(post.getCaption());
+    post.setEmbedding(embedding);
 
     return postMapper.toResponse(postRepository.save(post));
   }
