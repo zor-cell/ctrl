@@ -187,3 +187,53 @@ $radius:       16px;
   i { font-size: 2rem; opacity: 0.4; }
   p { font-size: 0.88rem; margin: 0; }
 }
+
+// ─── Reply ──────────────────────────────────────
+.reply-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: #888;
+  cursor: pointer;
+  padding: 2px 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &:hover { color: var(--p-primary-color); }
+}
+
+.replying-to-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #888;
+  padding: 6px 2px;
+  border-top: 1px solid var(--border);
+}
+
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  font-size: 0.85rem;
+  &:hover { color: #e05858; }
+}
+
+// ─── Comment Field ──────────────────────────────────────
+.comment-input-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.comment-input {
+  flex: 1;
+  resize: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}

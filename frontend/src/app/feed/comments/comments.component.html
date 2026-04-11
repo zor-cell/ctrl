@@ -77,6 +77,9 @@
               <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
             </div>
             <p class="comment-content">{{ comment.content }}</p>
+            <button class="reply-btn" (click)="setReplyingTo(comment)">
+              <i class="pi pi-reply"></i> Reply
+            </button>
 
             <!-- Replies -->
             @for (reply of repliesFor(comment.commentId); track reply.commentId) {
@@ -101,4 +104,33 @@
     </div>
 
   }
+  <!-- ─── Comment Input ─── -->
+  <ng-template pTemplate="footer">
+    @if (replyingTo()) {
+      <div class="replying-to-banner">
+        <span>Replying to <strong>{{ replyingTo()!.username }}</strong></span>
+        <button class="cancel-reply-btn" (click)="cancelReply()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    }
+    <div class="comment-input-row">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="newComment"
+      [autoResize]="true"
+      [rows]="1"
+      [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+      class="comment-input"
+      (keydown.enter)="$event.preventDefault(); submitComment()"
+    ></textarea>
+      <p-button
+        icon="pi pi-send"
+        [rounded]="true"
+        [text]="true"
+        [disabled]="!newComment.trim()"
+        (onClick)="submitComment()"
+      />
+    </div>
+  </ng-template>
 </p-dialog>
