@@ -1,4 +1,3 @@
-
 <div class="feed-wrapper">
 
   <!-- Tabs: Public / Private -->
@@ -78,16 +77,25 @@
       </div>
     </div>
 
-    <!-- Why Button -->
-    <p-button
-      label="Why?"
-      severity="secondary"
-      size="small"
-      [rounded]="true"
-      [outlined]="true"
-      (onClick)="openWhyDialog(post)"
-      styleClass="why-btn"
-    />
+    <!-- Labels + Why Button -->
+    <div class="post-header-right">
+      @if (post.labelIds.length > 0) {
+        <div class="post-labels">
+          @for (label of post.labelIds; track label) {
+            <p-tag [value]="label" severity="secondary" styleClass="post-label" />
+          }
+        </div>
+      }
+      <p-button
+        label="Why?"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        [outlined]="true"
+        (onClick)="openWhyDialog(post)"
+        styleClass="why-btn"
+      />
+    </div>
   </div>
 
   <!-- Post Image -->
@@ -104,15 +112,6 @@
 
   <!-- Caption -->
   <p class="post-caption">{{ post.caption }}</p>
-
-  <!-- Labels -->
-  @if (post.labelIds.length > 0) {
-    <div class="post-labels">
-      @for (label of post.labelIds; track label) {
-        <p-tag [value]="label" severity="secondary" styleClass="post-label" />
-      }
-    </div>
-  }
 
   <!-- Actions -->
   <div class="post-actions">

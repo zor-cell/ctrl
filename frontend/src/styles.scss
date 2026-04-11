@@ -1,9 +1,17 @@
 @import 'primeicons/primeicons.css';
 
+:root {
+  --border: rgba(0, 0, 0, 0.1);
+}
+
+.app-dark {
+  --border: rgba(255, 255, 255, 0.08);
+}
+
 // Background Colors Light Mode
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 50%, #f0f0f0 100%);
+  background: linear-gradient(135deg, #f0faf5 0%, #e2f4ec 50%, #edf8f3 100%);
 }
 
 // Background Colors Dark Mode

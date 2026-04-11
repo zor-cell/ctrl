@@ -1,7 +1,7 @@
 // ─── Tokens ───────────────────────────────────────────
 $surface:     #1a1a1a;
 $surface-2:   #242424;
-$border:      rgba(255, 255, 255, 0.08);
+$border:      var(--border);
 $text-primary: #f0f0f0;
 $text-muted:   #888;
 $accent:       #ffffff;
@@ -81,6 +81,13 @@ $radius-sm:    10px;
   }
 }
 
+// ─── Header Right: Labels + Why Button ────────────────
+.post-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 // ─── Why Button ───────────────────────────────────────
 :host ::ng-deep .why-btn {
   font-size: 0.8rem !important;
@@ -124,8 +131,8 @@ $radius-sm:    10px;
 .post-labels {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 16px 10px;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 :host ::ng-deep .post-label {
