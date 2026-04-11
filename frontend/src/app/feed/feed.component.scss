@@ -6,6 +6,11 @@ $downvote:     #e05858;
 $radius:       16px;
 $radius-sm:    10px;
 
+// ─── Tab List ─────────────────────────────────────
+:host ::ng-deep .p-tablist-tab-list {
+  justify-content: center;
+}
+
 // ─── Feed Wrapper ─────────────────────────────────────
 .feed-wrapper {
   min-height: 100vh;
