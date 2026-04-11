@@ -1,3 +1,5 @@
+import {PostComment} from './Comment';
+
 export interface Post {
   postId: string;
   userId: string;
@@ -13,5 +15,6 @@ export interface Post {
   labelIds: string[];
   topicIds: string[];
   sourceIds: string[] | null;
+  comments: PostComment[];
 }
 

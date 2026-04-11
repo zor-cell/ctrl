@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { UserService } from '../user/user.service';
 import { FeedService } from './feed.service';
 import { Post } from './dto/Post';
+import { CommentsComponent } from './comments/comments.component';
 
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
@@ -22,6 +23,7 @@ import { CommonModule } from '@angular/common';
     DialogModule,
     AvatarModule,
     TagModule,
+    CommentsComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -31,8 +33,14 @@ export class FeedComponent implements OnInit {
   private feedService = inject(FeedService);
 
   protected allPosts = signal<Post[]>([]);
+
+  // Why dialog
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
+
+  // Comments dialog
+  protected commentsDialogVisible = signal(false);
+  protected selectedPostForComments = signal<Post | null>(null);
 
   protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
   protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
@@ -61,5 +69,15 @@ export class FeedComponent implements OnInit {
   closeWhyDialog(): void {
     this.whyDialogVisible.set(false);
     this.selectedPost.set(null);
+  }
+
+  openCommentsDialog(post: Post): void {
+    this.selectedPostForComments.set(post);
+    this.commentsDialogVisible.set(true);
+  }
+
+  closeCommentsDialog(): void {
+    this.commentsDialogVisible.set(false);
+    this.selectedPostForComments.set(null);
   }
 }
