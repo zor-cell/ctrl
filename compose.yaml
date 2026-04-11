@@ -79,12 +79,13 @@ services:
 
   infinity:
     platform: linux/amd64
-    image: michaelfeil/infinity:latest-cpu
+    image: michaelf34/infinity:latest-cpu
     ports:
       - "7997:7997"
     environment:
-      - INFINITY_MODEL_ID=jinaai/jina-clip-v1
+      - INFINITY_MODEL_ID=${INFINITY_MODEL}
       - INFINITY_BATCH_SIZE=32
+      - INFINITY_ENGINE=torch
     restart: on-failure:3
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:7997/health || exit 1"]
@@ -97,3 +98,4 @@ services:
 volumes:
   db_data:
   minio_data:
+  infinity_cache:

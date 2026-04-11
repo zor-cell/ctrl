@@ -20,8 +20,8 @@ minio:
 
 infinity:
   url: http://infinity:7997
-  model: jinaai/jina-clip-v1
-  dimensions: 384
+  model: ${INFINITY_MODEL}
+  dimensions: ${INFINITY_MODEL_DIMENSIONS}
 
 application:
   security:
