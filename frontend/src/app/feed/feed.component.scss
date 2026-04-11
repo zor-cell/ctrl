@@ -45,6 +45,11 @@ $radius-sm:    10px;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   flex-shrink: 0;
+
+  height: calc(100vh - 120px); // gleiche Höhe wie .posts-list
+  display: flex;
+  flex-direction: column;
+
 }
 
 // ─── Post Header ──────────────────────────────────────
@@ -101,19 +106,16 @@ $radius-sm:    10px;
 
 // ─── Post Image ───────────────────────────────────────
 .post-image-wrapper {
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  flex: 1;
   overflow: hidden;
 }
 
 .post-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
-  transition: transform 0.4s ease;
 
-  &:hover { transform: scale(1.02); }
 }
 
 // ─── Caption ──────────────────────────────────────────

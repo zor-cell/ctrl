@@ -164,7 +164,7 @@ export class FeedService {
         likes: 213,
         labelIds: [],
         topicIds: ['Food & Lifestyle'],
-        sourceIds: ['assets/posts/post2.png'],
+        sourceIds: ['assets/posts/post2.webp'],
         comments: [
 
         ],
