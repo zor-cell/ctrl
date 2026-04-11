@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.*;
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Builder
 @Getter
@@ -46,6 +49,11 @@ public class Post {
 
   @Column(name = "created_at")
   private LocalDateTime createdAt;
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "embedding")
+  @Array(length = 768)
+  private float[] embedding;
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default

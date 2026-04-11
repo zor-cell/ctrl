@@ -67,6 +67,12 @@
 			<artifactId>postgresql</artifactId>
 		</dependency>
 
+		<!-- PostgreSQL database vector column support -->
+		<dependency>
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-vector</artifactId>
+		</dependency>
+
 		<!-- S3 driver for MinIO file storage -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
