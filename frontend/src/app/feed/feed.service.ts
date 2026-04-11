@@ -11,7 +11,7 @@ export class FeedService {
         userId: 'user-1',
         username: 'leo.photo',
         userProfilePic: 'assets/users/user1ProfilePic.jpeg',
-        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
         caption: 'Golden hour in the nature. Sometimes you just have to put the phone down ✨',
         isPublic: false,
         whyExplanation: 'This post is very recent and you are interested in the topic Art & Culture.',
@@ -170,5 +170,97 @@ export class FeedService {
         ],
       },
     ];
+  }
+
+  async getTagesschauPosts(): Promise<Post[]> {
+    try {
+      // Schritt 1: Korrekte ID holen
+      const lookupRes = await fetch('https://ard.social/api/v1/accounts/lookup?acct=tagesschau');
+      const account = await lookupRes.json();
+
+      if (!account?.id) return [];
+
+      // Schritt 2: Posts laden
+      const statusRes = await fetch(
+        `https://ard.social/api/v1/accounts/${account.id}/statuses?limit=20&exclude_replies=true`
+      );
+      const data = await statusRes.json();
+
+      if (!Array.isArray(data)) return [];
+
+      return data
+        .filter((s: any) => s.content && !s.reblog)
+        .map((status: any) => ({
+          postId: status.id,
+          userId: status.account.id,
+          username: status.account.display_name,
+          userProfilePic: status.account.avatar,
+          createdAt: status.created_at,
+          caption: status.content.replace(/<[^>]+>/g, '').trim(),
+          isPublic: true,
+          upvotes: 0,
+          downvotes: 0,
+          likes: status.favourites_count,
+          sourceIds: status.media_attachments?.length > 0
+            ? status.media_attachments
+              .filter((m: any) => m.type === 'image')
+              .map((m: any) => m.url)
+            : status.card?.image
+              ? [status.card.image]
+              : [],
+          labelIds: ['mastodon.social'],
+          topicIds: status.tags.map((t: any) => t.name),
+          comments: [],
+          whyExplanation: 'Latest news from Tagesschau',
+        }));
+    } catch (e) {
+      console.error('Mastodon fetch failed', e);
+      return [];
+    }
+  }
+
+  async getBBCNewsPosts(): Promise<Post[]> {
+    try {
+      const lookupRes = await fetch('https://mastodon.social/api/v1/accounts/lookup?acct=BBCNews@flipboard.com');
+      const account = await lookupRes.json();
+
+      if (!account?.id) return [];
+
+      const statusRes = await fetch(
+        `https://mastodon.social/api/v1/accounts/${account.id}/statuses?limit=20&exclude_replies=true`
+      );
+      const data = await statusRes.json();
+
+      if (!Array.isArray(data)) return [];
+
+      return data
+        .filter((s: any) => s.content && !s.reblog)
+        .map((status: any) => ({
+          postId: status.id,
+          userId: status.account.id,
+          username: status.account.display_name,
+          userProfilePic: status.account.avatar,
+          createdAt: status.created_at,
+          caption: status.content.replace(/<[^>]+>/g, '').trim(),
+          isPublic: true,
+          upvotes: 0,
+          downvotes: 0,
+          likes: 0,
+          sourceIds: status.media_attachments?.length > 0
+            ? status.media_attachments
+              .filter((m: any) => m.type === 'image')
+              .map((m: any) => m.url)
+            : status.card?.image
+              ? [status.card.image]
+              : [],
+          labelIds: ['mastodon.social'],
+          topicIds: status.tags.map((t: any) => t.name),
+          comments: [],
+          whyExplanation: 'Latest news from BBC News',
+        }));
+    } catch (e) {
+      console.error('BBC fetch failed', e);
+      return [];
+    }
   }
 }
