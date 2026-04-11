@@ -54,5 +54,16 @@ export const Noir = definePreset(Aura, {
                 }
             }
         }
+    },
+  components: {
+    tabs: {
+      tabpanel: {
+        background: 'transparent',
+      },
+      tablist: {
+        background: 'transparent',
+      }
     }
+  }
+
 });
