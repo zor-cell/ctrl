@@ -9,8 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
-
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +30,6 @@ public class EmbeddingService {
                             .build()
             ))
             .build();
-
-    private final ObjectMapper objectMapper;
 
     public float[] embedText(String text) {
         var request = new EmbeddingRequest(model, List.of(text), null);
@@ -79,12 +75,10 @@ public class EmbeddingService {
     }
 
     private float[] callEmbeddings(EmbeddingRequest request) {
-        String json = objectMapper.writeValueAsString(request);
-
         var response = restClient.post()
                 .uri(baseUrl + "/embeddings")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(json)
+                .body(request)
                 .retrieve()
                 .body(EmbeddingResponse.class);
 

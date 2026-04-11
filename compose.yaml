@@ -12,6 +12,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
+      - INFINITY_MODEL=${INFINITY_MODEL}
     depends_on:
       db:
         condition: service_healthy
