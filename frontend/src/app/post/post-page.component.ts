@@ -14,6 +14,8 @@ import {
   FormArray,
   FormBuilder,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -30,15 +32,23 @@ import { UserService } from '../user/user.service';
 import { CreatePostRequest } from './dto/CreatePostRequest';
 import { CreateSingleSourceRequest } from './dto/CreateSingleSourceRequest';
 import { CreateSourceRequest } from './dto/CreateSourceRequest';
-import { LabelResponse } from './dto/LabelResponse';
+import { TopicResponse } from './dto/TopicResponse';
 import { PostService } from './post.service';
 
-interface LabelOption {
+interface TopicOption {
   label: string;
   value: string;
 }
 
 type PreviewKind = 'image' | 'video' | null;
+
+interface SourceFormValue {
+  journal: string;
+  author: string;
+  title: string;
+  url: string;
+  date: string | Date | null;
+}
 
 @Component({
   selector: 'app-post-page',
@@ -60,6 +70,7 @@ type PreviewKind = 'image' | 'video' | null;
 })
 export class PostPageComponent implements OnInit {
   protected readonly maxCaptionLength = 10000;
+  protected readonly maxSources = 10;
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
   private readonly notificationService = inject(NotificationService);
@@ -73,17 +84,19 @@ export class PostPageComponent implements OnInit {
   protected readonly previewKind = signal<PreviewKind>(null);
   protected readonly selectedFileName = signal<string | null>(null);
   protected readonly submitting = signal(false);
-  protected readonly loadingLabels = signal(false);
-  protected readonly labelOptions = signal<LabelOption[]>([]);
+  protected readonly loadingTopics = signal(false);
+  protected readonly submitAttempted = signal(false);
+  protected readonly expandedSourceIndex = signal<number | null>(0);
+  protected readonly topicOptions = signal<TopicOption[]>([]);
   protected readonly isVerifiedUser = computed(
     () => this.userService.user()?.isVerified ?? false,
   );
   protected readonly canContinueToDetails = computed(
     () => this.selectedFileName() !== null,
   );
-  protected readonly selectedLabelsSummary = computed(() => {
-    const selectedValues = this.postForm.controls.labelIds.value;
-    return this.labelOptions()
+  protected readonly selectedTopicsSummary = computed(() => {
+    const selectedValues = this.postForm.controls.topicIds.value;
+    return this.topicOptions()
       .filter(option => selectedValues.includes(option.value))
       .map(option => option.label)
       .join(', ');
@@ -98,12 +111,13 @@ export class PostPageComponent implements OnInit {
       Validators.maxLength(this.maxCaptionLength),
     ]),
     isPublic: this.fb.nonNullable.control(false),
-    labelIds: this.fb.nonNullable.control<string[]>([]),
+    isAiGenerated: this.fb.nonNullable.control(false),
+    topicIds: this.fb.nonNullable.control<string[]>([]),
     sources: this.fb.array([this.createSourceGroup()]),
   });
 
   ngOnInit() {
-    this.loadLabels();
+    this.loadTopics();
   }
 
   protected openCreateDialog() {
@@ -145,8 +159,20 @@ export class PostPageComponent implements OnInit {
     this.currentStep.set(1);
   }
 
+  protected canAddSource(): boolean {
+    return this.sources.length < this.maxSources;
+  }
+
   protected addSource() {
+    if (!this.canAddSource()) {
+      this.notificationService.showWarning(
+        `You can add at most ${this.maxSources} sources per post.`,
+      );
+      return;
+    }
+
     this.sources.push(this.createSourceGroup());
+    this.expandedSourceIndex.set(this.sources.length - 1);
   }
 
   protected removeSource(index: number) {
@@ -158,13 +184,48 @@ export class PostPageComponent implements OnInit {
         url: '',
         date: '',
       });
+      this.expandedSourceIndex.set(0);
       return;
     }
 
     this.sources.removeAt(index);
+
+    const expandedIndex = this.expandedSourceIndex();
+    if (expandedIndex === null) {
+      return;
+    }
+
+    if (expandedIndex === index) {
+      this.expandedSourceIndex.set(Math.min(index, this.sources.length - 1));
+      return;
+    }
+
+    if (expandedIndex > index) {
+      this.expandedSourceIndex.set(expandedIndex - 1);
+    }
+  }
+
+  protected toggleSource(index: number) {
+    this.expandedSourceIndex.set(this.isSourceExpanded(index) ? null : index);
+  }
+
+  protected isSourceExpanded(index: number): boolean {
+    return this.expandedSourceIndex() === index;
+  }
+
+  protected collapsedSourceTitle(index: number): string {
+    const source = this.sources.at(index).value as SourceFormValue;
+    const title = source.title.trim();
+    return title === '' ? 'Untitled source' : title;
+  }
+
+  protected hasCollapsedSourceError(index: number): boolean {
+    return this.submitAttempted() && !this.isSourceExpanded(index) && this.sources.at(index).invalid;
   }
 
   protected submitPost() {
+    this.submitAttempted.set(true);
+
     if (this.postForm.invalid) {
       this.postForm.markAllAsTouched();
       return;
@@ -189,23 +250,36 @@ export class PostPageComponent implements OnInit {
     return this.sources.at(index);
   }
 
+  protected hasSourceError(index: number, errorCode: string): boolean {
+    const control = this.sources.at(index);
+    return this.submitAttempted() && control.hasError(errorCode);
+  }
+
+  protected hasCaptionError(errorCode: string): boolean {
+    return this.submitAttempted() && this.postForm.controls.caption.hasError(errorCode);
+  }
+
+  protected topicOptionLabel(topic: TopicOption): string {
+    return topic.label;
+  }
+
   protected get sources(): FormArray {
     return this.postForm.controls.sources;
   }
 
-  private loadLabels() {
-    this.loadingLabels.set(true);
-    this.postService.getLabels().subscribe({
-      next: labels => {
-        this.labelOptions.set(labels.map(label => this.toLabelOption(label)));
-        this.loadingLabels.set(false);
+  private loadTopics() {
+    this.loadingTopics.set(true);
+    this.postService.getTopics().subscribe({
+      next: topics => {
+        this.topicOptions.set(topics.map(topic => this.toTopicOption(topic)));
+        this.loadingTopics.set(false);
       },
       error: () => {
-        this.labelOptions.set([]);
-        this.loadingLabels.set(false);
+        this.topicOptions.set([]);
+        this.loadingTopics.set(false);
         this.notificationService.showWarning(
-          'Labels could not be loaded from the backend.',
-          'Labels unavailable',
+          'Topics could not be loaded from the backend.',
+          'Topics unavailable',
         );
       },
     });
@@ -217,18 +291,15 @@ export class PostPageComponent implements OnInit {
       caption: rawValue.caption,
       mediaRef: this.selectedFileName(),
       isPublic: this.isVerifiedUser() ? rawValue.isPublic : false,
-      labelIds: rawValue.labelIds,
+      isAiGenerated: rawValue.isAiGenerated,
+      topicIds: rawValue.topicIds,
       source: this.buildSourceRequest(rawValue.sources),
     };
   }
 
-  private buildSourceRequest(rawSources: {
-    journal: string;
-    author: string;
-    title: string;
-    url: string;
-    date: string;
-  }[]): CreateSourceRequest | null {
+  private buildSourceRequest(
+    rawSources: SourceFormValue[],
+  ): CreateSourceRequest | null {
     const singleSources = rawSources
       .map(source => this.mapSource(source))
       .filter((source): source is CreateSingleSourceRequest => source !== null);
@@ -244,19 +315,13 @@ export class PostPageComponent implements OnInit {
     };
   }
 
-  private mapSource(source: {
-    journal: string;
-    author: string;
-    title: string;
-    url: string;
-    date: string;
-  }): CreateSingleSourceRequest | null {
+  private mapSource(source: SourceFormValue): CreateSingleSourceRequest | null {
     const normalizedSource = {
       journal: this.normalizeOptionalValue(source.journal),
       author: this.normalizeOptionalValue(source.author),
       title: this.normalizeOptionalValue(source.title),
       url: this.normalizeOptionalValue(source.url),
-      date: this.normalizeOptionalValue(source.date),
+      date: this.normalizeOptionalDate(source.date),
     };
 
     const hasContent = Object.values(normalizedSource).some(value => value !== null);
@@ -273,20 +338,68 @@ export class PostPageComponent implements OnInit {
     return normalizedValue === '' ? null : normalizedValue;
   }
 
-  private createSourceGroup() {
-    return this.fb.nonNullable.group({
-      journal: '',
-      author: '',
-      title: '',
-      url: '',
-      date: '',
-    });
+  private normalizeOptionalDate(value: string | Date | null): string | null {
+    if (value === null) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+    }
+
+    return this.normalizeOptionalValue(value);
   }
 
-  private toLabelOption(label: LabelResponse): LabelOption {
+  private createSourceGroup() {
+    return this.fb.nonNullable.group(
+      {
+        journal: '',
+        author: '',
+        title: '',
+        url: '',
+        date: '',
+      },
+      { validators: this.sourceValidator() },
+    );
+  }
+
+  private sourceValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const source = control.value as SourceFormValue;
+      const hasContent = [
+        source.journal,
+        source.author,
+        source.title,
+        source.url,
+        source.date,
+      ].some(value => !this.isBlankValue(value));
+
+      if (!hasContent) {
+        return null;
+      }
+
+      const errors: ValidationErrors = {};
+
+      if (this.isBlankValue(source.title)) {
+        errors['sourceTitleRequired'] = true;
+      }
+
+      if (this.isBlankValue(source.author) && this.isBlankValue(source.url)) {
+        errors['sourceAuthorOrUrlRequired'] = true;
+      }
+
+      return Object.keys(errors).length === 0 ? null : errors;
+    };
+  }
+
+  private isBlankValue(value: unknown): boolean {
+    return typeof value === 'string' ? value.trim() === '' : value == null;
+  }
+
+  private toTopicOption(topic: TopicResponse): TopicOption {
     return {
-      label: `${label.emoji} ${label.name}`,
-      value: label.labelId,
+      label: `${topic.emoji} ${topic.name}`,
+      value: topic.topicId,
     };
   }
 
@@ -306,13 +419,16 @@ export class PostPageComponent implements OnInit {
     this.revokePreview();
     this.selectedFileName.set(null);
     this.previewKind.set(null);
+    this.submitAttempted.set(false);
     this.postForm.reset({
       caption: '',
       isPublic: false,
-      labelIds: [],
+      isAiGenerated: false,
+      topicIds: [],
     });
     this.sources.clear();
     this.sources.push(this.createSourceGroup());
+    this.expandedSourceIndex.set(0);
 
     const inputElement = this.mediaInput()?.nativeElement;
     if (inputElement) {

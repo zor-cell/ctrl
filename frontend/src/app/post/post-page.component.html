@@ -101,7 +101,7 @@
           <h2>Add post details</h2>
           <p>
             Write your caption, decide on visibility, add sources, and choose
-            labels.
+            topics.
           </p>
         </div>
       </div>
@@ -133,11 +133,19 @@
               [maxlength]="maxCaptionLength"
               class="field__textarea"
             ></textarea>
-            <label for="caption">Caption</label>
+            <label for="caption">Caption *</label>
           </p-floatlabel>
           <p class="field__hint">
-            {{ captionLength() }} / {{ maxCaptionLength }} characters
+            Required · {{ captionLength() }} / {{ maxCaptionLength }} characters
           </p>
+          @if (hasCaptionError('required')) {
+            <p class="field__error">Caption is required.</p>
+          }
+          @if (hasCaptionError('maxlength')) {
+            <p class="field__error">
+              Caption must not be longer than {{ maxCaptionLength }} characters.
+            </p>
+          }
         </div>
 
         @if (isVerifiedUser()) {
@@ -164,28 +172,48 @@
           </div>
         }
 
+        <div class="ai-card">
+          <div>
+            <h3>AI generated content</h3>
+            <p>Mark this if text, images, or video were generated with AI.</p>
+          </div>
+          <p-toggleswitch formControlName="isAiGenerated" inputId="isAiGenerated" />
+        </div>
+
         <div class="field">
           <p-floatlabel variant="on">
             <p-multiselect
-              inputId="labelIds"
-              formControlName="labelIds"
-              [options]="labelOptions()"
+              inputId="topicIds"
+              formControlName="topicIds"
+              [options]="topicOptions()"
               optionLabel="label"
               optionValue="value"
               [showToggleAll]="false"
               [filter]="true"
+              [selectionLimit]="3"
+              [maxSelectedLabels]="4"
               display="chip"
-              [loading]="loadingLabels()"
-              [disabled]="loadingLabels()"
+              [loading]="loadingTopics()"
+              [disabled]="loadingTopics()"
               class="field__multiselect"
-            />
-            <label for="labelIds">Labels</label>
+            >
+              <ng-template #selecteditems let-selectedTopics>
+                @if (selectedTopics?.length) {
+                  <div class="topic-chip-list">
+                    @for (topic of selectedTopics; track topic.value) {
+                      <span class="topic-chip">{{ topicOptionLabel(topic) }}</span>
+                    }
+                  </div>
+                }
+              </ng-template>
+            </p-multiselect>
+            <label for="topicIds">Topics</label>
           </p-floatlabel>
-          @if (selectedLabelsSummary()) {
-            <p class="field__hint">Selected: {{ selectedLabelsSummary() }}</p>
-          } @else if (!loadingLabels() && labelOptions().length === 0) {
+          @if (selectedTopicsSummary()) {
+            <p class="field__hint">Selected: {{ selectedTopicsSummary() }}</p>
+          } @else if (!loadingTopics() && topicOptions().length === 0) {
             <p class="field__hint">
-              No labels were returned by the backend.
+              No topics were returned by the backend.
             </p>
           }
         </div>
@@ -195,81 +223,115 @@
         <div class="sources-section__header">
           <div>
             <h3>Sources</h3>
-            <p>Add one or more sources for this post.</p>
+            <p>Optional · up to {{ maxSources }} sources.</p>
           </div>
 
           <p-button
             label="Add Source"
             icon="pi pi-plus"
             severity="secondary"
+            [disabled]="!canAddSource()"
             (onClick)="addSource()"
           />
         </div>
 
         <div formArrayName="sources" class="sources-list">
           @for (source of sources.controls; track $index) {
-            <div class="source-card" [formGroupName]="$index">
+            <div
+              class="source-card"
+              [class.source-card--error]="hasCollapsedSourceError($index)"
+              [formGroupName]="$index"
+            >
               <div class="source-card__title-row">
-                <h4>Source {{ $index + 1 }}</h4>
-                <p-button
-                  label="Remove"
-                  severity="contrast"
-                  size="small"
-                  (onClick)="removeSource($index)"
-                />
-              </div>
-
-              <div class="source-card__grid">
-                <p-floatlabel variant="on">
-                  <input
-                    pInputText
-                    id="journal-{{$index}}"
-                    formControlName="journal"
+                <div>
+                  <h4>Source {{ $index + 1 }}</h4>
+                  @if (!isSourceExpanded($index)) {
+                    <p class="source-card__collapsed-title">
+                      {{ collapsedSourceTitle($index) }}
+                    </p>
+                  }
+                </div>
+                <div class="source-card__actions">
+                  <p-button
+                    [label]="isSourceExpanded($index) ? 'Collapse' : 'Expand'"
+                    severity="secondary"
+                    size="small"
+                    (onClick)="toggleSource($index)"
                   />
-                  <label for="journal-{{$index}}">Journal</label>
-                </p-floatlabel>
-
-                <p-floatlabel variant="on">
-                  <input
-                    pInputText
-                    id="author-{{$index}}"
-                    formControlName="author"
+                  <p-button
+                    label="Remove"
+                    severity="contrast"
+                    size="small"
+                    (onClick)="removeSource($index)"
                   />
-                  <label for="author-{{$index}}">Author</label>
-                </p-floatlabel>
-
-                <p-floatlabel variant="on">
-                  <input
-                    pInputText
-                    id="title-{{$index}}"
-                    formControlName="title"
-                  />
-                  <label for="title-{{$index}}">Title</label>
-                </p-floatlabel>
-
-                <p-floatlabel variant="on">
-                  <input
-                    pInputText
-                    id="url-{{$index}}"
-                    formControlName="url"
-                  />
-                  <label for="url-{{$index}}">URL</label>
-                </p-floatlabel>
-
-                <div class="source-card__date-field">
-                  <p-floatlabel variant="on">
-                    <p-datepicker
-                      inputId="date-{{$index}}"
-                      formControlName="date"
-                      dateFormat="dd.mm.yy"
-                      [showIcon]="false"
-                      appendTo="body"
-                      class="source-card__date-picker"
-                    />
-                    <label for="date-{{$index}}">Date</label>
-                  </p-floatlabel>
                 </div>
               </div>
+
+              @if (isSourceExpanded($index)) {
+                <div class="source-card__grid">
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="journal-{{$index}}"
+                      formControlName="journal"
+                    />
+                    <label for="journal-{{$index}}">Journal</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="author-{{$index}}"
+                      formControlName="author"
+                    />
+                    <label for="author-{{$index}}">Author</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="title-{{$index}}"
+                      formControlName="title"
+                    />
+                    <label for="title-{{$index}}">Title *</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="url-{{$index}}"
+                      formControlName="url"
+                    />
+                    <label for="url-{{$index}}">URL</label>
+                  </p-floatlabel>
+
+                  <div class="source-card__date-field">
+                    <p-floatlabel variant="on">
+                      <p-datepicker
+                        inputId="date-{{$index}}"
+                        formControlName="date"
+                        dateFormat="dd.mm.yy"
+                        [showIcon]="false"
+                        appendTo="body"
+                        class="source-card__date-picker"
+                      />
+                      <label for="date-{{$index}}">Date</label>
+                    </p-floatlabel>
+                  </div>
+                </div>
+
+                @if (hasSourceError($index, 'sourceTitleRequired')) {
+                  <p class="source-card__error">
+                    Title is required when you add source information.
+                  </p>
+                }
+
+                @if (hasSourceError($index, 'sourceAuthorOrUrlRequired')) {
+                  <p class="source-card__error">
+                    Add either an author or a URL for this source.
+                  </p>
+                }
+              }
             </div>
           }
         </div>
@@ -286,7 +348,7 @@
           label="Create Post"
           icon="pi pi-check"
           [loading]="submitting()"
-          [disabled]="postForm.invalid"
+          [disabled]="submitting()"
           (onClick)="submitPost()"
         />
       </div>

@@ -6,7 +6,9 @@ export interface PostResponse {
   caption: string;
   mediaRef: string | null;
   isPublic: boolean;
+  isAiGenerated: boolean;
   labelIds: string[];
+  topicIds: string[];
   upvotes: number;
   downvotes: number;
   createdAt: string;
