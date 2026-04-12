@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { TextareaModule } from 'primeng/textarea';
 
 @Component({
@@ -20,6 +21,7 @@ import { TextareaModule } from 'primeng/textarea';
     AvatarModule,
     ButtonModule,
     TagModule,
+    TooltipModule,
     TextareaModule,
   ],
   templateUrl: './comments.component.html',
