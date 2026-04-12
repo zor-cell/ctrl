@@ -1,5 +1,7 @@
 package at.ac.tuwien.inso.ctrl.auth;
 
+import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
@@ -36,6 +38,20 @@ public class AuthController {
         authService.register(registerRequest);
         emailVerificationService.sendVerificationEmail(registerRequest);
 
+    }
+
+    @PostMapping("/verify")
+    @ResponseStatus(HttpStatus.OK)
+    public EmailVerificationResponse verify(@RequestBody EmailVerificationRequest emailVerificationRequest) {
+        LOGGER.trace("Email Verification request: {}", emailVerificationRequest);
+        return emailVerificationService.verifyEmail(emailVerificationRequest);
+    }
+
+    @PostMapping("/email")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void resendVerificationEmail(@RequestBody RegisterRequest registerRequest) {
+        LOGGER.trace("Resend verification email request: {}", registerRequest);
+        emailVerificationService.sendVerificationEmail(registerRequest);
     }
 
     @PostMapping("/login")

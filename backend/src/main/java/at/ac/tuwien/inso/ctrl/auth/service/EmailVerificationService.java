@@ -1,6 +1,12 @@
 package at.ac.tuwien.inso.ctrl.auth.service;
 
+import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
+import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +32,16 @@ public class EmailVerificationService {
 
   private final JavaMailSender mailSender;
   private final TemplateEngine templateEngine;
+  private final EmailVerificationRepository emailVerificationRepository;
+  private final UserRepository userRepository;
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Async
   public void sendVerificationEmail(RegisterRequest registerRequest) {
     LOGGER.info("Sending verification email to: {}", registerRequest.email());
     try {
-      Context context = createContext(registerRequest);
+      String code = generateCode(registerRequest.password(), System.currentTimeMillis());
+      Context context = createContext(code);
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
@@ -42,6 +52,7 @@ public class EmailVerificationService {
       helper.setText(htmlContent, true);
 
       mailSender.send(message);
+      saveVerificationCode(registerRequest, code);
     } catch (MailException e) {
       throw new RuntimeException("Failed to send email", e);
     } catch (MessagingException me) {
@@ -49,11 +60,41 @@ public class EmailVerificationService {
     }
   }
 
-  private Context createContext(RegisterRequest registerRequest) {
+  public EmailVerificationResponse verifyEmail(EmailVerificationRequest emailVerificationRequest) {
+    User user = userRepository.findByUsername(emailVerificationRequest.username())
+        .orElseThrow(() -> new IllegalStateException("User not found for verification"));
+    EmailVerification verification = emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
+        .orElseThrow(() -> new IllegalStateException("Verification not found for user"));
+
+    if (verification.getCode().equals(emailVerificationRequest.code()) && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
+      emailVerificationRepository.delete(verification);
+      user.setEmailVerified(true);
+      userRepository.save(user);
+      return new EmailVerificationResponse(true);
+    } else {
+      throw new IllegalStateException("Invalid or expired verification code");
+    }
+  }
+
+  private Context createContext(String code) {
     Context context = new Context();
 
-    context.setVariable("verificationCode", generateCode(registerRequest.password(), System.currentTimeMillis()));
+    context.setVariable("verificationCode", code);
     return context;
+  }
+  
+  private void saveVerificationCode(RegisterRequest registerRequest, String code) {
+    User user = userRepository.findByUsername(registerRequest.username())
+            .orElseThrow(() -> new IllegalStateException("User not found for verification"));
+
+    emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
+            .ifPresent(emailVerificationRepository::delete);
+
+    EmailVerification verification = new EmailVerification();
+    verification.setUser(user);
+    verification.setCode(code);
+    verification.setExpiryTime(LocalDateTime.now().plusMinutes(1));
+    emailVerificationRepository.save(verification);
   }
 
   private String generateCode(String password, long timeInMs) {

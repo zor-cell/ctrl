@@ -24,6 +24,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
+    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -47,6 +48,10 @@ public class User implements UserDetails {
 
     @Column(name = "birthdate")
     private LocalDate birthdate;
+
+    @Builder.Default
+    @Column(name = "is_email_verified", nullable = false)
+    private boolean emailVerified = false;
 
     @OneToMany(mappedBy = "username", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMember> chatMembers;
@@ -83,4 +88,5 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

@@ -43,6 +43,10 @@ public class AuthService {
         var user = userRepository.findByUsername(loginRequest.username())
                 .orElseThrow();
 
+        if (!user.isEmailVerified()) {
+            throw new IllegalStateException("Email not verified");
+        }
+
         var token = jwtService.generateToken(user);
 
         return new AuthResponse(token);

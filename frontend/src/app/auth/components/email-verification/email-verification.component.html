@@ -1,0 +1,46 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h2>Email verification</h2>
+      @if (registerRequest) {
+        <p>We sent a verification link to <strong>{{ registerRequest.email }}</strong>.</p>
+
+      } @else {
+        <p>No registration data found. Please register again.</p>
+      }
+    </div>
+
+    <form [formGroup]="verificationForm" (ngSubmit)="submitCode()" class="login-form">
+      <div>
+        <p-floatlabel variant="on">
+          <input
+            pInputText
+            id="code"
+            formControlName="code"
+            maxlength="6"
+            inputmode="numeric"
+          />
+          <label for="code">6-digit code</label>
+        </p-floatlabel>
+
+        @if (verificationForm.controls.code.invalid && verificationForm.controls.code.touched) {
+          <p-message severity="error" size="small" variant="simple">
+            Please enter a valid 6-digit code.
+          </p-message>
+        }
+      </div>
+
+      <p-button type="submit" label="Verify"></p-button>
+      @if (showResendButton) {
+        <p-button
+          type="button"
+          label="Resend email"
+          severity="secondary"
+          [text]="true"
+          (onClick)="resendEmail()"
+        ></p-button>
+      }
+    </form>
+  </div>
+
+</div>

@@ -12,6 +12,10 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
+      - MINIO_USERNAME=${MINIO_USER}
+      - MINIO_PASSWORD=${MINIO_PASSWORD}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -30,7 +34,7 @@ services:
       - "80:80"
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
         restart: false
     restart: on-failure:3
 
