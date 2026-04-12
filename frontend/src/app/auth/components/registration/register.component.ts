@@ -49,5 +49,7 @@ export class RegisterComponent {
         state: { registerRequest }
       });
     });
+
+    this.authService.resendVerificationEmail(registerRequest).subscribe();
   }
 }

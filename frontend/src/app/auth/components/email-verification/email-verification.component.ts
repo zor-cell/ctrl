@@ -33,7 +33,7 @@ export class EmailVerificationComponent implements OnDestroy {
     private router: Router,
     private notificationService: NotificationService,
   ) {
-    const navState = this.router.getCurrentNavigation()?.extras.state?.['registerRequest'] as
+    const navState = this.router.currentNavigation()?.extras.state?.['registerRequest'] as
       | RegisterRequest
       | undefined;
     const historyState = history.state?.registerRequest as RegisterRequest | undefined;

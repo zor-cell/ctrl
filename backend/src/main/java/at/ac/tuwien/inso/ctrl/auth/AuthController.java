@@ -36,7 +36,7 @@ public class AuthController {
     public void register(@RequestBody RegisterRequest registerRequest) {
         LOGGER.trace("Register request: {}", registerRequest);
         authService.register(registerRequest);
-        emailVerificationService.sendVerificationEmail(registerRequest);
+        //emailVerificationService.sendVerificationEmail(registerRequest);
 
     }
 
