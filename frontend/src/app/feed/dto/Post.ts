@@ -12,10 +12,9 @@ export interface Post {
   upvotes: number;
   downvotes: number;
   likes: number;
-  labelIds: string[];
+  labelIds: [string, string][];
   topicIds: string[];
   videoImageRef: string;
   sourceIds: string[] | null;
   comments: PostComment[];
 }
-

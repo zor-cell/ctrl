@@ -9,6 +9,7 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { AvatarModule } from 'primeng/avatar';
+import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 
@@ -23,6 +24,7 @@ import { CommonModule } from '@angular/common';
     DialogModule,
     AvatarModule,
     TagModule,
+    TooltipModule,
     CommentsComponent,
   ],
   templateUrl: './feed.component.html',
