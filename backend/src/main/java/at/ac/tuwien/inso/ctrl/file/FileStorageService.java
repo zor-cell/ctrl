@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class FileStorageService {
   private final S3Client s3Client;
 
-  @Value("${minio.bucket-name}")
+  @Value("${garage.bucket-name}")
   private String bucketName;
 
   public String uploadFile(MultipartFile file) throws IOException {
@@ -35,7 +35,7 @@ public class FileStorageService {
             .contentType(file.getContentType())
             .build();
 
-    // upload file to minio
+    // upload file to garage
     s3Client.putObject(
         putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 

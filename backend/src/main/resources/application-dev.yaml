@@ -4,10 +4,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-minio:
-  url: http://localhost:9000
-  access-key: ${MINIO_USER}
-  secret-key: ${MINIO_PASSWORD}
+garage:
+  url: http://localhost:3900
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ctrl-dev-media
 
 infinity:

@@ -12,10 +12,10 @@ spring:
     hibernate:
       ddl-auto: update
 
-minio:
-  url: http://minio:9000
-  access-key: ${MINIO_USER}
-  secret-key: ${MINIO_PASSWORD}
+garage:
+  url: http://garage:3900
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ctrl-prod-media
 
 infinity:
