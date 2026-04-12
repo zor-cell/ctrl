@@ -21,8 +21,6 @@ public class GarageConfig {
   @Value("${garage.secret-key}")
   private String secretKey;
 
-  @Value("${garage.region}")
-  private String region;
 
   @Bean
   public S3Client s3Client() {
@@ -30,7 +28,7 @@ public class GarageConfig {
         .endpointOverride(URI.create(garageUrl))
         .credentialsProvider(
             StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
-        .region(Region.of(region))
+        .region(Region.US_EAST_1)
         .serviceConfiguration(S3Configuration.builder()
                 .pathStyleAccessEnabled(true)
                 .build())

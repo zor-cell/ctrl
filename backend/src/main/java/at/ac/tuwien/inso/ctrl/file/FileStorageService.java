@@ -18,6 +18,12 @@ public class FileStorageService {
   @Value("${garage.bucket-name}")
   private String bucketName;
 
+  @Value("${garage.public-url}")
+  private String publicUrl;
+
+  /**
+   * Uploads a given file to the S3 file storage and returns a relative filename (or unique object key)
+   */
   public String uploadFile(MultipartFile file) throws IOException {
     // generate unique object key
     String originalFilename = file.getOriginalFilename();
@@ -40,5 +46,17 @@ public class FileStorageService {
         putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
     return uniqueFileName;
+  }
+
+  /**
+   * Resolves the given relative filename (or unique object key) to a publicly available URL
+   * to see the image
+   */
+  public String resolveFileUrl(String relativeFilename) {
+    if(relativeFilename == null || relativeFilename.isBlank()) {
+      return null;
+    }
+
+    return publicUrl + "/" + bucketName + "/" + relativeFilename;
   }
 }
