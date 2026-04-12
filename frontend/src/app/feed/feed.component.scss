@@ -120,10 +120,33 @@ $radius-sm:    10px;
 
 // ─── Caption ──────────────────────────────────────────
 .post-caption {
-  padding: 14px 16px 10px;
+  padding: 14px 16px 8px;
   font-size: 0.93rem;
   line-height: 1.55;
   margin: 0;
+  white-space: pre-line;
+}
+
+// ─── Source Link ──────────────────────────────────────
+.post-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 16px 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid $border;
+  font-size: 0.75rem;
+  color: $text-muted;
+  text-decoration: none;
+  transition: all 0.2s;
+
+  i { font-size: 0.7rem; }
+
+  &:hover {
+    color: var(--p-primary-color, #6366f1);
+    border-color: var(--p-primary-color, #6366f1);
+  }
 }
 
 // ─── Labels ───────────────────────────────────────────
