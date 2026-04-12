@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ctrl
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+application:
+  security:
+    jwt:
+      secret-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      expiration: 86400000
+    id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      client-id: "ctrl-test"
+      client-secret: "ctrl-test-secret"
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
