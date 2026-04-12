@@ -44,9 +44,9 @@
         </div>
       </div>
 
-      @if (post.sourceIds && post.sourceIds.length > 0) {
+      @if (post.videoImageRef && post.videoImageRef.length > 0) {
         <div class="preview-image-wrapper">
-          <img [src]="post.sourceIds[0]" [alt]="post.caption" class="preview-image" />
+          <img [src]="post.videoImageRef[0]" [alt]="post.caption" class="preview-image" />
         </div>
       }
 

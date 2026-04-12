@@ -20,7 +20,7 @@ export class FeedService {
         likes: 142,
         labelIds: ['ai-generated', 'recent'],
         topicIds: ['Art & Culture'],
-        sourceIds: ['assets/posts/post3.jpeg'],
+        videoImageRef: 'assets/posts/post3.jpeg',
         comments: [
           {
             commentId: 'c1-1',
@@ -92,7 +92,7 @@ export class FeedService {
         likes: 87,
         labelIds: ['recent'],
         topicIds: ['Technology'],
-        sourceIds: ['assets/posts/post1.png'],
+        videoImageRef: 'assets/posts/post1.png',
         comments: [
           {
             commentId: 'c2-1',
@@ -164,7 +164,7 @@ export class FeedService {
         likes: 213,
         labelIds: [],
         topicIds: ['Food & Lifestyle'],
-        sourceIds: ['assets/posts/post2.webp'],
+        videoImageRef: 'assets/posts/post2.webp',
         comments: [
 
         ],
@@ -201,7 +201,7 @@ export class FeedService {
           upvotes: 0,
           downvotes: 0,
           likes: status.favourites_count,
-          sourceIds: status.media_attachments?.length > 0
+          videoImageRef: status.media_attachments?.length > 0
             ? status.media_attachments
               .filter((m: any) => m.type === 'image')
               .map((m: any) => m.url)
@@ -246,7 +246,7 @@ export class FeedService {
           upvotes: 0,
           downvotes: 0,
           likes: 0,
-          sourceIds: status.media_attachments?.length > 0
+          videoImageRef: status.media_attachments?.length > 0
             ? status.media_attachments
               .filter((m: any) => m.type === 'image')
               .map((m: any) => m.url)

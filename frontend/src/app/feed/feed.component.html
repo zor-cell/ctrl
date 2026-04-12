@@ -99,10 +99,10 @@
   </div>
 
   <!-- Post Image -->
-  @if (post.sourceIds && post.sourceIds.length > 0) {
+  @if (post.videoImageRef) {
     <div class="post-image-wrapper">
       <img
-        [src]="post.sourceIds[0]"
+        [src]="post.videoImageRef"
         [alt]="post.caption"
         class="post-image"
         loading="lazy"
