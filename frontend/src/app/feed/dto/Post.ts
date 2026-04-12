@@ -15,7 +15,7 @@ export interface Post {
   labelIds: string[];
   topicIds: string[];
   videoImageRef: string;
-  // sourceIds: string[] | null;
+  sourceIds: string[] | null;
   comments: PostComment[];
 }
 

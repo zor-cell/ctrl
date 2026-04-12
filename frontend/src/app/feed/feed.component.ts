@@ -53,11 +53,19 @@ export class FeedComponent implements OnInit {
       this.feedService.getTagesschauPosts(),
       this.feedService.getBBCNewsPosts(),
     ]);
-
+    console.log(tagesschauPosts, bbcPosts);
     this.allPosts.set(
       [...tagesschauPosts, ...bbcPosts, ...mockPosts]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     );
+  }
+
+  getDomain(url: string): string {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
   }
 
   timeAgo(createdAt: string): string {

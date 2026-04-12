@@ -21,6 +21,7 @@ export class FeedService {
         labelIds: ['ai-generated', 'recent'],
         topicIds: ['Art & Culture'],
         videoImageRef: 'assets/posts/post3.jpeg',
+        sourceIds: [],
         comments: [
           {
             commentId: 'c1-1',
@@ -93,6 +94,7 @@ export class FeedService {
         labelIds: ['recent'],
         topicIds: ['Technology'],
         videoImageRef: 'assets/posts/post1.png',
+        sourceIds: [],
         comments: [
           {
             commentId: 'c2-1',
@@ -165,6 +167,7 @@ export class FeedService {
         labelIds: [],
         topicIds: ['Food & Lifestyle'],
         videoImageRef: 'assets/posts/post2.webp',
+        sourceIds: [],
         comments: [
 
         ],
@@ -190,29 +193,60 @@ export class FeedService {
 
       return data
         .filter((s: any) => s.content && !s.reblog)
-        .map((status: any) => ({
-          postId: status.id,
-          userId: status.account.id,
-          username: status.account.display_name,
-          userProfilePic: status.account.avatar,
-          createdAt: status.created_at,
-          caption: status.content.replace(/<[^>]+>/g, '').trim(),
-          isPublic: true,
-          upvotes: 0,
-          downvotes: 0,
-          likes: status.favourites_count,
-          videoImageRef: status.media_attachments?.length > 0
-            ? status.media_attachments
-              .filter((m: any) => m.type === 'image')
-              .map((m: any) => m.url)
-            : status.card?.image
-              ? [status.card.image]
-              : [],
-          labelIds: ['mastodon.social'],
-          topicIds: status.tags.map((t: any) => t.name),
-          comments: [],
-          whyExplanation: 'Latest news from Tagesschau',
-        }));
+        .map((status: any) => {
+          const rawCaption = status.content.replace(/<[^>]+>/g, '').trim();
+          const urlRegex = /https?:\/\/\S+/g;
+          const extractedUrls: string[] = [];
+
+          const lines = rawCaption
+            .split('\n')
+            .map((l: string) => l.trim())
+            .filter((line: string) => {
+              const urls = line.match(urlRegex);
+              if (urls) {
+                extractedUrls.push(...urls);
+                return false;
+              }
+              if (line === '➡️') return false;
+              return line.length > 0;
+            });
+
+          let title = lines[0] ?? '';
+          let body = lines.slice(1).join('\n').trim();
+
+          // Fallback: if content was only a URL, use the link preview card
+          if (!title && status.card?.title) {
+            title = status.card.title;
+            body = status.card.description ?? '';
+          }
+
+          const caption = body ? `${title}\n\n${body}` : title;
+
+          return {
+            postId: status.id,
+            userId: status.account.id,
+            username: status.account.display_name,
+            userProfilePic: status.account.avatar,
+            createdAt: status.created_at,
+            caption,
+            isPublic: true,
+            upvotes: 0,
+            downvotes: 0,
+            likes: status.favourites_count,
+            sourceIds: extractedUrls,
+            videoImageRef: status.media_attachments?.length > 0
+              ? status.media_attachments
+                .filter((m: any) => m.type === 'image')
+                .map((m: any) => m.url)
+              : status.card?.image
+                ? [status.card.image]
+                : [],
+            labelIds: ['mastodon.social'],
+            topicIds: status.tags.map((t: any) => t.name),
+            comments: [],
+            whyExplanation: 'Latest news from Tagesschau',
+          };
+        });
     } catch (e) {
       console.error('Mastodon fetch failed', e);
       return [];
@@ -235,29 +269,56 @@ export class FeedService {
 
       return data
         .filter((s: any) => s.content && !s.reblog)
-        .map((status: any) => ({
-          postId: status.id,
-          userId: status.account.id,
-          username: status.account.display_name,
-          userProfilePic: status.account.avatar,
-          createdAt: status.created_at,
-          caption: status.content.replace(/<[^>]+>/g, '').trim(),
-          isPublic: true,
-          upvotes: 0,
-          downvotes: 0,
-          likes: 0,
-          videoImageRef: status.media_attachments?.length > 0
-            ? status.media_attachments
-              .filter((m: any) => m.type === 'image')
-              .map((m: any) => m.url)
-            : status.card?.image
-              ? [status.card.image]
-              : [],
-          labelIds: ['mastodon.social'],
-          topicIds: status.tags.map((t: any) => t.name),
-          comments: [],
-          whyExplanation: 'Latest news from BBC News',
-        }));
+        .map((status: any) => {
+          const rawCaption = status.content.replace(/<[^>]+>/g, '').trim();
+          const urlRegex = /https?:\/\/\S+/g;
+          const extractedUrls: string[] = [];
+
+          const lines = rawCaption
+            .split('\n')
+            .map((l: string) => l.trim())
+            .filter((line: string) => {
+              const urls = line.match(urlRegex);
+              if (urls) {
+                extractedUrls.push(...urls);
+                return false;
+              }
+              if (line.startsWith('Posted into')) return false;
+              return line.length > 0;
+            });
+
+          let caption = lines.join('\n').trim();
+
+          // Fallback: if content was only a URL, use the link preview card
+          if (!caption && status.card?.title) {
+            caption = status.card.title;
+          }
+
+          return {
+            postId: status.id,
+            userId: status.account.id,
+            username: status.account.display_name,
+            userProfilePic: status.account.avatar,
+            createdAt: status.created_at,
+            caption,
+            isPublic: true,
+            upvotes: 0,
+            downvotes: 0,
+            likes: 0,
+            sourceIds: extractedUrls,
+            videoImageRef: status.media_attachments?.length > 0
+              ? status.media_attachments
+                .filter((m: any) => m.type === 'image')
+                .map((m: any) => m.url)
+              : status.card?.image
+                ? [status.card.image]
+                : [],
+            labelIds: ['mastodon.social'],
+            topicIds: status.tags.map((t: any) => t.name),
+            comments: [],
+            whyExplanation: 'Latest news from BBC News',
+          };
+        });
     } catch (e) {
       console.error('BBC fetch failed', e);
       return [];

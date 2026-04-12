@@ -113,6 +113,14 @@
   <!-- Caption -->
   <p class="post-caption">{{ post.caption }}</p>
 
+  <!-- Source -->
+  @if (post.sourceIds.length > 0) {
+    <a class="post-source" [href]="post.sourceIds[0]" target="_blank" rel="noopener noreferrer">
+      <i class="pi pi-external-link"></i>
+      {{ getDomain(post.sourceIds[0]) }}
+    </a>
+  }
+
   <!-- Actions -->
   <div class="post-actions">
     <div class="post-actions-left">
