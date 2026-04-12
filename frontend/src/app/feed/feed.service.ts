@@ -18,7 +18,7 @@ export class FeedService {
         upvotes: 0,
         downvotes: 0,
         likes: 142,
-        labelIds: ['ai-generated', 'recent'],
+        labelIds: [],
         topicIds: ['Art & Culture'],
         videoImageRef: 'assets/posts/post3.jpeg',
         sourceIds: [],
@@ -91,7 +91,7 @@ export class FeedService {
         upvotes: 0,
         downvotes: 0,
         likes: 87,
-        labelIds: ['recent'],
+        labelIds: [],
         topicIds: ['Technology'],
         videoImageRef: 'assets/posts/post1.png',
         sourceIds: [],
@@ -241,7 +241,10 @@ export class FeedService {
               : status.card?.image
                 ? [status.card.image]
                 : [],
-            labelIds: ['mastodon.social'],
+            labelIds: [
+              ['Mastodon', 'Mastodon is a decentralized social media platform where this post was originally published.'],
+              ['Tagesschau', 'Tagesschau is the main news program of ARD, Germany\'s public broadcasting network.'],
+            ] as [string, string][],
             topicIds: status.tags.map((t: any) => t.name),
             comments: [],
             whyExplanation: 'Latest news from Tagesschau',
@@ -313,7 +316,10 @@ export class FeedService {
               : status.card?.image
                 ? [status.card.image]
                 : [],
-            labelIds: ['mastodon.social'],
+            labelIds: [
+              ['Mastodon', 'Mastodon is a decentralized social media platform where this post was originally published.'],
+              ['BBC News', 'BBC News is the internationally recognized news division of the British Broadcasting Corporation.'],
+            ] as [string, string][],
             topicIds: status.tags.map((t: any) => t.name),
             comments: [],
             whyExplanation: 'Latest news from BBC News',
