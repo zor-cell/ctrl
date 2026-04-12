@@ -4,6 +4,18 @@ import { Post } from './dto/Post';
 @Injectable({ providedIn: 'root' })
 export class FeedService {
 
+  private stripHtml(html: string): string {
+    return html
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+  }
+
   getMockPosts(): Post[] {
     return [
       {
@@ -194,7 +206,7 @@ export class FeedService {
       return data
         .filter((s: any) => s.content && !s.reblog)
         .map((status: any) => {
-          const rawCaption = status.content.replace(/<[^>]+>/g, '').trim();
+          const rawCaption = this.stripHtml(status.content);
           const urlRegex = /https?:\/\/\S+/g;
           const extractedUrls: string[] = [];
 
@@ -216,8 +228,8 @@ export class FeedService {
 
           // Fallback: if content was only a URL, use the link preview card
           if (!title && status.card?.title) {
-            title = status.card.title;
-            body = status.card.description ?? '';
+            title = this.stripHtml(status.card.title);
+            body = status.card.description ? this.stripHtml(status.card.description) : '';
           }
 
           const caption = body ? `${title}\n\n${body}` : title;
@@ -273,7 +285,7 @@ export class FeedService {
       return data
         .filter((s: any) => s.content && !s.reblog)
         .map((status: any) => {
-          const rawCaption = status.content.replace(/<[^>]+>/g, '').trim();
+          const rawCaption = this.stripHtml(status.content);
           const urlRegex = /https?:\/\/\S+/g;
           const extractedUrls: string[] = [];
 
@@ -294,7 +306,7 @@ export class FeedService {
 
           // Fallback: if content was only a URL, use the link preview card
           if (!caption && status.card?.title) {
-            caption = status.card.title;
+            caption = this.stripHtml(status.card.title);
           }
 
           return {
