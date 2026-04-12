@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -38,6 +39,7 @@ public class PostServiceImpl implements PostService {
   private final SourceService sourceService;
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
+  private final FileStorageService fileStorageService;
 
   @Override
   @Transactional
@@ -48,6 +50,13 @@ public class PostServiceImpl implements PostService {
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     Source source = sourceService.createSource(request.source());
+
+    //TODO: this method needs a multipartfile from the user to upload the file
+    /*try {
+      String mediaRef = this.fileStorageService.uploadFile(null);
+    } catch(Exception e) {
+      //file saving failed
+    }*/
 
     var post =
         Post.builder()
