@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/${DB_NAME}
+
+application:
+  security:
+    id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
+

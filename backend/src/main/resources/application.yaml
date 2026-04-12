@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: ctrl
+  config:
+    import: "optional:configtree:/run/secrets/"
+  datasource:
+    url: jdbc:postgresql://db:5432/${DB_NAME}
+    username: ${db_username}
+    password: ${db_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: 86400000 #1 day in ms
+    id-austria:
+      issuer-uri: "http://keycloak:8080/realms/id-austria-mock"
+      client-id: "http://localhost:8080"
+      client-secret: ${ID_AUSTRIA_SECRET}
+      token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:80/verification-callback"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          health
+  endpoint:
+    health:
+      show-details:
+        always

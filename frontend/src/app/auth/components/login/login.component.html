@@ -1,0 +1,40 @@
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue</p>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="login()" class="login-form">
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText id="username" formControlName="username" />
+                    <label for="username">Username</label>
+                </p-floatlabel>
+
+                @if (loginForm.controls.username.invalid && loginForm.controls.username.touched && loginForm.controls.username.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
+                }
+            </div>
+
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText type="password" id="password" formControlName="password" />
+                    <label for="password">Password</label>
+                </p-floatlabel>
+
+                @if (loginForm.controls.password.invalid && loginForm.controls.password.touched && loginForm.controls.password.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Password is required.</p-message>
+                }
+            </div>
+
+            <p-button type="submit" label="Log In"></p-button>
+
+            <div class="register-link">
+                Don't have an account?
+                <a routerLink="/register">Register here</a>
+            </div>
+        </form>
+    </div>
+
+</div>
