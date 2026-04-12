@@ -8,25 +8,32 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 
 @Configuration
-public class MinioConfig {
-  @Value("${minio.url}")
-  private String minioUrl;
+public class GarageConfig {
+  @Value("${garage.url}")
+  private String garageUrl;
 
-  @Value("${minio.access-key}")
+  @Value("${garage.access-key}")
   private String accessKey;
 
-  @Value("${minio.secret-key}")
+  @Value("${garage.secret-key}")
   private String secretKey;
+
+  @Value("${garage.region}")
+  private String region;
 
   @Bean
   public S3Client s3Client() {
     return S3Client.builder()
-        .endpointOverride(URI.create(minioUrl))
+        .endpointOverride(URI.create(garageUrl))
         .credentialsProvider(
             StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
-        .region(Region.US_EAST_1) // Required by SDK, but ignored by MinIO
+        .region(Region.of(region))
+        .serviceConfiguration(S3Configuration.builder()
+                .pathStyleAccessEnabled(true)
+                .build())
         .build();
   }
 }
