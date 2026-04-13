@@ -23,19 +23,21 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public void register(RegisterRequest registerRequest) {
-        if(userRepository.existsByUsername(registerRequest.username())) {
-            throw new ResourceAlreadyExistsException(String.format("Username '%s' already exists", registerRequest.username()));
+        String username = registerRequest.username().trim();
+        if(userRepository.existsByUsername(username)) {
+            throw new ResourceAlreadyExistsException("User", "username", username);
         }
 
-        if(userRepository.existsByEmail(registerRequest.email())) {
-            throw new ResourceAlreadyExistsException(String.format("Email '%s' already exists", registerRequest.email()));
+        String email = registerRequest.email().trim();
+        if(userRepository.existsByEmail(email)) {
+            throw new ResourceAlreadyExistsException("User", "email", email);
         }
 
         var user = User.builder()
-                .username(registerRequest.username())
+                .username(username)
                 .password(passwordEncoder.encode(registerRequest.password()))
-                .name(registerRequest.name())
-                .email(registerRequest.email())
+                .name(registerRequest.name().trim())
+                .email(email)
                 .birthdate(registerRequest.birthdate())
                 .build();
 
@@ -43,10 +45,11 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
+        String username = loginRequest.username().trim();
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.username(),
+                            username,
                             loginRequest.password()
                     )
             );
@@ -58,7 +61,7 @@ public class AuthService {
             throw new InvalidPasswordException("Account is locked. Please contact support.");
         }
 
-        var user = userRepository.findByUsername(loginRequest.username())
+        var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         var token = jwtService.generateToken(user);
