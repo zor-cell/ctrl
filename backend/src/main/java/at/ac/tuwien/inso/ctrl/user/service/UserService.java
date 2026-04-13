@@ -42,7 +42,7 @@ public class UserService {
 
         String newEmail = request.email().trim();
         if (!user.getEmail().equalsIgnoreCase(newEmail) && userRepository.existsByEmail(newEmail)) {
-            throw new ResourceAlreadyExistsException(String.format("Email '%s' already exists", newEmail));
+            throw new ResourceAlreadyExistsException("User", "email", newEmail);
         }
 
         String newName = request.name().trim();
@@ -82,7 +82,7 @@ public class UserService {
         String newUsername = request.newUsername().trim();
 
         if (userRepository.existsByUsername(newUsername)) {
-            throw new ResourceAlreadyExistsException(String.format("Username '%s' already exists", newUsername));
+            throw new ResourceAlreadyExistsException("User", "username", newUsername);
         }
 
         User user = getUserInternal(currentUser.getId());
