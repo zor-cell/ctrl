@@ -1,13 +1,15 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
 
 import {AuthService} from '../../auth.service'
 import {LoginRequest} from "../../dto/LoginRequest";
-import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {form, FormField, required} from "@angular/forms/signals";
+import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {Password} from "primeng/password";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {FloatLabel} from "primeng/floatlabel";
 import {Message} from "primeng/message";
-import {RouterLink} from "@angular/router";
+import {Router, RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-login',
@@ -26,6 +28,7 @@ import {RouterLink} from "@angular/router";
 export class LoginComponent {
   private authService = inject(AuthService);
   private fb = inject(NonNullableFormBuilder);
+  private router = inject(Router);
 
   protected loginForm = this.fb.group({
     username: ['', Validators.required],
@@ -40,6 +43,8 @@ export class LoginComponent {
     }
 
     const loginRequest: LoginRequest = this.loginForm.getRawValue();
-    this.authService.login(loginRequest).subscribe();
+    this.authService.login(loginRequest).subscribe(res => {
+      this.router.navigate(['/profile']);
+    });
   }
 }

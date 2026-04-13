@@ -1,11 +1,11 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
 
-minio:
-  url: http://minio:9000
-  access-key: ${MINIO_USER}
-  secret-key: ${MINIO_PASSWORD}
-  bucket-name: ctrl-dev-media
+application:
+  security:
+    id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
+

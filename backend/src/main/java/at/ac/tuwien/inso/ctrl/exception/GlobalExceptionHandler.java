@@ -34,4 +34,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return handleExceptionInternal(
         ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
   }
+
+  @ExceptionHandler(value = {InvalidPasswordException.class})
+  protected ResponseEntity<Object> handleInvalidPassword(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+  }
+
+  @ExceptionHandler(value = {ResourceAlreadyExistsException.class})
+  protected ResponseEntity<Object> handleUsernameExists(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.CONFLICT, request);
+  }
+
+  @ExceptionHandler(value = {InvalidRequestException.class})
+  protected ResponseEntity<Object> handleInvalidRequest(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+  }
+
+  @ExceptionHandler(value = {CommunicationException.class})
+  protected ResponseEntity<Object> handleCommunication(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_GATEWAY, request);
+  }
 }

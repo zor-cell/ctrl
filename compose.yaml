@@ -11,10 +11,12 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASSWORD=${MINIO_PASSWORD}
+      - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
     depends_on:
       db:
+        condition: service_healthy
+        restart: false
+      keycloak:
         condition: service_healthy
         restart: false
     restart: on-failure:3
@@ -54,29 +56,30 @@ services:
     volumes:
       - db_data:/var/lib/postgresql
 
-  minio:
-    platform: linux/amd64
-    image: minio/minio:latest
-    ports:
-      - "9000:9000" # api
-      - "9001:9001" # admin web ui
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev --import-realm
     environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
+      - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_RELATIVE_PATH=/
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8081:8080"
+    healthcheck:
+      # curl is not installed in image, so raw tcp connection check for healthchecks
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep 'HTTP/1.1 200 OK' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
-      - minio_data:/data
-    # create a minio bucket for media files with public permissions on startup
-    entrypoint: >
-      /bin/sh -c "
-      minio server /data --console-address ':9001' & 
-      sleep 3;
-      mc alias set local http://localhost:9000 ${MINIO_USER} ${MINIO_PASSWORD};
-      mc mb local/ctrl-dev-media --ignore-existing;
-      mc anonymous set download local/ctrl-dev-media;
-      wait
-      "
-    restart: on-failure:3
+      - keycloak_data:/opt/keycloak/data
+      - ./backend/keycloak-config:/opt/keycloak/data/import/ # import test dataset
 
 volumes:
   db_data:
-  minio_data:
+  keycloak_data:

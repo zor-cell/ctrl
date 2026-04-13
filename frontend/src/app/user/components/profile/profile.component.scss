@@ -1,0 +1,67 @@
+.profile-container {
+  max-width: 42rem;
+  margin: var(--space-6) auto 0;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.profile-card {
+  padding: var(--space-6);
+
+  &__title {
+    margin-bottom: var(--space-4);
+  }
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.setting-row {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  padding: var(--space-3);
+  gap: 1rem;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: row;
+
+  gap: 3rem;
+}
+
+.setting-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  display: block;
+}
+
+.setting-value {
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+}
+
+/* Form Layout */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+p-floatlabel,
+.p-inputtext,
+.p-datepicker {
+  width: 100% !important;
+}
