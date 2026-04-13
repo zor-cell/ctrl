@@ -1,10 +1,9 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
-import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
-import at.ac.tuwien.inso.ctrl.exception.UsernameExistsException;
+import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -12,13 +11,9 @@ import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -67,7 +62,7 @@ public class UserService {
         String newUsername = request.newUsername().trim();
 
         if (userRepository.findByUsername(newUsername).isPresent()) {
-            throw new UsernameExistsException("Username is already taken");
+            throw new ResourceAlreadyExistsException("Username is already taken");
         }
 
         User user = userRepository.findById(currentUser.getId()).orElseThrow();
