@@ -31,10 +31,6 @@ public class IdAustriaOidcService {
 
     private final JwtDecoder idAustriaJwtDecoder;
 
-    /**
-     * Makes an HTTP call to the IDAustria OIDC endpoint specified in their specification:
-     * <a href="https://www.id-austria.gv.at/de/developer/anbinden/anbindung-mit-openid-connect">ID Austria OIDC Spezifikation</a>
-     */
     private IdAustriaTokenResponse exchangeCodeForToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", code);
@@ -51,12 +47,12 @@ public class IdAustriaOidcService {
                 .body(IdAustriaTokenResponse.class);
     }
 
+    /**
+     * Makes an HTTP call to the IDAustria OIDC endpoint specified in their specification:
+     * <a href="https://www.id-austria.gv.at/de/developer/anbinden/anbindung-mit-openid-connect">ID Austria OIDC Spezifikation</a>
+     */
     public Jwt getTokenFromCode(String code) {
         IdAustriaTokenResponse tokenResponse = exchangeCodeForToken(code);
-
-        if (tokenResponse == null || tokenResponse.idToken() == null) {
-            throw new CommunicationException("Failed to retrieve token from ID Austria");
-        }
 
         return idAustriaJwtDecoder.decode(tokenResponse.idToken());
     }

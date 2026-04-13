@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,23 +22,23 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public UserDetailsResponse updateUser(@AuthenticationPrincipal User currentUser, @RequestBody UpdateProfileRequest request) {
+    public UserDetailsResponse updateUser(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdateProfileRequest request) {
         return userService.updateUser(currentUser, request);
     }
 
     @PutMapping("/me/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updatePassword(@AuthenticationPrincipal User currentUser, @RequestBody UpdatePasswordRequest request) {
+    public void updatePassword(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdatePasswordRequest request) {
         userService.updatePassword(currentUser, request);
     }
 
     @PutMapping("/me/username")
-    public AuthResponse updateUsername(@AuthenticationPrincipal User currentUser, @RequestBody UpdateUsernameRequest request) {
+    public AuthResponse updateUsername(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdateUsernameRequest request) {
         return userService.updateUsername(currentUser, request);
     }
 
     @PutMapping("/me/verify")
-    public UserDetailsResponse verifyUser(@AuthenticationPrincipal User currentUser, @RequestBody VerifyIdentityRequest request) {
+    public UserDetailsResponse verifyUser(@AuthenticationPrincipal User currentUser, @Valid @RequestBody VerifyIdentityRequest request) {
         return userService.verifyUser(currentUser, request);
     }
 }

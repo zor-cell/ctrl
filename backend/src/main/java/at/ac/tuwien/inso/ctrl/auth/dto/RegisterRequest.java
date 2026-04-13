@@ -9,16 +9,12 @@ import java.time.LocalDate;
 public record RegisterRequest(
         @NotBlank
         String username,
-
         @NotBlank
         String password,
-
         @Email
         String email,
-
         @NotBlank
         String name,
-
         @PastOrPresent
         LocalDate birthdate
 ) {
