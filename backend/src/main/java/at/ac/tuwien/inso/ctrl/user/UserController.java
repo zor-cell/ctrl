@@ -14,31 +14,38 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
+  private final UserService userService;
 
-    @GetMapping("/me")
-    public UserDetailsResponse getUser(@AuthenticationPrincipal User currentUser) {
-        return userService.getUser(currentUser.getId());
-    }
+  @GetMapping("/me")
+  public UserDetailsResponse getUser(@AuthenticationPrincipal User currentUser) {
+    return userService.getUser(currentUser.getId());
+  }
 
-    @PutMapping("/me")
-    public UserDetailsResponse updateUser(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdateProfileRequest request) {
-        return userService.updateUser(currentUser, request);
-    }
+  @PutMapping("/me")
+  public UserDetailsResponse updateUser(
+      @AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdateProfileRequest request) {
+    return userService.updateUser(currentUser, request);
+  }
 
-    @PutMapping("/me/password")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updatePassword(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdatePasswordRequest request) {
-        userService.updatePassword(currentUser, request);
-    }
+  @PutMapping("/me/password")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void updatePassword(
+      @AuthenticationPrincipal User currentUser,
+      @Valid @RequestBody UpdatePasswordRequest request) {
+    userService.updatePassword(currentUser, request);
+  }
 
-    @PutMapping("/me/username")
-    public AuthResponse updateUsername(@AuthenticationPrincipal User currentUser, @Valid @RequestBody UpdateUsernameRequest request) {
-        return userService.updateUsername(currentUser, request);
-    }
+  @PutMapping("/me/username")
+  public AuthResponse updateUsername(
+      @AuthenticationPrincipal User currentUser,
+      @Valid @RequestBody UpdateUsernameRequest request) {
+    return userService.updateUsername(currentUser, request);
+  }
 
-    @PutMapping("/me/verify")
-    public UserDetailsResponse verifyUser(@AuthenticationPrincipal User currentUser, @Valid @RequestBody VerifyIdentityRequest request) {
-        return userService.verifyUser(currentUser, request);
-    }
+  @PutMapping("/me/verify")
+  public UserDetailsResponse verifyUser(
+      @AuthenticationPrincipal User currentUser,
+      @Valid @RequestBody VerifyIdentityRequest request) {
+    return userService.verifyUser(currentUser, request);
+  }
 }
