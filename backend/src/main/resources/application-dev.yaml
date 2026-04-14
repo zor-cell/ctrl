@@ -2,6 +2,12 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/${DB_NAME}
 
+garage:
+  url: http://localhost:3900
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
+  bucket-name: ctrl-dev-media
+
 application:
   security:
     id-austria:
@@ -9,3 +15,5 @@ application:
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:4200/verification-callback"
 
+infinity:
+  url: http://localhost:7997
