@@ -44,11 +44,21 @@
         </div>
       </div>
 
-      @if (post.videoImageRef && post.videoImageRef.length > 0) {
-        <div class="preview-image-wrapper">
+    @if (post.videoImageRef && post.videoImageRef.length > 0) {
+      <div class="preview-image-wrapper">
+        @if (isVideo(post.videoImageRef[0])) {
+          <video
+            [src]="post.videoImageRef[0]"
+            class="preview-image"
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+        } @else {
           <img [src]="post.videoImageRef[0]" [alt]="post.caption" class="preview-image" />
-        </div>
-      }
+        }
+      </div>
+    }
 
       <p class="preview-caption">{{ post.caption }}</p>
     </div>
