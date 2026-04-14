@@ -4,6 +4,7 @@ import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -22,6 +23,7 @@ public class GarageConfig {
   private String secretKey;
 
 
+  @Lazy
   @Bean
   public S3Client s3Client() {
     return S3Client.builder()

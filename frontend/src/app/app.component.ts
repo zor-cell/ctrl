@@ -17,6 +17,6 @@ export class AppComponent implements OnInit {
   protected readonly title = signal('frontend');
 
   ngOnInit() {
-    this.userService.loadUser(true).subscribe();
+    this.userService.loadUser().subscribe();
   }
 }
