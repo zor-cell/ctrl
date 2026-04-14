@@ -1,4 +1,5 @@
 import {PostComment} from './Comment';
+import { PostSource } from './PostSource';
 
 export interface Post {
   postId: string;
@@ -15,6 +16,6 @@ export interface Post {
   labelIds: [string, string][];
   topicIds: string[];
   videoImageRef: string[];
-  sourceIds: string[] | null;
+  sourceIds: PostSource[];
   comments: PostComment[];
 }

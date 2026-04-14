@@ -131,10 +131,20 @@
 
   <!-- Source -->
   @if (post.sourceIds.length > 0) {
-    <a class="post-source" [href]="post.sourceIds[0]" target="_blank" rel="noopener noreferrer">
-      <i class="pi pi-external-link"></i>
-      {{ getDomain(post.sourceIds[0]) }}
-    </a>
+    <div class="post-source-row">
+      <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
+        <i class="pi pi-external-link"></i>
+        {{ getDomain(post.sourceIds[0].url) }}
+      </a>
+        <button class="action-btn upvote">
+          <i class="pi pi-arrow-up"></i>
+          <span>{{ post.sourceIds[0].upvotes }}</span>
+        </button>
+        <button class="action-btn downvote">
+          <i class="pi pi-arrow-down"></i>
+          <span>{{ post.sourceIds[0].downvotes }}</span>
+        </button>
+    </div>
   }
 
   <!-- Actions -->
