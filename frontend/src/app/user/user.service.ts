@@ -11,7 +11,6 @@ import {UpdatePasswordRequest} from "./dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "./dto/UpdateUsernameRequest";
 import {AuthResponse} from "../auth/dto/AuthResponse";
 import {AuthService} from "../auth/auth.service";
-import {SILENT_ERROR_CONTEXT} from "../core/interceptors";
 
 @Injectable({
   providedIn: 'root',

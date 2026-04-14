@@ -17,6 +17,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./post/post-page.component').then(m => m.PostPageComponent),
   },
+  {
+    path: 'post',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./post/post-page.component').then(m => m.PostPageComponent),
+  },
   {path: 'feed', component: FeedComponent},
   {path: 'profile', component: ProfileComponent},
   {path: 'verification-callback', component: VerificationCallbackComponent},
