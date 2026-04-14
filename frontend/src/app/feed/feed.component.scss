@@ -132,7 +132,7 @@ $radius-sm:    10px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0 16px 12px;
+  margin: 16px 12px;
   padding: 4px 10px;
   border-radius: 20px;
   border: 1px solid $border;
@@ -147,6 +147,10 @@ $radius-sm:    10px;
     color: var(--p-primary-color, #6366f1);
     border-color: var(--p-primary-color, #6366f1);
   }
+}
+.post-source-row {
+  display: flex;
+  align-items: center;
 }
 
 // ─── Labels ───────────────────────────────────────────

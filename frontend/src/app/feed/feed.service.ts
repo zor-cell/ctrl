@@ -245,7 +245,7 @@ export class FeedService {
             upvotes: 0,
             downvotes: 0,
             likes: status.favourites_count,
-            sourceIds: extractedUrls,
+            sourceIds: extractedUrls.map(url => ({ url, upvotes: 0, downvotes: 0 })),
             videoImageRef: status.media_attachments?.length > 0
               ? status.media_attachments
                 .filter((m: any) => m.type === 'image')
@@ -320,7 +320,7 @@ export class FeedService {
             upvotes: 0,
             downvotes: 0,
             likes: 0,
-            sourceIds: extractedUrls,
+            sourceIds: extractedUrls.map(url => ({ url, upvotes: 0, downvotes: 0 })),
             videoImageRef: status.media_attachments?.length > 0
               ? status.media_attachments
                 .filter((m: any) => m.type === 'image')
