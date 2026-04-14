@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { UserService } from '../../user/user.service';
-import { FeedService } from '../feed.service';
+import { FeedService } from '../services/feed.service';
 import { Post } from '../dto/Post';
 import { CommentsComponent } from '../comments/components/comments.component';
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Post } from './dto/Post';
+import { Post } from '../dto/Post';
 
 @Injectable({ providedIn: 'root' })
 export class FeedService {
