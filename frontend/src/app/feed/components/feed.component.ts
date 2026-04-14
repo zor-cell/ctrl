@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
-import { UserService } from '../user/user.service';
-import { FeedService } from './feed.service';
-import { Post } from './dto/Post';
-import { CommentsComponent } from './comments/comments.component';
+import { UserService } from '../../user/user.service';
+import { FeedService } from '../feed.service';
+import { Post } from '../dto/Post';
+import { CommentsComponent } from '../comments/components/comments.component';
 
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';

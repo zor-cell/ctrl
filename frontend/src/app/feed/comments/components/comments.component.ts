@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Post } from '../dto/Post';
-import { PostComment } from '../dto/Comment';
+import { Post } from '../../dto/Post';
+import { PostComment } from '../../dto/Comment';
 
 import { DialogModule } from 'primeng/dialog';
 import { AvatarModule } from 'primeng/avatar';
