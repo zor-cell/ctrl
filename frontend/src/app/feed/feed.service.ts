@@ -32,7 +32,7 @@ export class FeedService {
         likes: 142,
         labelIds: [],
         topicIds: ['Art & Culture'],
-        videoImageRef: 'assets/posts/post3.jpeg',
+        videoImageRef: ['assets/posts/post3.jpeg'],
         sourceIds: [],
         comments: [
           {
@@ -105,7 +105,7 @@ export class FeedService {
         likes: 87,
         labelIds: [],
         topicIds: ['Technology'],
-        videoImageRef: 'assets/posts/post1.png',
+        videoImageRef: ['assets/posts/post1.png'],
         sourceIds: [],
         comments: [
           {
@@ -178,7 +178,7 @@ export class FeedService {
         likes: 213,
         labelIds: [],
         topicIds: ['Food & Lifestyle'],
-        videoImageRef: 'assets/posts/post2.webp',
+        videoImageRef: ['assets/posts/vid2.mp4'],
         sourceIds: [],
         comments: [
 

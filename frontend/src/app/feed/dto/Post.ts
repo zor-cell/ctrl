@@ -14,7 +14,7 @@ export interface Post {
   likes: number;
   labelIds: [string, string][];
   topicIds: string[];
-  videoImageRef: string;
+  videoImageRef: string[];
   sourceIds: string[] | null;
   comments: PostComment[];
 }

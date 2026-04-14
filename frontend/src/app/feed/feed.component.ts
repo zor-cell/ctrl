@@ -100,4 +100,8 @@ export class FeedComponent implements OnInit {
     this.commentsDialogVisible.set(false);
     this.selectedPostForComments.set(null);
   }
+
+  isVideo(url: string): boolean {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
 }

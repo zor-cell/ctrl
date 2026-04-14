@@ -86,4 +86,8 @@ export class CommentsComponent {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
   }
+
+  isVideo(url: string): boolean {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
 }
