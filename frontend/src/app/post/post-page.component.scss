@@ -12,24 +12,77 @@
 
 .post-page {
   display: grid;
-  place-items: center;
-  min-height: calc(100vh - 5rem);
+  gap: 1.5rem;
   padding: 2rem;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
 }
 
-.post-page__hero {
-  display: grid;
+.post-profile-card {
+  display: flex;
   gap: 1.25rem;
-  justify-items: center;
-  width: min(100%, 44rem);
-  padding: 3rem;
+  align-items: center;
+  padding: 1.5rem;
   border-radius: 2rem;
-  text-align: center;
-  background:
-    radial-gradient(circle at top, rgba(255, 189, 89, 0.34), transparent 38%),
-    linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(45, 55, 72, 0.96));
+  background: linear-gradient(135deg, #111827, #2d3748);
   color: #f8fafc;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.profile-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 7rem;
+  height: 7rem;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.profile-avatar:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 4px;
+}
+
+.profile-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar__initial {
+  font-size: 2.6rem;
+  font-weight: 800;
+}
+
+.profile-avatar__edit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0.4rem;
+  background: rgba(15, 23, 42, 0.78);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-avatar-status {
+  align-self: end;
+  margin-left: -0.75rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.82rem;
+}
+
+.post-profile-card__copy {
+  flex: 1;
+  min-width: 0;
 }
 
 .post-page__eyebrow {
@@ -40,18 +93,211 @@
   opacity: 0.76;
 }
 
-.post-page__hero h1 {
+.post-profile-card h1 {
   margin: 0;
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  font-size: clamp(2rem, 4vw, 3.2rem);
   line-height: 1.02;
 }
 
-.post-page__intro {
+.post-profile-card__copy p:last-child {
   max-width: 34rem;
-  margin: 0;
+  margin: 0.65rem 0 0;
   font-size: 1rem;
   line-height: 1.6;
   opacity: 0.88;
+}
+
+.my-posts-section {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.my-posts-section__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+}
+
+.my-posts-section__header h2,
+.posts-empty-card h3 {
+  margin: 0;
+}
+
+.my-posts-section__count {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  font-weight: 700;
+}
+
+.posts-empty-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 2rem;
+  border-radius: 1.25rem;
+  color: #475569;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.posts-empty-card p {
+  margin: 0;
+}
+
+.my-posts-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+}
+
+.post-card {
+  overflow: hidden;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 1.25rem;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.post-card:hover,
+.post-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+}
+
+.post-card:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 3px;
+}
+
+.post-card__media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.post-card__body {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.post-card__meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  color: var(--p-text-muted-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.post-card__caption {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.post-card__topics {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.post-card__topics span {
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.18);
+  color: #713f12;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.post-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.post-detail__media {
+  width: 100%;
+  max-height: 68vh;
+  object-fit: contain;
+  border-radius: 1rem;
+  background: #020617;
+}
+
+.post-detail__body {
+  display: grid;
+  gap: 1rem;
+}
+
+.post-detail__body p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.post-detail__section {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(203, 213, 225, 0.8);
+}
+
+.post-detail__section h3,
+.post-detail__source h4 {
+  margin: 0;
+}
+
+.post-detail__sources,
+.post-detail__comments {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.post-detail__source,
+.post-detail__comment {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border-radius: 0.9rem;
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.post-detail__source dl {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.post-detail__source dl div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.post-detail__source dt,
+.post-detail__comment span,
+.post-detail__empty {
+  color: var(--p-text-muted-color);
+  font-size: 0.86rem;
+}
+
+.post-detail__source dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .composer-step,
@@ -328,8 +574,7 @@
     padding: 1rem;
   }
 
-  .post-page__hero,
-  .post-grid,
+  .post-profile-card,
   .sources-section__header,
   .source-card__title-row,
   .visibility-card,

@@ -6,7 +6,7 @@ garage:
   url: http://localhost:3900
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
-  bucket-name: ctrl-dev-media
+  bucket-name: ${GARAGE_BUCKET_NAME:ctrl-dev-media}
 
 application:
   security:

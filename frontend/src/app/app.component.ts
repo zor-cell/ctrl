@@ -3,6 +3,8 @@ import { RouterOutlet } from '@angular/router';
 import {UserService} from "./user/user.service";
 import {Toast} from "primeng/toast";
 import {NavigationComponent} from './navigation/navigation.component';
+import {SidebarComponent} from './sidebar/sidebar.component';
+import { AuthService } from './auth/auth.service';
 
 
 @Component({
@@ -13,8 +15,11 @@ import {NavigationComponent} from './navigation/navigation.component';
 })
 export class AppComponent implements OnInit {
   protected userService = inject(UserService);
+  private readonly authService = inject(AuthService);
 
   ngOnInit() {
-    this.userService.loadUser().subscribe();
+    if (this.authService.token()) {
+      this.userService.loadUser().subscribe();
+    }
   }
 }

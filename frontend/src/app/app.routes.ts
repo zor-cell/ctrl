@@ -1,16 +1,17 @@
 import { Routes } from '@angular/router';
+
 import { authGuard } from './auth/auth.guard';
-import {LoginComponent} from "./auth/components/login/login.component";
-import {RegisterComponent} from "./auth/components/registration/register.component";
+import { LoginComponent } from './auth/components/login/login.component';
+import { RegisterComponent } from './auth/components/registration/register.component';
 
 export const routes: Routes = [
-  {path: '', redirectTo: 'login', pathMatch: 'full'},
-  {path: 'login', component: LoginComponent},
-  {path: 'register', component: RegisterComponent},
-
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
   {
     path: 'feed',
-    loadComponent: () => import('./feed/components/feed/feed.component').then(m => m.FeedComponent)
+    loadComponent: () =>
+      import('./feed/components/feed/feed.component').then(m => m.FeedComponent),
   },
   {
     path: 'post',
@@ -22,18 +23,23 @@ export const routes: Routes = [
     path: 'followed',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./user/components/followed-page/followed-page.component').then(m => m.FollowedPageComponent),
+      import('./user/components/followed-page/followed-page.component').then(
+        m => m.FollowedPageComponent,
+      ),
   },
   {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./user/components/profile/profile.component').then(m => m.ProfileComponent),
+      import('./user/components/profile/profile.component').then(
+        m => m.ProfileComponent,
+      ),
   },
   {
     path: 'verification-callback',
     loadComponent: () =>
-      import('./user/components/verification-callback/verification-callback.component')
-        .then(m => m.VerificationCallbackComponent)
+      import('./user/components/verification-callback/verification-callback.component').then(
+        m => m.VerificationCallbackComponent,
+      ),
   },
 ];

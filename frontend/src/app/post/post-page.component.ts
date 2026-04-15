@@ -5,6 +5,7 @@ import {
   ElementRef,
   computed,
   inject,
+  OnDestroy,
   OnInit,
   signal,
   viewChild,
@@ -27,12 +28,15 @@ import { MultiSelect } from 'primeng/multiselect';
 import { Textarea } from 'primeng/textarea';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 
+import { environment } from '../../environments/environment';
 import { NotificationService } from '../core/services/notification.service';
 import { UserService } from '../user/user.service';
 import { CreatePostRequest } from './dto/CreatePostRequest';
 import { CreateSingleSourceRequest } from './dto/CreateSingleSourceRequest';
 import { CreateSourceRequest } from './dto/CreateSourceRequest';
+import { PostResponse, SingleSourceResponse } from './dto/PostResponse';
 import { TopicResponse } from './dto/TopicResponse';
+import { FileService } from './file.service';
 import { PostService } from './post.service';
 
 interface TopicOption {
@@ -68,26 +72,53 @@ interface SourceFormValue {
   styleUrl: './post-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PostPageComponent implements OnInit {
+export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly maxCaptionLength = 10000;
   protected readonly maxSources = 10;
   private readonly fb = inject(FormBuilder);
   private readonly postService = inject(PostService);
+  private readonly fileService = inject(FileService);
   private readonly notificationService = inject(NotificationService);
   protected readonly userService = inject(UserService);
   private readonly mediaInput =
     viewChild<ElementRef<HTMLInputElement>>('mediaInput');
+  private readonly avatarInput =
+    viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
   protected readonly dialogVisible = signal(false);
   protected readonly currentStep = signal(1);
   protected readonly previewUrl = signal<string | null>(null);
+  protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly previewKind = signal<PreviewKind>(null);
   protected readonly selectedFileName = signal<string | null>(null);
+  protected readonly selectedMediaFile = signal<File | null>(null);
+  protected readonly myPosts = signal<PostResponse[]>([]);
+  protected readonly selectedPost = signal<PostResponse | null>(null);
+  protected readonly loadingPosts = signal(false);
+  protected readonly updatingAvatar = signal(false);
   protected readonly submitting = signal(false);
   protected readonly loadingTopics = signal(false);
   protected readonly submitAttempted = signal(false);
   protected readonly expandedSourceIndex = signal<number | null>(0);
   protected readonly topicOptions = signal<TopicOption[]>([]);
+  protected readonly username = computed(
+    () => this.userService.user()?.username ?? 'Unknown user',
+  );
+  protected readonly avatarInitial = computed(
+    () => this.username().trim().charAt(0).toUpperCase() || '?',
+  );
+  protected readonly currentProfilePicture = computed(
+    () =>
+      this.avatarPreviewUrl()
+      ?? this.mediaUrlFromRef(this.userService.user()?.profilePicture ?? null),
+  );
+  protected readonly selectedPostMediaUrl = computed(() =>
+    this.postMediaUrl(this.selectedPost()),
+  );
+  protected readonly postsCountLabel = computed(() => {
+    const count = this.myPosts().length;
+    return count === 1 ? '1 post' : `${count} posts`;
+  });
   protected readonly isVerifiedUser = computed(
     () => this.userService.user()?.isVerified ?? false,
   );
@@ -118,6 +149,12 @@ export class PostPageComponent implements OnInit {
 
   ngOnInit() {
     this.loadTopics();
+    this.loadMyPosts();
+  }
+
+  ngOnDestroy() {
+    this.revokePreview();
+    this.revokeAvatarPreview();
   }
 
   protected openCreateDialog() {
@@ -135,6 +172,40 @@ export class PostPageComponent implements OnInit {
     this.mediaInput()?.nativeElement.click();
   }
 
+  protected openAvatarPicker() {
+    this.avatarInput()?.nativeElement.click();
+  }
+
+  protected onAvatarSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.item(0);
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.notificationService.showWarning(
+        'Please choose an image as profile picture.',
+      );
+      input.value = '';
+      return;
+    }
+
+    this.revokeAvatarPreview();
+    this.avatarPreviewUrl.set(URL.createObjectURL(file));
+    this.updatingAvatar.set(true);
+    this.userService.updateProfilePicture(file).subscribe({
+      next: () => {
+        this.updatingAvatar.set(false);
+        this.revokeAvatarPreview();
+      },
+      error: () => {
+        this.updatingAvatar.set(false);
+      },
+    });
+  }
+
   protected onMediaSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.item(0);
@@ -144,6 +215,7 @@ export class PostPageComponent implements OnInit {
     }
 
     this.revokePreview();
+    this.selectedMediaFile.set(file);
     this.selectedFileName.set(file.name);
     this.previewUrl.set(URL.createObjectURL(file));
     this.previewKind.set(this.resolvePreviewKind(file.type));
@@ -220,7 +292,11 @@ export class PostPageComponent implements OnInit {
   }
 
   protected hasCollapsedSourceError(index: number): boolean {
-    return this.submitAttempted() && !this.isSourceExpanded(index) && this.sources.at(index).invalid;
+    return (
+      this.submitAttempted()
+      && !this.isSourceExpanded(index)
+      && this.sources.at(index).invalid
+    );
   }
 
   protected submitPost() {
@@ -231,15 +307,20 @@ export class PostPageComponent implements OnInit {
       return;
     }
 
-    const request = this.buildRequest();
+    const media = this.selectedMediaFile();
+
+    if (!media) {
+      this.currentStep.set(1);
+      this.notificationService.showWarning(
+        'Please choose an image or video first.',
+      );
+      return;
+    }
+
     this.submitting.set(true);
 
-    this.postService.createPost(request).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.notificationService.showSuccess('Post created successfully.');
-        this.closeCreateDialog();
-      },
+    this.fileService.uploadPostMedia(media).subscribe({
+      next: uploadedFile => this.createPostWithMediaRef(uploadedFile.mediaRef),
       error: () => {
         this.submitting.set(false);
       },
@@ -256,15 +337,116 @@ export class PostPageComponent implements OnInit {
   }
 
   protected hasCaptionError(errorCode: string): boolean {
-    return this.submitAttempted() && this.postForm.controls.caption.hasError(errorCode);
+    return (
+      this.submitAttempted()
+      && this.postForm.controls.caption.hasError(errorCode)
+    );
   }
 
   protected topicOptionLabel(topic: TopicOption): string {
     return topic.label;
   }
 
+  protected topicLabelById(topicId: string): string {
+    return (
+      this.topicOptions().find(option => option.value === topicId)?.label ?? topicId
+    );
+  }
+
+  protected openPost(post: PostResponse) {
+    this.selectedPost.set(post);
+  }
+
+  protected closePost() {
+    this.selectedPost.set(null);
+  }
+
+  protected postMediaUrl(post: PostResponse | null): string | null {
+    if (!post) {
+      return null;
+    }
+
+    return this.mediaUrlFromRef(post.mediaRef);
+  }
+
+  protected postMediaKind(post: PostResponse): PreviewKind {
+    const mediaUrl = post.mediaRef;
+
+    if (!mediaUrl) {
+      return null;
+    }
+
+    return /\.(mp4|webm)$/i.test(mediaUrl) ? 'video' : 'image';
+  }
+
+  protected formattedPostDate(post: PostResponse): string {
+    return this.formatDateTime(post.createdAt);
+  }
+
+  protected formattedCommentDate(commentDate: string): string {
+    return this.formatDateTime(commentDate);
+  }
+
+  protected formattedSourceDate(source: SingleSourceResponse): string {
+    if (!source.date) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('de-AT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(source.date));
+  }
+
+  protected postSources(post: PostResponse): SingleSourceResponse[] {
+    return post.source?.singleSources ?? [];
+  }
+
   protected get sources(): FormArray {
     return this.postForm.controls.sources;
+  }
+
+  private loadMyPosts() {
+    this.loadingPosts.set(true);
+    this.postService.getMyPosts().subscribe({
+      next: posts => {
+        this.myPosts.set(posts);
+        this.loadingPosts.set(false);
+      },
+      error: () => {
+        this.myPosts.set([]);
+        this.loadingPosts.set(false);
+        this.notificationService.showWarning(
+          'Your posts could not be loaded from the backend.',
+          'Posts unavailable',
+        );
+      },
+    });
+  }
+
+  private mediaUrlFromRef(mediaRef: string | null): string | null {
+    if (!mediaRef) {
+      return null;
+    }
+
+    return `${environment.apiUrl}/files/media?ref=${encodeURIComponent(mediaRef)}`;
+  }
+
+  private formatDateTime(value: string): string {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('de-AT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   }
 
   private loadTopics() {
@@ -289,12 +471,31 @@ export class PostPageComponent implements OnInit {
     const rawValue = this.postForm.getRawValue();
     return {
       caption: rawValue.caption,
-      mediaRef: this.selectedFileName(),
+      mediaRef: null,
       isPublic: this.isVerifiedUser() ? rawValue.isPublic : false,
       isAiGenerated: rawValue.isAiGenerated,
       topicIds: rawValue.topicIds,
       source: this.buildSourceRequest(rawValue.sources),
     };
+  }
+
+  private createPostWithMediaRef(mediaRef: string) {
+    const request = {
+      ...this.buildRequest(),
+      mediaRef,
+    };
+
+    this.postService.createPost(request).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.notificationService.showSuccess('Post created successfully.');
+        this.closeCreateDialog();
+        this.loadMyPosts();
+      },
+      error: () => {
+        this.submitting.set(false);
+      },
+    });
   }
 
   private buildSourceRequest(
@@ -324,7 +525,9 @@ export class PostPageComponent implements OnInit {
       date: this.normalizeOptionalDate(source.date),
     };
 
-    const hasContent = Object.values(normalizedSource).some(value => value !== null);
+    const hasContent = Object.values(normalizedSource).some(
+      value => value !== null,
+    );
 
     if (!hasContent) {
       return null;
@@ -344,7 +547,9 @@ export class PostPageComponent implements OnInit {
     }
 
     if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+      return Number.isNaN(value.getTime())
+        ? null
+        : value.toISOString().slice(0, 10);
     }
 
     return this.normalizeOptionalValue(value);
@@ -417,6 +622,7 @@ export class PostPageComponent implements OnInit {
 
   private resetFormState() {
     this.revokePreview();
+    this.selectedMediaFile.set(null);
     this.selectedFileName.set(null);
     this.previewKind.set(null);
     this.submitAttempted.set(false);
@@ -441,6 +647,14 @@ export class PostPageComponent implements OnInit {
     if (currentPreviewUrl) {
       URL.revokeObjectURL(currentPreviewUrl);
       this.previewUrl.set(null);
+    }
+  }
+
+  private revokeAvatarPreview() {
+    const currentAvatarPreviewUrl = this.avatarPreviewUrl();
+    if (currentAvatarPreviewUrl) {
+      URL.revokeObjectURL(currentAvatarPreviewUrl);
+      this.avatarPreviewUrl.set(null);
     }
   }
 }

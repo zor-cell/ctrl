@@ -37,8 +37,15 @@ export class PostService {
    *
    * @returns An observable that emits an array of {@link TopicResponse} objects
    */
+
   getTopics() {
     return this.httpClient.get<TopicResponse[]>(this.topicUri);
+  }
+
+
+  
+  getMyPosts() {
+    return this.httpClient.get<PostResponse[]>(`${this.baseUri}/me`);
   }
 
   /**

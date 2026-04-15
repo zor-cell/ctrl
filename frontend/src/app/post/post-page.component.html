@@ -1,11 +1,42 @@
 <section class="post-page">
-  <div class="post-page__hero">
-    <p class="post-page__eyebrow">Create</p>
-    <h1>Create a post to inspire others.</h1>
-    <p class="post-page__intro">
-      Share something meaningful with a strong visual, a thoughtful caption,
-      and the right context.
-    </p>
+  <header class="post-profile-card">
+    <button
+      type="button"
+      class="profile-avatar"
+      aria-label="Choose profile picture"
+      (click)="openAvatarPicker()"
+    >
+      @if (currentProfilePicture()) {
+        <img
+          [src]="currentProfilePicture()!"
+          alt=""
+          class="profile-avatar__image"
+        />
+      } @else {
+        <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+      }
+      <span class="profile-avatar__edit">Change</span>
+    </button>
+    @if (updatingAvatar()) {
+      <span class="profile-avatar-status" aria-live="polite">Saving...</span>
+    }
+
+    <input
+      #avatarInput
+      type="file"
+      accept="image/*"
+      class="sr-only"
+      (change)="onAvatarSelected($event)"
+    />
+
+    <div class="post-profile-card__copy">
+      <p class="post-page__eyebrow">Posting Space</p>
+      <h1>{{ username() }}</h1>
+      <p>
+        Share media-backed posts and keep your own published ideas visible in
+        one place.
+      </p>
+    </div>
 
     <p-button
       label="Create Post"
@@ -13,8 +44,186 @@
       size="large"
       (onClick)="openCreateDialog()"
     />
-  </div>
+  </header>
+
+  <section class="my-posts-section" aria-labelledby="my-posts-title">
+    <div class="my-posts-section__header">
+      <div>
+        <p class="post-page__eyebrow">Archive</p>
+        <h2 id="my-posts-title">Your posts</h2>
+      </div>
+      <span class="my-posts-section__count" aria-live="polite">
+        {{ postsCountLabel() }}
+      </span>
+    </div>
+
+    @if (loadingPosts()) {
+      <div class="posts-empty-card" aria-live="polite">
+        Loading your posts...
+      </div>
+    } @else if (myPosts().length === 0) {
+      <div class="posts-empty-card">
+        <h3>No posts yet</h3>
+        <p>Your posts will appear here after you create them.</p>
+      </div>
+    } @else {
+      <div class="my-posts-grid">
+        @for (post of myPosts(); track post.postId) {
+          <button
+            type="button"
+            class="post-card"
+            (click)="openPost(post)"
+          >
+            @if (postMediaUrl(post) && postMediaKind(post) === 'image') {
+              <img
+                [src]="postMediaUrl(post)!"
+                alt=""
+                class="post-card__media"
+              />
+            } @else if (postMediaUrl(post) && postMediaKind(post) === 'video') {
+              <video
+                [src]="postMediaUrl(post)!"
+                muted
+                class="post-card__media"
+              ></video>
+            }
+
+            <div class="post-card__body">
+              <div class="post-card__meta">
+                <span>{{ post.isPublic ? 'Public' : 'Private' }}</span>
+                @if (formattedPostDate(post)) {
+                  <span>{{ formattedPostDate(post) }}</span>
+                }
+              </div>
+
+              <p class="post-card__caption">{{ post.caption }}</p>
+
+              @if (post.topicIds.length > 0) {
+                <div class="post-card__topics" aria-label="Selected topics">
+                  @for (topicId of post.topicIds; track topicId) {
+                    <span>{{ topicLabelById(topicId) }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </button>
+        }
+      </div>
+    }
+  </section>
 </section>
+
+<p-dialog
+  [visible]="selectedPost() !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: 'min(42rem, 92vw)' }"
+  header="Post"
+  (visibleChange)="!$event && closePost()"
+>
+  @if (selectedPost(); as post) {
+    <article class="post-detail">
+      @if (selectedPostMediaUrl() && postMediaKind(post) === 'image') {
+        <img
+          [src]="selectedPostMediaUrl()!"
+          alt=""
+          class="post-detail__media"
+        />
+      } @else if (selectedPostMediaUrl() && postMediaKind(post) === 'video') {
+        <video
+          [src]="selectedPostMediaUrl()!"
+          controls
+          class="post-detail__media"
+        ></video>
+      }
+
+      <div class="post-detail__body">
+        <div class="post-card__meta">
+          <span>{{ post.isPublic ? 'Public' : 'Private' }}</span>
+          @if (formattedPostDate(post)) {
+            <span>{{ formattedPostDate(post) }}</span>
+          }
+        </div>
+        <p>{{ post.caption }}</p>
+
+        @if (post.topicIds.length > 0) {
+          <section class="post-detail__section" aria-labelledby="post-topics-title">
+            <h3 id="post-topics-title">Topics</h3>
+            <div class="post-card__topics">
+              @for (topicId of post.topicIds; track topicId) {
+                <span>{{ topicLabelById(topicId) }}</span>
+              }
+            </div>
+          </section>
+        }
+
+        <section class="post-detail__section" aria-labelledby="post-sources-title">
+          <h3 id="post-sources-title">Sources</h3>
+          @if (postSources(post).length > 0) {
+            <div class="post-detail__sources">
+              @for (source of postSources(post); track source.singleSourceId) {
+                <article class="post-detail__source">
+                  <h4>{{ source.title || 'Untitled source' }}</h4>
+                  <dl>
+                    @if (source.author) {
+                      <div>
+                        <dt>Author</dt>
+                        <dd>{{ source.author }}</dd>
+                      </div>
+                    }
+                    @if (source.journal) {
+                      <div>
+                        <dt>Journal</dt>
+                        <dd>{{ source.journal }}</dd>
+                      </div>
+                    }
+                    @if (source.url) {
+                      <div>
+                        <dt>URL</dt>
+                        <dd>
+                          <a [href]="source.url" target="_blank" rel="noreferrer">
+                            {{ source.url }}
+                          </a>
+                        </dd>
+                      </div>
+                    }
+                    @if (formattedSourceDate(source)) {
+                      <div>
+                        <dt>Date</dt>
+                        <dd>{{ formattedSourceDate(source) }}</dd>
+                      </div>
+                    }
+                  </dl>
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="post-detail__empty">No sources added.</p>
+          }
+        </section>
+
+        <section class="post-detail__section" aria-labelledby="post-comments-title">
+          <h3 id="post-comments-title">Comments</h3>
+          @if (post.comments.length > 0) {
+            <div class="post-detail__comments">
+              @for (comment of post.comments; track comment.commentId) {
+                <article class="post-detail__comment">
+                  <strong>{{ comment.username }}</strong>
+                  <span>{{ formattedCommentDate(comment.createdAt) }}</span>
+                  <p>{{ comment.content }}</p>
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="post-detail__empty">No comments yet.</p>
+          }
+        </section>
+      </div>
+    </article>
+  }
+</p-dialog>
 
 <input
   #mediaInput

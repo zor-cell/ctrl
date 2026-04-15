@@ -5,7 +5,6 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
@@ -21,8 +20,8 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -48,7 +47,6 @@ public class PostServiceImpl implements PostService {
   private final SourceService sourceService;
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
-  private final FileStorageService fileStorageService;
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
 
@@ -61,13 +59,6 @@ public class PostServiceImpl implements PostService {
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     Source source = sourceService.createSource(request.source());
-
-    //TODO: this method needs a multipartfile from the user to upload the file
-    /*try {
-      String mediaRef = this.fileStorageService.uploadFile(null);
-    } catch(Exception e) {
-      //file saving failed
-    }*/
 
     var post =
         Post.builder()
@@ -84,7 +75,7 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    //embed post information (only text for now, image when file storage service is up)
+    // embed post information (only text for now, image when file storage service is up)
     float[] embedding = embeddingService.embedText(post.getCaption());
     post.setEmbedding(embedding);
 
@@ -116,6 +107,13 @@ public class PostServiceImpl implements PostService {
   }
 
   /** Helpers **/
+
+  @Transactional(readOnly = true)
+  public List<PostResponse> getPostsForUser(String username) {
+    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+        .map(postMapper::toResponse)
+        .toList();
+  }
 
   private boolean resolveIsPublic(CreatePostRequest request, boolean isVerified) {
     return isVerified && Boolean.TRUE.equals(request.isPublic());
