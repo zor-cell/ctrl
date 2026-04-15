@@ -32,7 +32,7 @@ import { CommonModule } from '@angular/common';
 })
 export class FeedComponent implements OnInit {
   protected userService = inject(UserService);
-  private feedService = inject(FeedService);
+  private readonly feedService = inject(FeedService);
 
   protected allPosts = signal<Post[]>([]);
 
@@ -49,17 +49,11 @@ export class FeedComponent implements OnInit {
 
   async ngOnInit() {
     this.userService.loadUser();
-
-    const mockPosts = this.feedService.getMockPosts();
-    const [tagesschauPosts, bbcPosts] = await Promise.all([
-      this.feedService.getTagesschauPosts(),
-      this.feedService.getBBCNewsPosts(),
-    ]);
-    console.log(tagesschauPosts, bbcPosts);
-    this.allPosts.set(
-      [...tagesschauPosts, ...bbcPosts, ...mockPosts]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    );
+    const posts = await this.feedService.getFeed();
+    console.log(posts);
+    this.allPosts.set(posts.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ));
   }
 
   getDomain(url: string): string {
@@ -94,11 +88,6 @@ export class FeedComponent implements OnInit {
   openCommentsDialog(post: Post): void {
     this.selectedPostForComments.set(post);
     this.commentsDialogVisible.set(true);
-  }
-
-  closeCommentsDialog(): void {
-    this.commentsDialogVisible.set(false);
-    this.selectedPostForComments.set(null);
   }
 
   isVideo(url: string): boolean {

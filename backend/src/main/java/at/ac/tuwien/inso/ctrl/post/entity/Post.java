@@ -24,13 +24,21 @@ public class Post {
   private String postId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
   private User user;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "external_author_id", referencedColumnName = "external_author_id", nullable = true)
+  private ExternalAuthor externalAuthor;
+
+  @Column(name = "external_post_id", unique = true)
+  private String externalPostId; // verhindert Duplikate beim re-fetch
 
   @OneToOne(optional = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "source_id")
   private Source source;
 
+  @Column(columnDefinition = "TEXT")
   private String caption;
 
   @Column(name = "media_ref")
@@ -70,4 +78,9 @@ public class Post {
   public boolean isAiGenerated() {
     return Boolean.TRUE.equals(isAiGenerated);
   }
+
+  public boolean isExternalPost() {
+    return externalAuthor != null;
+  }
+
 }
