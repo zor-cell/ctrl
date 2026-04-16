@@ -1,0 +1,60 @@
+.friend-list {
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--p-text-color-secondary);
+  }
+
+  .list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .friend-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--p-surface-100);
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--p-surface-200);
+    }
+
+    ::ng-deep .friend-avatar {
+      cursor: pointer;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    .friend-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      .name {
+        font-weight: 500;
+        color: var(--p-text-color);
+      }
+
+      .username {
+        font-size: 0.875rem;
+        color: var(--p-text-color-secondary);
+      }
+    }
+  }
+}
+
+.app-dark .friend-item {
+  background: var(--p-surface-800);
+
+  &:hover {
+    background: var(--p-surface-700);
+  }
+}

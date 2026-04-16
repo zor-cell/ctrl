@@ -5,6 +5,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import {FeedComponent} from './feed/components/feed/feed.component';
 import {ProfileComponent} from "./user/components/profile/profile.component";
 import {VerificationCallbackComponent} from "./user/components/verification-callback/verification-callback.component";
+import {FollowingPageComponent} from "./user/components/following-page/following-page.component";
 
 export const routes: Routes = [
   {path: '', redirectTo: 'login', pathMatch: 'full'},
@@ -13,5 +14,6 @@ export const routes: Routes = [
   {path: 'feed', component: FeedComponent},
   {path: 'profile', component: ProfileComponent},
   {path: 'verification-callback', component: VerificationCallbackComponent},
+  {path: 'following', component: FollowingPageComponent},
   {path: '', component: SidebarComponent}
 ];

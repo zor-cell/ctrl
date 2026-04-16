@@ -1,0 +1,101 @@
+<div class="following-page">
+  <p-tabs [(value)]="activeTab">
+    <p-tablist>
+      <p-tab value="friends">Friends</p-tab>
+      <p-tab value="following">Following</p-tab>
+    </p-tablist>
+    
+    <!-- Friends Tab Content -->
+    @if (activeTab() === 'friends') {
+      <div class="tab-content">
+        <!-- Search Bar -->
+        <div class="search-section">
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              type="text"
+              pInputText
+              placeholder="Search by username or name..."
+              [ngModel]="friendSearch()"
+              (ngModelChange)="onFriendSearchChange($event)"
+              class="search-input" />
+          </p-iconField>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <p-button
+            label="Find People"
+            icon="pi pi-plus"
+            (onClick)="openSearchDialog('friends')"
+            severity="secondary" />
+
+          <p-button
+            label="Friend Requests"
+            icon="pi pi-bell"
+            (onClick)="openRequestsDialog()"
+            severity="secondary">
+            @if (pendingCount() > 0) {
+              <p-badge [value]="pendingCount().toString()" severity="danger" />
+            }
+          </p-button>
+        </div>
+
+        <!-- Friends List -->
+        <app-friend-list [searchQuery]="friendSearch()" />
+      </div>
+    }
+
+    <!-- Following Tab Content -->
+    @if (activeTab() === 'following') {
+      <div class="tab-content">
+        <!-- Search Bar -->
+        <div class="search-section">
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              type="text"
+              pInputText
+              placeholder="Search by username..."
+              [ngModel]="followingSearch()"
+              (ngModelChange)="onFollowingSearchChange($event)"
+              class="search-input" />
+          </p-iconField>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <p-button
+            label="Find People"
+            icon="pi pi-plus"
+            (onClick)="openSearchDialog('following')"
+            severity="secondary" />
+        </div>
+
+        <!-- Following List -->
+        <app-following-list [searchQuery]="followingSearch()" />
+      </div>
+    }
+  </p-tabs>
+
+  <!-- Friend Requests Dialog -->
+  <p-dialog
+    header="Friend Requests"
+    [(visible)]="showRequestsDialog"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+    [draggable]="false">
+    <app-friend-requests-dialog (onClose)="showRequestsDialog.set(false)" />
+  </p-dialog>
+
+  <!-- User Search Dialog -->
+  <p-dialog
+    header="Find People"
+    [(visible)]="showSearchDialog"
+    [modal]="true"
+    [style]="{ width: '600px' }"
+    [draggable]="false"
+    (onHide)="closeSearchDialog()">
+    <app-user-search [source]="searchSource()" />
+  </p-dialog>
+</div>
