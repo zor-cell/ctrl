@@ -6,7 +6,7 @@ import { Menu, MenuModule } from 'primeng/menu';
 import { Router } from '@angular/router';
 
 import { RelationshipService } from '../../relationship.service';
-import { FriendRequestEventBusService } from '../../services/friend-request-event-bus.service';
+import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
@@ -17,7 +17,7 @@ import { NotificationService } from '../../../core/services/notification.service
   styleUrl: './friend-list.component.scss',
 })
 export class FriendListComponent {
-  private socialService = inject(RelationshipService);
+  private relationshipService = inject(RelationshipService);
   private eventBus = inject(FriendRequestEventBusService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
@@ -27,7 +27,7 @@ export class FriendListComponent {
   // Input to determine if search filter is active
   searchQuery = input<string>('');
 
-  friends = this.socialService.friends;
+  friends = this.relationshipService.friends;
   selectedUsername: string | null = null;
 
   menuItems = [
@@ -45,11 +45,11 @@ export class FriendListComponent {
 
   removeFriend() {
     if (this.selectedUsername) {
-      this.socialService.unfollow(this.selectedUsername).subscribe({
+      this.relationshipService.unfollow(this.selectedUsername).subscribe({
         next: () => {
           this.notificationService.showSuccess(`Removed ${this.selectedUsername} from friends`);
           this.eventBus.unfollowed();
-          this.socialService.loadFriends().subscribe();
+          this.relationshipService.loadFriends().subscribe();
         },
         error: () => {
           this.notificationService.showError('Failed to remove friend');

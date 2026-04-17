@@ -6,18 +6,18 @@ import { Menu, MenuModule } from 'primeng/menu';
 import { Router } from '@angular/router';
 
 import { RelationshipService } from '../../relationship.service';
-import { FriendRequestEventBusService } from '../../services/friend-request-event-bus.service';
+import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
-  selector: 'app-following-list',
+  selector: 'app-followed-list',
   standalone: true,
   imports: [CommonModule, Avatar, Button, MenuModule],
-  templateUrl: './following-list.component.html',
-  styleUrl: './following-list.component.scss',
+  templateUrl: './followed-list.component.html',
+  styleUrl: './followed-list.component.scss',
 })
-export class FollowingListComponent {
-  private socialService = inject(RelationshipService);
+export class FollowedListComponent {
+  private relationshipService = inject(RelationshipService);
   private eventBus = inject(FriendRequestEventBusService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
@@ -27,7 +27,7 @@ export class FollowingListComponent {
   // Input to determine if search filter is active
   searchQuery = input<string>('');
 
-  following = this.socialService.following;
+  followed = this.relationshipService.followed;
   selectedUsername: string | null = null;
 
   menuItems = [
@@ -45,11 +45,11 @@ export class FollowingListComponent {
 
   unfollow() {
     if (this.selectedUsername) {
-      this.socialService.unfollow(this.selectedUsername).subscribe({
+      this.relationshipService.unfollow(this.selectedUsername).subscribe({
         next: () => {
           this.notificationService.showSuccess(`Unfollowed ${this.selectedUsername}`);
           this.eventBus.unfollowed();
-          this.socialService.loadFollowing().subscribe();
+          this.relationshipService.loadFollowed().subscribe();
         },
         error: () => {
           this.notificationService.showError('Failed to unfollow user');

@@ -34,6 +34,6 @@ export class SidebarComponent {
     { label: 'Post',     icon: '✏️', route: '/post'     },
     { label: 'Chat',     icon: '💬', route: '/chat'     },
     { label: 'Settings', icon: '⚙️', route: '/settings' },
-    { label: 'Following',icon: '🔁', route: '/following'},
+    { label: 'Following',icon: '🔁', route: '/followees'},
   ];
 }

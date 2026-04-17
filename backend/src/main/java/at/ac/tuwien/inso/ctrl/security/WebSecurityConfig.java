@@ -53,7 +53,7 @@ public class WebSecurityConfig {
 
     configuration.setAllowedOrigins(
         List.of("http://localhost:4200", "http://localhost", "http://127.0.0.1"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 
     // header for jwt auth

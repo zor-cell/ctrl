@@ -5,14 +5,19 @@ export interface Friend {
   profilePicture: string | null;
 }
 
-export interface FollowedUser {
+export interface Followed {
   id: string;
   username: string;
   profilePicture: string | null;
 }
 
+/**
+ * FriendRequest response from backend.
+ * The username field always contains the "other" person's username:
+ * - For incoming requests: the sender's username
+ * - For sent requests: the receiver's username
+ */
 export interface FriendRequest {
-  id: string;
   username: string;
   profilePicture: string | null;
   isIncoming: boolean;
@@ -25,9 +30,21 @@ export interface UserSearchResult {
   name: string | null;
   profilePicture: string | null;
   isVerified: boolean;
-  relationshipStatus: 'NONE' | 'FOLLOWING' | 'FRIEND' | 'PENDING_REQUEST_SENT' | 'PENDING_REQUEST_INCOMING';
+  relationshipStatus: 'NONE' | 'FOLLOWED' | 'FRIEND' | 'PENDING_REQUEST_SENT' | 'PENDING_REQUEST_INCOMING';
 }
 
 export interface SendFriendRequest {
   toUsername: string;
+}
+
+/**
+ * Action enum for PATCH /friend-requests/{username} endpoint
+ */
+export type FriendRequestAction = 'ACCEPT' | 'DECLINE';
+
+/**
+ * DTO for PATCH /friend-requests/{username}
+ */
+export interface FriendRequestActionDto {
+  action: FriendRequestAction;
 }

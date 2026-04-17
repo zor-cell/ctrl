@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.user.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.*;
 
 @Builder
@@ -20,15 +19,16 @@ import lombok.*;
     })
 public class FriendRequest {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private UUID id;
+  @EmbeddedId
+  private FriendRequestId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("senderId")
   @JoinColumn(name = "sender_id", nullable = false)
   private User sender;
 
   @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("receiverId")
   @JoinColumn(name = "receiver_id", nullable = false)
   private User receiver;
 

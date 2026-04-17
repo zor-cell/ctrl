@@ -6,7 +6,6 @@ import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.FriendRequestService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,19 +26,19 @@ public class RelationshipController {
     return followService.getFriends(currentUser, q);
   }
 
-  @GetMapping("/following")
-  public List<FollowedUserResponse> getFollowing(
+  @GetMapping("/followed")
+  public List<FollowedResponse> getFollowed(
       @AuthenticationPrincipal User currentUser, @RequestParam(required = false) String q) {
-    return followService.getFollowing(currentUser, q);
+    return followService.getFollowed(currentUser, q);
   }
 
-  @PostMapping("/following/{username}")
+  @PostMapping("/followed/{username}")
   @ResponseStatus(HttpStatus.CREATED)
   public void follow(@AuthenticationPrincipal User currentUser, @PathVariable String username) {
     followService.follow(currentUser, username);
   }
 
-  @DeleteMapping("/following/{username}")
+  @DeleteMapping("/followed/{username}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void unfollow(@AuthenticationPrincipal User currentUser, @PathVariable String username) {
     followService.unfollow(currentUser, username);
@@ -64,18 +63,20 @@ public class RelationshipController {
     friendRequestService.sendRequest(currentUser, request.toUsername());
   }
 
-  @PostMapping("/friend-requests/{id}/accept")
+  @PatchMapping("/friend-requests/{username}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void acceptFriendRequest(
-      @AuthenticationPrincipal User currentUser, @PathVariable UUID id) {
-    friendRequestService.acceptRequest(currentUser, id);
+  public void handleFriendRequestAction(
+      @AuthenticationPrincipal User currentUser,
+      @PathVariable String username,
+      @Valid @RequestBody FriendRequestActionDto actionDto) {
+    friendRequestService.handleIncomingRequestAction(currentUser, username, actionDto.action());
   }
 
-  @DeleteMapping("/friend-requests/{id}")
+  @DeleteMapping("/friend-requests/{username}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void declineFriendRequest(
-      @AuthenticationPrincipal User currentUser, @PathVariable UUID id) {
-    friendRequestService.declineRequest(currentUser, id);
+  public void cancelFriendRequest(
+      @AuthenticationPrincipal User currentUser, @PathVariable String username) {
+    friendRequestService.cancelSentRequest(currentUser, username);
   }
 
   @GetMapping("/friend-requests/count")

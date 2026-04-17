@@ -1,9 +1,9 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { tap, switchMap, takeUntil, Subject, merge } from 'rxjs';
+import { tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Friend, FollowedUser, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
-import { FriendRequestEventBusService, FriendRequestActionEvent } from './services/friend-request-event-bus.service';
+import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
+import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
 
 @Injectable({
   providedIn: 'root',
@@ -15,14 +15,14 @@ export class RelationshipService implements OnDestroy {
   private eventBus = inject(FriendRequestEventBusService);
 
   private _friends = signal<Friend[]>([]);
-  private _following = signal<FollowedUser[]>([]);
+  private _followed = signal<Followed[]>([]);
   private _incomingRequests = signal<FriendRequest[]>([]);
   private _sentRequests = signal<FriendRequest[]>([]);
   private _pendingRequestCount = signal<number>(0);
   private _searchResults = signal<UserSearchResult[]>([]);
 
   public friends = this._friends.asReadonly();
-  public following = this._following.asReadonly();
+  public followed = this._followed.asReadonly();
   public incomingRequests = this._incomingRequests.asReadonly();
   public sentRequests = this._sentRequests.asReadonly();
   public pendingRequestCount = this._pendingRequestCount.asReadonly();
@@ -47,27 +47,39 @@ export class RelationshipService implements OnDestroy {
       .subscribe((event) => this.handleActionEvent(event));
   }
 
-  /**
-   * Handle action events and trigger appropriate follow-up refreshes
-   */
   private handleActionEvent(event: FriendRequestActionEvent): void {
     switch (event.type) {
       case 'accepted':
-        this.loadFriends().subscribe();
+        forkJoin([
+          this.loadIncomingFriendRequests(),
+          this.loadPendingRequestCount(),
+          this.loadFriends()
+        ]).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'declined':
+        forkJoin([
+          this.loadIncomingFriendRequests(),
+          this.loadPendingRequestCount()
+        ]).pipe(takeUntil(this._destroy$)).subscribe();
+        break;
       case 'cancelled':
+        this.loadSentFriendRequests().pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'sent':
-        this._consolidatedRefresh$.next();
+        this.loadSentFriendRequests().pipe(takeUntil(this._destroy$)).subscribe();
+        break;
+      case 'followed':
+        this.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
+        break;
+      case 'unfollowed':
+        forkJoin([
+          this.loadFollowed(),
+          this.loadFriends()
+        ]).pipe(takeUntil(this._destroy$)).subscribe();
         break;
     }
   }
 
-  /**
-   * Perform a consolidated refresh of all friend request data in parallel
-   * Updates the event bus state with new data
-   */
   private performConsolidatedRefresh() {
     this.eventBus.setLoading(true);
 
@@ -99,22 +111,22 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  loadFollowing(search?: string) {
+  loadFollowed(search?: string) {
     let params = new HttpParams();
     if (search) {
       params = params.set('q', search);
     }
-    return this.http.get<FollowedUser[]>(`${this.baseUri}/following`, { params }).pipe(
-      tap(following => this._following.set(following))
+    return this.http.get<Followed[]>(`${this.baseUri}/followed`, { params }).pipe(
+      tap(followed => this._followed.set(followed))
     );
   }
 
   follow(username: string) {
-    return this.http.post<void>(`${this.baseUri}/following/${username}`, {});
+    return this.http.post<void>(`${this.baseUri}/followed/${username}`, {});
   }
 
   unfollow(username: string) {
-    return this.http.delete<void>(`${this.baseUri}/following/${username}`);
+    return this.http.delete<void>(`${this.baseUri}/followed/${username}`);
   }
 
   loadSentFriendRequests() {
@@ -153,15 +165,19 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  acceptFriendRequest(requestId: string, request?: FriendRequest) {
-    return this.http.post<void>(`${this.baseUri}/friend-requests/${requestId}/accept`, {}).pipe(
+  /**
+   * Accept an incoming friend request using the new PATCH endpoint
+   * @param username - The username of the sender (from the incoming request)
+   */
+  acceptFriendRequest(username: string, request?: FriendRequest) {
+    return this.http.patch<void>(`${this.baseUri}/friend-requests/${username}`, { action: 'ACCEPT' }).pipe(
       tap(() => {
         if (request) {
           this.eventBus.acceptRequest(request);
         } else {
           this.eventBus.emitAction({
             type: 'accepted',
-            requestId,
+            username,
             timestamp: new Date(),
           });
           this.eventBus.requestRefresh();
@@ -170,15 +186,19 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  declineFriendRequest(requestId: string, request?: FriendRequest) {
-    return this.http.delete<void>(`${this.baseUri}/friend-requests/${requestId}`).pipe(
+  /**
+   * Decline an incoming friend request using the new PATCH endpoint
+   * @param username - The username of the sender (from the incoming request)
+   */
+  declineFriendRequest(username: string, request?: FriendRequest) {
+    return this.http.patch<void>(`${this.baseUri}/friend-requests/${username}`, { action: 'DECLINE' }).pipe(
       tap(() => {
         if (request) {
           this.eventBus.declineRequest(request);
         } else {
           this.eventBus.emitAction({
             type: 'declined',
-            requestId,
+            username,
             timestamp: new Date(),
           });
           this.eventBus.requestRefresh();
@@ -187,10 +207,23 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  cancelFriendRequest(request: FriendRequest) {
-    return this.http.delete<void>(`${this.baseUri}/friend-requests/${request.id}`).pipe(
+  /**
+   * Cancel a sent friend request using the new DELETE endpoint
+   * @param username - The username of the receiver (to whom the request was sent)
+   */
+  cancelFriendRequest(username: string, request?: FriendRequest) {
+    return this.http.delete<void>(`${this.baseUri}/friend-requests/${username}`).pipe(
       tap(() => {
-        this.eventBus.cancelRequest(request);
+        if (request) {
+          this.eventBus.cancelRequest(request);
+        } else {
+          this.eventBus.emitAction({
+            type: 'cancelled',
+            username,
+            timestamp: new Date(),
+          });
+          this.eventBus.requestRefresh();
+        }
       })
     );
   }
@@ -199,13 +232,13 @@ export class RelationshipService implements OnDestroy {
   searchUsers(
     query: string,
     excludeFriends: boolean = false,
-    excludeFollowing: boolean = false,
+    excludeFollowed: boolean = false,
     verifiedOnly: boolean = false
   ) {
     let params = new HttpParams()
       .set('q', query)
       .set('excludeFriends', excludeFriends.toString())
-      .set('excludeFollowing', excludeFollowing.toString())
+      .set('excludeFollowed', excludeFollowed.toString())
       .set('verifiedOnly', verifiedOnly.toString());
 
     return this.http.get<UserSearchResult[]>(`${this.searchUri}/search`, { params }).pipe(
@@ -217,10 +250,6 @@ export class RelationshipService implements OnDestroy {
     this._searchResults.set([]);
   }
 
-  /**
-   * Cleanup subscriptions when service is destroyed
-   * Prevents memory leaks
-   */
   ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();

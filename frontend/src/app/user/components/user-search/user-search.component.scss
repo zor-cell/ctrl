@@ -8,8 +8,36 @@
     gap: 0.75rem;
     align-items: center;
 
-    .search-input {
+    p-iconField {
       flex: 1;
+      position: relative;
+
+      .search-input {
+        width: 100%;
+        padding-right: 2rem;
+      }
+    }
+
+    .clear-button {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      color: var(--p-text-color-secondary);
+      transition: color 0.2s;
+      z-index: 1;
+
+      &:hover {
+        color: var(--p-text-color);
+      }
+
+      i {
+        font-size: 0.875rem;
+      }
     }
   }
 

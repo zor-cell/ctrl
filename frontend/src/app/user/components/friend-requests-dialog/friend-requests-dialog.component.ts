@@ -7,7 +7,7 @@ import { Subject, takeUntil } from 'rxjs';
 
 import { RelationshipService } from '../../relationship.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { FriendRequestEventBusService } from '../../services/friend-request-event-bus.service';
+import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { FriendRequest } from '../../dto/Relationship';
 
 /**
@@ -26,14 +26,14 @@ import { FriendRequest } from '../../dto/Relationship';
   styleUrl: './friend-requests-dialog.component.scss',
 })
 export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
-  private socialService = inject(RelationshipService);
+  private relationshipService = inject(RelationshipService);
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
 
   @Output() onClose = new EventEmitter<void>();
 
-  incomingRequests = this.socialService.incomingRequests;
-  sentRequests = this.socialService.sentRequests;
+  incomingRequests = this.relationshipService.incomingRequests;
+  sentRequests = this.relationshipService.sentRequests;
 
   private _destroy$ = new Subject<void>();
 
@@ -55,7 +55,8 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   }
 
   acceptRequest(request: FriendRequest) {
-    this.socialService.acceptFriendRequest(request.id, request).subscribe({
+    // For incoming requests, username is the sender's username
+    this.relationshipService.acceptFriendRequest(request.username, request).subscribe({
       next: () => {
         this.notificationService.showSuccess(`Accepted friend request from ${request.username}`);
       },
@@ -66,7 +67,8 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   }
 
   declineRequest(request: FriendRequest) {
-    this.socialService.declineFriendRequest(request.id, request).subscribe({
+    // For incoming requests, username is the sender's username
+    this.relationshipService.declineFriendRequest(request.username, request).subscribe({
       next: () => {
         this.notificationService.showSuccess('Friend request declined');
       },
@@ -77,7 +79,8 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   }
 
   cancelRequest(request: FriendRequest) {
-    this.socialService.cancelFriendRequest(request).subscribe({
+    // For sent requests, username is the receiver's username
+    this.relationshipService.cancelFriendRequest(request.username, request).subscribe({
       next: () => {
         this.notificationService.showSuccess('Friend request cancelled');
       },

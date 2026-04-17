@@ -55,9 +55,9 @@ public class UserController {
       @AuthenticationPrincipal User currentUser,
       @RequestParam String q,
       @RequestParam(required = false, defaultValue = "false") boolean excludeFriends,
-      @RequestParam(required = false, defaultValue = "false") boolean excludeFollowing,
+      @RequestParam(required = false, defaultValue = "false") boolean excludeFollowed,
       @RequestParam(required = false, defaultValue = "false") boolean verifiedOnly) {
 
-    return userService.searchUsers(currentUser, q, excludeFriends, excludeFollowing, verifiedOnly);
+    return userService.searchUsers(currentUser, q, excludeFriends, excludeFollowed, verifiedOnly);
   }
 }

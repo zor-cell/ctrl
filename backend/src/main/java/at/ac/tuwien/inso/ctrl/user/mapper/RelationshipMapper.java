@@ -1,6 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user.mapper;
 
-import at.ac.tuwien.inso.ctrl.user.dto.FollowedUserResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
@@ -22,7 +22,7 @@ public interface RelationshipMapper {
 
   // remove when adding profilePicture support
   @Mapping(target = "profilePicture", constant = "null")
-  FollowedUserResponse toFollowedUserResponse(User user);
+  FollowedResponse toFollowedResponse(User user);
 
   @Mapping(target = "profilePicture", constant = "null")
   @Mapping(target = "username", source = "sender.username")
@@ -51,14 +51,14 @@ public interface RelationshipMapper {
 
   default UserSearchResponse.RelationshipStatus determineRelationshipStatus(
       User targetUser,
-      Set<UUID> followingIds,
+      Set<UUID> followedIds,
       Set<UUID> friendIds,
       Set<UUID> pendingRequestSentIds,
       Set<UUID> pendingRequestIncomingIds) {
     if (friendIds.contains(targetUser.getId())) {
       return UserSearchResponse.RelationshipStatus.FRIEND;
-    } else if (followingIds.contains(targetUser.getId())) {
-      return UserSearchResponse.RelationshipStatus.FOLLOWING;
+    } else if (followedIds.contains(targetUser.getId())) {
+      return UserSearchResponse.RelationshipStatus.FOLLOWED;
     } else if (pendingRequestSentIds.contains(targetUser.getId())) {
       return UserSearchResponse.RelationshipStatus.PENDING_REQUEST_SENT;
     } else if (pendingRequestIncomingIds.contains(targetUser.getId())) {

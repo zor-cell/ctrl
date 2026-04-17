@@ -2,25 +2,24 @@ import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { Tabs, TabList, Tab } from 'primeng/tabs';
 import { Button } from 'primeng/button';
-import { Badge } from 'primeng/badge';
 import { InputText } from 'primeng/inputtext';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { Dialog } from 'primeng/dialog';
 
 import { RelationshipService } from '../../relationship.service';
-import { FriendRequestEventBusService } from '../../services/friend-request-event-bus.service';
+import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { FriendListComponent } from '../friend-list/friend-list.component';
-import { FollowingListComponent } from '../following-list/following-list.component';
+import { FollowedListComponent } from '../followed-list/followed-list.component';
 import { FriendRequestsDialogComponent } from '../friend-requests-dialog/friend-requests-dialog.component';
 import { UserSearchComponent } from '../user-search/user-search.component';
 
 /**
- * Following Page Component
+ * Followed Page Component
  *
  * Uses the FriendRequestEventBus for:
  * - Centralized refresh requests when dialogs open
@@ -28,7 +27,7 @@ import { UserSearchComponent } from '../user-search/user-search.component';
  * - Memory-leak protected subscriptions
  */
 @Component({
-  selector: 'app-following-page',
+  selector: 'app-followed-page',
   standalone: true,
   imports: [
     CommonModule,
@@ -37,21 +36,20 @@ import { UserSearchComponent } from '../user-search/user-search.component';
     TabList,
     Tab,
     Button,
-    Badge,
     InputText,
     IconField,
     InputIcon,
     Dialog,
     FriendListComponent,
-    FollowingListComponent,
+    FollowedListComponent,
     FriendRequestsDialogComponent,
     UserSearchComponent,
   ],
-  templateUrl: './following-page.component.html',
-  styleUrl: './following-page.component.scss',
+  templateUrl: './followed-page.component.html',
+  styleUrl: './followed-page.component.scss',
 })
-export class FollowingPageComponent implements OnInit, OnDestroy {
-  protected socialService: RelationshipService = inject(RelationshipService);
+export class FollowedPageComponent implements OnInit, OnDestroy {
+  protected relationshipService: RelationshipService = inject(RelationshipService);
   private eventBus = inject(FriendRequestEventBusService);
   private router: Router = inject(Router);
 
@@ -59,14 +57,18 @@ export class FollowingPageComponent implements OnInit, OnDestroy {
   showRequestsDialog = signal<boolean>(false);
   showSearchDialog = signal<boolean>(false);
   searchQuery = signal<string>('');
-  searchSource = signal<'friends' | 'following'>('friends');
+  searchSource = signal<'friends' | 'followed'>('friends');
 
   friendSearch = signal<string>('');
-  followingSearch = signal<string>('');
+  followedSearch = signal<string>('');
 
-  pendingCount = computed(() => this.socialService.pendingRequestCount());
+  pendingCount = computed(() => this.relationshipService.pendingRequestCount());
 
   private _destroy$ = new Subject<void>();
+
+  // Debounced search subjects
+  private friendSearchInput$ = new Subject<string>();
+  private followedSearchInput$ = new Subject<string>();
 
   ngOnInit() {
     this.loadInitialData();
@@ -75,31 +77,63 @@ export class FollowingPageComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this._destroy$))
       .subscribe((state) => {
       });
+
+    // Setup debounced friend search
+    this.friendSearchInput$
+      .pipe(
+        takeUntil(this._destroy$),
+        debounceTime(300),
+        distinctUntilChanged()
+      )
+      .subscribe((query) => {
+        this.performFriendSearch(query);
+      });
+
+    // Setup debounced followed search
+    this.followedSearchInput$
+      .pipe(
+        takeUntil(this._destroy$),
+        debounceTime(300),
+        distinctUntilChanged()
+      )
+      .subscribe((query) => {
+        this.performFollowedSearch(query);
+      });
   }
 
   ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
+    this.friendSearchInput$.complete();
+    this.followedSearchInput$.complete();
   }
 
   private loadInitialData() {
-    this.socialService.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
-    this.socialService.loadFollowing().pipe(takeUntil(this._destroy$)).subscribe();
-    this.socialService.loadPendingRequestCount().pipe(takeUntil(this._destroy$)).subscribe();
+    this.relationshipService.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
+    this.relationshipService.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
+    this.relationshipService.loadPendingRequestCount().pipe(takeUntil(this._destroy$)).subscribe();
+  }
+
+  private performFriendSearch(query: string) {
+    this.relationshipService.loadFriends(query || undefined)
+      .pipe(takeUntil(this._destroy$))
+      .subscribe();
+  }
+
+  private performFollowedSearch(query: string) {
+    this.relationshipService.loadFollowed(query || undefined)
+      .pipe(takeUntil(this._destroy$))
+      .subscribe();
   }
 
   onFriendSearchChange(query: string) {
     this.friendSearch.set(query);
-    this.socialService.loadFriends(query || undefined)
-      .pipe(takeUntil(this._destroy$))
-      .subscribe();
+    this.friendSearchInput$.next(query);
   }
 
-  onFollowingSearchChange(query: string) {
-    this.followingSearch.set(query);
-    this.socialService.loadFollowing(query || undefined)
-      .pipe(takeUntil(this._destroy$))
-      .subscribe();
+  onFollowedSearchChange(query: string) {
+    this.followedSearch.set(query);
+    this.followedSearchInput$.next(query);
   }
 
   openRequestsDialog() {
@@ -111,14 +145,14 @@ export class FollowingPageComponent implements OnInit, OnDestroy {
     this.showRequestsDialog.set(false);
   }
 
-  openSearchDialog(fromTab: 'friends' | 'following') {
+  openSearchDialog(fromTab: 'friends' | 'followed') {
     this.searchSource.set(fromTab);
     this.showSearchDialog.set(true);
   }
 
   closeSearchDialog() {
     this.showSearchDialog.set(false);
-    this.socialService.clearSearch();
+    // Note: Not clearing search results so they persist when reopening
     this.loadInitialData();
   }
 }

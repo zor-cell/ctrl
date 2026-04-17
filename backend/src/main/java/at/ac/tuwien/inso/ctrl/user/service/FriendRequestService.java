@@ -3,10 +3,12 @@ package at.ac.tuwien.inso.ctrl.user.service;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
+import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
@@ -16,7 +18,6 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -71,8 +72,8 @@ public class FriendRequestService {
             .findByUsername(targetUsername)
             .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
-    if (followRelationRepository.existsByFollowerAndFollowing(currentUser, target)
-        && followRelationRepository.existsByFollowerAndFollowing(target, currentUser)) {
+    if (followRelationRepository.existsByFollowerAndFollowed(currentUser, target)
+        && followRelationRepository.existsByFollowerAndFollowed(target, currentUser)) {
       throw new InvalidRequestException("You are already friends with this user");
     }
 
@@ -88,20 +89,21 @@ public class FriendRequestService {
     // create follow relation immediately if verified, since even if the request is
     // declined one can still follow verified persons
     if (target.isVerified()
-        && !followRelationRepository.existsByFollowerAndFollowing(currentUser, target)) {
+        && !followRelationRepository.existsByFollowerAndFollowed(currentUser, target)) {
       FollowRelation follow =
           FollowRelation.builder()
               .id(new FollowRelationId(currentUser.getId(), target.getId()))
               .follower(currentUser)
-              .following(target)
+              .followed(target)
               .since(LocalDateTime.now())
               .build();
       followRelationRepository.save(follow);
     }
 
-    // Create friend request
+    // Create friend request with composite key
     FriendRequest request =
         FriendRequest.builder()
+            .id(new FriendRequestId(currentUser.getId(), target.getId()))
             .sender(currentUser)
             .receiver(target)
             .createdAt(LocalDateTime.now())
@@ -112,32 +114,47 @@ public class FriendRequestService {
   }
 
   @Transactional
-  public void acceptRequest(User currentUser, UUID requestId) {
+  public void handleIncomingRequestAction(
+      User currentUser, String senderUsername, FriendRequestAction action) {
+    User sender =
+        userRepository
+            .findByUsername(senderUsername)
+            .orElseThrow(() -> new NotFoundException("User", senderUsername));
+
     FriendRequest request =
         friendRequestRepository
-            .findById(requestId)
-            .orElseThrow(() -> new NotFoundException("Friend request", requestId.toString()));
+            .findBySenderAndReceiver(sender, currentUser)
+            .orElseThrow(() -> new NotFoundException("Friend request", "from " + senderUsername));
 
-    // Verify this request is for the current user
+    // Verify this request is for the current user (receiver)
     if (!request.getReceiver().getId().equals(currentUser.getId())) {
       throw new InvalidRequestException(
-          "You cannot accept this friend request, since you are not the receiver");
+          "You cannot manage this friend request, since you are not the receiver");
     }
 
     if (checkWhetherAndDeleteIfExpired(request)) {
       throw new InvalidRequestException("This friend request has expired");
     }
 
-    User sender = request.getSender();
+    switch (action) {
+      case ACCEPT:
+        acceptRequestInternal(currentUser, sender, request);
+        break;
+      case DECLINE:
+        declineRequestInternal(currentUser, sender, request);
+        break;
+    }
+  }
 
+  private void acceptRequestInternal(User currentUser, User sender, FriendRequest request) {
     // Create follow relation from receiver to sender (if not exists)
     // This creates the mutual follow = friendship
-    if (!followRelationRepository.existsByFollowerAndFollowing(currentUser, sender)) {
+    if (!followRelationRepository.existsByFollowerAndFollowed(currentUser, sender)) {
       FollowRelation follow =
           FollowRelation.builder()
               .id(new FollowRelationId(currentUser.getId(), sender.getId()))
               .follower(currentUser)
-              .following(sender)
+              .followed(sender)
               .since(LocalDateTime.now())
               .build();
       followRelationRepository.save(follow);
@@ -146,12 +163,12 @@ public class FriendRequestService {
     // If sender is not verified, also create the reverse follow
     // (normally this would have been created when request was sent, but only if
     // target was verified)
-    if (!followRelationRepository.existsByFollowerAndFollowing(sender, currentUser)) {
+    if (!followRelationRepository.existsByFollowerAndFollowed(sender, currentUser)) {
       FollowRelation reverseFollow =
           FollowRelation.builder()
               .id(new FollowRelationId(sender.getId(), currentUser.getId()))
               .follower(sender)
-              .following(currentUser)
+              .followed(currentUser)
               .since(LocalDateTime.now())
               .build();
       followRelationRepository.save(reverseFollow);
@@ -161,37 +178,46 @@ public class FriendRequestService {
     friendRequestRepository.delete(request);
   }
 
+  private void declineRequestInternal(User currentUser, User sender, FriendRequest request) {
+    // If the target (receiver) declines, and they are not verified,
+    // remove the follow relation that was created when request was sent
+    // (since it was only created if receiver was verified)
+    if (!currentUser.isVerified()) {
+      // Only remove if it exists (would have been created when request sent if
+      // receiver verified)
+      followRelationRepository.deleteByFollowerAndFollowed(sender, currentUser);
+    }
+
+    // Delete the request
+    friendRequestRepository.delete(request);
+  }
+
   @Transactional
-  public void declineRequest(User currentUser, UUID requestId) {
+  public void cancelSentRequest(User currentUser, String receiverUsername) {
+    User receiver =
+        userRepository
+            .findByUsername(receiverUsername)
+            .orElseThrow(() -> new NotFoundException("User", receiverUsername));
+
     FriendRequest request =
         friendRequestRepository
-            .findById(requestId)
-            .orElseThrow(() -> new NotFoundException("Friend request", requestId.toString()));
+            .findBySenderAndReceiver(currentUser, receiver)
+            .orElseThrow(() -> new NotFoundException("Friend request", "to " + receiverUsername));
 
-    // Verify this request is for the current user (incoming) or from current user
-    // (sent)
-    boolean isReceiver = request.getReceiver().getId().equals(currentUser.getId());
-    boolean isSender = request.getSender().getId().equals(currentUser.getId());
-
-    if (!isReceiver && !isSender) {
+    // Verify this request is from the current user (sender)
+    if (!request.getSender().getId().equals(currentUser.getId())) {
       throw new InvalidRequestException(
-          "You cannot decline this friend request, since you are neither sender nor receiver");
+          "You cannot cancel this friend request, since you are not the sender");
     }
 
     if (checkWhetherAndDeleteIfExpired(request)) {
       throw new InvalidRequestException("This friend request has expired");
     }
 
-    User sender = request.getSender();
-    User receiver = request.getReceiver();
-
-    // If the target (receiver) declines, and they are not verified,
-    // remove the follow relation that was created when request was sent
-    // (since it was only created if receiver was verified)
-    if (isReceiver && !receiver.isVerified()) {
-      // Only remove if it exists (would have been created when request sent if
-      // receiver verified)
-      followRelationRepository.deleteByFollowerAndFollowing(sender, receiver);
+    // If receiver is not verified, remove the follow relation that was created when
+    // request was sent
+    if (!receiver.isVerified()) {
+      followRelationRepository.deleteByFollowerAndFollowed(currentUser, receiver);
     }
 
     // Delete the request
@@ -200,8 +226,9 @@ public class FriendRequestService {
 
   @Transactional
   public long getPendingRequestCount(User currentUser) {
-    return friendRequestRepository.findAllIncomingRequests(currentUser).stream()
-        .filter(this::checkWhetherAndDeleteIfExpired)
-        .count();
+    List<FriendRequest> incomingRequests =
+        friendRequestRepository.findAllIncomingRequests(currentUser);
+    List<FriendRequest> validRequests = filterExpiredRequests(incomingRequests);
+    return validRequests.size();
   }
 }

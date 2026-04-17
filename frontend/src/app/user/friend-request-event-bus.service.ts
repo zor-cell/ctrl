@@ -1,10 +1,9 @@
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import { Subject, BehaviorSubject, ReplaySubject, Observable, takeUntil, shareReplay } from 'rxjs';
-import { FriendRequest } from '../dto/Relationship';
+import { FriendRequest } from './dto/Relationship';
 
 export interface FriendRequestActionEvent {
   type: 'accepted' | 'declined' | 'cancelled' | 'sent' | 'followed' | 'unfollowed';
-  requestId: string;
   username?: string;
   timestamp: Date;
 }
@@ -17,14 +16,6 @@ export interface FriendRequestState {
   isLoading: boolean;
 }
 
-/**
- * EventBus service for managing friend request state and communication
- * between components. Provides:
- * - Centralized state management via RxJS subjects
- * - Action event streams for cross-component communication
- * - Auto-cleanup on service destruction
- * - ShareReplay for efficient multicasting to multiple subscribers
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -88,49 +79,44 @@ export class FriendRequestEventBusService implements OnDestroy {
   }
 
   acceptRequest(request: FriendRequest): void {
+    // For incoming requests, username is the sender's username
     this.emitAction({
       type: 'accepted',
-      requestId: request.id,
       username: request.username,
       timestamp: new Date(),
     });
-    this.requestRefresh();
   }
 
   declineRequest(request: FriendRequest): void {
+    // For incoming requests, username is the sender's username
     this.emitAction({
       type: 'declined',
-      requestId: request.id,
       username: request.username,
       timestamp: new Date(),
     });
-    this.requestRefresh();
   }
 
   cancelRequest(request: FriendRequest): void {
+    // For sent requests, username is the receiver's username
     this.emitAction({
       type: 'cancelled',
-      requestId: request.id,
       username: request.username,
       timestamp: new Date(),
     });
-    this.requestRefresh();
   }
 
   requestSent(username: string): void {
     this.emitAction({
       type: 'sent',
-      requestId: '',
       username,
       timestamp: new Date(),
     });
-    this.requestRefresh();
   }
 
-  followed(): void {
+  followed(username: string): void {
     this.emitAction({
       type: 'followed',
-      requestId: '',
+      username,
       timestamp: new Date(),
     });
   }
@@ -138,7 +124,6 @@ export class FriendRequestEventBusService implements OnDestroy {
   unfollowed(): void {
     this.emitAction({
       type: 'unfollowed',
-      requestId: '',
       timestamp: new Date(),
     });
   }
@@ -147,10 +132,6 @@ export class FriendRequestEventBusService implements OnDestroy {
     return this._state.getValue();
   }
 
-  /**
-   * Cleanup all subscriptions when service is destroyed
-   * Prevents memory leaks by completing all subjects
-   */
   ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();

@@ -9,7 +9,7 @@
       </div>
     } @else {
       <div class="requests-list">
-        @for (request of incomingRequests(); track request.id) {
+        @for (request of incomingRequests(); track request.username) {
           <div class="request-item incoming">
             <p-avatar
               [image]="request.profilePicture || undefined"
@@ -51,7 +51,7 @@
       </div>
     } @else {
       <div class="requests-list">
-        @for (request of sentRequests(); track request.id) {
+        @for (request of sentRequests(); track request.username) {
           <div class="request-item sent">
             <p-avatar
               [image]="request.profilePicture || undefined"
