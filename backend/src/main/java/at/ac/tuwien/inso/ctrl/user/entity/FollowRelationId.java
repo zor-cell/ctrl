@@ -20,6 +20,6 @@ public class FollowRelationId implements Serializable {
   @Column(name = "follower_id")
   private UUID followerId;
 
-  @Column(name = "following_id")
-  private UUID followingId;
+  @Column(name = "followed_id")
+  private UUID followedId;
 }

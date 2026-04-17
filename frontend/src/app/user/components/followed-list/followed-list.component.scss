@@ -1,4 +1,4 @@
-.following-list {
+.followed-list {
   .empty-state {
     text-align: center;
     padding: 2rem;
@@ -11,7 +11,7 @@
     gap: 0.75rem;
   }
 
-  .following-item {
+  .followed-item {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -24,7 +24,7 @@
       background: var(--p-surface-200);
     }
 
-    ::ng-deep .following-avatar {
+    ::ng-deep .followed-avatar {
       cursor: pointer;
       transition: opacity 0.2s;
 
@@ -33,7 +33,7 @@
       }
     }
 
-    .following-info {
+    .followed-info {
       flex: 1;
 
       .username {
@@ -44,7 +44,7 @@
   }
 }
 
-.app-dark .following-item {
+.app-dark .followed-item {
   background: var(--p-surface-800);
 
   &:hover {

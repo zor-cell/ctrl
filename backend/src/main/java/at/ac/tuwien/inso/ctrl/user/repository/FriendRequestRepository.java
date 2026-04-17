@@ -1,8 +1,10 @@
 package at.ac.tuwien.inso.ctrl.user.repository;
 
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,13 +13,18 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface FriendRequestRepository extends JpaRepository<FriendRequest, UUID> {
+public interface FriendRequestRepository extends JpaRepository<FriendRequest, FriendRequestId> {
 
   @Query("SELECT fr FROM FriendRequest fr WHERE fr.receiver = :receiver")
   List<FriendRequest> findAllIncomingRequests(@Param("receiver") User receiver);
 
   @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender")
   List<FriendRequest> findAllSentRequests(@Param("sender") User sender);
+
+  @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender AND fr.receiver = :receiver")
+  Optional<FriendRequest> findBySenderAndReceiver(
+      @Param("sender") User sender,
+      @Param("receiver") User receiver);
 
   boolean existsBySenderAndReceiver(User sender, User receiver);
 

@@ -1,8 +1,8 @@
-<div class="following-page">
+<div class="followed-page">
   <p-tabs [(value)]="activeTab">
     <p-tablist>
       <p-tab value="friends">Friends</p-tab>
-      <p-tab value="following">Following</p-tab>
+      <p-tab value="followed">Followed</p-tab>
     </p-tablist>
     
     <!-- Friends Tab Content -->
@@ -31,13 +31,15 @@
             severity="secondary" />
 
           <p-button
-            label="Friend Requests"
-            icon="pi pi-bell"
             (onClick)="openRequestsDialog()"
             severity="secondary">
-            @if (pendingCount() > 0) {
-              <p-badge [value]="pendingCount().toString()" severity="danger" />
-            }
+            <span class="button-content">
+              <i class="pi pi-bell"></i>
+              <span>Friend Requests</span>
+              @if (pendingCount() > 0) {
+                <span class="pending-badge">{{ pendingCount() }}</span>
+              }
+            </span>
           </p-button>
         </div>
 
@@ -46,8 +48,8 @@
       </div>
     }
 
-    <!-- Following Tab Content -->
-    @if (activeTab() === 'following') {
+    <!-- Followed Tab Content -->
+    @if (activeTab() === 'followed') {
       <div class="tab-content">
         <!-- Search Bar -->
         <div class="search-section">
@@ -57,8 +59,8 @@
               type="text"
               pInputText
               placeholder="Search by username..."
-              [ngModel]="followingSearch()"
-              (ngModelChange)="onFollowingSearchChange($event)"
+              [ngModel]="followedSearch()"
+              (ngModelChange)="onFollowedSearchChange($event)"
               class="search-input" />
           </p-iconField>
         </div>
@@ -68,12 +70,12 @@
           <p-button
             label="Find People"
             icon="pi pi-plus"
-            (onClick)="openSearchDialog('following')"
+            (onClick)="openSearchDialog('followed')"
             severity="secondary" />
         </div>
 
-        <!-- Following List -->
-        <app-following-list [searchQuery]="followingSearch()" />
+        <!-- Followed List -->
+        <app-followed-list [searchQuery]="followedSearch()" />
       </div>
     }
   </p-tabs>

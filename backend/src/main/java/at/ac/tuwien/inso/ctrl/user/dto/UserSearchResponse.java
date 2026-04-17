@@ -12,7 +12,7 @@ public record UserSearchResponse(
 
   public enum RelationshipStatus {
     NONE,
-    FOLLOWING,
+    FOLLOWED,
     FRIEND,
     PENDING_REQUEST_SENT,
     PENDING_REQUEST_INCOMING

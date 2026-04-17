@@ -11,6 +11,15 @@
         (ngModelChange)="onSearchInputChange($event)"
         (keyup.enter)="onSearch()"
         class="search-input" />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          class="clear-button"
+          (click)="clearSearch()"
+          title="Clear search">
+          <i class="pi pi-times"></i>
+        </button>
+      }
     </p-iconField>
     <p-button
       icon="pi pi-search"
@@ -29,12 +38,12 @@
       [text]="!excludeFriends()" />
 
     <p-button
-      [label]="excludeFollowing() ? 'Hide Following' : 'Show Following'"
-      [icon]="excludeFollowing() ? 'pi pi-check' : 'pi pi-times'"
-      [severity]="excludeFollowing() ? 'secondary' : 'primary'"
-      (onClick)="toggleFilter('following')"
+      [label]="excludeFollowed() ? 'Hide Followed' : 'Show Followed'"
+      [icon]="excludeFollowed() ? 'pi pi-check' : 'pi pi-times'"
+      [severity]="excludeFollowed() ? 'secondary' : 'primary'"
+      (onClick)="toggleFilter('followed')"
       size="small"
-      [text]="!excludeFollowing()" />
+      [text]="!excludeFollowed()" />
 
     <p-button
       [label]="verifiedOnly() ? 'Verified Only' : 'All Users'"
@@ -73,8 +82,8 @@
               }
               @if (user.relationshipStatus === 'FRIEND') {
                 <span class="relationship-badge friend">Friend</span>
-              } @else if (user.relationshipStatus === 'FOLLOWING') {
-                <span class="relationship-badge following">Following</span>
+              } @else if (user.relationshipStatus === 'FOLLOWED') {
+                <span class="relationship-badge followed">Followed</span>
               } @else if (user.relationshipStatus === 'PENDING_REQUEST_SENT') {
                 <span class="relationship-badge pending-sent">Request Sent</span>
               } @else if (user.relationshipStatus === 'PENDING_REQUEST_INCOMING') {

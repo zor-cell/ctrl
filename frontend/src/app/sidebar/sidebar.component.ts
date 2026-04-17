@@ -41,7 +41,7 @@ export class SidebarComponent {
     { label: 'Post',     icon: '✏️', route: '/post', requiresAuth: true },
     { label: 'Chat',     icon: '💬', route: '/chat'     },
     { label: 'Settings', icon: '⚙️', route: '/settings' },
-    { label: 'Following',icon: '🔁', route: '/following'},
+    { label: 'Following',icon: '🔁', route: '/followees'},
   ];
 
   navigate(item: NavItem) {

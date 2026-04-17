@@ -32,9 +32,9 @@ public class FollowRelation {
   private User follower;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("followingId")
-  @JoinColumn(name = "following_id", referencedColumnName = "id", nullable = false)
-  private User following;
+  @MapsId("followedId")
+  @JoinColumn(name = "followed_id", referencedColumnName = "id", nullable = false)
+  private User followed;
 
   @Column(name = "since")
   private LocalDateTime since;

@@ -139,12 +139,12 @@ public class UserService {
       User currentUser,
       String query,
       boolean excludeFriends,
-      boolean excludeFollowing,
+      boolean excludeFollowed,
       boolean verifiedOnly) {
 
     String searchTerm = query != null ? query.trim().toLowerCase() : "";
 
-    Set<UUID> followingIds = followService.getFollowingIds(currentUser);
+    Set<UUID> followedIds = followService.getFollowedIds(currentUser);
     Set<UUID> friendIds = followService.getFriendIds(currentUser);
     Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
     Set<UUID> pendingRequestIncomingIds = friendRequestRepository.findSenderIdsByReceiver(currentUser);
@@ -154,12 +154,12 @@ public class UserService {
     return allUsers.stream()
         .filter(user -> !user.getId().equals(currentUser.getId()))
         .filter(user -> !excludeFriends || !friendIds.contains(user.getId()))
-        .filter(user -> !excludeFollowing || !followingIds.contains(user.getId()))
+        .filter(user -> !excludeFollowed || !followedIds.contains(user.getId()))
         .filter(user -> !verifiedOnly || user.isVerified())
         .map(
             user -> {
               UserSearchResponse.RelationshipStatus status =
-                  socialMapper.determineRelationshipStatus(user, followingIds, friendIds, pendingRequestSentIds, pendingRequestIncomingIds);
+                  socialMapper.determineRelationshipStatus(user, followedIds, friendIds, pendingRequestSentIds, pendingRequestIncomingIds);
               String displayName = socialMapper.displayName(user, status);
               return socialMapper.toUserSearchResponse(user, status, displayName);
             })

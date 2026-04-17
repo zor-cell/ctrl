@@ -2,7 +2,7 @@ package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
-import at.ac.tuwien.inso.ctrl.user.dto.FollowedUserResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
@@ -34,12 +34,12 @@ public class FollowService {
     return friends.stream().map(socialMapper::toFriendResponse).toList();
   }
 
-  public List<FollowedUserResponse> getFollowing(User currentUser, String search) {
-    List<User> following =
+  public List<FollowedResponse> getFollowed(User currentUser, String search) {
+    List<User> followed =
         search == null || search.isBlank()
-            ? followRelationRepository.findFollowingByFollower(currentUser)
-            : followRelationRepository.findFollowingBySearch(currentUser, search);
-    return following.stream().map(socialMapper::toFollowedUserResponse).toList();
+            ? followRelationRepository.findFollowedByFollower(currentUser)
+            : followRelationRepository.findFollowedBySearch(currentUser, search);
+    return followed.stream().map(socialMapper::toFollowedResponse).toList();
   }
 
   @Transactional
@@ -57,7 +57,7 @@ public class FollowService {
       throw new InvalidRequestException("Can only follow verified users");
     }
 
-    if (followRelationRepository.existsByFollowerAndFollowing(currentUser, target)) {
+    if (followRelationRepository.existsByFollowerAndFollowed(currentUser, target)) {
       return; // already following
     }
 
@@ -65,7 +65,7 @@ public class FollowService {
         FollowRelation.builder()
             .id(new FollowRelationId(currentUser.getId(), target.getId()))
             .follower(currentUser)
-            .following(target)
+            .followed(target)
             .since(LocalDateTime.now())
             .build();
 
@@ -83,20 +83,20 @@ public class FollowService {
     followRelationRepository.deleteBidirectional(currentUser, target);
   }
 
-  public Set<UUID> getFollowingIds(User currentUser) {
-    return followRelationRepository.findFollowingIdsByFollower(currentUser);
+  public Set<UUID> getFollowedIds(User currentUser) {
+    return followRelationRepository.findFollowedIdsByFollower(currentUser);
   }
 
   public Set<UUID> getFriendIds(User currentUser) {
     return followRelationRepository.findFriendIds(currentUser);
   }
 
-  public boolean isFollowing(User follower, User following) {
-    return followRelationRepository.existsByFollowerAndFollowing(follower, following);
+  public boolean isFollowing(User follower, User followed) {
+    return followRelationRepository.existsByFollowerAndFollowed(follower, followed);
   }
 
   public boolean areFriends(User user1, User user2) {
-    return followRelationRepository.existsByFollowerAndFollowing(user1, user2)
-        && followRelationRepository.existsByFollowerAndFollowing(user2, user1);
+    return followRelationRepository.existsByFollowerAndFollowed(user1, user2)
+        && followRelationRepository.existsByFollowerAndFollowed(user2, user1);
   }
 }

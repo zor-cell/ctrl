@@ -51,9 +51,9 @@ public class User implements UserDetails {
 
   @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
-  private Set<FollowRelation> followingRelations = new LinkedHashSet<>();
+  private Set<FollowRelation> followedRelations = new LinkedHashSet<>();
 
-  @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "followed", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private Set<FollowRelation> followerRelations = new LinkedHashSet<>();
 
