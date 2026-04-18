@@ -1,7 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
@@ -51,7 +51,7 @@ public class FollowService {
     User target =
         userRepository
             .findByUsername(targetUsername)
-            .orElseThrow(() -> new ResourceNotFoundException("User"));
+            .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
     if (!target.isVerified()) {
       throw new InvalidRequestException("Can only follow verified users");
@@ -77,7 +77,7 @@ public class FollowService {
     User target =
         userRepository
             .findByUsername(targetUsername)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
     // Delete both directions - this breaks friendship if existed
     followRelationRepository.deleteBidirectional(currentUser, target);

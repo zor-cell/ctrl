@@ -1,8 +1,8 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
@@ -70,7 +70,7 @@ public class FriendRequestService {
     User target =
         userRepository
             .findByUsername(targetUsername)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
     if (followRelationRepository.existsByFollowerAndFollowed(currentUser, target)
         && followRelationRepository.existsByFollowerAndFollowed(target, currentUser)) {
@@ -118,16 +118,14 @@ public class FriendRequestService {
     User sender =
         userRepository
             .findByUsername(senderUsername)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new NotFoundException("User", senderUsername));
 
     FriendRequest request =
         friendRequestRepository
             .findBySenderAndReceiver(sender, currentUser)
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "Did not find the friend request from " + senderUsername));
+            .orElseThrow(() -> new NotFoundException("Friend request", "from " + senderUsername));
 
+    // Verify this request is for the current user (receiver)
     if (!request.getReceiver().getId().equals(currentUser.getId())) {
       throw new InvalidRequestException(
           "You cannot manage this friend request, since you are not the receiver");
@@ -187,12 +185,12 @@ public class FriendRequestService {
     User receiver =
         userRepository
             .findByUsername(receiverUsername)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new NotFoundException("User", receiverUsername));
 
     FriendRequest request =
         friendRequestRepository
             .findBySenderAndReceiver(currentUser, receiver)
-            .orElseThrow(() -> new ResourceNotFoundException("Friend request not found"));
+            .orElseThrow(() -> new NotFoundException("Friend request", "to " + receiverUsername));
 
     // Verify this request is from the current user (sender)
     if (!request.getSender().getId().equals(currentUser.getId())) {
