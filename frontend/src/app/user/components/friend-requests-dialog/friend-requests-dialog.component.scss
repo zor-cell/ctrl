@@ -1,0 +1,72 @@
+.friend-requests-dialog {
+  .requests-section {
+    margin-bottom: 1rem;
+
+    h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1rem;
+      color: var(--p-text-color);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 1rem;
+      color: var(--p-text-color-secondary);
+      font-size: 0.875rem;
+    }
+
+    .requests-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .request-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      background: var(--p-secondary-color);
+
+      &.incoming {
+        border-left: 3px solid var(--p-primary-color);
+      }
+
+      &.sent {
+        border-left: 3px solid var(--p-secondary-color);
+      }
+
+      .request-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .name {
+          font-weight: 500;
+          color: var(--p-text-color);
+        }
+
+        .username {
+          font-size: 0.875rem;
+          color: var(--p-text-color-secondary);
+        }
+
+        .date {
+          font-size: 0.75rem;
+          color: var(--p-text-color-secondary);
+          margin-top: 0.25rem;
+        }
+      }
+
+      .request-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+    }
+  }
+}
+
+.app-dark .request-item {
+  background: var(--p-surface-800) !important;
+}

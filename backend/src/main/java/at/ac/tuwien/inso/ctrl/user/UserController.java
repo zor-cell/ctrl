@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,5 +48,16 @@ public class UserController {
       @AuthenticationPrincipal User currentUser,
       @Valid @RequestBody VerifyIdentityRequest request) {
     return userService.verifyUser(currentUser, request);
+  }
+
+  @GetMapping("/search")
+  public List<UserSearchResponse> searchUsers(
+      @AuthenticationPrincipal User currentUser,
+      @RequestParam String q,
+      @RequestParam(required = false, defaultValue = "false") boolean excludeFriends,
+      @RequestParam(required = false, defaultValue = "false") boolean excludeFollowing,
+      @RequestParam(required = false, defaultValue = "false") boolean verifiedOnly) {
+
+    return userService.searchUsers(currentUser, q, excludeFriends, excludeFollowing, verifiedOnly);
   }
 }
