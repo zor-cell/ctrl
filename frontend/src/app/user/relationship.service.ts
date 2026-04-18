@@ -165,10 +165,6 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  /**
-   * Accept an incoming friend request using the new PATCH endpoint
-   * @param username - The username of the sender (from the incoming request)
-   */
   acceptFriendRequest(username: string, request?: FriendRequest) {
     return this.http.patch<void>(`${this.baseUri}/friend-requests/${username}`, { action: 'ACCEPT' }).pipe(
       tap(() => {
@@ -186,10 +182,6 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  /**
-   * Decline an incoming friend request using the new PATCH endpoint
-   * @param username - The username of the sender (from the incoming request)
-   */
   declineFriendRequest(username: string, request?: FriendRequest) {
     return this.http.patch<void>(`${this.baseUri}/friend-requests/${username}`, { action: 'DECLINE' }).pipe(
       tap(() => {
@@ -207,10 +199,6 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  /**
-   * Cancel a sent friend request using the new DELETE endpoint
-   * @param username - The username of the receiver (to whom the request was sent)
-   */
   cancelFriendRequest(username: string, request?: FriendRequest) {
     return this.http.delete<void>(`${this.baseUri}/friend-requests/${username}`).pipe(
       tap(() => {

@@ -200,8 +200,6 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   }
 
   acceptIncomingRequest(user: UserSearchResult) {
-    // For incoming requests, we can directly use the username since it's the sender
-    // No need to fetch the request first - the PATCH endpoint uses the sender's username
     this.relationshipService.acceptFriendRequest(user.username).subscribe({
       next: () => {
         this.notificationService.showSuccess(`Accepted friend request from ${user.username}`);
