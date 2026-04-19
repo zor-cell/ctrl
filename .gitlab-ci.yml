@@ -39,15 +39,11 @@ lint:frontend:
   <<: *temp
 
 test:backend:
+  extends: .docker_base
   stage: test
-  image: maven:3.9-eclipse-temurin-21
-  variables:
-    DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_TLS_CERTDIR: ""
-    TESTCONTAINERS_HOST_OVERRIDE: "docker"
   services:
-    - name: docker:24-dind
-      alias: docker
+    - name: maven:3.9-eclipse-temurin-21
+      alias: mvn
 
   script:
     - mvn test -f ./backend
