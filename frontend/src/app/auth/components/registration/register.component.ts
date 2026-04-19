@@ -8,6 +8,7 @@ import {InputText} from "primeng/inputtext";
 import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {DatePicker} from "primeng/datepicker";
+import {Password} from "primeng/password";
 
 @Component({
   selector: 'app-registration',
@@ -18,7 +19,8 @@ import {DatePicker} from "primeng/datepicker";
     Message,
     ReactiveFormsModule,
     DatePicker,
-    RouterLink
+    RouterLink,
+    Password
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',

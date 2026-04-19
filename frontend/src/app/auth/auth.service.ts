@@ -20,6 +20,7 @@ export class AuthService {
 
   private _token = signal<string | null>(this.getValidTokenOnStartup());
   public token = this._token.asReadonly();
+  
   public isAuthenticated = computed(() => {
     const currentToken = this.token();
     if (!currentToken) {

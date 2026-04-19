@@ -2,14 +2,13 @@ import {Component, inject, signal} from '@angular/core';
 
 import {AuthService} from '../../auth.service'
 import {LoginRequest} from "../../dto/LoginRequest";
-import {form, FormField, required} from "@angular/forms/signals";
 import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {Password} from "primeng/password";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {FloatLabel} from "primeng/floatlabel";
 import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
+import {Password} from "primeng/password";
 
 @Component({
   selector: 'app-login',
@@ -20,7 +19,8 @@ import {Router, RouterLink} from "@angular/router";
     FloatLabel,
     ReactiveFormsModule,
     Message,
-    RouterLink
+    RouterLink,
+    Password
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
