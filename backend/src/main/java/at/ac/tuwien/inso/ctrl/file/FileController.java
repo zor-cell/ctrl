@@ -39,11 +39,11 @@ public class FileController {
   @PostMapping(value = "/post-media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public FileUploadResponse uploadPostMedia(@RequestPart("file") MultipartFile file) {
-    String mediaRef = fileStorageService.uploadPostMedia(file);
+    FileStorageService.UploadedFile uploadedFile = fileStorageService.uploadPostMedia(file);
     return new FileUploadResponse(
-        mediaRef,
-        fileStorageService.resolveFileUrl(mediaRef),
-        file.getContentType(),
-        file.getSize());
+        uploadedFile.mediaRef(),
+        fileStorageService.resolveFileUrl(uploadedFile.mediaRef()),
+        uploadedFile.contentType(),
+        uploadedFile.size());
   }
 }

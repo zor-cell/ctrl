@@ -31,6 +31,7 @@ public class Post {
   @JoinColumn(name = "source_id")
   private Source source;
 
+  @Column(nullable = false, columnDefinition = "text")
   private String caption;
 
   @Column(name = "media_ref")

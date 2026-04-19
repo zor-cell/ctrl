@@ -13,18 +13,22 @@
 .post-page {
   display: grid;
   gap: 1.5rem;
+  width: min(100%, 72rem);
+  margin: 0 auto;
   padding: 2rem;
   background: linear-gradient(180deg, #f8fafc, #f1f5f9);
 }
 
 .post-profile-card {
-  display: flex;
+  position: relative;
+  display: grid;
   gap: 1.25rem;
-  align-items: center;
+  justify-items: center;
   padding: 1.5rem;
   border-radius: 2rem;
   background: linear-gradient(135deg, #111827, #2d3748);
   color: #f8fafc;
+  text-align: center;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
@@ -32,7 +36,6 @@
   position: relative;
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
   width: 7rem;
   height: 7rem;
   padding: 0;
@@ -74,15 +77,18 @@
 }
 
 .profile-avatar-status {
-  align-self: end;
-  margin-left: -0.75rem;
+  margin-top: -1rem;
   color: rgba(255, 255, 255, 0.82);
   font-size: 0.82rem;
 }
 
-.post-profile-card__copy {
-  flex: 1;
-  min-width: 0;
+.post-profile-card__actions {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  justify-items: stretch;
 }
 
 .post-page__eyebrow {
@@ -152,33 +158,19 @@
 .my-posts-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .post-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
-  width: 100%;
+  min-height: 24rem;
   padding: 0;
   border: 0;
   border-radius: 1.25rem;
   background: #fff;
-  color: inherit;
-  cursor: pointer;
   text-align: left;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.post-card:hover,
-.post-card:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
-}
-
-.post-card:focus-visible {
-  outline: 3px solid #fbbf24;
-  outline-offset: 3px;
 }
 
 .post-card__media {
@@ -191,7 +183,8 @@
 .post-card__body {
   display: grid;
   gap: 0.5rem;
-  padding: 0.75rem;
+  grid-template-rows: auto 1fr auto;
+  padding: 0.7rem;
 }
 
 .post-card__meta {
@@ -213,28 +206,50 @@
 }
 
 .post-card__topics {
+  align-self: end;
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .post-card__topics span {
-  padding: 0.28rem 0.55rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 999px;
   background: rgba(251, 191, 36, 0.18);
   color: #713f12;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 .post-detail {
   display: grid;
   gap: 1rem;
+  padding-top: 1rem;
+}
+
+.post-detail__topbar {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.post-detail__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.post-detail__sources-panel {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .post-detail__media {
-  width: 100%;
-  max-height: 68vh;
+  justify-self: center;
+  width: auto;
+  max-width: min(100%, 38rem);
+  max-height: 30rem;
   object-fit: contain;
   border-radius: 1rem;
   background: #020617;
@@ -281,11 +296,6 @@
   display: grid;
   gap: 0.4rem;
   margin: 0;
-}
-
-.post-detail__source dl div {
-  display: grid;
-  gap: 0.2rem;
 }
 
 .post-detail__source dt,
@@ -574,6 +584,10 @@
     padding: 1rem;
   }
 
+  .my-posts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .post-profile-card,
   .sources-section__header,
   .source-card__title-row,
@@ -590,5 +604,11 @@
 
   .composer-actions {
     justify-content: stretch;
+  }
+}
+
+@media (max-width: 560px) {
+  .my-posts-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -30,7 +30,6 @@
     />
 
     <div class="post-profile-card__copy">
-      <p class="post-page__eyebrow">Posting Space</p>
       <h1>{{ username() }}</h1>
       <p>
         Share media-backed posts and keep your own published ideas visible in
@@ -38,12 +37,21 @@
       </p>
     </div>
 
-    <p-button
-      label="Create Post"
-      icon="pi pi-plus"
-      size="large"
-      (onClick)="openCreateDialog()"
-    />
+    <div class="post-profile-card__actions">
+      <p-button
+        icon="pi pi-cog"
+        ariaLabel="Open profile settings"
+        severity="secondary"
+        [rounded]="true"
+        (onClick)="openProfileSettings()"
+      />
+      <p-button
+        label="Create Post"
+        icon="pi pi-plus"
+        size="large"
+        (onClick)="openCreateDialog()"
+      />
+    </div>
   </header>
 
   <section class="my-posts-section" aria-labelledby="my-posts-title">
@@ -91,9 +99,6 @@
             <div class="post-card__body">
               <div class="post-card__meta">
                 <span>{{ post.isPublic ? 'Public' : 'Private' }}</span>
-                @if (formattedPostDate(post)) {
-                  <span>{{ formattedPostDate(post) }}</span>
-                }
               </div>
 
               <p class="post-card__caption">{{ post.caption }}</p>
@@ -119,12 +124,89 @@
   [draggable]="false"
   [resizable]="false"
   [dismissableMask]="true"
-  [style]="{ width: 'min(42rem, 92vw)' }"
-  header="Post"
+  [style]="{ width: 'min(48rem, 92vw)' }"
+  [showHeader]="false"
   (visibleChange)="!$event && closePost()"
 >
   @if (selectedPost(); as post) {
     <article class="post-detail">
+      <div class="post-detail__topbar">
+        <div class="post-detail__sources-panel">
+          <p-button
+            [label]="sourcesButtonLabel(post)"
+            icon="pi pi-book"
+            severity="secondary"
+            size="small"
+            (onClick)="toggleSources()"
+          />
+
+          @if (sourcesExpanded()) {
+            <section aria-label="Sources">
+              @if (postSources(post).length > 0) {
+                <div class="post-detail__sources">
+                  @for (source of postSources(post); track source.singleSourceId) {
+                    <article class="post-detail__source">
+                      <h4>{{ source.title || 'Untitled source' }}</h4>
+                      <dl>
+                        @if (source.author) {
+                          <div>
+                            <dt>Author</dt>
+                            <dd>{{ source.author }}</dd>
+                          </div>
+                        }
+                        @if (source.journal) {
+                          <div>
+                            <dt>Journal</dt>
+                            <dd>{{ source.journal }}</dd>
+                          </div>
+                        }
+                        @if (source.url) {
+                          <div>
+                            <dt>URL</dt>
+                            <dd>
+                              <a [href]="source.url" target="_blank" rel="noreferrer">
+                                {{ displaySourceUrl(source.url) }}
+                              </a>
+                            </dd>
+                          </div>
+                        }
+                        @if (formattedSourceDate(source)) {
+                          <div>
+                            <dt>Date</dt>
+                            <dd>{{ formattedSourceDate(source) }}</dd>
+                          </div>
+                        }
+                      </dl>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <p class="post-detail__empty">No sources added.</p>
+              }
+            </section>
+          }
+        </div>
+
+        <div class="post-detail__actions">
+          <p-button
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            size="small"
+            [outlined]="true"
+            (onClick)="requestPostDeletion(post)"
+          />
+          <p-button
+            icon="pi pi-times"
+            ariaLabel="Close post detail"
+            severity="secondary"
+            [rounded]="true"
+            [text]="true"
+            (onClick)="closePost()"
+          />
+        </div>
+      </div>
+
       @if (selectedPostMediaUrl() && postMediaKind(post) === 'image') {
         <img
           [src]="selectedPostMediaUrl()!"
@@ -140,69 +222,20 @@
       }
 
       <div class="post-detail__body">
-        <div class="post-card__meta">
-          <span>{{ post.isPublic ? 'Public' : 'Private' }}</span>
-          @if (formattedPostDate(post)) {
-            <span>{{ formattedPostDate(post) }}</span>
-          }
-        </div>
-        <p>{{ post.caption }}</p>
-
-        @if (post.topicIds.length > 0) {
-          <section class="post-detail__section" aria-labelledby="post-topics-title">
-            <h3 id="post-topics-title">Topics</h3>
+        @if (post.topicIds.length > 0 || post.labelIds.length > 0) {
+          <section class="post-detail__labels" aria-label="Labels">
             <div class="post-card__topics">
               @for (topicId of post.topicIds; track topicId) {
                 <span>{{ topicLabelById(topicId) }}</span>
+              }
+              @for (labelId of post.labelIds; track labelId) {
+                <span>{{ labelId }}</span>
               }
             </div>
           </section>
         }
 
-        <section class="post-detail__section" aria-labelledby="post-sources-title">
-          <h3 id="post-sources-title">Sources</h3>
-          @if (postSources(post).length > 0) {
-            <div class="post-detail__sources">
-              @for (source of postSources(post); track source.singleSourceId) {
-                <article class="post-detail__source">
-                  <h4>{{ source.title || 'Untitled source' }}</h4>
-                  <dl>
-                    @if (source.author) {
-                      <div>
-                        <dt>Author</dt>
-                        <dd>{{ source.author }}</dd>
-                      </div>
-                    }
-                    @if (source.journal) {
-                      <div>
-                        <dt>Journal</dt>
-                        <dd>{{ source.journal }}</dd>
-                      </div>
-                    }
-                    @if (source.url) {
-                      <div>
-                        <dt>URL</dt>
-                        <dd>
-                          <a [href]="source.url" target="_blank" rel="noreferrer">
-                            {{ source.url }}
-                          </a>
-                        </dd>
-                      </div>
-                    }
-                    @if (formattedSourceDate(source)) {
-                      <div>
-                        <dt>Date</dt>
-                        <dd>{{ formattedSourceDate(source) }}</dd>
-                      </div>
-                    }
-                  </dl>
-                </article>
-              }
-            </div>
-          } @else {
-            <p class="post-detail__empty">No sources added.</p>
-          }
-        </section>
+        <p class="post-detail__caption">{{ post.caption }}</p>
 
         <section class="post-detail__section" aria-labelledby="post-comments-title">
           <h3 id="post-comments-title">Comments</h3>
@@ -225,10 +258,44 @@
   }
 </p-dialog>
 
+<p-dialog
+  [visible]="postPendingDeletion() !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!deletingPost()"
+  [style]="{ width: 'min(28rem, 92vw)' }"
+  header="Delete post?"
+  (visibleChange)="!$event && cancelPostDeletion()"
+>
+  <div class="delete-confirmation">
+    <p>
+      This action is irreversible. Are you sure you want to permanently delete
+      this post?
+    </p>
+    <div class="composer-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="deletingPost()"
+        (onClick)="cancelPostDeletion()"
+      />
+      <p-button
+        label="Delete permanently"
+        icon="pi pi-trash"
+        severity="danger"
+        [loading]="deletingPost()"
+        (onClick)="confirmPostDeletion()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
 <input
   #mediaInput
   type="file"
-  accept="image/*,video/*"
+  [accept]="acceptedPostMediaInputTypes"
   class="sr-only"
   (change)="onMediaSelected($event)"
 />
@@ -249,10 +316,10 @@
       <div class="composer-step__header">
         <span class="composer-step__number">1</span>
         <div>
-          <h2>Choose an image or video</h2>
+          <h2>Add an image or video</h2>
           <p>
-            Start with the media for your post. You can change it again before
-            you submit.
+            This is optional. You can also continue without media and create a
+            text-only post.
           </p>
         </div>
       </div>
@@ -278,7 +345,9 @@
           <span class="media-dropzone__icon">🖼️</span>
           <span class="media-dropzone__title">Select image or video</span>
           <span class="media-dropzone__text">
-            Click to choose a file from your device.
+            Click to choose a file from your device. Supported:
+            {{ acceptedPostMediaFormatsLabel }} · max
+            {{ maxPostMediaSizeLabel }}.
           </span>
         }
       </button>
@@ -297,7 +366,6 @@
           label="Weiter"
           icon="pi pi-arrow-right"
           iconPos="right"
-          [disabled]="!canContinueToDetails()"
           (onClick)="continueToDetails()"
         />
       </div>
@@ -349,6 +417,9 @@
           </p>
           @if (hasCaptionError('required')) {
             <p class="field__error">Caption is required.</p>
+          }
+          @if (hasCaptionError('blank')) {
+            <p class="field__error">Caption must contain text.</p>
           }
           @if (hasCaptionError('maxlength')) {
             <p class="field__error">
@@ -483,6 +554,7 @@
                       pInputText
                       id="journal-{{$index}}"
                       formControlName="journal"
+                      [maxlength]="maxSourceJournalLength"
                     />
                     <label for="journal-{{$index}}">Journal</label>
                   </p-floatlabel>
@@ -492,6 +564,7 @@
                       pInputText
                       id="author-{{$index}}"
                       formControlName="author"
+                      [maxlength]="maxSourceAuthorLength"
                     />
                     <label for="author-{{$index}}">Author</label>
                   </p-floatlabel>
@@ -501,6 +574,7 @@
                       pInputText
                       id="title-{{$index}}"
                       formControlName="title"
+                      [maxlength]="maxSourceTitleLength"
                     />
                     <label for="title-{{$index}}">Title *</label>
                   </p-floatlabel>
@@ -510,6 +584,7 @@
                       pInputText
                       id="url-{{$index}}"
                       formControlName="url"
+                      [maxlength]="maxSourceUrlLength"
                     />
                     <label for="url-{{$index}}">URL</label>
                   </p-floatlabel>
@@ -539,6 +614,10 @@
                   <p class="source-card__error">
                     Add either an author or a URL for this source.
                   </p>
+                }
+
+                @if (submitAttempted() && sourceLengthErrorMessage($index); as message) {
+                  <p class="source-card__error">{{ message }}</p>
                 }
               }
             </div>

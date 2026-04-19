@@ -115,6 +115,17 @@ public class PostServiceImpl implements PostService {
         .toList();
   }
 
+  @Override
+  @Transactional
+  public void deletePost(String postId, String username) {
+    Post post =
+        postRepository
+            .findByPostIdAndUserUsername(postId, username)
+            .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+
+    postRepository.delete(post);
+  }
+
   private boolean resolveIsPublic(CreatePostRequest request, boolean isVerified) {
     return isVerified && Boolean.TRUE.equals(request.isPublic());
   }

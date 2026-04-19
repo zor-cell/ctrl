@@ -19,6 +19,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DatePicker } from 'primeng/datepicker';
@@ -45,6 +46,42 @@ interface TopicOption {
 }
 
 type PreviewKind = 'image' | 'video' | null;
+
+const MAX_POST_MEDIA_SIZE_BYTES = 100 * 1024 * 1024;
+const MAX_POST_MEDIA_SIZE_LABEL = '100 MB';
+const ACCEPTED_POST_MEDIA_FORMATS_LABEL =
+  'JPG, PNG, WEBP, GIF, MP4, WEBM, MOV';
+const ACCEPTED_POST_MEDIA_INPUT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-quicktime',
+  '.mov',
+].join(',');
+const ALLOWED_POST_MEDIA_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-quicktime',
+]);
+const ALLOWED_POST_MEDIA_EXTENSIONS = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'webp',
+  'gif',
+  'mp4',
+  'webm',
+  'mov',
+]);
 
 interface SourceFormValue {
   journal: string;
@@ -75,7 +112,17 @@ interface SourceFormValue {
 export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly maxCaptionLength = 10000;
   protected readonly maxSources = 10;
+  protected readonly maxSourceJournalLength = 255;
+  protected readonly maxSourceAuthorLength = 255;
+  protected readonly maxSourceTitleLength = 500;
+  protected readonly maxSourceUrlLength = 2048;
+  protected readonly maxPostMediaSizeLabel = MAX_POST_MEDIA_SIZE_LABEL;
+  protected readonly acceptedPostMediaFormatsLabel =
+    ACCEPTED_POST_MEDIA_FORMATS_LABEL;
+  protected readonly acceptedPostMediaInputTypes =
+    ACCEPTED_POST_MEDIA_INPUT_TYPES;
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
   private readonly postService = inject(PostService);
   private readonly fileService = inject(FileService);
   private readonly notificationService = inject(NotificationService);
@@ -94,9 +141,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly selectedMediaFile = signal<File | null>(null);
   protected readonly myPosts = signal<PostResponse[]>([]);
   protected readonly selectedPost = signal<PostResponse | null>(null);
+  protected readonly sourcesExpanded = signal(false);
   protected readonly loadingPosts = signal(false);
   protected readonly updatingAvatar = signal(false);
   protected readonly submitting = signal(false);
+  protected readonly deletingPost = signal(false);
+  protected readonly postPendingDeletion = signal<PostResponse | null>(null);
   protected readonly loadingTopics = signal(false);
   protected readonly submitAttempted = signal(false);
   protected readonly expandedSourceIndex = signal<number | null>(0);
@@ -122,9 +172,6 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly isVerifiedUser = computed(
     () => this.userService.user()?.isVerified ?? false,
   );
-  protected readonly canContinueToDetails = computed(
-    () => this.selectedFileName() !== null,
-  );
   protected readonly selectedTopicsSummary = computed(() => {
     const selectedValues = this.postForm.controls.topicIds.value;
     return this.topicOptions()
@@ -132,13 +179,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
       .map(option => option.label)
       .join(', ');
   });
-  protected readonly captionLength = computed(
-    () => this.postForm.controls.caption.value.length,
-  );
-
   protected readonly postForm = this.fb.group({
     caption: this.fb.nonNullable.control('', [
       Validators.required,
+      this.notBlankValidator(),
       Validators.maxLength(this.maxCaptionLength),
     ]),
     isPublic: this.fb.nonNullable.control(false),
@@ -166,6 +210,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.dialogVisible.set(false);
     this.currentStep.set(1);
     this.resetFormState();
+  }
+
+  protected openProfileSettings() {
+    this.router.navigate(['/profile']);
   }
 
   protected openMediaPicker() {
@@ -214,17 +262,21 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
+    if (!this.isValidPostMedia(file)) {
+      input.value = '';
+      this.clearSelectedMedia();
+      return;
+    }
+
     this.revokePreview();
     this.selectedMediaFile.set(file);
     this.selectedFileName.set(file.name);
     this.previewUrl.set(URL.createObjectURL(file));
-    this.previewKind.set(this.resolvePreviewKind(file.type));
+    this.previewKind.set(this.resolvePreviewKind(file));
   }
 
   protected continueToDetails() {
-    if (this.canContinueToDetails()) {
-      this.currentStep.set(2);
-    }
+    this.currentStep.set(2);
   }
 
   protected goBackToMedia() {
@@ -310,10 +362,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const media = this.selectedMediaFile();
 
     if (!media) {
+      this.createPostWithMediaRef(null);
+      return;
+    }
+
+    if (!this.isValidPostMedia(media)) {
       this.currentStep.set(1);
-      this.notificationService.showWarning(
-        'Please choose an image or video first.',
-      );
+      this.clearSelectedMedia();
       return;
     }
 
@@ -336,11 +391,38 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return this.submitAttempted() && control.hasError(errorCode);
   }
 
+  protected sourceLengthErrorMessage(index: number): string | null {
+    const source = this.sources.at(index);
+    const fields = [
+      {
+        name: 'journal',
+        label: 'Journal',
+        maxLength: this.maxSourceJournalLength,
+      },
+      { name: 'author', label: 'Author', maxLength: this.maxSourceAuthorLength },
+      { name: 'title', label: 'Title', maxLength: this.maxSourceTitleLength },
+      { name: 'url', label: 'URL', maxLength: this.maxSourceUrlLength },
+    ] as const;
+    const invalidField = fields.find(field =>
+      source.get(field.name)?.hasError('maxlength'),
+    );
+
+    if (!invalidField) {
+      return null;
+    }
+
+    return `${invalidField.label} must not be longer than ${invalidField.maxLength} characters.`;
+  }
+
   protected hasCaptionError(errorCode: string): boolean {
     return (
       this.submitAttempted()
       && this.postForm.controls.caption.hasError(errorCode)
     );
+  }
+
+  protected captionLength(): number {
+    return this.postForm.controls.caption.value.length;
   }
 
   protected topicOptionLabel(topic: TopicOption): string {
@@ -355,10 +437,64 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openPost(post: PostResponse) {
     this.selectedPost.set(post);
+    this.sourcesExpanded.set(false);
   }
 
   protected closePost() {
     this.selectedPost.set(null);
+    this.sourcesExpanded.set(false);
+  }
+
+  protected requestPostDeletion(post: PostResponse) {
+    this.postPendingDeletion.set(post);
+  }
+
+  protected cancelPostDeletion() {
+    if (this.deletingPost()) {
+      return;
+    }
+
+    this.postPendingDeletion.set(null);
+  }
+
+  protected confirmPostDeletion() {
+    const post = this.postPendingDeletion();
+
+    if (!post) {
+      return;
+    }
+
+    this.deletingPost.set(true);
+    this.postService.deletePost(post.postId).subscribe({
+      next: () => {
+        this.myPosts.update(posts =>
+          posts.filter(currentPost => currentPost.postId !== post.postId),
+        );
+
+        if (this.selectedPost()?.postId === post.postId) {
+          this.closePost();
+        }
+
+        this.postPendingDeletion.set(null);
+        this.deletingPost.set(false);
+        this.notificationService.showSuccess('Post deleted.');
+      },
+      error: () => {
+        this.deletingPost.set(false);
+      },
+    });
+  }
+
+  protected toggleSources() {
+    this.sourcesExpanded.update(expanded => !expanded);
+  }
+
+  protected sourcesButtonLabel(post: PostResponse): string {
+    const sourceCount = this.postSources(post).length;
+    const sourceLabel = sourceCount === 1 ? 'source' : 'sources';
+    return this.sourcesExpanded()
+      ? 'Hide sources'
+      : `Sources (${sourceCount} ${sourceLabel})`;
   }
 
   protected postMediaUrl(post: PostResponse | null): string | null {
@@ -379,10 +515,6 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return /\.(mp4|webm)$/i.test(mediaUrl) ? 'video' : 'image';
   }
 
-  protected formattedPostDate(post: PostResponse): string {
-    return this.formatDateTime(post.createdAt);
-  }
-
   protected formattedCommentDate(commentDate: string): string {
     return this.formatDateTime(commentDate);
   }
@@ -401,6 +533,16 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected postSources(post: PostResponse): SingleSourceResponse[] {
     return post.source?.singleSources ?? [];
+  }
+
+  protected displaySourceUrl(url: string): string {
+    const maxLength = 288;
+
+    if (url.length <= maxLength) {
+      return url;
+    }
+
+    return `${url.slice(0, maxLength - 1)}…`;
   }
 
   protected get sources(): FormArray {
@@ -470,7 +612,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private buildRequest(): CreatePostRequest {
     const rawValue = this.postForm.getRawValue();
     return {
-      caption: rawValue.caption,
+      caption: rawValue.caption.trim(),
       mediaRef: null,
       isPublic: this.isVerifiedUser() ? rawValue.isPublic : false,
       isAiGenerated: rawValue.isAiGenerated,
@@ -479,7 +621,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     };
   }
 
-  private createPostWithMediaRef(mediaRef: string) {
+  private createPostWithMediaRef(mediaRef: string | null) {
     const request = {
       ...this.buildRequest(),
       mediaRef,
@@ -558,14 +700,27 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private createSourceGroup() {
     return this.fb.nonNullable.group(
       {
-        journal: '',
-        author: '',
-        title: '',
-        url: '',
+        journal: this.fb.nonNullable.control('', [
+          Validators.maxLength(this.maxSourceJournalLength),
+        ]),
+        author: this.fb.nonNullable.control('', [
+          Validators.maxLength(this.maxSourceAuthorLength),
+        ]),
+        title: this.fb.nonNullable.control('', [
+          Validators.maxLength(this.maxSourceTitleLength),
+        ]),
+        url: this.fb.nonNullable.control('', [
+          Validators.maxLength(this.maxSourceUrlLength),
+        ]),
         date: '',
       },
       { validators: this.sourceValidator() },
     );
+  }
+
+  private notBlankValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null =>
+      this.isBlankValue(control.value) ? { blank: true } : null;
   }
 
   private sourceValidator(): ValidatorFn {
@@ -608,23 +763,63 @@ export class PostPageComponent implements OnDestroy, OnInit {
     };
   }
 
-  private resolvePreviewKind(mimeType: string): PreviewKind {
-    if (mimeType.startsWith('image/')) {
+  private resolvePreviewKind(file: File): PreviewKind {
+    if (file.type.startsWith('image/')) {
       return 'image';
     }
 
-    if (mimeType.startsWith('video/')) {
+    if (file.type.startsWith('video/')) {
+      return 'video';
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension)) {
+      return 'image';
+    }
+
+    if (extension && ['mp4', 'webm', 'mov'].includes(extension)) {
       return 'video';
     }
 
     return null;
   }
 
-  private resetFormState() {
+  private isValidPostMedia(file: File): boolean {
+    if (file.size > MAX_POST_MEDIA_SIZE_BYTES) {
+      this.notificationService.showWarning(
+        `Please choose an image or video smaller than ${MAX_POST_MEDIA_SIZE_LABEL}.`,
+      );
+      return false;
+    }
+
+    if (!this.isAllowedPostMediaType(file)) {
+      this.notificationService.showWarning(
+        `Please choose a supported media file: ${ACCEPTED_POST_MEDIA_FORMATS_LABEL}.`,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  private isAllowedPostMediaType(file: File): boolean {
+    if (ALLOWED_POST_MEDIA_TYPES.has(file.type)) {
+      return true;
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    return extension ? ALLOWED_POST_MEDIA_EXTENSIONS.has(extension) : false;
+  }
+
+  private clearSelectedMedia() {
     this.revokePreview();
     this.selectedMediaFile.set(null);
     this.selectedFileName.set(null);
     this.previewKind.set(null);
+  }
+
+  private resetFormState() {
+    this.clearSelectedMedia();
     this.submitAttempted.set(false);
     this.postForm.reset({
       caption: '',

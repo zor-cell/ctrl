@@ -37,8 +37,8 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
-  private final FollowService followService;
   private final FileStorageService fileStorageService;
+  private final FollowService followService;
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);

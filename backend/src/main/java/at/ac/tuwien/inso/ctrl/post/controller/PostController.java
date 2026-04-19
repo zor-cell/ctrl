@@ -11,8 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+<<<<<<< HEAD
 import org.springframework.web.bind.annotation.PathVariable;
+=======
+import org.springframework.web.bind.annotation.DeleteMapping;
+>>>>>>> a863499 (feat(#13): correcting rebase conficts)
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,5 +65,12 @@ public class PostController {
           @Valid @RequestBody VoteRequest request,
           @AuthenticationPrincipal UserDetails userDetails) {
     return postService.votePost(postId, request, userDetails.getUsername());
+  }
+}
+  @DeleteMapping("/{postId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deletePost(
+      @PathVariable String postId, @AuthenticationPrincipal UserDetails userDetails) {
+    postService.deletePost(postId, userDetails.getUsername());
   }
 }

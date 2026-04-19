@@ -35,4 +35,12 @@ public interface PostService {
    * @return posts created by the user ordered from newest to oldest
    */
   List<PostResponse> getPostsForUser(String username);
+
+  /**
+   * Deletes a post created by the authenticated user.
+   *
+   * @param postId the ID of the post to delete
+   * @param username the username of the authenticated user
+   */
+  void deletePost(String postId, String username);
 }

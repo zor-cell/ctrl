@@ -38,6 +38,10 @@ export class PostService {
    * @returns An observable that emits an array of {@link TopicResponse} objects
    */
 
+  deletePost(postId: string) {
+    return this.httpClient.delete<void>(`${this.baseUri}/${postId}`);
+  }
+
   getTopics() {
     return this.httpClient.get<TopicResponse[]>(this.topicUri);
   }
