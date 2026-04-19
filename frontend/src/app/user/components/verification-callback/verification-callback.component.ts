@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {Component, inject, signal, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from "@angular/router";
 import {UserService} from "../../user.service";
 import {NotificationService} from "../../../core/services/notification.service";
@@ -14,7 +14,7 @@ import {ProgressSpinner} from "primeng/progressspinner";
   templateUrl: './verification-callback.component.html',
   styleUrl: './verification-callback.component.scss',
 })
-export class VerificationCallbackComponent {
+export class VerificationCallbackComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private userService = inject(UserService);
@@ -32,10 +32,10 @@ export class VerificationCallbackComponent {
     }
 
     this.userService.verifyUser(code).subscribe({
-      next: res => {
+      next: () => {
         this.goHome();
       },
-      error: err => {
+      error: () => {
         this.isError.set(true);
       }
     });

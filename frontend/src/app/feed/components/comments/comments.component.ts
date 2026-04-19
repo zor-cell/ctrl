@@ -29,7 +29,7 @@ import { TextareaModule } from 'primeng/textarea';
 })
 export class CommentsComponent {
   @Input() post: Post | null = null;
-  @Input() visible: boolean = false;
+  @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
 
   newComment = '';

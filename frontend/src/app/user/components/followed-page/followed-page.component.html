@@ -4,7 +4,7 @@
       <p-tab value="friends">Friends</p-tab>
       <p-tab value="followed">Followed</p-tab>
     </p-tablist>
-    
+
     <!-- Friends Tab Content -->
     @if (activeTab() === 'friends') {
       <div class="tab-content">
@@ -87,7 +87,7 @@
     [modal]="true"
     [style]="{ width: '500px' }"
     [draggable]="false">
-    <app-friend-requests-dialog (onClose)="showRequestsDialog.set(false)" />
+    <app-friend-requests-dialog (closeEvent)="showRequestsDialog.set(false)" />
   </p-dialog>
 
   <!-- User Search Dialog -->

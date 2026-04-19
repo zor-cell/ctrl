@@ -7,11 +7,11 @@ import {MessageService} from "primeng/api";
 export class NotificationService {
   private messageService = inject(MessageService);
 
-  showSuccess(message: string, title: string = 'Success') {
+  showSuccess(message: string, title = 'Success') {
     this.messageService.add({ severity: 'success', summary: title, detail: message });
   }
 
-  showError(error: any, title: string = 'Error') {
+  showError(error: any, title = 'Error') {
     const e = error instanceof Object ? error.error : error;
     const status: number = error.status;
 
@@ -37,11 +37,11 @@ export class NotificationService {
     this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message });
   }
 
-  showInfo(message: string, title: string = 'Information') {
+  showInfo(message: string, title = 'Information') {
     this.messageService.add({ severity: 'info', summary: title, detail: message });
   }
 
-  showWarning(message: string, title: string = 'Warning') {
+  showWarning(message: string, title = 'Warning') {
     this.messageService.add({ severity: 'warn', summary: title, detail: message });
   }
 }

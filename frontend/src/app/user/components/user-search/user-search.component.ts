@@ -1,7 +1,7 @@
 import { Component, inject, input, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil, merge, filter } from 'rxjs';
+import { Subject, debounceTime, takeUntil, filter } from 'rxjs';
 
 import { InputText } from 'primeng/inputtext';
 import { Button } from 'primeng/button';

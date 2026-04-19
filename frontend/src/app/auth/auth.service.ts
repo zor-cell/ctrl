@@ -2,12 +2,11 @@ import {Injectable, inject, signal} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
-import {UserDetails} from '../user/dto/UserDetails'
+
 import {RegisterRequest} from './dto/RegisterRequest'
 import {LoginRequest} from './dto/LoginRequest'
 import {AuthResponse} from './dto/AuthResponse'
 import {Observable, tap} from "rxjs";
-import {UserService} from "../user/user.service";
 import {NotificationService} from "../core/services/notification.service";
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 
