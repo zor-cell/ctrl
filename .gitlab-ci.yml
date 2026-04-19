@@ -46,15 +46,11 @@ test:backend:
     paths:
       - .m2/repository
   services:
-    - name: registry.reset.inso-w.at/pub/docker/postgres:18-alpine
-      alias: db
-      variables:
-        HEALTHCHECK_TCP_PORT: "5432"
+    - name: docker:24-dind
+      alias: docker
   variables:
-    CI_DEBUG_SERVICES: "true"
-    POSTGRES_DB: testdb
-    POSTGRES_USER: test
-    POSTGRES_PASSWORD: test
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
   script:
     - mvn test -f ./backend
   artifacts:
