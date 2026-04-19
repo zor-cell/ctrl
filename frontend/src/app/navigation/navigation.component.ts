@@ -18,7 +18,6 @@ import {Menu} from "primeng/menu";
 })
 export class NavigationComponent {
   private router = inject(Router);
-  private notificationService = inject(NotificationService);
   protected authService = inject(AuthService);
   protected themeService = inject(ThemeService);
 
@@ -32,9 +31,8 @@ export class NavigationComponent {
 
     if (loggedIn) {
       items.push(
-        { label: 'Post', icon: 'pi pi-pencil', routerLink: '/post' },
-        { label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat' },
-        { label: 'Following', icon: 'pi pi-users', routerLink: '/followed' }
+        { label: 'Post', icon: 'pi pi-plus', routerLink: '/post' },
+        { label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat' }
       );
     }
     return items;
@@ -42,6 +40,7 @@ export class NavigationComponent {
 
   protected profileItems = computed<MenuItem[]>(() => [
     { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
+    { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
     { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
     { separator: true },
     {
