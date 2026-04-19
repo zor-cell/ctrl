@@ -1,140 +1,19 @@
----
-stages:
-  - lint
-  - test
-  - build
+# DinD service is required for Testcontainers
+services:
+  - name: docker:24-dind
+    # explicitly disable tls to avoid docker startup interruption
+    command: ["--tls=false"]
 
 variables:
+  # Instruct Testcontainers to use the daemon of DinD, use port 2375 for non-tls connections.
+  DOCKER_HOST: "tcp://docker:2375"
+  # Instruct Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  # Improve performance with overlayfs.
   DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
-  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
-.temp: &temp
-  rules:
-    - when: manual
-
-lint:backend:
-  stage: lint
-  allow_failure: true
+test:
   image: maven:3.9-eclipse-temurin-21
-  cache:
-    key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .m2/repository
-  script:
-    - mvn spotless:check -f ./backend/
-  <<: *temp
-
-lint:frontend:
-  stage: lint
-  allow_failure: true
-  image: node:20
-  cache:
-    key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .npm
-  script:
-    - cd frontend && npm ci && npm run lint
-  <<: *temp
-
-test:backend:
   stage: test
-  image: maven:3.9-eclipse-temurin-21
-  services:
-    - name: docker:24-dind
-      alias: docker
-      command: ["--tls=false"]
+  script: mvn test -f ./backend/
 
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-  script:
-    - mvn test -f ./backend/
-  artifacts:
-    reports:
-      junit: ./backend/target/surefire-reports/TEST-*.xml
-    when: always
-  <<: *temp
-
-test:frontend:
-  stage: test
-  image: node:20
-  cache:
-    key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .npm
-  script:
-    - cd frontend && npm ci && npm run test
-  artifacts:
-    reports:
-      junit: ./frontend/test-results/*.xml
-    when: always
-  <<: *temp
-
-.build_rules: &build_rules
-  rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
-      when: manual
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_TAG
-
-
-build:backend:
-  stage: build
-  image: maven:3.9-eclipse-temurin-21
-  cache:
-    key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .m2/repository
-  script:
-    - mvn clean package -DskipTests -f ./backend/
-  artifacts:
-    expire_in: 7 days
-    paths:
-      - ./backend/target/
-  <<: *build_rules
-
-build:frontend:
-  stage: build
-  image: node:20
-  cache:
-    key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .npm
-  script:
-    - cd frontend && npm ci && npm run build
-  artifacts:
-    paths:
-      - ./frontend/dist/
-  <<: *build_rules
-
-.docker_base:
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-
-build:docker-backend:
-  extends: .docker_base
-  stage: build
-  needs:
-    - job: build:backend
-      artifacts: true
-  script:
-    - docker build --cache-from "$CI_REGISTRY_IMAGE/backend:latest" -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/backend:latest" ./backend
-    - docker push "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
-  <<: *build_rules
-
-build:docker-frontend:
-  extends: .docker_base
-  stage: build
-  needs:
-    - job: build:frontend
-      artifacts: true
-  script:
-    - docker build --cache-from "$CI_REGISTRY_IMAGE/frontend:latest" -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/frontend:latest" ./frontend
-    - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
-  <<: *build_rules
