@@ -8,12 +8,16 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -25,10 +29,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
   private final UserMapper userMapper;
+  private final RelationshipMapper socialMapper;
   private final UserRepository userRepository;
+  private final FriendRequestRepository friendRequestRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
+  private final FollowService followService;
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);
@@ -126,6 +133,37 @@ public class UserService {
 
     User updatedUser = userRepository.save(user);
     return userMapper.toUserDetailsResponse(updatedUser);
+  }
+
+  public List<UserSearchResponse> searchUsers(
+      User currentUser,
+      String query,
+      boolean excludeFriends,
+      boolean excludeFollowed,
+      boolean verifiedOnly) {
+
+    String searchTerm = query != null ? query.trim().toLowerCase() : "";
+
+    Set<UUID> followedIds = followService.getFollowedIds(currentUser);
+    Set<UUID> friendIds = followService.getFriendIds(currentUser);
+    Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
+    Set<UUID> pendingRequestIncomingIds = friendRequestRepository.findSenderIdsByReceiver(currentUser);
+
+    List<User> allUsers = userRepository.findByUsernameContainingIgnoreCase(searchTerm);
+
+    return allUsers.stream()
+        .filter(user -> !user.getId().equals(currentUser.getId()))
+        .filter(user -> !excludeFriends || !friendIds.contains(user.getId()))
+        .filter(user -> !excludeFollowed || !followedIds.contains(user.getId()))
+        .filter(user -> !verifiedOnly || user.isVerified())
+        .map(
+            user -> {
+              UserSearchResponse.RelationshipStatus status =
+                  socialMapper.determineRelationshipStatus(user, followedIds, friendIds, pendingRequestSentIds, pendingRequestIncomingIds);
+              String displayName = socialMapper.displayName(user, status);
+              return socialMapper.toUserSearchResponse(user, status, displayName);
+            })
+        .toList();
   }
 
   private User getUserInternal(UUID userId) {
