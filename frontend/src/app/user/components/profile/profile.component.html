@@ -65,13 +65,15 @@
                     }
                 </div>
 
-                <p-button
-                        type="submit"
-                        label="Save Changes"
-                        icon="pi pi-check"
-                        [disabled]="profileForm.invalid || profileForm.pristine"
-                >
-                </p-button>
+                <div class="input-action-group" style="justify-content: end;">
+                    <p-button
+                            type="submit"
+                            label="Save Changes"
+                            icon="pi pi-check"
+                            [disabled]="profileForm.invalid || profileForm.pristine"
+                    >
+                    </p-button>
+                </div>
             </form>
         </div>
 
@@ -119,30 +121,41 @@
 }
 
 <p-dialog header="Change Password" [modal]="true" [(visible)]="isPasswordDialogOpen" [style]="{ width: '25rem' }">
-    <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="flex flex-col gap-4 mt-2">
-
-        <div class="field p-fluid mt-4">
+    <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="dialog-form">
+        <div>
             <p-floatlabel variant="on">
-                <input pInputText type="password" id="currentPassword" formControlName="currentPassword" />
+                <p-password id="password"
+                            formControlName="currentPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
                 <label for="currentPassword">Current Password</label>
             </p-floatlabel>
         </div>
 
-        <div class="field p-fluid">
+        <div>
             <p-floatlabel variant="on">
-                <input pInputText type="password" id="newPassword" formControlName="newPassword" />
+                <p-password id="password"
+                            formControlName="newPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
                 <label for="newPassword">New Password</label>
             </p-floatlabel>
         </div>
 
-        <div class="field p-fluid">
+        <div>
             <p-floatlabel variant="on">
-                <input pInputText type="password" id="confirmPassword" formControlName="confirmPassword" />
+                <p-password id="password"
+                            formControlName="confirmPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
                 <label for="confirmPassword">Confirm Password</label>
             </p-floatlabel>
         </div>
 
-        <div class="flex justify-end gap-2 mt-4">
+        <div class="input-action-group">
             <p-button label="Cancel" severity="secondary" (onClick)="isPasswordDialogOpen.set(false)"></p-button>
             <p-button label="Update Password" type="submit" [disabled]="passwordForm.invalid"></p-button>
         </div>
@@ -150,15 +163,15 @@
 </p-dialog>
 
 <p-dialog header="Change Username" [modal]="true" [(visible)]="isUsernameDialogOpen" [style]="{ width: '25rem' }">
-    <form [formGroup]="usernameForm" (ngSubmit)="updateUsername()">
-        <div class="field p-fluid mt-4">
+    <form [formGroup]="usernameForm" (ngSubmit)="updateUsername()" class="dialog-form">
+        <div>
             <p-floatlabel variant="on">
-                <input pInputText id="newUsername" formControlName="newUsername" />
+                <input pInputText id="newUsername" formControlName="newUsername" fluid />
                 <label for="newUsername">Username</label>
             </p-floatlabel>
         </div>
 
-        <div class="flex justify-end gap-2 mt-4">
+        <div class="input-action-group">
             <p-button label="Cancel" severity="secondary" (onClick)="isUsernameDialogOpen.set(false)"></p-button>
             <p-button label="Update Username" type="submit" [disabled]="usernameForm.invalid"></p-button>
         </div>

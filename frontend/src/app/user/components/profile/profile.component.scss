@@ -6,7 +6,7 @@
 }
 
 .profile-section {
-  margin-top: 0;
+  margin-top: 2rem;
   margin-bottom: 0;
 }
 
@@ -32,13 +32,16 @@
   gap: 1rem;
 }
 
-.app-dark .verification-box {
-  background-color: var(--p-surface-800);
-  border-color: var(--p-surface-600);
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
 }
 
-/* Ensure centering on the whole page */
-:host {
-  display: block;
-  width: 100%;
+.p-dialog-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 1rem;
 }
