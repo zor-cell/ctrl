@@ -1,6 +1,6 @@
 # DinD service is required for Testcontainers
 services:
-  - name: docker:24-dind
+  - name: docker:dind
     # explicitly disable tls to avoid docker startup interruption
     command: ["--tls=false"]
 
