@@ -41,6 +41,11 @@ lint:frontend:
 test:backend:
   stage: test
   image: maven:3.9-eclipse-temurin-21
+  variables:
+    DOCKER_HOST: "tcp://docker:2376"
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
   services:
     - name: docker:24-dind
       alias: docker
