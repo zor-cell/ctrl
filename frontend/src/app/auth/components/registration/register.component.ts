@@ -8,6 +8,7 @@ import {InputText} from "primeng/inputtext";
 import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {DatePicker} from "primeng/datepicker";
+import {environment} from '../../../../environments/environment';
 
 @Component({
   selector: 'app-registration',
@@ -45,9 +46,14 @@ export class RegisterComponent {
 
     const registerRequest: RegisterRequest = this.registerForm.getRawValue();
     this.authService.register(registerRequest).subscribe(() => {
-      this.router.navigate(['/email_verification'], {
-        state: { registerRequest }
-      });
+      if (environment.auth.requireEmailVerification){
+        this.router.navigate(['/email_verification'], {
+          state: { registerRequest }
+        });
+      } else {
+        this.router.navigate(['/login'])
+      }
+
     });
 
     this.authService.resendVerificationEmail(registerRequest).subscribe();

@@ -1,5 +1,6 @@
-import {Component, inject, OnDestroy} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
+import {ChangeDetectorRef} from '@angular/core';
 import {RegisterRequest} from '../../dto/RegisterRequest';
 import {Button} from 'primeng/button';
 import {FloatLabel} from 'primeng/floatlabel';
@@ -16,32 +17,33 @@ import {AuthService} from '../../auth.service';
   templateUrl: './email-verification.component.html',
   styleUrl: './email-verification.component.scss',
 })
-export class EmailVerificationComponent implements OnDestroy {
+export class EmailVerificationComponent implements OnDestroy, OnInit {
   private static readonly RESEND_COOLDOWN_MS = 60_000;
+  private static readonly RESEND_COOLDOWN_SECONDS = 60;
 
-  protected registerRequest: RegisterRequest | null = null;
-  protected showResendButton = false;
+  registerRequest: RegisterRequest | null = null;
+  showResendButton = false;
+  resendCountdownSeconds = EmailVerificationComponent.RESEND_COOLDOWN_SECONDS;
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
-  private resendTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private router = inject(Router);
+  private notificationService = inject(NotificationService);
+  private resendCooldownIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  protected verificationForm = this.fb.group({
+  verificationForm = this.fb.group({
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
+  codeControl = this.verificationForm.controls.code;
 
-  constructor(
-    private router: Router,
-    private notificationService: NotificationService,
-  ) {
+  constructor(private cdr: ChangeDetectorRef) {
     const navState = this.router.currentNavigation()?.extras.state?.['registerRequest'] as
       | RegisterRequest
       | undefined;
     const historyState = history.state?.registerRequest as RegisterRequest | undefined;
     this.registerRequest = navState ?? historyState ?? null;
-    this.startResendCooldown();
   }
 
-  protected submitCode() {
+  submitCode() {
     if (this.verificationForm.invalid) {
       this.verificationForm.markAllAsTouched();
       this.verificationForm.markAllAsDirty();
@@ -57,7 +59,7 @@ export class EmailVerificationComponent implements OnDestroy {
 
     const verificationRequest: EmailVerificationRequest = {
       username: this.registerRequest.username,
-      code: code
+      code: code,
     };
 
     this.authService.verify_email(verificationRequest).subscribe((isValid) => {
@@ -68,9 +70,7 @@ export class EmailVerificationComponent implements OnDestroy {
     });
   }
 
-
-
-  protected resendEmail() {
+  resendEmail() {
     this.startResendCooldown();
 
     if (!this.registerRequest) {
@@ -82,21 +82,35 @@ export class EmailVerificationComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.resendTimeoutId) {
-      clearTimeout(this.resendTimeoutId);
-    }
+    this.clearResendCooldownTimer();
+  }
+
+  ngOnInit() {
+    this.startResendCooldown()
   }
 
   private startResendCooldown() {
     this.showResendButton = false;
+    this.resendCountdownSeconds = EmailVerificationComponent.RESEND_COOLDOWN_SECONDS;
 
-    if (this.resendTimeoutId) {
-      clearTimeout(this.resendTimeoutId);
+    this.clearResendCooldownTimer();
+
+    this.resendCooldownIntervalId = setInterval(() => {
+      this.resendCountdownSeconds -= 1;
+
+      if (this.resendCountdownSeconds <= 0) {
+        this.resendCountdownSeconds = 0;
+        this.showResendButton = true;
+        this.clearResendCooldownTimer();
+      }
+      this.cdr.detectChanges();
+    }, EmailVerificationComponent.RESEND_COOLDOWN_MS / EmailVerificationComponent.RESEND_COOLDOWN_SECONDS);
+  }
+
+  private clearResendCooldownTimer() {
+    if (this.resendCooldownIntervalId) {
+      clearInterval(this.resendCooldownIntervalId);
+      this.resendCooldownIntervalId = null;
     }
-
-    this.resendTimeoutId = setTimeout(() => {
-      this.showResendButton = true;
-      this.resendTimeoutId = null;
-    }, EmailVerificationComponent.RESEND_COOLDOWN_MS);
   }
 }
