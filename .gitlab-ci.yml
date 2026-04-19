@@ -48,7 +48,9 @@ test:backend:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-
+  before_script:
+    - apt-get update && apt-get install -y curl
+    - until curl -s http://docker:2375/_ping | grep -q OK; do echo "waiting for dind..."; sleep 2; done
   script:
     - mvn test -f ./backend/
   artifacts:
