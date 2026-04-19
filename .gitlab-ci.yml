@@ -41,12 +41,20 @@ lint:frontend:
 test:backend:
   stage: test
   image: maven:3.9-eclipse-temurin-21
+
   services:
     - name: docker:24-dind
       alias: docker
+      command: ["--tls=false"]
+
   variables:
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""   # disable TLS (important)
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+
+  before_script:
+    - docker info  # waits for daemon
+
   script:
     - mvn test -f ./backend
   artifacts:
