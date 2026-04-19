@@ -65,3 +65,4 @@ logging:
     org.springframework.mail: DEBUG
     org.eclipse.angus.mail: DEBUG
     jakarta.mail: DEBUG
+

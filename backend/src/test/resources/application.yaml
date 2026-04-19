@@ -8,6 +8,17 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+garage:
+  url: http://localhost:3900
+  public-url: http://localhost:3900
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket-name: ctrl-test-media
+
+infinity:
+  url: http://localhost:7997
+  model: test-model
+
 application:
   security:
     jwt:

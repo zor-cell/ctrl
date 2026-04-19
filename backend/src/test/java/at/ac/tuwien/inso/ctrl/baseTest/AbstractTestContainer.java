@@ -21,10 +21,11 @@ import static org.mockito.Mockito.when;
 public abstract class AbstractTestContainer {
 
   @Container
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:pg18-trixie")
       .withDatabaseName("testdb")
       .withUsername("test")
-      .withPassword("test");
+      .withPassword("test")
+      .withInitScript("init-pgvector.sql");
 
 
   @DynamicPropertySource
