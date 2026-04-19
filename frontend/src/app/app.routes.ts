@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 import {LoginComponent} from "./auth/components/login/login.component";
 import {RegisterComponent} from "./auth/components/registration/register.component";
-import { SidebarComponent } from './sidebar/sidebar.component';
+import { NavigationComponent } from './navigation/navigation.component';
 import {FeedComponent} from './feed/components/feed/feed.component';
 import {ProfileComponent} from "./user/components/profile/profile.component";
 import {VerificationCallbackComponent} from "./user/components/verification-callback/verification-callback.component";
@@ -37,5 +37,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./user/components/followed-page/followed-page.component').then(m => m.FollowedPageComponent),
   },
-  {path: '', component: SidebarComponent}
+  {path: '', component: NavigationComponent}
 ];

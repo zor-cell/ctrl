@@ -1,0 +1,38 @@
+<div>
+    <p-menubar [model]="navItems()">
+        <ng-template pTemplate="start">
+            <div
+                    class="font-bold text-xl tracking-wider cursor-pointer pr-4"
+                    routerLink="/feed"
+            >
+                CTRL
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="end">
+            <div class="flex align-items-center gap-3">
+                @if (authService.isAuthenticated()) {
+                    <p-avatar
+                            icon="pi pi-user"
+                            shape="circle"
+                            class="cursor-pointer"
+                            (click)="profileMenu.toggle($event)"
+                    />
+
+                    <p-menu #profileMenu [model]="profileItems()" [popup]="true" />
+                } @else {
+                    <p-button label="Login" size="small" [text]="true" routerLink="/login" />
+                    <p-button label="Register" size="small" routerLink="/register" />
+                }
+
+                <p-button
+                        [icon]="themeService.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+                        [rounded]="true"
+                        [text]="true"
+                        (onClick)="themeService.toggle()"
+                />
+            </div>
+        </ng-template>
+
+    </p-menubar>
+</div>

@@ -5,6 +5,10 @@ import {NotificationService} from "../core/services/notification.service";
 import { ThemeService } from '../core/services/theme.service';
 import {ButtonModule} from 'primeng/button';
 import { Tabs, TabList, Tab } from 'primeng/tabs';
+import {MenuItem} from "primeng/api";
+import {Menubar} from "primeng/menubar";
+import {Avatar} from "primeng/avatar";
+import {Menu} from "primeng/menu";
 
 interface NavItem {
   label: string;
@@ -14,13 +18,13 @@ interface NavItem {
 }
 
 @Component({
-  selector: 'app-sidebar',
+  selector: 'app-navigation',
   standalone: true,
-  imports: [RouterOutlet, ButtonModule, Tabs, TabList, Tab, RouterModule],
-  templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  imports: [RouterOutlet, ButtonModule, Tabs, TabList, Tab, RouterModule, Menubar, Avatar, Menu],
+  templateUrl: './navigation.component.html',
+  styleUrl: './navigation.component.scss'
 })
-export class SidebarComponent {
+export class NavigationComponent {
   private router = inject(Router);
   private notificationService = inject(NotificationService);
   protected authService = inject(AuthService);
@@ -30,9 +34,39 @@ export class SidebarComponent {
     this.items.find(i => this.router.url.startsWith(i.route))?.route ?? ''
   );
 
+  protected navItems = computed<MenuItem[]>(() => {
+    const loggedIn = this.authService.isAuthenticated();
+
+    const items: MenuItem[] = [
+      { label: 'Feed', icon: 'pi pi-home', routerLink: '/feed' },
+      { label: 'Search', icon: 'pi pi-search', routerLink: '/search' }
+    ];
+
+    if (loggedIn) {
+      items.push(
+        { label: 'Post', icon: 'pi pi-pencil', routerLink: '/post' },
+        { label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat' },
+        { label: 'Following', icon: 'pi pi-users', routerLink: '/followed' }
+      );
+    }
+    return items;
+  });
+
+  protected profileItems = computed<MenuItem[]>(() => [
+    { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
+    { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
+    { separator: true },
+    {
+      label: 'Logout',
+      icon: 'pi pi-sign-out',
+      command: () => {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      }
+    }
+  ]);
+
   protected items: NavItem[] = [
-    { label: 'Login',    icon: '🔑', route: '/login'    },
-    { label: 'Register', icon: '📝', route: '/register' },
     { label: 'Feed',     icon: '🏠', route: '/feed'     },
     { label: 'Search',   icon: '🔍', route: '/search'   },
     { label: 'Profile',  icon: '👤', route: '/profile'  },
