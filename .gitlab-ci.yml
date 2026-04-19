@@ -39,6 +39,7 @@ lint:frontend:
   <<: *temp
 
 test:backend:
+  extends: .docker_base
   stage: test
   image: maven:3.9-eclipse-temurin-17
   services:
@@ -49,8 +50,7 @@ test:backend:
     DOCKER_TLS_CERTDIR: ""
 
   script:
-    - mvn clean package -DskipTests
-    - docker version
+    - mvn test -f ./backend/
   artifacts:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
