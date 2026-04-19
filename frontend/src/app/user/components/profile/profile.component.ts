@@ -6,12 +6,12 @@ import {DatePicker} from "primeng/datepicker";
 import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
-import {form} from "@angular/forms/signals";
 import {Dialog} from "primeng/dialog";
 import {passwordMatchValidator} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
+import {ProgressSpinner} from "primeng/progressspinner";
 
 @Component({
   selector: 'app-profile',
@@ -23,7 +23,8 @@ import {environment} from "../../../../environments/environment";
     Button,
     InputText,
     Dialog,
-    FormsModule
+    FormsModule,
+    ProgressSpinner
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -32,6 +33,7 @@ export class ProfileComponent {
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
 
+  protected isLoading = signal(true);
   protected currentUser = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
   protected isUsernameDialogOpen = signal(false);
@@ -70,18 +72,31 @@ export class ProfileComponent {
           email: currentUser.email,
           birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date()
         });
+
+        //dynamic disabling of controls
+        if (currentUser.isVerified) {
+          this.profileForm.controls.name.disable();
+          this.profileForm.controls.birthdate.disable();
+        } else {
+          this.profileForm.controls.name.enable();
+          this.profileForm.controls.birthdate.enable();
+        }
+
       }
     });
   }
 
   ngOnInit() {
-    this.userService.loadUser().subscribe();
+    this.userService.loadUser().subscribe({
+      next: () => this.isLoading.set(false),
+      error: () => this.isLoading.set(false)
+    });
   }
 
   protected updateProfile() {
     if (this.profileForm.invalid) return;
 
-    const formValues = this.profileForm.value;
+    const formValues = this.profileForm.getRawValue();
     const dateObj = formValues.birthdate as Date;
 
     const year = dateObj.getFullYear();
@@ -93,9 +108,7 @@ export class ProfileComponent {
       name: formValues.name!,
       email: formValues.email!,
       birthdate: formattedDate
-    }).subscribe(res => {
-
-    });
+    }).subscribe();
   }
 
   protected updatePassword() {

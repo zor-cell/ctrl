@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.user.dto;
 
-public record UpdateUsernameRequest(
-        String newUsername
-) {
-}
+import jakarta.validation.constraints.NotBlank;
+
+public record UpdateUsernameRequest(@NotBlank String newUsername) {}

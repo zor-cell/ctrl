@@ -1,0 +1,243 @@
+// ─── Tokens ───────────────────────────────────────────
+$border:      var(--border);
+$text-muted:  #888;
+$upvote:      #5bc97a;
+$downvote:    #e05858;
+$radius:      16px;
+$radius-sm:   10px;
+
+// ─── Dialog overrides ─────────────────────────────────
+:host ::ng-deep .comments-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+  display: flex;
+  flex-direction: column;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
+    overflow-y: auto;
+    border-radius: 0 0 $radius $radius !important;
+  }
+}
+
+// ─── Post Preview ─────────────────────────────────────
+.post-preview {
+  // No extra padding — post-header carries its own
+}
+
+// ─── Post Header ──────────────────────────────────────
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+
+  .post-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-username {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .post-info {
+    font-size: 0.78rem;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .separator { opacity: 0.5; }
+  }
+}
+
+// ─── Header Right: Labels + Why Button ────────────────
+.post-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// ─── Labels ───────────────────────────────────────────
+.post-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+:host ::ng-deep .post-label {
+  color: $text-muted !important;
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+  border: 1px solid $border !important;
+}
+
+// ─── Why Button ───────────────────────────────────────
+:host ::ng-deep .why-btn {
+  font-size: 0.8rem !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  border-color: $border !important;
+  color: $text-muted !important;
+}
+
+// ─── Post Image ───────────────────────────────────────
+.preview-image-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+// ─── Caption ──────────────────────────────────────────
+.preview-caption {
+  padding: 14px 16px 10px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+// ─── Divider ──────────────────────────────────────────
+.comments-divider {
+  height: 1px;
+  background: $border;
+}
+
+// ─── Comments List ────────────────────────────────────
+.comments-list {
+  padding: 12px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+// ─── Single Comment ───────────────────────────────────
+.comment {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+
+  &.reply {
+    margin-top: 10px;
+    padding-left: 4px;
+
+    .comment-username { font-size: 0.8rem; }
+    .comment-content  { font-size: 0.82rem; }
+    .comment-time     { font-size: 0.72rem; }
+  }
+}
+
+.comment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.comment-username {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: $text-muted;
+}
+
+.comment-content {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+// ─── Empty State ──────────────────────────────────────
+.comments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: $text-muted;
+
+  i { font-size: 2rem; opacity: 0.4; }
+  p { font-size: 0.88rem; margin: 0; }
+}
+
+// ─── Reply ────────────────────────────────────────────
+.reply-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 2px 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &:hover { color: var(--p-primary-color); }
+}
+
+.replying-to-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: $text-muted;
+  padding: 6px 2px;
+  border-top: 1px solid $border;
+}
+
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $text-muted;
+  font-size: 0.85rem;
+  &:hover { color: $downvote; }
+}
+
+// ─── Comment Input ────────────────────────────────────
+.comment-input-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.comment-input {
+  flex: 1;
+  resize: none;
+  border-radius: $radius-sm;
+  font-size: 0.9rem;
+}

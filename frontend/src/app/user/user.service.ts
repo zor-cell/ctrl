@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
 import { UserDetails } from './dto/UserDetails';
 import {UpdateProfileRequest} from "./dto/UpdateProfileRequest";
 import {NotificationService} from "../core/services/notification.service";
@@ -24,7 +25,7 @@ export class UserService {
   public user = this._user.asReadonly();
 
   public loadUser() {
-    return this.httpClient.get<UserDetails>(this.baseUri + '/me').pipe(
+    return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
         this._user.set(user)
       })

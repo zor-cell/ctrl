@@ -12,6 +12,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -36,9 +37,16 @@ public class EmailVerificationService {
   private final UserRepository userRepository;
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @Value("${application.auth.require-email-verification:true}")
+  private boolean requireEmailVerification;
+
   @Async
   public void sendVerificationEmail(RegisterRequest registerRequest) {
     LOGGER.info("Sending verification email to: {}", registerRequest.email());
+    if (!requireEmailVerification) {
+      LOGGER.info("Email verification not required");
+      return;
+    }
     try {
       String code = generateCode(registerRequest.password(), System.currentTimeMillis());
       Context context = createContext(code);
@@ -61,6 +69,9 @@ public class EmailVerificationService {
   }
 
   public EmailVerificationResponse verifyEmail(EmailVerificationRequest emailVerificationRequest) {
+    if (!requireEmailVerification) {
+      return new EmailVerificationResponse(true);
+    }
     User user = userRepository.findByUsername(emailVerificationRequest.username())
         .orElseThrow(() -> new IllegalStateException("User not found for verification"));
     EmailVerification verification = emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())

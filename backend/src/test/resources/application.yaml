@@ -12,7 +12,7 @@ application:
   security:
     jwt:
       secret-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      expiration: 86400000
+      expiration: 86400000  # 1 day in ms
     id-austria:
       issuer-uri: "http://localhost:8081/realms/id-austria-mock"
       client-id: "ctrl-test"

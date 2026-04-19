@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from '../../auth.service';
 import { RegisterComponent } from './register.component';
+import {MessageService} from "primeng/api";
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
@@ -20,6 +21,7 @@ describe('RegisterComponent', () => {
       resendVerificationEmail: vi.fn().mockReturnValue(of(void 0)),
     };
     await TestBed.configureTestingModule({
+      providers: [MessageService,],
       imports: [RegisterComponent],
       providers: [
         provideRouter([]),

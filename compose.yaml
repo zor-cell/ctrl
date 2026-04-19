@@ -11,13 +11,18 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - GARAGE_ACCESS_KEY=${GARAGE_ACCESS_KEY}
+      - GARAGE_SECRET_KEY=${GARAGE_SECRET_KEY}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
-      - MINIO_USERNAME=${MINIO_USER}
-      - MINIO_PASSWORD=${MINIO_PASSWORD}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - INFINITY_MODEL=${INFINITY_MODEL}
+      - MAIL_REQUIRED=${MAIL_REQUIRED}
     depends_on:
       db:
+        condition: service_healthy
+        restart: false
+      keycloak:
         condition: service_healthy
         restart: false
     restart: on-failure:3
@@ -34,7 +39,7 @@ services:
       - "80:80"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
         restart: false
     restart: on-failure:3
 
@@ -56,6 +61,7 @@ services:
       start_period: 10s
     volumes:
       - db_data:/var/lib/postgresql
+      - ./setup/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql # start setup
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
@@ -67,12 +73,66 @@ services:
       - KC_HOSTNAME_STRICT=false
       - KC_HOSTNAME_STRICT_HTTPS=false
       - KC_HTTP_RELATIVE_PATH=/
+      - KC_HEALTH_ENABLED=true
     ports:
       - "8081:8080"
+    healthcheck:
+      # curl is not installed in image, so raw tcp connection check for healthchecks
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep 'HTTP/1.1 200 OK' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
       - keycloak_data:/opt/keycloak/data
-      - ./backend/keycloak-config:/opt/keycloak/data/import/ # import test dataset
+      - ./setup/keycloak:/opt/keycloak/data/import/ # import test dataset
+
+  garage:
+    platform: linux/amd64
+    image: dxflrs/garage:v2.2.0
+    ports:
+      - "3900:3900" # S3 api
+      - "3902:3902" # S3 web gui
+      - "3903:3903" # admin api
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
+      GARAGE_DEFAULT_BUCKET: ctrl-dev-media
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+      - ./setup/garage/garage.toml:/etc/garage.toml
+    command: /garage server
+
+  infinity:
+    platform: linux/amd64
+    image: michaelf34/infinity:latest-cpu
+    ports:
+      - "7997:7997"
+    environment:
+      - INFINITY_MODEL_ID=${INFINITY_MODEL}
+      - INFINITY_BATCH_SIZE=32
+      - INFINITY_ENGINE=torch
+    restart: on-failure:3
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7997/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 2m
+    volumes:
+      - infinity_cache:/app/.cache
 
 volumes:
   db_data:
+  garage_meta:
+  garage_data:
   keycloak_data:
+  infinity_cache:

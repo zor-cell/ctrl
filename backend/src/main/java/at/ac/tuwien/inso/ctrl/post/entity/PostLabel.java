@@ -22,16 +22,15 @@ import lombok.Setter;
 @Table(name = "post_labels")
 public class PostLabel {
 
-    @EmbeddedId
-    private PostLabelId id;
+  @EmbeddedId private PostLabelId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("postId")
-    @JoinColumn(name = "post_id", referencedColumnName = "post_id", nullable = false)
-    private Post post;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("postId")
+  @JoinColumn(name = "post_id", referencedColumnName = "post_id", nullable = false)
+  private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("labelId")
-    @JoinColumn(name = "label_id", referencedColumnName = "label_id", nullable = false)
-    private Label label;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("labelId")
+  @JoinColumn(name = "label_id", referencedColumnName = "label_id", nullable = false)
+  private Label label;
 }

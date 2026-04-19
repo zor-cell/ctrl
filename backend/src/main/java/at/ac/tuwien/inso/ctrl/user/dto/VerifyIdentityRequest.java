@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.user.dto;
 
-public record VerifyIdentityRequest(
-        String code
-) {
-}
+import jakarta.validation.constraints.NotBlank;
+
+public record VerifyIdentityRequest(@NotBlank String code) {}

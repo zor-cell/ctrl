@@ -9,13 +9,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Builder
 @Getter
@@ -26,22 +25,21 @@ import java.time.LocalDateTime;
 @Table(name = "reactions")
 public class Reaction {
 
-    @EmbeddedId
-    private ReactionId id;
+  @EmbeddedId private ReactionId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("messageId")
-    @JoinColumn(name = "message_id", referencedColumnName = "message_id", nullable = false)
-    private Message message;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("messageId")
+  @JoinColumn(name = "message_id", referencedColumnName = "message_id", nullable = false)
+  private Message message;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("fromUsername")
-    @JoinColumn(name = "from_username", referencedColumnName = "username", nullable = false)
-    private User fromUser;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("fromUserId")
+  @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
+  private User fromUser;
 
-    @Column(nullable = false)
-    private String content;
+  @Column(nullable = false)
+  private String content;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
 }

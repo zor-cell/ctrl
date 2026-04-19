@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record UpdatePasswordRequest(
-        String currentPassword,
-        String newPassword
-) {
-}
+    @NotBlank String currentPassword, @NotBlank String newPassword) {}
