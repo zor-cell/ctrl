@@ -34,7 +34,7 @@ Styles for global containers
   flex-direction: column;
   gap: 1.5rem;
 
-  background-color: var(--p-surface-0);
+  background-color: var(--p-surface-50);
   border: 1px solid var(--p-surface-200);
   border-radius: var(--p-border-radius-xl);
 
@@ -45,4 +45,9 @@ Styles for global containers
     flex-direction: column;
     gap: 1rem;
   }
+}
+
+.app-dark .form-container {
+  background-color: var(--p-surface-900);
+  border-color: var(--p-surface-700);
 }
