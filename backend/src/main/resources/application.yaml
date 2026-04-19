@@ -5,8 +5,8 @@ spring:
     import: "optional:configtree:/run/secrets/"
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
-    username: ${db_username}
-    password: ${db_password}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -23,6 +23,17 @@ spring:
           starttls:
             enable: true
         debug: true
+
+garage:
+  url: http://garage:3900
+  public-url: http://localhost:3900
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
+  bucket-name: ctrl-prod-media
+
+infinity:
+  url: http://infinity:7997
+  model: ${INFINITY_MODEL}
 
 application:
   security:

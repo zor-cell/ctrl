@@ -8,6 +8,6 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface UserMapper {
-    @Mapping(source = "verified", target = "isVerified")
-    UserDetailsResponse toUserDetailsResponse(User user);
+  @Mapping(source = "verified", target = "isVerified")
+  UserDetailsResponse toUserDetailsResponse(User user);
 }

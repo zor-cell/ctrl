@@ -24,7 +24,7 @@ export class NotificationService {
       message = error.error;
     } else if(error.error && Array.isArray(error.error)) {
       //array error
-      message = error.error;
+      message = error.error.map((err: any) => `• ${err}`).join('\n');
     } else if (error.error && error.error.message) {
       // JSON error
       message = error.error.message;

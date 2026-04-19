@@ -1,4 +1,8 @@
-@if(currentUser(); as user) {
+@if(isLoading()) {
+    <div class="flex justify-center items-center p-8 mt-8">
+        <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
+    </div>
+} @else if(currentUser(); as user) {
     <div class="profile-container">
         <div class="card profile-card">
             <h3 class="h3 profile-card__title">Profile Details</h3>
@@ -7,7 +11,7 @@
 
                 <div class="field p-fluid">
                     <p-floatlabel variant="on">
-                        <input pInputText id="name" formControlName="name" />
+                        <input pInputText id="name" formControlName="name"/>
                         <label for="name">Full Name</label>
                     </p-floatlabel>
 

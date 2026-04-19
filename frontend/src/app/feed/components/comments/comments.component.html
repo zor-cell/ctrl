@@ -1,0 +1,146 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '95vw', maxWidth: '560px', maxHeight: '90vh' }"
+  styleClass="comments-dialog"
+  [header]="'Comments (' + (post?.comments?.length ?? 0) + ')'"
+>
+  @if (post) {
+
+    <!-- ─── Post Preview (1:1 post-header layout) ─── -->
+    <div class="post-preview">
+
+      <div class="post-header">
+        <div class="post-user">
+          <p-avatar
+            [image]="post.userProfilePic"
+            shape="circle"
+            size="normal"
+            [style]="{ width: '42px', height: '42px' }"
+          />
+          <div class="post-meta">
+            <span class="post-username">{{ post.username }}</span>
+            <span class="post-info">
+              {{ timeAgo(post.createdAt) }}
+              @if (post.topicIds.length > 0) {
+                <span class="separator">·</span>
+                {{ post.topicIds[0] }}
+              }
+            </span>
+          </div>
+        </div>
+
+        <div class="post-header-right">
+          @if (post.labelIds.length > 0) {
+            <div class="post-labels">
+              @for (label of post.labelIds; track label) {
+                <p-tag [value]="label[0]" severity="secondary" styleClass="post-label" [pTooltip]="label[1]" tooltipPosition="bottom" />
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    @if (post.videoImageRef && post.videoImageRef.length > 0) {
+      <div class="preview-image-wrapper">
+        @if (isVideo(post.videoImageRef[0])) {
+          <video
+            [src]="post.videoImageRef[0]"
+            class="preview-image"
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+        } @else {
+          <img [src]="post.videoImageRef[0]" [alt]="post.caption" class="preview-image" />
+        }
+      </div>
+    }
+
+      <p class="preview-caption">{{ post.caption }}</p>
+    </div>
+
+    <div class="comments-divider"></div>
+
+    <!-- ─── Comments List ─── -->
+    <div class="comments-list">
+      @if (topLevelComments().length === 0) {
+        <div class="comments-empty">
+          <i class="pi pi-comment"></i>
+          <p>No comments yet.</p>
+        </div>
+      }
+
+      @for (comment of topLevelComments(); track comment.commentId) {
+        <div class="comment">
+          <p-avatar
+            [image]="comment.userProfilePic"
+            shape="circle"
+            [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
+          />
+          <div class="comment-body">
+            <div class="comment-header">
+              <span class="comment-username">{{ comment.username }}</span>
+              <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
+            </div>
+            <p class="comment-content">{{ comment.content }}</p>
+            <button class="reply-btn" (click)="setReplyingTo(comment)">
+              <i class="pi pi-reply"></i> Reply
+            </button>
+
+            <!-- Replies -->
+            @for (reply of repliesFor(comment.commentId); track reply.commentId) {
+              <div class="comment reply">
+                <p-avatar
+                  [image]="reply.userProfilePic"
+                  shape="circle"
+                  [style]="{ width: '28px', height: '28px', flexShrink: '0' }"
+                />
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-username">{{ reply.username }}</span>
+                    <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
+                  </div>
+                  <p class="comment-content">{{ reply.content }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+  }
+  <!-- ─── Comment Input ─── -->
+  <ng-template pTemplate="footer">
+    @if (replyingTo()) {
+      <div class="replying-to-banner">
+        <span>Replying to <strong>{{ replyingTo()!.username }}</strong></span>
+        <button class="cancel-reply-btn" (click)="cancelReply()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    }
+    <div class="comment-input-row">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="newComment"
+      [autoResize]="true"
+      [rows]="1"
+      [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+      class="comment-input"
+      (keydown.enter)="$event.preventDefault(); submitComment()"
+    ></textarea>
+      <p-button
+        icon="pi pi-send"
+        [rounded]="true"
+        [text]="true"
+        [disabled]="!newComment.trim()"
+        (onClick)="submitComment()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
