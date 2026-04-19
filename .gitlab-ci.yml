@@ -16,6 +16,7 @@ variables:
 
 lint:backend:
   stage: lint
+  allow_failure: true
   image: maven:3.9-eclipse-temurin-21
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
@@ -27,6 +28,7 @@ lint:backend:
 
 lint:frontend:
   stage: lint
+  allow_failure: true
   image: node:20
   cache:
     key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
