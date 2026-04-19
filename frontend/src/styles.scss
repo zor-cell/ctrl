@@ -40,6 +40,20 @@ Styles for global containers
 
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
+  .form-header {
+    text-align: center;
+
+    h2 {
+      color: var(--p-text-color);
+      margin: 0;
+    }
+
+    p {
+      color: var(--p-text-muted-color);
+      font-size: 0.875rem;
+    }
+  }
+
   form {
     display: flex;
     flex-direction: column;

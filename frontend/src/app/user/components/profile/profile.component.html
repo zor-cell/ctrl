@@ -3,15 +3,16 @@
         <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
     </div>
 } @else if(currentUser(); as user) {
-    <div class="profile-container">
-        <div class="card profile-card">
-            <h3 class="h3 profile-card__title">Profile Details</h3>
+    <div class="profile-layout">
+        <div class="form-container profile-section">
+            <div class="form-header">
+                <h2>Profile Details</h2>
+            </div>
 
-            <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="profile-form">
-
-                <div class="field p-fluid">
+            <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+                <div>
                     <p-floatlabel variant="on">
-                        <input pInputText id="name" formControlName="name"/>
+                        <input pInputText id="name" formControlName="name" fluid/>
                         <label for="name">Full Name</label>
                     </p-floatlabel>
 
@@ -20,9 +21,9 @@
                     }
                 </div>
 
-                <div class="field p-fluid">
+                <div>
                     <p-floatlabel variant="on">
-                        <input pInputText type="email" id="name" formControlName="email" />
+                        <input pInputText type="email" id="name" formControlName="email" fluid/>
                         <label for="name">Email</label>
                     </p-floatlabel>
 
@@ -31,15 +32,16 @@
                     }
                 </div>
 
-                <div class="field p-fluid">
+                <div>
                     <p-floatlabel variant="on">
                         <p-date-picker
                                 inputId="birthdate"
                                 formControlName="birthdate"
                                 [maxDate]="maxDate"
                                 [showIcon]="true"
-                                dateFormat="dd.mm.yy">
-                        </p-date-picker>
+                                dateFormat="dd.mm.yy"
+                                fluid
+                        />
                         <label for="birthdate">Birthdate</label>
                     </p-floatlabel>
 
@@ -48,40 +50,38 @@
                     }
                 </div>
 
-                <div class="setting-info">
-                    <div class="flex items-center gap-2 mt-1">
-                        @if (user.isVerified) {
-                            <p-message severity="success" variant="simple" size="small">Verified via ID Austria</p-message>
-                        } @else {
-                            <p-message severity="warn" variant="simple" size="small">Your account is unverified</p-message>
-
-                            <p-button
-                                    label="Verify Now"
-                                    size="small"
-                                    severity="secondary"
-                                    (onClick)="initiateVerification()"
-                            >
-                            </p-button>
-                        }
-                    </div>
+                <div class="verification-box">
+                    @if (user.isVerified) {
+                        <p-message severity="success" variant="simple" size="small">Verified via ID Austria</p-message>
+                    } @else {
+                        <p-message severity="warn" variant="simple" size="small">Your account is unverified</p-message>
+                        <p-button
+                                label="Verify Now"
+                                size="small"
+                                severity="secondary"
+                                (onClick)="initiateVerification()"
+                        >
+                        </p-button>
+                    }
                 </div>
 
-                <div class="form-actions">
-                    <p-button
-                            type="submit"
-                            label="Save Changes"
-                            icon="pi pi-check"
-                            [disabled]="profileForm.invalid || profileForm.pristine">
-                    </p-button>
-                </div>
+                <p-button
+                        type="submit"
+                        label="Save Changes"
+                        icon="pi pi-check"
+                        [disabled]="profileForm.invalid || profileForm.pristine"
+                >
+                </p-button>
             </form>
         </div>
 
-        <div class="card profile-card">
-            <h3 class="h3 profile-card__title">Account Settings</h3>
+        <div class="form-container profile-section">
+            <div class="form-header">
+                <h2>Account Settings</h2>
+            </div>
 
-            <div class="settings-list">
-                <div class="setting-row">
+            <div class="settings-stack">
+                <div>
                     <p-floatlabel variant="on">
                         <p-date-picker
                                 inputId="createdAt"
@@ -89,24 +89,24 @@
                                 [showIcon]="true"
                                 [ngModel]="createdAt()"
                                 disabled
-                                dateFormat="dd.mm.yy">
-                        </p-date-picker>
-
+                                dateFormat="dd.mm.yy"
+                                fluid
+                        />
                         <label for="createdAt">Account Created</label>
                     </p-floatlabel>
                 </div>
 
-                <div class="setting-row">
+                <div class="input-action-group">
                     <p-floatlabel variant="on">
-                        <input pInputText id="username" [value]="user.username" disabled  />
+                        <input pInputText id="username" [value]="user.username" disabled fluid  />
                         <label for="username">Username</label>
                     </p-floatlabel>
                     <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()"></p-button>
                 </div>
 
-                <div class="setting-row">
+                <div class="input-action-group">
                     <p-floatlabel variant="on">
-                        <input pInputText id="password" value="********" disabled  />
+                        <input pInputText id="password" value="********" disabled fluid />
                         <label for="password">Password</label>
                     </p-floatlabel>
                     <p-button label="Change" severity="secondary" (onClick)="openPasswordDialog()"></p-button>
