@@ -41,23 +41,12 @@ lint:frontend:
 test:backend:
   stage: test
   image: maven:3.9-eclipse-temurin-21
-
   services:
     - name: docker:24-dind
-      command: ["--tls=false"]
-
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-
-  before_script:
-    # install docker CLI into Maven image
-    - apt-get update
-    - apt-get install -y docker.io
+      alias: docker
 
   script:
     - mvn test -f ./backend
-    - docker version
   artifacts:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
