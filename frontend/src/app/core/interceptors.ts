@@ -12,7 +12,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = authService.token();
 
   //dont add token to auth endpoints
-  if (!token || req.url.includes('/api/auth/')) {
+  if (!token || req.url.includes('/api/auth/') || !authService.validateSession()) {
     return next(req);
   }
 

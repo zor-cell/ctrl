@@ -21,18 +21,16 @@ interface NavItem {
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
-  theme = inject(ThemeService);
-  router = inject(Router);
-  authService = inject(AuthService);
-  notificationService = inject(NotificationService);
+  private router = inject(Router);
+  private notificationService = inject(NotificationService);
+  protected authService = inject(AuthService);
+  protected themeService = inject(ThemeService);
 
-  activeRoute = computed(() =>
+  protected activeRoute = computed(() =>
     this.items.find(i => this.router.url.startsWith(i.route))?.route ?? ''
   );
 
-  isLoggedIn = computed(() => this.authService.token() !== null);
-
-  items: NavItem[] = [
+  protected items: NavItem[] = [
     { label: 'Login',    icon: '🔑', route: '/login'    },
     { label: 'Register', icon: '📝', route: '/register' },
     { label: 'Feed',     icon: '🏠', route: '/feed'     },
@@ -44,8 +42,8 @@ export class SidebarComponent {
     { label: 'Following',icon: '🔁', route: '/followed'},
   ];
 
-  navigate(item: NavItem) {
-    if (item.requiresAuth && !this.isLoggedIn()) {
+  protected navigate(item: NavItem) {
+    if (item.requiresAuth && !this.authService.isAuthenticated()) {
       this.notificationService.showInfo('Please log in to create a post.');
       void this.router.navigate(['/login']);
       return;
