@@ -53,7 +53,8 @@ test:backend:
     TESTCONTAINERS_HOST_OVERRIDE: docker
 
   before_script:
-    - docker info  # waits for daemon
+    - apt-get update && apt-get install -y docker-cli
+    - docker info
 
   script:
     - mvn test -f ./backend
