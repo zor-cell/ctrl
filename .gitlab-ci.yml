@@ -48,7 +48,6 @@ test:backend:
 
   variables:
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
   script:
     - mvn test -f ./backend/
   artifacts:
