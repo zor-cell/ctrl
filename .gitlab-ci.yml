@@ -41,13 +41,12 @@ lint:frontend:
 test:backend:
   stage: test
   image: maven:3.9-eclipse-temurin-21
-  cache:
-    key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
-    paths:
-      - .m2/repository
   services:
     - name: docker:24-dind
       alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""   # disable TLS (important)
   script:
     - mvn test -f ./backend
   artifacts:
