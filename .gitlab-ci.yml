@@ -7,6 +7,7 @@ stages:
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_HOST: tcp://docker:2375
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
@@ -38,15 +39,14 @@ lint:frontend:
     - cd frontend && npm ci && npm run lint
   <<: *temp
 
-test:backend:
-  stage: test
-  image: maven:3.9-eclipse-temurin-21
-  services:
+services:
     - name: docker:dind
       command: ["--tls=false"]
 
-  variables:
-    DOCKER_HOST: tcp://docker:2375
+
+test:backend:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
   script:
     - mvn test -f ./backend/
   artifacts:
