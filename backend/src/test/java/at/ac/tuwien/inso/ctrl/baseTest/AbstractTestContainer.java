@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.baseTest;
 
-
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.boot.test.context.SpringBootTest;

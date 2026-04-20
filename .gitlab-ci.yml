@@ -1,7 +1,6 @@
 ---
 stages:
   - lint
-  - prepare
   - test
   - build
 
@@ -10,16 +9,10 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
-  CI_MAVEN_DOCKER_IMAGE: "$CI_REGISTRY_IMAGE/ci/maven-docker:24-3.9-temurin-21"
 
 .temp: &temp
   rules:
     - when: manual
-
-.prepare_rules: &prepare_rules
-  rules:
-    - if: $CI_COMMIT_BRANCH
-    - if: $CI_COMMIT_TAG
 
 lint:backend:
   stage: lint
@@ -48,12 +41,16 @@ lint:frontend:
 
 test:backend:
   stage: test
-  image: $CI_MAVEN_DOCKER_IMAGE
-  needs:
-    - job: build:ci-maven-docker
+  image: maven:3.9-eclipse-temurin-21
+  services:
+    - name: docker:24-dind
+      alias: docker
+      command: ["--tls=false",
+      "--min-api-version=1.24"]
   variables:
-    DOCKER_HOST: "tcp://127.0.0.1:2375"
+    DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
   script:
     - mvn clean install -f ./backend/
   artifacts:
@@ -116,33 +113,10 @@ build:frontend:
 
 .docker_base:
   image: docker:24
-  variables:
-    DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_TLS_CERTDIR: ""
   services:
-    - name: docker:24-dind
-      alias: docker
-      command: ["--tls=false"]
+    - docker:24-dind
   before_script:
-    - |
-      i=0
-      until docker info > /dev/null 2>&1; do
-        i=$((i + 1))
-        if [ "$i" -ge 60 ]; then
-          echo "Docker daemon did not become ready in time."
-          exit 1
-        fi
-        sleep 1
-      done
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-
-build:ci-maven-docker:
-  extends: .docker_base
-  stage: prepare
-  script:
-    - docker build -t "$CI_MAVEN_DOCKER_IMAGE" ./.gitlab/ci/maven-docker
-    - docker push "$CI_MAVEN_DOCKER_IMAGE"
-  <<: *prepare_rules
 
 build:docker-backend:
   extends: .docker_base
