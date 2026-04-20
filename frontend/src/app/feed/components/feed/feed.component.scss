@@ -199,6 +199,9 @@ $radius-sm:    10px;
   &.upvote:hover  { color: $upvote;   border-color: $upvote; }
   &.downvote:hover { color: $downvote; border-color: $downvote; }
 
+  &.upvote.active { color: $upvote; border-color: $upvote }
+  &.downvote.active { color: $downvote; border-color: $downvote }
+
   &.flag-btn {
     background: transparent;
     border-color: transparent;
