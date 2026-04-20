@@ -57,11 +57,15 @@ test:backend:
       alias: db
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
+        POSTGRES_DB: testdb
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
   variables:
     CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
+    SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
 
   script:
     - mvn test -f ./backend
