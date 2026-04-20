@@ -38,18 +38,20 @@ lint:frontend:
     - cd frontend && npm ci && npm run lint
   <<: *temp
 
-services:
-    - name: docker:dind
-      command: ["--tls=false"]
-
 
 test:backend:
-  image: maven:latest
-  services:
-    - name: docker:dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
   stage: test
+  image: maven:3.9-eclipse-temurin-21
+  tags:
+    - dind
+  services:
+    - name: docker:24-dind
+      alias: docker
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: "docker"
   script:
     - mvn clean install -f ./backend/
   artifacts:
