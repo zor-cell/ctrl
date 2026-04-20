@@ -29,7 +29,6 @@ import { MultiSelect } from 'primeng/multiselect';
 import { Textarea } from 'primeng/textarea';
 import { ToggleSwitch } from 'primeng/toggleswitch';
 
-import { environment } from '../../environments/environment';
 import { NotificationService } from '../core/services/notification.service';
 import { UserService } from '../user/user.service';
 import { CreatePostRequest } from './dto/CreatePostRequest';
@@ -158,9 +157,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     () => this.username().trim().charAt(0).toUpperCase() || '?',
   );
   protected readonly currentProfilePicture = computed(
-    () =>
-      this.avatarPreviewUrl()
-      ?? this.mediaUrlFromRef(this.userService.user()?.profilePicture ?? null),
+    () => this.avatarPreviewUrl() ?? this.userService.user()?.profilePicture ?? null,
   );
   protected readonly selectedPostMediaUrl = computed(() =>
     this.postMediaUrl(this.selectedPost()),
@@ -502,11 +499,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return this.mediaUrlFromRef(post.mediaRef);
+    return post.mediaUrl;
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
-    const mediaUrl = post.mediaRef;
+    const mediaUrl = post.mediaRef ?? post.mediaUrl;
 
     if (!mediaUrl) {
       return null;
@@ -565,14 +562,6 @@ export class PostPageComponent implements OnDestroy, OnInit {
         );
       },
     });
-  }
-
-  private mediaUrlFromRef(mediaRef: string | null): string | null {
-    if (!mediaRef) {
-      return null;
-    }
-
-    return `${environment.apiUrl}/files/media?ref=${encodeURIComponent(mediaRef)}`;
   }
 
   private formatDateTime(value: string): string {
