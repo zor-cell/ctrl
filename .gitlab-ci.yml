@@ -44,14 +44,14 @@ services:
 
 
 test:backend:
-  stage: test
   image: maven:latest
   services:
     - name: docker:dind
   variables:
     DOCKER_HOST: tcp://docker:2375
+  stage: test
   script:
-    - mvn test -f ./backend/
+    - mvn clean install -f ./backend/
   artifacts:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
