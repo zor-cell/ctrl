@@ -137,11 +137,11 @@
         {{ getDomain(post.sourceIds[0].url) }}
       </a>
         <button class="action-btn upvote">
-          <i class="pi pi-arrow-up"></i>
+          <i class="pi pi-thumbs-up"></i>
           <span>{{ post.sourceIds[0].upvotes }}</span>
         </button>
         <button class="action-btn downvote">
-          <i class="pi pi-arrow-down"></i>
+          <i class="pi pi-thumbs-down"></i>
           <span>{{ post.sourceIds[0].downvotes }}</span>
         </button>
     </div>
@@ -161,12 +161,10 @@
       <!-- PUBLIC: Up/Downvotes only -->
       @if (post.isPublic) {
         <button class="action-btn upvote">
-          <i class="pi pi-arrow-up"></i>
-          <span>{{ post.upvotes }}</span>
+          <i class="pi pi-thumbs-up"></i>
         </button>
         <button class="action-btn downvote">
-          <i class="pi pi-arrow-down"></i>
-          <span>{{ post.downvotes }}</span>
+          <i class="pi pi-thumbs-down"></i>
         </button>
       }
 

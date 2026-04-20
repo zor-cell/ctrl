@@ -10,8 +10,6 @@ export interface Post {
   caption: string;
   isPublic: boolean;
   whyExplanation: string; // will be changed in the future
-  upvotes: number;
-  downvotes: number;
   likes: number;
   labelIds: [string, string][];
   topicIds: string[];

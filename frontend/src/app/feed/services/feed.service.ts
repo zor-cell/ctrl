@@ -26,8 +26,6 @@ export class FeedService {
       caption: item.caption ?? '',
       isPublic: item.isPublic,
       whyExplanation: '',
-      upvotes: item.upvotes ?? 0,
-      downvotes: item.downvotes ?? 0,
       likes: 0,
       labelIds: item.labelIds?.map((l: any) => [l.name, l.description]) ?? [],
       topicIds: item.topicIds ?? [],
