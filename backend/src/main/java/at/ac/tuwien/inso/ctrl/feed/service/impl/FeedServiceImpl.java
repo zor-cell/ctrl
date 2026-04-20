@@ -36,7 +36,7 @@ public class FeedServiceImpl implements FeedService {
         List<FeedPostResponse.LabelResponse> labels = post.getPostLabels().stream()
                 .map(pl -> new FeedPostResponse.LabelResponse(
                         pl.getLabel().getName(),
-                        pl.getLabel().getEmoji()
+                        pl.getLabel().getExplanation()
                 ))
                 .toList();
 
