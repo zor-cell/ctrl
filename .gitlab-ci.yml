@@ -57,19 +57,12 @@ test:backend:
       alias: db
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
-        POSTGRES_DB: testdb
-        POSTGRES_USER: test
-        POSTGRES_PASSWORD: test
   variables:
     CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
-    TEST_DB_HOST: db
-    TEST_DB_PORT: "5432"
-    TEST_DB_NAME: testdb
-    TEST_DB_USERNAME: test
-    TEST_DB_PASSWORD: test
+
   script:
     - mvn test -f ./backend
   artifacts:
