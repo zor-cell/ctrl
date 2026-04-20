@@ -21,7 +21,6 @@ describe('RegisterComponent', () => {
       resendVerificationEmail: vi.fn().mockReturnValue(of(void 0)),
     };
     await TestBed.configureTestingModule({
-      providers: [MessageService,],
       imports: [RegisterComponent],
       providers: [
         provideRouter([]),
