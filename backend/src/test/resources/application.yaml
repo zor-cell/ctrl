@@ -2,9 +2,9 @@ spring:
   application:
     name: ctrl
   datasource:
-    url: jdbc:postgresql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:5433}/${TEST_DB_NAME:${DB_NAME:testdb}}
-    username: ${TEST_DB_USERNAME:${DB_USERNAME:testuser}}
-    password: ${TEST_DB_PASSWORD:${DB_PASSWORD:testpw}}
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -12,7 +12,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
 
 
 garage:
