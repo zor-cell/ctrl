@@ -1,5 +1,0 @@
-### Mastodon Ingest triggern
-POST http://localhost:8080/api/feed/ingest
-
-### Feed laden
-GET http://localhost:8080/api/feed?page=0&postsPerPage=20
