@@ -16,53 +16,63 @@ variables:
 
 lint:backend:
   stage: lint
-  allow_failure: true
-  image: maven:3.9-eclipse-temurin-21
+  image: registry.reset.inso-w.at/pub/docker/debian-mvn
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
       - .m2/repository
   script:
+    - java -version
+    - mvn --version
     - mvn spotless:check -f ./backend/
+  artifacts:
+    expire_in: 1h
+    when: on_failure
   <<: *temp
 
 lint:frontend:
   stage: lint
-  allow_failure: true
-  image: node:20
+  image: registry.reset.inso-w.at/pub/docker/node:22-alpine
   cache:
     key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
     paths:
       - .npm
   script:
     - cd frontend && npm ci && npm run lint
+  artifacts:
+    expire_in: 1h
+    when: on_failure
   <<: *temp
-
 
 test:backend:
   stage: test
-  image: maven:3.9-eclipse-temurin-21
+  image: registry.reset.inso-w.at/pub/docker/debian-mvn
+  cache:
+    key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .m2/repository
   services:
-    - name: docker:24-dind
-      alias: docker
-      command: ["--tls=false",
-      "--min-api-version=1.24"]
+    - name: registry.reset.inso-w.at/pub/docker/pgvector:pg18-trixie
+      alias: db
+      variables:
+        HEALTHCHECK_TCP_PORT: "5432"
   variables:
-    DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_TLS_CERTDIR: ""
-    TESTCONTAINERS_HOST_OVERRIDE: "docker"
+    CI_DEBUG_SERVICES: "true"
+    POSTGRES_DB: testdb
+    POSTGRES_USER: test
+    POSTGRES_PASSWORD: test
   script:
-    - docker version
-    - mvn clean install -f ./backend/
+    - mvn test -f ./backend
   artifacts:
+    expire_in: 1h
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
-    when: always
+    when: on_failure
   <<: *temp
 
 test:frontend:
   stage: test
-  image: node:20
+  image: registry.reset.inso-w.at/pub/docker/node:22-alpine
   cache:
     key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
     paths:
@@ -70,9 +80,10 @@ test:frontend:
   script:
     - cd frontend && npm ci && npm run test
   artifacts:
+    expire_in: 1h
     reports:
       junit: ./frontend/test-results/*.xml
-    when: always
+    when: on_failure
   <<: *temp
 
 .build_rules: &build_rules

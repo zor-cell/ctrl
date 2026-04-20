@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
 import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
-import at.ac.tuwien.inso.ctrl.baseTest.AbstractTestContainer;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -27,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Import(TestConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
-public class UserUnitTest extends AbstractTestContainer {
+public class UserUnitTest {
 
   @Autowired
   private AuthService authService;

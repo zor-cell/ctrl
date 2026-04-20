@@ -1,12 +1,19 @@
 spring:
   application:
     name: ctrl
+  datasource:
+    url: jdbc:postgresql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:5433}/${TEST_DB_NAME:${DB_NAME:testdb}}
+    username: ${TEST_DB_USERNAME:${DB_USERNAME:testuser}}
+    password: ${TEST_DB_PASSWORD:${DB_PASSWORD:testpw}}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
 
 garage:
   url: http://localhost:3900
