@@ -53,7 +53,7 @@ test:backend:
     paths:
       - .m2/repository
   services:
-    - name: registry.reset.inso-w.at/pub/docker/pgvector:pg18-trixie
+    - name: postgres:16-alpine
       alias: db
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
