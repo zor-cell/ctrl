@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.baseTest;
 
-import at.ac.tuwien.inso.ctrl.config.IdAustriaConfig;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -13,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 @TestConfiguration
 public class TestConfig {
+
 
   @Bean
   @Primary
