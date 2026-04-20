@@ -6,6 +6,9 @@ import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.LabelRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
+import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
@@ -15,6 +18,9 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,24 +30,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class MastodonScheduler {
 
-    private static final String SOURCE_MASTODON = "mastodon";
-    private static final int    FETCH_LIMIT      = 20;
+    private static final String  SOURCE_MASTODON = "mastodon";
+    private static final int     FETCH_LIMIT     = 20;
+    private static final Pattern URL_PATTERN     = Pattern.compile("https?://\\S+");
 
     private final PostRepository           postRepository;
     private final ExternalAuthorRepository externalAuthorRepository;
     private final LabelRepository          labelRepository;
     private final TopicRepository          topicRepository;
+    private final SourceRepository         sourceRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient   httpClient   = HttpClient.newHttpClient();
 
     public MastodonScheduler(PostRepository postRepository,
                              ExternalAuthorRepository externalAuthorRepository,
                              LabelRepository labelRepository,
-                             TopicRepository topicRepository) {
+                             TopicRepository topicRepository,
+                             SourceRepository sourceRepository) {
         this.postRepository           = postRepository;
         this.externalAuthorRepository = externalAuthorRepository;
         this.labelRepository          = labelRepository;
         this.topicRepository          = topicRepository;
+        this.sourceRepository         = sourceRepository;
     }
 
     @Scheduled(fixedRateString = "PT15M")
@@ -70,7 +80,7 @@ public class MastodonScheduler {
                     getExplanation(sourceName));
             int saved = 0;
             for (JsonNode status : statuses) {
-                if (saveStatus(status, mastodonLabel, sourceLabel)) saved++;
+                if (saveStatus(status, mastodonLabel, sourceLabel, sourceName)) saved++;
             }
             log.info("Saved {}/{} new posts from {}@{}", saved, statuses.size(), acct, instance);
 
@@ -79,7 +89,7 @@ public class MastodonScheduler {
         }
     }
 
-    private boolean saveStatus(JsonNode status, Label mastodonLabel, Label sourceLabel) {
+    private boolean saveStatus(JsonNode status, Label mastodonLabel, Label sourceLabel, String sourceName) {
         if (!status.path("reblog").isNull()) return false;
 
         String externalPostId = status.path("id").asText(null);
@@ -89,15 +99,21 @@ public class MastodonScheduler {
         JsonNode account  = status.path("account");
         ExternalAuthor author = resolveOrCreateAuthor(account);
 
-        String        caption   = buildCaption(status);
-        String        mediaRef  = extractMediaRef(status);
-        LocalDateTime createdAt = parseCreatedAt(status.path("created_at").asText());
+        CaptionResult captionResult = buildCaptionAndExtractUrls(status, sourceName);
+        String        mediaRef      = extractMediaRef(status);
+        LocalDateTime createdAt     = parseCreatedAt(status.path("created_at").asText());
+
+        // Nur Posts mit Caption, Bild oder Source-URL speichern
+        if (captionResult.caption().isBlank() && mediaRef == null && captionResult.urls().isEmpty()) {
+            log.debug("Skipping post {} from {} — no caption, no image, no source URL", externalPostId, sourceName);
+            return false;
+        }
 
         Post post = Post.builder()
                 .postId(UUID.randomUUID().toString())
                 .externalPostId(externalPostId)
                 .externalAuthor(author)
-                .caption(caption)
+                .caption(captionResult.caption())
                 .mediaRef(mediaRef)
                 .isPublic(true)
                 .isAiGenerated(false)
@@ -109,6 +125,13 @@ public class MastodonScheduler {
         // Labels hinzufügen
         addLabel(post, mastodonLabel);
         addLabel(post, sourceLabel);
+
+        // Sources: eine Source-Entity mit je einer SingleSource pro extrahierter URL
+        // Post hat @OneToOne Source — alle URLs kommen als SingleSources in eine Source
+        List<String> urls = captionResult.urls();
+        if (!urls.isEmpty()) {
+            post.setSource(buildSource(urls));
+        }
 
         // Topics aus Hashtags
         JsonNode tags = status.path("tags");
@@ -144,6 +167,27 @@ public class MastodonScheduler {
                 .topic(topic)
                 .build();
         post.getPostTopics().add(postTopic);
+    }
+
+    private Source buildSource(List<String> urls) {
+        Source source = Source.builder()
+                .sourceId(UUID.randomUUID().toString())
+                .upvotes(0)
+                .downvotes(0)
+                .createdAt(LocalDateTime.now())
+                .singleSources(new ArrayList<>())
+                .build();
+
+        for (String url : urls) {
+            SingleSource singleSource = SingleSource.builder()
+                    .singleSourceId(UUID.randomUUID().toString())
+                    .url(url)
+                    .source(source)
+                    .build();
+            source.getSingleSources().add(singleSource);
+        }
+
+        return sourceRepository.save(source);
     }
 
     private Topic findOrCreateTopic(String name) {
@@ -189,19 +233,83 @@ public class MastodonScheduler {
         return statuses;
     }
 
-    private String buildCaption(JsonNode status) {
+    private record CaptionResult(String caption, List<String> urls) {}
+
+    /**
+     * Replicates the TypeScript FeedService caption logic exactly:
+     * - strips HTML (without touching URLs)
+     * - splits into lines, trims each
+     * - extracts URL lines into sources (removes them from caption)
+     * - applies source-specific filters (➡️ for Tagesschau, "Posted into" for BBC)
+     * - Tagesschau:  title = lines[0], body = lines[1+], caption = title + "\n\n" + body (or just title)
+     * - BBC News:    caption = all remaining lines joined by "\n"
+     * - both fall back to card.title / card.description if nothing remains
+     */
+    private CaptionResult buildCaptionAndExtractUrls(JsonNode status, String sourceName) {
         String raw = stripHtml(status.path("content").asText(""));
-        if (raw.isBlank() && !status.path("card").isMissingNode()) {
-            raw = status.path("card").path("title").asText("");
+        List<String> extractedUrls = new ArrayList<>();
+
+        // Immediate card fallback when content is empty after stripping
+        if (raw.isBlank()) {
+            return cardFallback(status, extractedUrls);
         }
-        return raw.trim();
+
+        List<String> lines = new ArrayList<>();
+        for (String line : raw.split("\n")) {
+            String trimmed = line.trim();
+
+            // Collect URLs and skip the line
+            Matcher m = URL_PATTERN.matcher(trimmed);
+            if (m.find()) {
+                m.reset();
+                while (m.find()) extractedUrls.add(m.group());
+                continue;
+            }
+
+            // Source-specific noise filters
+            if ("Tagesschau".equals(sourceName) && trimmed.equals("➡️")) continue;
+            if ("BBC News".equals(sourceName)   && trimmed.startsWith("Posted into")) continue;
+
+            if (!trimmed.isBlank()) lines.add(trimmed);
+        }
+
+        String caption;
+        if ("Tagesschau".equals(sourceName)) {
+            String title = lines.isEmpty() ? "" : lines.get(0);
+            String body  = lines.size() > 1
+                    ? lines.subList(1, lines.size()).stream().collect(Collectors.joining("\n"))
+                    : "";
+
+            // Fallback to link-preview card when filtered lines left nothing
+            if (title.isBlank()) {
+                return cardFallback(status, extractedUrls);
+            }
+            caption = body.isBlank() ? title : title + "\n\n" + body;
+
+        } else { // BBC News (and any future source)
+            caption = lines.stream().collect(Collectors.joining("\n"));
+            if (caption.isBlank()) {
+                caption = stripHtml(status.path("card").path("title").asText(""));
+            }
+        }
+
+        return new CaptionResult(caption, extractedUrls);
+    }
+
+    /** Builds caption from link-preview card (title + optional description). */
+    private CaptionResult cardFallback(JsonNode status, List<String> alreadyExtractedUrls) {
+        String title = stripHtml(status.path("card").path("title").asText(""));
+        String desc  = stripHtml(status.path("card").path("description").asText(""));
+        String caption = desc.isBlank() ? title : title + "\n\n" + desc;
+        return new CaptionResult(caption, alreadyExtractedUrls);
     }
 
     private String extractMediaRef(JsonNode status) {
         JsonNode attachments = status.path("media_attachments");
         if (attachments.isArray()) {
             for (JsonNode media : attachments) {
-                if ("image".equals(media.path("type").asText())) {
+                String type = media.path("type").asText();
+                if ("image".equals(type) || "video".equals(type) || "gifv".equals(type)) {
                     return media.path("url").asText(null);
                 }
             }
@@ -215,13 +323,12 @@ public class MastodonScheduler {
         catch (Exception e) { return LocalDateTime.now(); }
     }
 
+    /** Matches the TypeScript stripHtml exactly: strips tags + HTML entities, trims. No URL removal. */
     private String stripHtml(String html) {
         return html
                 .replaceAll("<[^>]+>", "")
                 .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
                 .replace("&quot;", "\"").replace("&#39;", "'").replace("&nbsp;", " ")
-                .replaceAll("https?://\\S+", "")
-                .replaceAll("\\s{2,}", "\n")
                 .trim();
     }
 
