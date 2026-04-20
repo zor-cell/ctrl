@@ -47,16 +47,34 @@ lint:frontend:
 
 build:test-db-image:
   stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
   script:
-    - docker build -f ci/pgvector-ci/Dockerfile -t "$CI_REGISTRY_IMAGE/test-db:pg18-ci" .
-    - docker push "$CI_REGISTRY_IMAGE/test-db:pg18-ci"
+    - mkdir -p /kaniko/.docker
+    - >
+      cat > /kaniko/.docker/config.json <<EOF
+      {
+        "auths": {
+          "${CI_REGISTRY}": {
+            "username": "${CI_REGISTRY_USER}",
+            "password": "${CI_REGISTRY_PASSWORD}"
+          },
+          "registry.reset.inso-w.at": {
+            "username": "${CI_REGISTRY_USER}",
+            "password": "${CI_REGISTRY_PASSWORD}"
+          }
+        }
+      }
+      EOF
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/ci/pgvector-ci/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/test-db:pg18-ci"
+      --cache=true
   rules:
     - when: manual
+
 
 
 test:backend:
