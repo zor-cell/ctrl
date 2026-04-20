@@ -52,6 +52,7 @@ test:backend:
     DOCKER_TLS_CERTDIR: ""
     TESTCONTAINERS_HOST_OVERRIDE: "docker"
   script:
+    - docker version
     - mvn clean install -f ./backend/
   artifacts:
     reports:
