@@ -1,4 +1,4 @@
-import {PostComment} from './Comment';
+import { PostComment } from './Comment';
 import { PostSource } from './PostSource';
 
 export interface Post {
@@ -9,8 +9,11 @@ export interface Post {
   createdAt: string;
   caption: string;
   isPublic: boolean;
-  whyExplanation: string; // will be changed in the future
+  whyExplanation: string;
   likes: number;
+  upvotes: number;
+  downvotes: number;
+  userVote: 'up' | 'down' | null;
   labelIds: [string, string][];
   topicIds: string[];
   videoImageRef: string[];
