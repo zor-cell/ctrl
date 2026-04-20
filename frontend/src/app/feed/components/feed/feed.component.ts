@@ -47,7 +47,7 @@ export class FeedComponent implements OnInit {
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
 
-  // Verhindert Doppelklicks während ein Request läuft
+  // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
 
@@ -60,8 +60,6 @@ export class FeedComponent implements OnInit {
     console.log(posts);
     this.allPosts.set(posts);
   }
-
-  // ── Post voting ─────────────────────────────────────────────────────────────
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
@@ -94,8 +92,6 @@ export class FeedComponent implements OnInit {
     }
   }
 
-  // ── Source voting ───────────────────────────────────────────────────────────
-
   async voteSource(post: Post, voteType: VoteType): Promise<void> {
     const source: PostSource | undefined = post.sourceIds?.[0];
     if (!source?.sourceId) return;
@@ -118,7 +114,7 @@ export class FeedComponent implements OnInit {
         userVote: result.userVote,
       });
     } catch (err) {
-      console.error('Source-Vote fehlgeschlagen, wird zurückgesetzt:', err);
+      console.error('Source vote failed; will be reset:', err);
       this.patchSource(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
@@ -129,7 +125,7 @@ export class FeedComponent implements OnInit {
     }
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  /** Helpers **/
 
   private calcOptimisticVote(
     upvotes: number,
