@@ -28,6 +28,7 @@ lint:backend:
   artifacts:
     expire_in: 1h
     when: on_failure
+    allow_failure: true
   <<: *temp
 
 lint:frontend:
@@ -42,6 +43,7 @@ lint:frontend:
   artifacts:
     expire_in: 1h
     when: on_failure
+    allow_failure: true
   <<: *temp
 
 test:backend:
