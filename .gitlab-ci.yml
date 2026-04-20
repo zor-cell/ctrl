@@ -52,7 +52,7 @@ build:test-db-image:
     entrypoint: [""]
   script:
     - mkdir -p /kaniko/.docker
-    - >
+    - |
       cat > /kaniko/.docker/config.json <<EOF
       {
         "auths": {
