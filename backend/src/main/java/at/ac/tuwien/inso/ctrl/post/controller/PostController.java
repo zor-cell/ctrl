@@ -11,11 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-<<<<<<< HEAD
-import org.springframework.web.bind.annotation.PathVariable;
-=======
 import org.springframework.web.bind.annotation.DeleteMapping;
->>>>>>> a863499 (feat(#13): correcting rebase conficts)
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,33 +36,31 @@ public class PostController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public PostResponse createPost(
-          @Valid @RequestBody CreatePostRequest request,
-          @AuthenticationPrincipal UserDetails userDetails) {
+      @Valid @RequestBody CreatePostRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
     return postService.createPost(request, userDetails.getUsername());
   }
 
   /**
-   * Casts an upvote or downvote on a post for the authenticated user.
-   * Sending the same vote type again toggles (removes) the existing vote.
+   * Casts an upvote or downvote on a post for the authenticated user. Sending the same vote type
+   * again toggles (removes) the existing vote.
    *
-   * PUT /posts/{postId}/vote
-   * Body: { "voteType": "up" | "down" }
+   * <p>PUT /posts/{postId}/vote Body: { "voteType": "up" | "down" }
    *
-   * @param postId      the unique identifier of the post to vote on
-   * @param request     the request body containing the vote type ('up' or 'down')
+   * @param postId the unique identifier of the post to vote on
+   * @param request the request body containing the vote type ('up' or 'down')
    * @param userDetails the currently authenticated user, injected via Spring Security
    * @return the updated vote counts and the user's current vote state as {@link VoteResponse}
    */
-
   @PutMapping("/{postId}/vote")
   @ResponseStatus(HttpStatus.OK)
   public VoteResponse votePost(
-          @PathVariable String postId,
-          @Valid @RequestBody VoteRequest request,
-          @AuthenticationPrincipal UserDetails userDetails) {
+      @PathVariable String postId,
+      @Valid @RequestBody VoteRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
     return postService.votePost(postId, request, userDetails.getUsername());
   }
-}
+
   @DeleteMapping("/{postId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deletePost(
