@@ -5,18 +5,17 @@ import java.util.List;
 
 public record FeedPostResponse(
         String postId,
-        // entweder interner User oder externer Autor
+        // either an internal user or an external author
         String userId,
         String username,
         String userProfilePic,
-        // Post-Daten
         String caption,
         String mediaRef,
         boolean isPublic,
         Integer upvotes,
         Integer downvotes,
+        String userVote,
         LocalDateTime createdAt,
-        // Relations
         List<String> topicIds,
         List<LabelResponse> labelIds,
         List<SourceResponse> sourceIds,
@@ -24,7 +23,13 @@ public record FeedPostResponse(
 ) {
     public record LabelResponse(String name, String description) {}
 
-    public record SourceResponse(String url, Integer upvotes, Integer downvotes) {}
+    public record SourceResponse(
+            String sourceId,
+            String url,
+            Integer upvotes,
+            Integer downvotes,
+            String userVote       // "up", "down" or null
+    ) {}
 
     public record CommentResponse(
             String commentId,
