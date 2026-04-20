@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
+import at.ac.tuwien.inso.ctrl.common.domain.Votable;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
@@ -18,7 +19,8 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor
 @Entity
 @Table(name = "posts")
-public class Post {
+public class Post implements Votable {
+
   @Id
   @Column(name = "post_id", nullable = false, unique = true)
   private String postId;
@@ -32,7 +34,7 @@ public class Post {
   private ExternalAuthor externalAuthor;
 
   @Column(name = "external_post_id", unique = true)
-  private String externalPostId; // verhindert Duplikate beim re-fetch
+  private String externalPostId;
 
   @OneToOne(optional = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "source_id")
@@ -82,5 +84,4 @@ public class Post {
   public boolean isExternalPost() {
     return externalAuthor != null;
   }
-
 }
