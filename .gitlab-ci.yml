@@ -60,13 +60,13 @@ test:backend:
         POSTGRES_DB: testdb
         POSTGRES_USER: test
         POSTGRES_PASSWORD: test
+        PGDATA: /tmp/pgdata
   variables:
     CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
     SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
-
   script:
     - mvn test -f ./backend
   artifacts:
@@ -90,28 +90,6 @@ test:frontend:
     reports:
       junit: ./frontend/test-results/*.xml
     when: on_failure
-  <<: *temp
-
-diag:pgvector-startup:
-  extends: .docker_base
-  stage: test
-  script:
-    - mkdir -p diag
-    - docker version
-    - docker pull registry.reset.inso-w.at/pub/docker/pgvector:pg18-trixie
-    - docker run --name pgdiag -e POSTGRES_DB=testdb -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -p 55432:5432 -d registry.reset.inso-w.at/pub/docker/pgvector:pg18-trixie
-    - sleep 8
-    - docker ps -a | tee diag/docker-ps.txt
-    - docker inspect pgdiag > diag/inspect.json || true
-    - docker logs pgdiag > diag/db.log 2>&1 || true
-    - docker exec pgdiag pg_isready -U test -d testdb > diag/pg-isready.txt 2>&1 || true
-    - docker exec pgdiag psql -U test -d testdb -c "select version();" > diag/psql.txt 2>&1 || true
-    - docker rm -f pgdiag || true
-  artifacts:
-    when: always
-    expire_in: 7 days
-    paths:
-      - ./diag/
   <<: *temp
 
 .build_rules: &build_rules
