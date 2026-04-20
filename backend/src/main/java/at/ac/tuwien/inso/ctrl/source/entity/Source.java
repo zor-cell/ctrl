@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.source.entity;
 
+import at.ac.tuwien.inso.ctrl.common.domain.Votable;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,7 +13,8 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "sources")
-public class Source {
+public class Source implements Votable {
+
   @Id
   @Column(name = "source_id", nullable = false, unique = true)
   private String sourceId;
