@@ -116,9 +116,24 @@ build:frontend:
 
 .docker_base:
   image: docker:24
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      alias: docker
+      command: ["--tls=false"]
   before_script:
+    - |
+      i=0
+      until docker info > /dev/null 2>&1; do
+        i=$((i + 1))
+        if [ "$i" -ge 60 ]; then
+          echo "Docker daemon did not become ready in time."
+          exit 1
+        fi
+        sleep 1
+      done
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
 build:ci-maven-docker:
