@@ -45,6 +45,16 @@ lint:frontend:
     when: on_failure
   <<: *temp
 
+build:test-db-image:
+  extends: .docker_base
+  stage: build
+  script:
+    - docker build -f ci/pgvector-ci/Dockerfile -t "$CI_REGISTRY_IMAGE/test-db:pg18-ci" .
+    - docker push "$CI_REGISTRY_IMAGE/test-db:pg18-ci"
+  rules:
+    - when: manual
+
+
 test:backend:
   stage: test
   image: registry.reset.inso-w.at/pub/docker/debian-mvn
@@ -53,14 +63,13 @@ test:backend:
     paths:
       - .m2/repository
   services:
-    - name: postgres:16-alpine
+    - name: $CI_REGISTRY_IMAGE/test-db:pg18-ci
       alias: db
       variables:
         HEALTHCHECK_TCP_PORT: "5432"
         POSTGRES_DB: testdb
         POSTGRES_USER: test
         POSTGRES_PASSWORD: test
-        PGDATA: /tmp/pgdata
   variables:
     CI_DEBUG_SERVICES: "true"
     POSTGRES_DB: testdb
