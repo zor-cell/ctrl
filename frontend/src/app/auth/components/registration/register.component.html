@@ -1,14 +1,14 @@
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <h2>Welcome</h2>
+<div class="wrapper">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Welcome to CTRL</h2>
             <p>Register a new account</p>
         </div>
 
-        <form [formGroup]="registerForm" (ngSubmit)="register()" class="login-form">
+        <form [formGroup]="registerForm" (ngSubmit)="register()">
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText id="username" formControlName="username" />
+                    <input pInputText id="username" formControlName="username" fluid/>
                     <label for="username">Username</label>
                 </p-floatlabel>
 
@@ -19,7 +19,7 @@
 
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText type="email" id="email" formControlName="email" />
+                    <input pInputText type="email" id="email" formControlName="email" fluid/>
                     <label for="email">Email</label>
                 </p-floatlabel>
 
@@ -30,7 +30,11 @@
 
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText type="password" id="password" formControlName="password" />
+                    <p-password id="password"
+                                formControlName="password"
+                                [feedback]="false"
+                                [toggleMask]="true"
+                                fluid/>
                     <label for="password">Password</label>
                 </p-floatlabel>
 
@@ -42,7 +46,7 @@
 
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText id="name" formControlName="name" />
+                    <input pInputText id="name" formControlName="name" fluid/>
                     <label for="name">Full Name</label>
                 </p-floatlabel>
 
@@ -58,7 +62,9 @@
                             formControlName="birthdate"
                             [showIcon]="true"
                             placeholder="dd.mm.yy"
-                            dateFormat="dd.mm.yy">
+                            dateFormat="dd.mm.yy"
+                            fluid
+                    >
                     </p-date-picker>
                     <label for="birthdate">Birthdate</label>
                 </p-floatlabel>
@@ -68,7 +74,7 @@
                 }
             </div>
 
-            <p-button type="submit" label="Register"></p-button>
+            <p-button type="submit" label="Register" fluid></p-button>
 
             <div class="register-link">
                 Already have an account?
@@ -76,5 +82,4 @@
             </div>
         </form>
     </div>
-
 </div>
