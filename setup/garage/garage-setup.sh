@@ -23,6 +23,7 @@ GARAGE_BUCKET_NAME=${GARAGE_BUCKET_NAME:-ctrl-dev-media}
 
 echo "Setting up bucket '$GARAGE_BUCKET_NAME'..."
 docker compose exec -T garage /garage bucket create "$GARAGE_BUCKET_NAME" || true
+docker compose exec -T garage /garage bucket website --allow "$GARAGE_BUCKET_NAME" || true
 
 echo "Importing access keys..."
 docker compose exec -T garage /garage key import --yes "$GARAGE_ACCESS_KEY" "$GARAGE_SECRET_KEY" -n backend-key || true

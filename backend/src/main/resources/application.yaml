@@ -18,7 +18,7 @@ spring:
 
 garage:
   url: http://garage:3900
-  public-url: http://localhost:3900
+  public-url: http://${GARAGE_BUCKET_NAME:ctrl-dev-media}.web.garage.localhost:3902
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ctrl-prod-media

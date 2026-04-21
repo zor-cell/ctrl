@@ -152,7 +152,7 @@ public class FileStorageService {
       return null;
     }
 
-    return publicUrl + "/" + bucketName + "/" + relativeFilename;
+    return publicUrl + "/" + relativeFilename;
   }
 
   private void validatePostMedia(MultipartFile file) {
