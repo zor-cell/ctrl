@@ -14,8 +14,6 @@ import {NavigationComponent} from './navigation/navigation.component';
 export class AppComponent implements OnInit {
   protected userService = inject(UserService);
 
-  protected readonly title = signal('frontend');
-
   ngOnInit() {
     this.userService.loadUser().subscribe();
   }
