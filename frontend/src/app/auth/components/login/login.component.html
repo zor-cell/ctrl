@@ -1,42 +1,44 @@
-<div class="form-container">
-    <div class="form-header">
-        <h2>Welcome Back</h2>
-        <p>Sign in to continue</p>
+<div class="wrapper">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue</p>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="login()">
+            <div>
+                <p-floatlabel variant="on">
+                    <input pInputText id="username" formControlName="username" fluid/>
+                    <label for="username">Username</label>
+                </p-floatlabel>
+
+                @if (loginForm.controls.username.invalid && loginForm.controls.username.touched && loginForm.controls.username.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
+                }
+            </div>
+
+            <div>
+                <p-floatlabel variant="on">
+                    <p-password id="password"
+                                formControlName="password"
+                                [feedback]="false"
+                                [toggleMask]="true"
+                                fluid
+                    />
+                    <label for="password">Password</label>
+                </p-floatlabel>
+
+                @if (loginForm.controls.password.invalid && loginForm.controls.password.touched && loginForm.controls.password.dirty) {
+                    <p-message severity="error" size="small" variant="simple">Password is required.</p-message>
+                }
+            </div>
+
+            <p-button type="submit" label="Log In" fluid></p-button>
+
+            <div class="register-link">
+                Don't have an account?
+                <a routerLink="/register">Register here</a>
+            </div>
+        </form>
     </div>
-
-    <form [formGroup]="loginForm" (ngSubmit)="login()">
-        <div>
-            <p-floatlabel variant="on">
-                <input pInputText id="username" formControlName="username" fluid />
-                <label for="username">Username</label>
-            </p-floatlabel>
-
-            @if (loginForm.controls.username.invalid && loginForm.controls.username.touched && loginForm.controls.username.dirty) {
-                <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
-            }
-        </div>
-
-        <div>
-            <p-floatlabel variant="on">
-                <p-password id="password"
-                            formControlName="password"
-                            [feedback]="false"
-                            [toggleMask]="true"
-                            fluid
-                />
-                <label for="password">Password</label>
-            </p-floatlabel>
-
-            @if (loginForm.controls.password.invalid && loginForm.controls.password.touched && loginForm.controls.password.dirty) {
-                <p-message severity="error" size="small" variant="simple">Password is required.</p-message>
-            }
-        </div>
-
-        <p-button type="submit" label="Log In" fluid></p-button>
-
-        <div class="register-link">
-            Don't have an account?
-            <a routerLink="/register">Register here</a>
-        </div>
-    </form>
 </div>

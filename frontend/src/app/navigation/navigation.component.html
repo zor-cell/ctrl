@@ -1,16 +1,11 @@
 <div>
     <p-menubar [model]="navItems()">
         <ng-template pTemplate="start">
-            <div
-                    class="font-bold text-xl tracking-wider cursor-pointer pr-4"
-                    routerLink="/feed"
-            >
-                <div class="logo-text">CTRL</div>
-            </div>
+            <div class="logo-text">CTRL</div>
         </ng-template>
 
         <ng-template pTemplate="end">
-            <div class="flex align-items-center gap-3">
+            <div class="profile-container">
                 @if (authService.isAuthenticated()) {
                     <p-avatar
                             icon="pi pi-user"
