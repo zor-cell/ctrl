@@ -10,9 +10,11 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /backend
+
+RUN apk add --no-cache curl ffmpeg
 
 COPY --from=build /backend/target/*.jar backend.jar
 

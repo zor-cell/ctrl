@@ -46,11 +46,11 @@ public class User implements UserDetails {
   @Column(name = "birthdate")
   private LocalDate birthdate;
 
-  @Column(name = "profile_picture")
-  private String profilePicture;
-
   @Column(name = "bio")
   private String bio;
+
+  @Column(name = "profile_picture_ref")
+  private String profilePicture;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ChatMember> chatMembers;

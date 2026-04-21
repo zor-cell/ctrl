@@ -20,27 +20,26 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "posts")
 public class Post implements Votable {
-
   @Id
   @Column(name = "post_id", nullable = false, unique = true)
   private String postId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
+  @JoinColumn(name = "user_id", referencedColumnName = "id")
   private User user;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "external_author_id", referencedColumnName = "external_author_id", nullable = true)
-  private ExternalAuthor externalAuthor;
 
   @Column(name = "external_post_id", unique = true)
   private String externalPostId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "external_author_id", referencedColumnName = "external_author_id")
+  private ExternalAuthor externalAuthor;
 
   @OneToOne(optional = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "source_id")
   private Source source;
 
-  @Column(columnDefinition = "TEXT")
+  @Column(nullable = false, columnDefinition = "text")
   private String caption;
 
   @Column(name = "media_ref")

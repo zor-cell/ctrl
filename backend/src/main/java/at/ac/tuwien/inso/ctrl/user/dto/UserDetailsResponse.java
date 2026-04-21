@@ -10,5 +10,6 @@ public record UserDetailsResponse(
     String email,
     String name,
     LocalDate birthdate,
+    String profilePicture,
     Instant createdAt,
     boolean isVerified) {}

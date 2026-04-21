@@ -1,27 +1,30 @@
-import {Injectable, inject, signal, computed} from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../environments/environment';
+import { tap } from 'rxjs';
 
-import {RegisterRequest} from './dto/RegisterRequest'
-import {LoginRequest} from './dto/LoginRequest'
-import {AuthResponse} from './dto/AuthResponse'
-import {tap} from "rxjs";
-import {NotificationService} from "../core/services/notification.service";
-import {jwtDecode} from "jwt-decode";
+import { environment } from '../../environments/environment';
+import { NotificationService } from '../core/services/notification.service';
+import { AuthResponse } from './dto/AuthResponse';
+import { LoginRequest } from './dto/LoginRequest';
+import { RegisterRequest } from './dto/RegisterRequest';
+
+interface JwtPayload {
+  exp?: number;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private readonly TOKEN_KEY = 'AUTH_TOKEN';
-  private readonly baseUri: string = environment.apiUrl + '/auth';
-  private httpClient = inject(HttpClient);
-  private notificationService = inject(NotificationService);
+  private readonly baseUri = environment.apiUrl + '/auth';
+  private readonly httpClient = inject(HttpClient);
+  private readonly notificationService = inject(NotificationService);
 
-  private _token = signal<string | null>(this.getValidTokenOnStartup());
-  public token = this._token.asReadonly();
-  
-  public isAuthenticated = computed(() => {
+  private readonly _token = signal<string | null>(this.getValidTokenOnStartup());
+  public readonly token = this._token.asReadonly();
+
+  public readonly isAuthenticated = computed(() => {
     const currentToken = this.token();
     if (!currentToken) {
       return false;
@@ -34,7 +37,7 @@ export class AuthService {
     return this.httpClient.post<void>(this.baseUri + '/register', registerRequest).pipe(
       tap(() => {
         this.notificationService.showSuccess('Registered user');
-      })
+      }),
     );
   }
 
@@ -42,7 +45,7 @@ export class AuthService {
     return this.httpClient.post<AuthResponse>(this.baseUri + '/login', loginRequest).pipe(
       tap(res => {
         this.updateToken(res.token);
-      })
+      }),
     );
   }
 
@@ -73,22 +76,23 @@ export class AuthService {
 
   private isTokenExpired(token: string): boolean {
     try {
-      const decoded = jwtDecode(token);
+      const decoded = this.decodeJwtPayload(token);
       if (!decoded.exp) {
         return false;
       }
 
       const expirationDateInMs = decoded.exp * 1000;
-      return Date.now() > (expirationDateInMs - 10000); //-10 seconds as buffer
-    } catch (error) {
+      return Date.now() > expirationDateInMs - 10000;
+    } catch {
       return true;
     }
   }
 
-  //retrieve the token on startup and checks its validity
   private getValidTokenOnStartup(): string | null {
     const token = localStorage.getItem(this.TOKEN_KEY);
-    if (!token) return null;
+    if (!token) {
+      return null;
+    }
 
     if (this.isTokenExpired(token)) {
       localStorage.removeItem(this.TOKEN_KEY);
@@ -96,5 +100,21 @@ export class AuthService {
     }
 
     return token;
+  }
+
+  private decodeJwtPayload(token: string): JwtPayload {
+    const [, payload] = token.split('.');
+
+    if (!payload) {
+      throw new Error('JWT payload is missing');
+    }
+
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = normalizedPayload.padEnd(
+      normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+      '=',
+    );
+
+    return JSON.parse(atob(paddedPayload)) as JwtPayload;
   }
 }
