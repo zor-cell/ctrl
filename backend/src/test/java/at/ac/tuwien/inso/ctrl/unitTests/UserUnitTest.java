@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +19,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,6 +42,8 @@ public class UserUnitTest {
 
   @MockitoBean
   JwtDecoder jwtDecoder;
+  @Autowired
+  private UserService userService;
 
   @Transactional
   @Test
@@ -69,6 +74,30 @@ public class UserUnitTest {
 
     //clean up
     userRepository.delete(user.get());
+
+  }
+
+  @Transactional
+  @Test
+  public void test_conductUserCleanup_withUserOlderThanOneDayAndNotVerified() {
+    //prepare db
+    User user = new User();
+    user.setUsername("test");
+    user.setName("Test");
+    user.setEmail("test@gmail.com");
+    user.setPassword("12345678");
+    user.setEmailVerified(false);
+    user.setBirthdate(LocalDate.of(2000, 1, 1));
+    user.setCreatedAt(LocalDate.now().minusDays(1).atTime(LocalTime.now()).toInstant(java.time.ZoneOffset.UTC));
+
+    userRepository.save(user);
+
+    userService.conductUserCleanup();
+
+    Optional<User> user_req = userRepository.findByEmail(user.getEmail());
+
+    assertNotNull(user_req);
+    assertFalse(user_req.isPresent());
 
   }
 }
