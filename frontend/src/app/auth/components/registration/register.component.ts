@@ -21,7 +21,7 @@ import {Password} from "primeng/password";
     ReactiveFormsModule,
     DatePicker,
     RouterLink,
-    Password
+    Password,
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -36,11 +36,11 @@ export class RegisterComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
     name: ['', Validators.required],
-    birthdate: ['', Validators.required]
+    birthdate: ['', Validators.required],
   });
 
   public register() {
-    if(this.registerForm.invalid) {
+    if (this.registerForm.invalid) {
       this.registerForm.markAllAsDirty();
       this.registerForm.markAllAsTouched();
       return;
@@ -54,20 +54,32 @@ export class RegisterComponent {
 
     const registerRequest: RegisterRequest = {
       ...formValue,
-      birthdate: formattedDate
+      birthdate: formattedDate,
     };
-    console.log(registerRequest)
-    this.authService.register(registerRequest).subscribe(() => {
-      if (environment.auth.requireEmailVerification){
-        this.router.navigate(['/email_verification'], {
-          state: { registerRequest }
-        });
-      } else {
-        this.router.navigate(['/login'])
-      }
 
+
+    this.authService.register(registerRequest).subscribe({
+      next: () => {
+        if (environment.auth.requireEmailVerification) {
+          this.redirectLogic(registerRequest);
+        } else {
+          this.router.navigate(['/login']);
+        }
+      },
+      error: (err) => {
+        console.error('Register or resend failed', err);
+      },
     });
+  }
 
-    this.authService.resendVerificationEmail(registerRequest).subscribe();
+  private redirectLogic(registerRequest: RegisterRequest) {
+    this.router.navigate(['/email_verification'], {
+      state: { registerRequest },
+    });
+    this.authService.resendVerificationEmail(registerRequest).subscribe({
+      error: () => {
+        this.router.navigate(['register']);
+      },
+    });
   }
 }

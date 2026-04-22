@@ -1,20 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
-
 import { environment } from '../../environments/environment';
-import { NotificationService } from '../core/services/notification.service';
 import { AuthResponse } from './dto/AuthResponse';
 import { LoginRequest } from './dto/LoginRequest';
 import { RegisterRequest } from './dto/RegisterRequest';
-
-
-import {UserDetails} from '../user/dto/UserDetails'
-import {RegisterRequest} from './dto/RegisterRequest'
-import {LoginRequest} from './dto/LoginRequest'
-import {AuthResponse} from './dto/AuthResponse'
 import {Observable, tap} from "rxjs";
-import {UserService} from "../user/user.service";
 import {NotificationService} from "../core/services/notification.service";
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 interface JwtPayload {
