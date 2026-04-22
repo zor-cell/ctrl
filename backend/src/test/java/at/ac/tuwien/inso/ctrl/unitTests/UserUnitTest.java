@@ -88,7 +88,7 @@ public class UserUnitTest {
     user.setPassword("12345678");
     user.setEmailVerified(false);
     user.setBirthdate(LocalDate.of(2000, 1, 1));
-    user.setCreatedAt(LocalDate.now().minusDays(1).atTime(LocalTime.now()).toInstant(java.time.ZoneOffset.UTC));
+    user.setCreatedAt(LocalDate.now().minusDays(1).atTime(LocalTime.now().minusMinutes(1)).toInstant(java.time.ZoneOffset.UTC));
 
     userRepository.save(user);
 
@@ -97,7 +97,71 @@ public class UserUnitTest {
     Optional<User> user_req = userRepository.findByEmail(user.getEmail());
 
     assertNotNull(user_req);
-    assertFalse(user_req.isPresent());
+    assertTrue(user_req.isPresent());
+    assertEquals(user.getEmail(), user_req.get().getEmail());
+    assertEquals(user.getUsername(), user_req.get().getUsername());
+    assertEquals(user.getPassword(), user_req.get().getPassword());
+    assertEquals(user.getCreatedAt(), user_req.get().getCreatedAt());
+    assertEquals(user.getBirthdate(), user_req.get().getBirthdate());
+  }
+
+  @Transactional
+  @Test
+  public void test_conductUserCleanup_withUserOlderThanOneDayAndVerified() {
+    //prepare db
+    User user = new User();
+    user.setUsername("test");
+    user.setName("Test");
+    user.setEmail("test@gmail.com");
+    user.setPassword("12345678");
+    user.setEmailVerified(true);
+    user.setBirthdate(LocalDate.of(2000, 1, 1));
+    user.setCreatedAt(LocalDate.now().minusDays(1).atTime(LocalTime.now().minusMinutes(1)).toInstant(java.time.ZoneOffset.UTC));
+
+    userRepository.save(user);
+
+    userService.conductUserCleanup();
+
+    Optional<User> user_req = userRepository.findByEmail(user.getEmail());
+
+    assertNotNull(user_req);
+    assertTrue(user_req.isPresent());
+    assertEquals(user.getEmail(), user_req.get().getEmail());
+    assertEquals(user.getUsername(), user_req.get().getUsername());
+    assertEquals(user.getPassword(), user_req.get().getPassword());
+    assertEquals(user.getCreatedAt(), user_req.get().getCreatedAt());
+    assertEquals(user.getBirthdate(), user_req.get().getBirthdate());
+
+
+  }
+
+  @Transactional
+  @Test
+  public void test_conductUserCleanup_withUserYoungerThanOneDayAndNotVerified() {
+    //prepare db
+    User user = new User();
+    user.setUsername("test");
+    user.setName("Test");
+    user.setEmail("test@gmail.com");
+    user.setPassword("12345678");
+    user.setEmailVerified(false);
+    user.setBirthdate(LocalDate.of(2000, 1, 1));
+    user.setCreatedAt(LocalDate.now().minusDays(1).atTime(LocalTime.now().plusMinutes(1)).toInstant(java.time.ZoneOffset.UTC));
+
+    userRepository.save(user);
+
+    userService.conductUserCleanup();
+
+    Optional<User> user_req = userRepository.findByEmail(user.getEmail());
+
+    assertNotNull(user_req);
+    assertTrue(user_req.isPresent());
+    assertEquals(user.getEmail(), user_req.get().getEmail());
+    assertEquals(user.getUsername(), user_req.get().getUsername());
+    assertEquals(user.getPassword(), user_req.get().getPassword());
+    assertEquals(user.getCreatedAt(), user_req.get().getCreatedAt());
+    assertEquals(user.getBirthdate(), user_req.get().getBirthdate());
+
 
   }
 }
