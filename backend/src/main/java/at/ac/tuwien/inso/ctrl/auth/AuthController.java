@@ -11,6 +11,7 @@ import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

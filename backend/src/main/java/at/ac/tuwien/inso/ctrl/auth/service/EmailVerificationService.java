@@ -5,6 +5,9 @@ import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
 import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
+import at.ac.tuwien.inso.ctrl.exception.InvalidEmailVerificationCodeException;
+import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -17,6 +20,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -62,9 +66,9 @@ public class EmailVerificationService {
       mailSender.send(message);
       saveVerificationCode(registerRequest, code);
     } catch (MailException e) {
-      throw new RuntimeException("Failed to send email", e);
+      throw new CommunicationException("Failed to send email. You can register again in 2 minutes.");
     } catch (MessagingException me) {
-      throw new RuntimeException("Failed to create Message", me);
+      throw new CommunicationException("Failed to create email. You can register again in 2 minutes.");
     }
   }
 
@@ -73,9 +77,9 @@ public class EmailVerificationService {
       return new EmailVerificationResponse(true);
     }
     User user = userRepository.findByUsername(emailVerificationRequest.username())
-        .orElseThrow(() -> new IllegalStateException("User not found for verification"));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
     EmailVerification verification = emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
-        .orElseThrow(() -> new IllegalStateException("Verification not found for user"));
+        .orElseThrow(() -> new ResourceNotFoundException("Verification not found for user"));
 
     if (verification.getCode().equals(emailVerificationRequest.code()) && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
       emailVerificationRepository.delete(verification);
@@ -83,7 +87,7 @@ public class EmailVerificationService {
       userRepository.save(user);
       return new EmailVerificationResponse(true);
     } else {
-      throw new IllegalStateException("Invalid or expired verification code");
+      throw new InvalidEmailVerificationCodeException("Invalid or expired verification code");
     }
   }
 
@@ -96,7 +100,7 @@ public class EmailVerificationService {
   
   private void saveVerificationCode(RegisterRequest registerRequest, String code) {
     User user = userRepository.findByUsername(registerRequest.username())
-            .orElseThrow(() -> new IllegalStateException("User not found for verification"));
+            .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
 
     emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
             .ifPresent(emailVerificationRepository::delete);
