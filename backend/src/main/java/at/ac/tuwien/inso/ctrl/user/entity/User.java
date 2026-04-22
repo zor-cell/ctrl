@@ -52,6 +52,11 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMember> chatMembers;
+  @Column(name = "bio")
+  private String bio;
+
+  @Column(name = "profile_picture_ref")
+  private String profilePicture;
 
   @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default

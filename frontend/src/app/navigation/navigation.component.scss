@@ -1,0 +1,62 @@
+.nav-bar {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+.logo-text {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+//show main nav items in the center of menubar on desktop
+@media screen and (min-width: 960px) {
+  :host ::ng-deep .p-menubar {
+    justify-content: space-between;
+
+    .p-menubar-start {
+      flex: 1;
+    }
+
+    .p-menubar-root-list {
+      justify-content: center;
+    }
+
+    .p-menubar-end {
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+}
+
+//mobile layout switch logo and hamburger
+@media screen and (max-width: 959px) {
+  :host ::ng-deep .p-menubar {
+
+    .p-menubar-button {
+      order: 1;
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    .p-menubar-start {
+      order: 2;
+      flex: 1;
+      display: flex;
+      justify-content: start;
+    }
+
+    .p-menubar-end {
+      order: 3;
+    }
+  }
+}

@@ -10,9 +10,13 @@ import {AuthService} from "../auth/auth.service";
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.token();
+  const publicEndpoints = ['/api/auth/', '/api/files/media', '/api/topics', '/api/labels'];
 
-  //dont add token to auth endpoints
-  if (!token || req.url.includes('/api/auth/')) {
+  if (!token || !authService.validateSession()) {
+    return next(req);
+  }
+
+  if (publicEndpoints.some(endpoint => req.url.includes(endpoint))) {
     return next(req);
   }
 

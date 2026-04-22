@@ -27,4 +27,7 @@ public class Label {
 
   @Column(nullable = false)
   private String emoji;
+
+  @Column(columnDefinition = "TEXT")
+  private String explanation;
 }

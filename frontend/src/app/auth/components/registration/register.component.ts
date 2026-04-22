@@ -9,6 +9,7 @@ import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {DatePicker} from "primeng/datepicker";
 import {environment} from '../../../../environments/environment';
+import {Password} from "primeng/password";
 
 @Component({
   selector: 'app-registration',
@@ -19,7 +20,8 @@ import {environment} from '../../../../environments/environment';
     Message,
     ReactiveFormsModule,
     DatePicker,
-    RouterLink
+    RouterLink,
+    Password
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -44,7 +46,17 @@ export class RegisterComponent {
       return;
     }
 
-    const registerRequest: RegisterRequest = this.registerForm.getRawValue();
+    const formValue = this.registerForm.getRawValue();
+
+    //format the date to ignore time zones
+    const birthdate = new Date(formValue.birthdate);
+    const formattedDate = `${birthdate.getFullYear()}-${(birthdate.getMonth() + 1).toString().padStart(2, '0')}-${birthdate.getDate().toString().padStart(2, '0')}`;
+
+    const registerRequest: RegisterRequest = {
+      ...formValue,
+      birthdate: formattedDate
+    };
+    console.log(registerRequest)
     this.authService.register(registerRequest).subscribe(() => {
       if (environment.auth.requireEmailVerification){
         this.router.navigate(['/email_verification'], {

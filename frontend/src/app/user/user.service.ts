@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
@@ -28,7 +28,15 @@ export class UserService {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
         this._user.set(user)
-      })
+      }),
+      catchError(error => {
+        if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
+          this._user.set(null);
+          this.authService.logout();
+        }
+
+        return throwError(() => error);
+      }),
     );
   }
 
@@ -37,6 +45,18 @@ export class UserService {
       tap(user => {
         this._user.set(user);
         this.notificationService.showSuccess('Updated profile');
+      })
+    );
+  }
+
+  public updateProfilePicture(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.httpClient.put<UserDetails>(this.baseUri + '/me/profile-picture', formData).pipe(
+      tap(user => {
+        this._user.set(user);
+        this.notificationService.showSuccess('Updated profile picture');
       })
     );
   }

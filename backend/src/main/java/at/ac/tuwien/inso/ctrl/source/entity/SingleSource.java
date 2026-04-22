@@ -1,8 +1,18 @@
 package at.ac.tuwien.inso.ctrl.source.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Builder
 @Getter
@@ -16,12 +26,16 @@ public class SingleSource {
   @Column(name = "single_source_id", nullable = false, unique = true)
   private String singleSourceId;
 
+  @Column(length = 255)
   private String journal;
 
+  @Column(length = 255)
   private String author;
 
+  @Column(length = 500)
   private String title;
 
+  @Column(length = 2048)
   private String url;
 
   private LocalDate date;
