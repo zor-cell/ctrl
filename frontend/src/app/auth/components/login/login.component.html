@@ -1,14 +1,14 @@
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-header">
+<div class="wrapper">
+    <div class="form-container">
+        <div class="form-header">
             <h2>Welcome Back</h2>
             <p>Sign in to continue</p>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="login()" class="login-form">
+        <form [formGroup]="loginForm" (ngSubmit)="login()">
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText id="username" formControlName="username" />
+                    <input pInputText id="username" formControlName="username" fluid/>
                     <label for="username">Username</label>
                 </p-floatlabel>
 
@@ -19,7 +19,12 @@
 
             <div>
                 <p-floatlabel variant="on">
-                    <input pInputText type="password" id="password" formControlName="password" />
+                    <p-password id="password"
+                                formControlName="password"
+                                [feedback]="false"
+                                [toggleMask]="true"
+                                fluid
+                    />
                     <label for="password">Password</label>
                 </p-floatlabel>
 
@@ -28,7 +33,7 @@
                 }
             </div>
 
-            <p-button type="submit" label="Log In"></p-button>
+            <p-button type="submit" label="Log In" fluid></p-button>
 
             <div class="register-link">
                 Don't have an account?
@@ -36,5 +41,4 @@
             </div>
         </form>
     </div>
-
 </div>

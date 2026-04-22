@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -20,10 +21,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
+  private final FileStorageService fileStorageService;
   private final FollowService followService;
 
   public UserDetailsResponse getUser(UUID userId) {
@@ -65,6 +69,16 @@ public class UserService {
     user.setName(newName);
     user.setEmail(newEmail);
     user.setBirthdate(request.birthdate());
+
+    User updatedUser = userRepository.save(user);
+    return userMapper.toUserDetailsResponse(updatedUser);
+  }
+
+  @Transactional
+  public UserDetailsResponse updateProfilePicture(User currentUser, MultipartFile file) {
+    User user = getUserInternal(currentUser.getId());
+    String profilePictureRef = fileStorageService.uploadProfilePicture(file);
+    user.setProfilePicture(profilePictureRef);
 
     User updatedUser = userRepository.save(user);
     return userMapper.toUserDetailsResponse(updatedUser);
@@ -170,5 +184,11 @@ public class UserService {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+  }
+
+  @Scheduled(cron = "0 0 2 * * *")
+  @Transactional
+  public void conductUserCleanup() {
+        userRepository.deleteUnverifiedUsersOlderThanOneDay();
   }
 }

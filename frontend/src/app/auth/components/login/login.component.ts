@@ -8,6 +8,7 @@ import {InputText} from "primeng/inputtext";
 import {FloatLabel} from "primeng/floatlabel";
 import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
+import {Password} from "primeng/password";
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,8 @@ import {Router, RouterLink} from "@angular/router";
     FloatLabel,
     ReactiveFormsModule,
     Message,
-    RouterLink
+    RouterLink,
+    Password
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',

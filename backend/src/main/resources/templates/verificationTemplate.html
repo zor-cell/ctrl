@@ -94,6 +94,37 @@
             text-align: center;
         }
 
+        .action-wrap {
+            margin-top: 22px;
+            text-align: center;
+        }
+
+        .email-button a {
+            display: inline-block;
+            min-width: 220px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #3f3f46;
+            background-color: #18181b;
+            color: #fafafa;
+            font-family: "DM Sans", "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.2;
+            text-decoration: none;
+            letter-spacing: 0.2px;
+            box-sizing: border-box;
+        }
+
+        .email-button a:hover {
+            background-color: #27272a;
+            border-color: #52525b;
+        }
+
+        .email-button a:active {
+            background-color: #3f3f46;
+        }
+
         .fallback {
             margin-top: 14px;
             font-size: 13px;
@@ -135,6 +166,10 @@
             <div class="code-card">
                 <p class="code-label">Here is your verification code:</p>
                 <p class="code"><span th:text="${verificationCode}">000000</span></p>
+            </div>
+
+            <div class="action-wrap email-button">
+                <a th:href="${redirectUrl}">Verify Account</a>
             </div>
 
             <p class="footer">If you did not request this email, you can safely ignore it.</p>

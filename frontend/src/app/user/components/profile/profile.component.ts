@@ -12,6 +12,7 @@ import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
 import {ProgressSpinner} from "primeng/progressspinner";
+import {Password} from "primeng/password";
 
 @Component({
   selector: 'app-profile',
@@ -24,7 +25,8 @@ import {ProgressSpinner} from "primeng/progressspinner";
     InputText,
     Dialog,
     FormsModule,
-    ProgressSpinner
+    ProgressSpinner,
+    Password
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',

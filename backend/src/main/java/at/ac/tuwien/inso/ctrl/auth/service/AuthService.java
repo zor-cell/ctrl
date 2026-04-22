@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.auth.service;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
+import at.ac.tuwien.inso.ctrl.exception.EmailNotVerifiedException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
@@ -73,7 +74,7 @@ public class AuthService {
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     if (requireEmailVerification) {
       if (!user.isEmailVerified()) {
-        throw new IllegalStateException("Email not verified");
+        throw new EmailNotVerifiedException("Email not verified");
       }
     }
 

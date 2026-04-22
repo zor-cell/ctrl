@@ -6,11 +6,13 @@ import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -48,9 +50,9 @@ public class AuthController {
 
     @PostMapping("/email")
     @ResponseStatus(HttpStatus.CREATED)
-    public void resendVerificationEmail(@Valid @RequestBody RegisterRequest registerRequest) {
-        LOGGER.trace("Resend verification email request: {}", registerRequest);
-        emailVerificationService.sendVerificationEmail(registerRequest);
+    public void resendVerificationEmail(@Valid @RequestBody SendEmailRequest sendEmailRequest) {
+        LOGGER.trace("Resend verification email request: {}", sendEmailRequest);
+        emailVerificationService.sendVerificationEmail(sendEmailRequest);
     }
 
   @PostMapping("/login")

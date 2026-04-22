@@ -1,7 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {ChangeDetectorRef} from '@angular/core';
-import {RegisterRequest} from '../../dto/RegisterRequest';
 import {Button} from 'primeng/button';
 import {FloatLabel} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
@@ -10,6 +9,7 @@ import {NonNullableFormBuilder, ReactiveFormsModule, Validators} from '@angular/
 import {NotificationService} from '../../../core/services/notification.service';
 import {EmailVerificationRequest} from '../../dto/EmailVerificationRequest';
 import {AuthService} from '../../auth.service';
+import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
 
 @Component({
   selector: 'app-email-verification',
@@ -21,7 +21,7 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   private static readonly RESEND_COOLDOWN_MS = 60_000;
   private static readonly RESEND_COOLDOWN_SECONDS = 60;
 
-  registerRequest: RegisterRequest | null = null;
+  emailData: EmailVerificationPageData | null = null;
   showResendButton = false;
   resendCountdownSeconds = EmailVerificationComponent.RESEND_COOLDOWN_SECONDS;
   private fb = inject(NonNullableFormBuilder);
@@ -35,12 +35,8 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   });
   codeControl = this.verificationForm.controls.code;
 
-  constructor(private cdr: ChangeDetectorRef) {
-    const navState = this.router.currentNavigation()?.extras.state?.['registerRequest'] as
-      | RegisterRequest
-      | undefined;
-    const historyState = history.state?.registerRequest as RegisterRequest | undefined;
-    this.registerRequest = navState ?? historyState ?? null;
+  constructor(private cdr: ChangeDetectorRef, private route: ActivatedRoute) {
+
   }
 
   submitCode() {
@@ -52,13 +48,13 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
 
     const code = this.verificationForm.controls.code.value;
 
-    if (!this.registerRequest?.username) {
+    if (!this.emailData?.username) {
       this.notificationService.showWarning('Missing registration context. Please register again.');
       return;
     }
 
     const verificationRequest: EmailVerificationRequest = {
-      username: this.registerRequest.username,
+      username: this.emailData.username,
       code: code,
     };
 
@@ -73,12 +69,12 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   resendEmail() {
     this.startResendCooldown();
 
-    if (!this.registerRequest) {
+    if (!this.emailData) {
       this.notificationService.showWarning('Missing registration data. Please register again.');
       return;
     }
 
-    this.authService.resendVerificationEmail(this.registerRequest).subscribe();
+    this.authService.resendVerificationEmail(this.emailData).subscribe();
   }
 
   ngOnDestroy() {
@@ -87,6 +83,15 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
 
   ngOnInit() {
     this.startResendCooldown()
+
+    if (this.route.snapshot.paramMap.has('email') && this.route.snapshot.paramMap.has('username')) {
+      this.emailData = {
+        username: this.route.snapshot.paramMap.get('username') || '',
+        email: this.route.snapshot.paramMap.get('email') || ''
+      } as EmailVerificationPageData;
+    } else {
+      this.notificationService.showError('Missing registration context. Please register again.');
+    }
   }
 
   private startResendCooldown() {
