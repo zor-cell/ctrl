@@ -7,6 +7,7 @@ import { RegisterRequest } from './dto/RegisterRequest';
 import {Observable, tap} from "rxjs";
 import {NotificationService} from "../core/services/notification.service";
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
+import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
 interface JwtPayload {
   exp?: number;
 }
@@ -51,8 +52,8 @@ export class AuthService {
     );
   }
 
-  public resendVerificationEmail(registerRequest: RegisterRequest) {
-    return this.httpClient.post<void>(this.baseUri + '/email', registerRequest).pipe(
+  public resendVerificationEmail(emailVerificationData: EmailVerificationPageData) {
+    return this.httpClient.post<void>(this.baseUri + '/email', emailVerificationData).pipe(
       tap(() => {
         this.notificationService.showSuccess('Verification email sent');
       })

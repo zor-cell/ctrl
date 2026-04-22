@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

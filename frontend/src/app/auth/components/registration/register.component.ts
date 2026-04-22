@@ -10,6 +10,7 @@ import {Router, RouterLink} from "@angular/router";
 import {DatePicker} from "primeng/datepicker";
 import {environment} from '../../../../environments/environment';
 import {Password} from "primeng/password";
+import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
 
 @Component({
   selector: 'app-registration',
@@ -73,10 +74,15 @@ export class RegisterComponent {
   }
 
   private redirectLogic(registerRequest: RegisterRequest) {
-    this.router.navigate(['/email_verification'], {
-      state: { registerRequest },
-    });
-    this.authService.resendVerificationEmail(registerRequest).subscribe({
+
+    this.router.navigate(['/email_verification', registerRequest.username, registerRequest.email]);
+
+    const email_registration_data = {
+      username: registerRequest.username,
+      email: registerRequest.email
+    } as EmailVerificationPageData;
+
+    this.authService.resendVerificationEmail(email_registration_data).subscribe({
       error: () => {
         this.router.navigate(['register']);
       },

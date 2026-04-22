@@ -79,6 +79,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     );
   }
 
+  @ExceptionHandler(value = {UserAlreadyVerifiedException.class})
+  protected ResponseEntity<Object> handleUserAlreadyVerified(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.CONFLICT, request
+    );
+  }
+
   @ExceptionHandler(value = {IllegalStateException.class})
   protected ResponseEntity<Object> handleIllegalState(RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(

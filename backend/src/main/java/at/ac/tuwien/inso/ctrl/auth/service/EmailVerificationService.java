@@ -3,11 +3,14 @@ package at.ac.tuwien.inso.ctrl.auth.service;
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidEmailVerificationCodeException;
+import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -25,11 +28,13 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,26 +50,45 @@ public class EmailVerificationService {
   private boolean requireEmailVerification;
 
   @Async
-  public void sendVerificationEmail(RegisterRequest registerRequest) {
-    LOGGER.info("Sending verification email to: {}", registerRequest.email());
+  public void sendVerificationEmail(SendEmailRequest sendEmailRequest) {
+    LOGGER.info("Sending verification email to: {}", sendEmailRequest.email());
     if (!requireEmailVerification) {
       LOGGER.info("Email verification not required");
       return;
     }
     try {
-      String code = generateCode(registerRequest.password(), System.currentTimeMillis());
-      Context context = createContext(code);
+
+      Optional<User> user = userRepository.findByUsername(sendEmailRequest.username());
+      if (user.isEmpty()) {
+        throw new UsernameNotFoundException("Username not found");
+      }
+
+      Optional<User> userByEmail = userRepository.findByEmail(sendEmailRequest.email());
+      if (userByEmail.isEmpty()) {
+        throw new UsernameNotFoundException("Email not found");
+      }
+
+      if (!user.get().equals(userByEmail.get())) {
+        throw new ResourceNotFoundException("User not found for verification");
+      }
+
+      if (user.get().isVerified()) {
+        throw new UserAlreadyVerifiedException("User is already verified");
+      }
+
+      String code = generateCode(user.get().getPassword(), System.currentTimeMillis());
+      Context context = createContext(code, sendEmailRequest);
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
       String htmlContent = templateEngine.process("verificationTemplate", context);
 
-      helper.setTo(registerRequest.email());
+      helper.setTo(sendEmailRequest.email());
       helper.setSubject("Welcome to CTRL");
       helper.setText(htmlContent, true);
 
       mailSender.send(message);
-      saveVerificationCode(registerRequest, code);
+      saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
       throw new CommunicationException("Failed to send email. You can register again in 2 minutes.");
     } catch (MessagingException me) {
@@ -91,15 +115,16 @@ public class EmailVerificationService {
     }
   }
 
-  private Context createContext(String code) {
+  private Context createContext(String code, SendEmailRequest data) {
     Context context = new Context();
 
     context.setVariable("verificationCode", code);
+    context.setVariable("redirectUrl", "http://localhost:80/email_verification/" + data.username() + "/" + data.email());
     return context;
   }
   
-  private void saveVerificationCode(RegisterRequest registerRequest, String code) {
-    User user = userRepository.findByUsername(registerRequest.username())
+  private void saveVerificationCode(SendEmailRequest sendEmailRequest, String code) {
+    User user = userRepository.findByUsername(sendEmailRequest.username())
             .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
 
     emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())

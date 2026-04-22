@@ -24,7 +24,7 @@ export const routes: Routes = [
   },
   {path: 'feed', component: FeedComponent},
   {path: 'profile', component: ProfileComponent},
-  {path: 'email_verification', component: EmailVerificationComponent},
+  { path: 'email_verification/:username/:email', component: EmailVerificationComponent },
   {path: 'verification-callback', component: VerificationCallbackComponent},
   {
     path: 'followed',

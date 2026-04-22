@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -183,5 +184,11 @@ public class UserService {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+  }
+
+  @Scheduled(cron = "0 0 2 * * *")
+  @Transactional
+  public void conductUserCleanup() {
+        userRepository.deleteUnverifiedUsersOlderThanOneDay();
   }
 }
