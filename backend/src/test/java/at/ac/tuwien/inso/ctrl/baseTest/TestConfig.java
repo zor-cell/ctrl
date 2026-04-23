@@ -24,10 +24,4 @@ public class TestConfig {
     when(javaMailSender.createMimeMessage()).thenAnswer(invocation -> new MimeMessage((Session) null));
     return javaMailSender;
   }
-
-  @Bean
-  @Primary
-  public JwtDecoder idAustriaJwtDecoder() {
-    return Mockito.mock(JwtDecoder.class);
-  }
 }

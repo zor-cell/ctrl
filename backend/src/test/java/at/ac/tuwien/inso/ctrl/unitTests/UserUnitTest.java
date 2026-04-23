@@ -42,6 +42,9 @@ public class UserUnitTest {
   @Autowired
   private UserService userService;
 
+  @MockitoBean
+  private JwtDecoder jwtDecoder;
+
   @Transactional
   @Test
   public void should_register_one_user() {
