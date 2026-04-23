@@ -39,8 +39,6 @@ public class UserUnitTest {
   @Autowired
   private PasswordEncoder passwordEncoder;
 
-  @MockitoBean
-  JwtDecoder jwtDecoder;
   @Autowired
   private UserService userService;
 
