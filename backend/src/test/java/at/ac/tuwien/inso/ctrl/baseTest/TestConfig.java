@@ -25,6 +25,9 @@ public class TestConfig {
     return javaMailSender;
   }
 
-  @MockitoBean
-  JwtDecoder idAustriaJwtDecoder;
+  @Bean
+  @Primary
+  public JwtDecoder idAustriaJwtDecoder() {
+    return Mockito.mock(JwtDecoder.class);
+  }
 }
