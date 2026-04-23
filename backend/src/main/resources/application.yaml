@@ -15,6 +15,18 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: true
 
 garage:
   url: http://garage:3900
@@ -38,6 +50,8 @@ application:
       client-secret: ${ID_AUSTRIA_SECRET}
       token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:80/verification-callback"
+  auth:
+    require-email-verification: ${MAIL_REQUIRED}
 
 management:
   endpoints:
@@ -49,3 +63,9 @@ management:
     health:
       show-details:
         always
+
+logging:
+  level:
+    org.springframework.mail: DEBUG
+    org.eclipse.angus.mail: DEBUG
+    jakarta.mail: DEBUG

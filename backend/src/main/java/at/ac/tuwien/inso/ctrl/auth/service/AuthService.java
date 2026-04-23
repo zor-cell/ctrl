@@ -3,12 +3,14 @@ package at.ac.tuwien.inso.ctrl.auth.service;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
+import at.ac.tuwien.inso.ctrl.exception.EmailNotVerifiedException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +24,11 @@ public class AuthService {
   private final JwtService jwtService;
   private final AuthenticationManager authenticationManager;
 
+  @Value("${application.auth.require-email-verification:true}")
+  private boolean requireEmailVerification;
+
+
+
   public void register(RegisterRequest registerRequest) {
     String username = registerRequest.username().trim();
     if (userRepository.existsByUsername(username)) {
@@ -33,6 +40,8 @@ public class AuthService {
       throw new ResourceAlreadyExistsException("User", "email", email);
     }
 
+
+
     var user =
         User.builder()
             .username(username)
@@ -40,6 +49,7 @@ public class AuthService {
             .name(registerRequest.name().trim())
             .email(email)
             .birthdate(registerRequest.birthdate())
+            .emailVerified(!requireEmailVerification)
             .build();
 
     userRepository.save(user);
@@ -62,6 +72,11 @@ public class AuthService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    if (requireEmailVerification) {
+      if (!user.isEmailVerified()) {
+        throw new EmailNotVerifiedException("Email not verified");
+      }
+    }
 
     var token = jwtService.generateToken(user);
 

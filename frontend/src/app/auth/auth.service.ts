@@ -1,17 +1,16 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
-
 import { environment } from '../../environments/environment';
-import { NotificationService } from '../core/services/notification.service';
 import { AuthResponse } from './dto/AuthResponse';
 import { LoginRequest } from './dto/LoginRequest';
 import { RegisterRequest } from './dto/RegisterRequest';
-
+import {Observable, tap} from "rxjs";
+import {NotificationService} from "../core/services/notification.service";
+import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
+import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
 interface JwtPayload {
   exp?: number;
 }
-
 @Injectable({
   providedIn: 'root',
 })
@@ -38,6 +37,26 @@ export class AuthService {
       tap(() => {
         this.notificationService.showSuccess('Registered user');
       }),
+    );
+  }
+
+  public verify_email(emailVerificationRequest: EmailVerificationRequest) : Observable<boolean> {
+    return this.httpClient.post<boolean>(this.baseUri + '/verify', emailVerificationRequest).pipe(
+      tap(res => {
+        if(res) {
+          this.notificationService.showSuccess('Email verified successfully');
+        } else {
+          this.notificationService.showError('Invalid verification code, try again.');
+        }
+      })
+    );
+  }
+
+  public resendVerificationEmail(emailVerificationData: EmailVerificationPageData) {
+    return this.httpClient.post<void>(this.baseUri + '/email', emailVerificationData).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Verification email sent');
+      })
     );
   }
 
