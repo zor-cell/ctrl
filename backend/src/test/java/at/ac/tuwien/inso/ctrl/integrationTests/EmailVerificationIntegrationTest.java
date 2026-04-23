@@ -30,8 +30,12 @@ import org.thymeleaf.TemplateEngine;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(SpringExtension.class)
 @Import(TestConfig.class)
@@ -106,10 +110,27 @@ public class EmailVerificationIntegrationTest {
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     multipart.writeTo(byteArrayOutputStream);
 
+
     assertEquals(1, mimeMessage.getAllRecipients().length);
     assertEquals(testUserUnverified.getEmail(), mimeMessage.getAllRecipients()[0].toString());
     assertEquals("Welcome to CTRL", mimeMessage.getSubject());
 
+    Matcher matcher = getMatcher(byteArrayOutputStream);
+
+    assertTrue(matcher.find());
+    String code = matcher.group(1);
+
+    assertNotEquals("111111", code);
+
+  }
+
+  private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {
+    String htmlContent = byteArrayOutputStream.toString();
+
+    Pattern pattern = Pattern.compile("<p class=\"code\"><span>(.*?)</span></p>");
+
+
+    return pattern.matcher(htmlContent);
   }
 
 }
