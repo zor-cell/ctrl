@@ -1,19 +1,22 @@
 spring:
   application:
     name: ctrl
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:test}
+    username: ${POSTGRES_USER:your_user}
+    password: ${POSTGRES_PASSWORD:your_password}
     driver-class-name: org.postgresql.Driver
+
   sql:
     init:
       mode: always
       schema-locations: classpath:init-pgvector.sql
+
   jpa:
     defer-datasource-initialization: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -41,3 +44,5 @@ application:
       client-secret: "ctrl-test-secret"
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:4200/verification-callback"
+  auth:
+    require-email-verification: true

@@ -23,7 +23,6 @@ import java.time.LocalTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -131,8 +130,6 @@ public class UserUnitTest {
     assertEquals(user.getPassword(), user_req.get().getPassword());
     assertEquals(user.getCreatedAt(), user_req.get().getCreatedAt());
     assertEquals(user.getBirthdate(), user_req.get().getBirthdate());
-
-
   }
 
   @Transactional
