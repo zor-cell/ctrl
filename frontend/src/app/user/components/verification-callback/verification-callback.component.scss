@@ -1,0 +1,13 @@
+.callback-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+
+  margin: 2rem;
+}
+
+.callback-container h2, .callback-container p {
+  margin: 0;
+}
