@@ -30,7 +30,7 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
 
-  @Output() onClose = new EventEmitter<void>();
+  @Output() closeEvent = new EventEmitter<void>();
 
   incomingRequests = this.relationshipService.incomingRequests;
   sentRequests = this.relationshipService.sentRequests;
@@ -91,6 +91,6 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   }
 
   close() {
-    this.onClose.emit();
+    this.closeEvent.emit();
   }
 }

@@ -219,11 +219,11 @@ export class RelationshipService implements OnDestroy {
   // potientially replaceable/reusable with a global search
   searchUsers(
     query: string,
-    excludeFriends: boolean = false,
-    excludeFollowed: boolean = false,
-    verifiedOnly: boolean = false
+    excludeFriends = false,
+    excludeFollowed = false,
+    verifiedOnly = false
   ) {
-    let params = new HttpParams()
+    const params = new HttpParams()
       .set('q', query)
       .set('excludeFriends', excludeFriends.toString())
       .set('excludeFollowed', excludeFollowed.toString())

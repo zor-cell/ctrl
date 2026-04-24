@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { Subject, BehaviorSubject, ReplaySubject, Observable, takeUntil, shareReplay } from 'rxjs';
 import { FriendRequest } from './dto/Relationship';
 

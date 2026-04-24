@@ -1,5 +1,5 @@
-import {Component, computed, effect, inject, signal} from '@angular/core';
-import {FormBuilder, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {Component, computed, effect, inject, signal, OnInit} from '@angular/core';
+import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
 import {UserService} from "../../user.service";
 import {Message} from "primeng/message";
 import {DatePicker} from "primeng/datepicker";
@@ -31,7 +31,7 @@ import {Password} from "primeng/password";
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
 
@@ -124,7 +124,7 @@ export class ProfileComponent {
       newPassword: newPassword
     }
 
-    this.userService.updatePassword(request).subscribe(res => {
+    this.userService.updatePassword(request).subscribe(() => {
       this.isPasswordDialogOpen.set(false);
     });
   }
@@ -135,7 +135,7 @@ export class ProfileComponent {
     }
 
     const request: UpdateUsernameRequest = this.usernameForm.getRawValue();
-    this.userService.updateUsername(request).subscribe(res => {
+    this.userService.updateUsername(request).subscribe(() => {
       this.isUsernameDialogOpen.set(false);
     })
   }

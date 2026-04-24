@@ -1,24 +1,45 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
+import { of } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AuthService } from '../../auth.service';
 import { RegisterComponent } from './register.component';
 import {MessageService} from "primeng/api";
 
-describe('RegistrationComponent', () => {
+describe('RegisterComponent', () => {
   let component: RegisterComponent;
-  let fixture: ComponentFixture<RegisterComponent>;
+  let authServiceMock: {
+    register: ReturnType<typeof vi.fn>;
+    resendVerificationEmail: ReturnType<typeof vi.fn>;
+  };
+  let router: Router;
 
   beforeEach(async () => {
+    authServiceMock = {
+      register: vi.fn().mockReturnValue(of(void 0)),
+      resendVerificationEmail: vi.fn().mockReturnValue(of(void 0)),
+    };
     await TestBed.configureTestingModule({
-      providers: [MessageService,],
       imports: [RegisterComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: authServiceMock,
+        },
+      ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(RegisterComponent);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const fixture = TestBed.createComponent(RegisterComponent);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('should create the component', () => {
     expect(component).toBeTruthy();
   });
 });
