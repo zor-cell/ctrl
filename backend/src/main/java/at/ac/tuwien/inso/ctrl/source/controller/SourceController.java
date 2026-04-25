@@ -20,21 +20,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SourceController {
 
-    private final SourceService sourceService;
+  private final SourceService sourceService;
 
-    /**
-     * PUT /sources/{sourceId}/vote
-     * Body: { "voteType": "up" | "down" }
-     *
-     * Returns the current vote counts and the userVote status.
-     * The same vote again = toggle (vote is cancelled).
-     */
-    @PutMapping("/{sourceId}/vote")
-    @ResponseStatus(HttpStatus.OK)
-    public VoteResponse voteSource(
-            @PathVariable String sourceId,
-            @Valid @RequestBody VoteRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        return sourceService.voteSource(sourceId, request, userDetails.getUsername());
-    }
+  /**
+   * PUT /sources/{sourceId}/vote Body: { "voteType": "up" | "down" }
+   *
+   * <p>Returns the current vote counts and the userVote status. The same vote again = toggle (vote
+   * is cancelled).
+   */
+  @PutMapping("/{sourceId}/vote")
+  @ResponseStatus(HttpStatus.OK)
+  public VoteResponse voteSource(
+      @PathVariable String sourceId,
+      @Valid @RequestBody VoteRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    return sourceService.voteSource(sourceId, request, userDetails.getUsername());
+  }
 }

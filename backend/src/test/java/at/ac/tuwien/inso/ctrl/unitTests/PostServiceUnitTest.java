@@ -1,5 +1,16 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
@@ -27,17 +38,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class PostServiceUnitTest {
@@ -75,12 +75,7 @@ public class PostServiceUnitTest {
   void createPost_ShouldSavePostWithContent_WhenRequestIsValid() {
     CreatePostRequest request =
         new CreatePostRequest(
-            "This is my post",
-            "media/image.png",
-            true,
-            true,
-            List.of("topic-1", "topic-2"),
-            null);
+            "This is my post", "media/image.png", true, true, List.of("topic-1", "topic-2"), null);
     Topic topicOne = Topic.builder().topicId("topic-1").name("Politics").build();
     Topic topicTwo = Topic.builder().topicId("topic-2").name("Science").build();
     float[] embedding = new float[] {0.1f, 0.2f};
@@ -187,12 +182,7 @@ public class PostServiceUnitTest {
   void createPost_ShouldUseDistinctTopicIds_WhenRequestContainsDuplicates() {
     CreatePostRequest request =
         new CreatePostRequest(
-            "Post with duplicate topics",
-            null,
-            false,
-            false,
-            List.of("topic-1", "topic-1"),
-            null);
+            "Post with duplicate topics", null, false, false, List.of("topic-1", "topic-1"), null);
     Topic topicOne = Topic.builder().topicId("topic-1").name("Politics").build();
     PostResponse response = createResponse("Post with duplicate topics", false, false, null);
 
@@ -244,7 +234,8 @@ public class PostServiceUnitTest {
     when(topicRepository.findAllById(List.of("topic-1", "missing"))).thenReturn(List.of(topicOne));
 
     ResourceNotFoundException exception =
-        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(request, "marlene"));
+        assertThrows(
+            ResourceNotFoundException.class, () -> postService.createPost(request, "marlene"));
 
     assertEquals("Topics not found: missing", exception.getMessage());
     verify(postRepository, never()).save(any());

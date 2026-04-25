@@ -93,21 +93,21 @@ public class PostServiceImpl implements PostService {
     Optional<PostVote> existingVote = postVoteRepository.findById(voteId);
 
     return voteManager.processVote(
-            post,
-            existingVote,
-            newVoteType,
-            /* createVote */ () -> postVoteRepository.save(
-                    PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
-            /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
-            /* updateVote */ () -> {
-              existingVote.get().setVoteType(newVoteType);
-              postVoteRepository.save(existingVote.get());
-            },
-            /* saveEntity */ () -> postRepository.save(post));
+        post,
+        existingVote,
+        newVoteType,
+        /* createVote */ () ->
+            postVoteRepository.save(
+                PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
+        /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
+        /* updateVote */ () -> {
+          existingVote.get().setVoteType(newVoteType);
+          postVoteRepository.save(existingVote.get());
+        },
+        /* saveEntity */ () -> postRepository.save(post));
   }
 
-  /** Helpers **/
-
+  /** Helpers * */
   @Transactional(readOnly = true)
   public List<PostResponse> getPostsForUser(String username) {
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
@@ -163,12 +163,14 @@ public class PostServiceImpl implements PostService {
   }
 
   private Post fetchPost(String postId) {
-    return postRepository.findById(postId)
-            .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
+    return postRepository
+        .findById(postId)
+        .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
   }
 
   private User fetchUser(String username) {
-    return userRepository.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    return userRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
   }
 }

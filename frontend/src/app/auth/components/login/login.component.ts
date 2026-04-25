@@ -43,7 +43,7 @@ export class LoginComponent {
     }
 
     const loginRequest: LoginRequest = this.loginForm.getRawValue();
-    this.authService.login(loginRequest).subscribe(res => {
+    this.authService.login(loginRequest).subscribe(() => {
       this.router.navigate(['/profile']);
     });
   }

@@ -11,8 +11,8 @@ import at.ac.tuwien.inso.ctrl.source.mapper.SourceMapper;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,6 @@ public class SourceServiceImpl implements SourceService {
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
   private final VoteManager voteManager;
-
 
   @Override
   @Transactional
@@ -52,28 +51,30 @@ public class SourceServiceImpl implements SourceService {
     Optional<SourceVote> existingVote = sourceVoteRepository.findById(voteId);
 
     return voteManager.processVote(
-            source,
-            existingVote,
-            newVoteType,
-            /* createVote */ () -> sourceVoteRepository.save(
-                    SourceVote.builder().id(voteId).source(source).voteType(newVoteType).build()),
-            /* deleteVote */ () -> sourceVoteRepository.delete(existingVote.get()),
-            /* updateVote */ () -> {
-              existingVote.get().setVoteType(newVoteType);
-              sourceVoteRepository.save(existingVote.get());
-            },
-            /* saveEntity */ () -> sourceRepository.save(source));
+        source,
+        existingVote,
+        newVoteType,
+        /* createVote */ () ->
+            sourceVoteRepository.save(
+                SourceVote.builder().id(voteId).source(source).voteType(newVoteType).build()),
+        /* deleteVote */ () -> sourceVoteRepository.delete(existingVote.get()),
+        /* updateVote */ () -> {
+          existingVote.get().setVoteType(newVoteType);
+          sourceVoteRepository.save(existingVote.get());
+        },
+        /* saveEntity */ () -> sourceRepository.save(source));
   }
 
-  /** Helpers **/
-
+  /** Helpers * */
   private Source fetchSource(String sourceId) {
-    return sourceRepository.findById(sourceId)
-            .orElseThrow(() -> new EntityNotFoundException("Source not found: " + sourceId));
+    return sourceRepository
+        .findById(sourceId)
+        .orElseThrow(() -> new EntityNotFoundException("Source not found: " + sourceId));
   }
 
   private User fetchUser(String username) {
-    return userRepository.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    return userRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
   }
 }

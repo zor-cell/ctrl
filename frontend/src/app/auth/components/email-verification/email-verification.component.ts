@@ -1,6 +1,5 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {ChangeDetectorRef} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FloatLabel} from 'primeng/floatlabel';
 import {InputText} from 'primeng/inputtext';
@@ -27,6 +26,8 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
   private notificationService = inject(NotificationService);
   private resendCooldownIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -34,10 +35,6 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
   codeControl = this.verificationForm.controls.code;
-
-  constructor(private cdr: ChangeDetectorRef, private route: ActivatedRoute) {
-
-  }
 
   submitCode() {
     if (this.verificationForm.invalid) {
@@ -58,7 +55,7 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
       code: code,
     };
 
-    this.authService.verify_email(verificationRequest).subscribe((isValid) => {
+    this.authService.verify_email(verificationRequest).subscribe(isValid => {
       if (isValid) {
         this.router.navigate(['/login']);
         return;
@@ -82,12 +79,12 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit() {
-    this.startResendCooldown()
+    this.startResendCooldown();
 
     if (this.route.snapshot.paramMap.has('email') && this.route.snapshot.paramMap.has('username')) {
       this.emailData = {
         username: this.route.snapshot.paramMap.get('username') || '',
-        email: this.route.snapshot.paramMap.get('email') || ''
+        email: this.route.snapshot.paramMap.get('email') || '',
       } as EmailVerificationPageData;
     } else {
       this.notificationService.showError('Missing registration context. Please register again.');
@@ -109,7 +106,9 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
         this.clearResendCooldownTimer();
       }
       this.cdr.detectChanges();
-    }, EmailVerificationComponent.RESEND_COOLDOWN_MS / EmailVerificationComponent.RESEND_COOLDOWN_SECONDS);
+    },
+    EmailVerificationComponent.RESEND_COOLDOWN_MS
+      / EmailVerificationComponent.RESEND_COOLDOWN_SECONDS);
   }
 
   private clearResendCooldownTimer() {

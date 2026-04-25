@@ -1,5 +1,12 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
@@ -12,13 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class FileControllerUnitTest {
@@ -42,8 +42,7 @@ public class FileControllerUnitTest {
 
     assertEquals("posts/media/file.png", response.mediaRef());
     assertEquals(
-        "http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png",
-        response.mediaUrl());
+        "http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png", response.mediaUrl());
     assertEquals("image/png", response.contentType());
     assertEquals(1234L, response.size());
     verify(fileStorageService).uploadPostMedia(file);

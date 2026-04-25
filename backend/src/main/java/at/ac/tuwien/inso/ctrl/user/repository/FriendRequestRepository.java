@@ -23,8 +23,7 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Fr
 
   @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender AND fr.receiver = :receiver")
   Optional<FriendRequest> findBySenderAndReceiver(
-      @Param("sender") User sender,
-      @Param("receiver") User receiver);
+      @Param("sender") User sender, @Param("receiver") User receiver);
 
   boolean existsBySenderAndReceiver(User sender, User receiver);
 
