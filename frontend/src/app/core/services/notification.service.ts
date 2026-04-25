@@ -22,7 +22,7 @@ export class NotificationService {
     const e = 'error' in apiError ? apiError.error : error;
     const status = apiError.status;
 
-    let message = e instanceof ProgressEvent ? apiError.message : e;
+    let message = e instanceof ProgressEvent ? apiError.message : toMessage(e);
     if (status === 0) {
       // backend unreachable
       message = 'Cannot connect to the server. Please check your internet connection or try again later'
@@ -65,4 +65,16 @@ function isErrorWithDetail(error: unknown): error is { detail: string } {
     && error !== null
     && 'detail' in error
     && typeof error.detail === 'string';
+}
+
+function toMessage(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Error) {
+    return value.message;
+  }
+
+  return '';
 }
