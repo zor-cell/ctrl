@@ -6,6 +6,7 @@ import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,9 +51,12 @@ public class AuthIntegrationTest {
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private User existingUser;
+
+    private final String registerEndpoint = "/api/auth/register";
+    private final String loginEndpoint = "/api/auth/login";
 
     @BeforeEach
     public void setUp() {
@@ -76,7 +80,25 @@ public class AuthIntegrationTest {
     }
 
     @Test
-    public void should_RegisterNewUser_AndSaveToDatabase() throws Exception {
+    public void register_shouldReturnBadRequest_WhenInvalidRequest() throws Exception {
+        RegisterRequest invalidRequest = new RegisterRequest(
+                "",
+                "",
+                "not-an-email",
+                "   ",
+                LocalDate.of(2050, 1, 1)
+        );
+
+        mockMvc.perform(post(registerEndpoint)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+
+        assertTrue(userRepository.findByEmail("not-an-email").isEmpty());
+    }
+
+    @Test
+    public void register_shouldSaveUser_WhenRequestIsValid() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "newUser",
                 "newPassword123!",
@@ -85,51 +107,97 @@ public class AuthIntegrationTest {
                 LocalDate.of(2000, 1, 1)
         );
 
-        mockMvc.perform(post("/auth/register") // Passe den Pfad an deinen AuthController an!
+        mockMvc.perform(post(registerEndpoint)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()); // Oder isCreated(), je nachdem was dein Controller zurückgibt
+                .andExpect(status().isCreated());
 
-        // Verifizieren, dass der User wirklich in der echten DB gelandet ist
         assertTrue(userRepository.existsByUsername("newUser"));
     }
 
     @Test
-    public void should_ReturnConflict_When_RegisteringWithExistingUsername() throws Exception {
+    public void register_shouldReturnConflict_WhenUsernameExists() throws Exception {
         RegisterRequest request = new RegisterRequest(
-                "integrationUser", // Existiert bereits aus dem @BeforeEach
+                existingUser.getUsername(),
                 "newPassword123!",
                 "unique@test.com",
                 "New User",
                 LocalDate.of(2000, 1, 1)
         );
 
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post(registerEndpoint)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict()); // Wir erwarten, dass der GlobalExceptionHandler greift
+                .andExpect(status().isConflict());
     }
 
     @Test
-    public void should_LoginSuccessfully_AndReturnJwtToken() throws Exception {
-        LoginRequest request = new LoginRequest("integrationUser", "securePass123!");
+    public void register_shouldReturnConflict_WhenEmailExists() throws Exception {
+        RegisterRequest request = new RegisterRequest(
+                "completelyNewUsername",
+                "newPassword123!",
+                existingUser.getEmail(),
+                "New User",
+                LocalDate.of(2000, 1, 1)
+        );
 
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post(registerEndpoint)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+
+
+    @Test
+    public void login_shouldReturnBadRequest_WhenInvalidRequest() throws Exception {
+        LoginRequest invalidRequest = new LoginRequest("", "  ");
+
+        mockMvc.perform(post(loginEndpoint)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void login_shouldReturnJwt_WhenUserExists() throws Exception {
+        LoginRequest request = new LoginRequest(existingUser.getUsername(), "securePass123!");
+
+        mockMvc.perform(post(loginEndpoint)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty()) // Wir erwarten ein echtes JWT im Response
+                .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.token").isString());
     }
 
     @Test
-    public void should_ReturnUnauthorized_When_LoginWithWrongPassword() throws Exception {
+    public void login_shouldReturnUnauthorized_WhenWrongPassword() throws Exception {
         LoginRequest request = new LoginRequest("integrationUser", "wrongPassword");
 
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post(loginEndpoint)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                // Spring Security oder dein Controller sollte hier 401 Unauthorized werfen
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void login_shouldReturnForbidden_WhenEmailNotVerified() throws Exception {
+        User unverifiedUser = User.builder()
+                .username("unverifiedUser")
+                .password(passwordEncoder.encode("securePass123!"))
+                .name("Unverified")
+                .email("unverified@test.com")
+                .birthdate(LocalDate.of(1995, 5, 5))
+                .emailVerified(false)
+                .build();
+        userRepository.save(unverifiedUser);
+
+        LoginRequest request = new LoginRequest(unverifiedUser.getUsername(), unverifiedUser.getPassword());
+
+        mockMvc.perform(post(loginEndpoint)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 }
