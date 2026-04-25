@@ -68,6 +68,7 @@ public class UserService {
 
     user.setName(newName);
     user.setEmail(newEmail);
+    user.setBio(request.bio() == null ? null : request.bio().trim());
     user.setBirthdate(request.birthdate());
 
     User updatedUser = userRepository.save(user);

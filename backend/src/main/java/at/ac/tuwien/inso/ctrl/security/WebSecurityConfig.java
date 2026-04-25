@@ -36,7 +36,12 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        "/api/auth/**", "/api/labels", "/api/topics", "/actuator/health", "/api/feed/**")
+                        "/api/auth/**",
+                        "/api/files/media",
+                        "/api/labels",
+                        "/api/topics",
+                        "/actuator/health",
+                        "/api/feed/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

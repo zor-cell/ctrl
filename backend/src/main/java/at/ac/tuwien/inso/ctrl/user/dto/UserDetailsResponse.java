@@ -9,6 +9,7 @@ public record UserDetailsResponse(
     String username,
     String email,
     String name,
+    String bio,
     LocalDate birthdate,
     String profilePicture,
     Instant createdAt,

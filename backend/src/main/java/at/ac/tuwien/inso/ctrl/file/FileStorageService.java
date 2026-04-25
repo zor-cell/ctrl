@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -150,6 +151,10 @@ public class FileStorageService {
   public String resolveFileUrl(String relativeFilename) {
     if (relativeFilename == null || relativeFilename.isBlank()) {
       return null;
+    }
+
+    if (publicUrl.endsWith("=")) {
+      return publicUrl + URLEncoder.encode(relativeFilename, StandardCharsets.UTF_8);
     }
 
     return publicUrl + "/" + relativeFilename;
