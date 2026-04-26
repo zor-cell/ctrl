@@ -54,8 +54,6 @@ public class EmailVerificationIntegrationTest {
 
   @Autowired private UserRepository userRepository;
 
-  @MockitoBean private JwtDecoder jwtDecoder;
-
   @AfterEach
   public void tearDown() {
     emailVerificationRepository.deleteAll();
@@ -88,6 +86,7 @@ public class EmailVerificationIntegrationTest {
     testUserVerified.setEmailVerified(true);
     testUserVerified.setBirthdate(LocalDate.of(1990, 1, 1));
     userRepository.save(testUserVerified);
+
   }
 
   @Test
