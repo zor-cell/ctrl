@@ -23,9 +23,6 @@ services:
       db:
         condition: service_healthy
         restart: false
-      keycloak:
-        condition: service_healthy
-        restart: false
       garage:
         condition: service_healthy
         restart: false
@@ -104,7 +101,7 @@ services:
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
       GARAGE_DEFAULT_BUCKET: ctrl-dev-media
     healthcheck:
-      test: [ "CMD", "/garage", "status" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
