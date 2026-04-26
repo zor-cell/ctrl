@@ -225,3 +225,37 @@ input[type="checkbox"] {
         font-size: 15px !important;
     }
 }
+
+/* ---------- Card header: realm name + logo ---------- */
+.ida-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.ida-realm-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4a5568;
+    letter-spacing: 0.01em;
+}
+
+.ida-logo {
+    height: 48px;
+    width: auto;
+    display: block;
+}
+
+/* Hide the now-empty default header area */
+#kc-header,
+#kc-header-wrapper,
+.login-pf-header,
+.pf-c-login__header {
+    display: none !important;
+}

@@ -1,9 +1,20 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password && realm.registrationAllowed && !registrationDisabled??; section>
     <#if section = "header">
-        <img src="${url.resourcesPath}/img/a-trust-logo.png" alt="A-Trust" class="ida-logo" height="36">
+    <#-- intentionally empty: we render the header inside the form section below -->
     <#elseif section = "form">
         <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post">
+
+            <div class="ida-card-header">
+                <div class="ida-realm-name">${realm.displayName!'id-austria-mock'}</div>
+                <img src="${url.resourcesPath}/img/a-trust_logo.svg" alt="A-Trust" class="ida-logo">
+            </div>
+
+            <#if messagesPerField.existsError('username','password')>
+                <div class="alert-error">
+                    ${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
+                </div>
+            </#if>
 
             <div class="pf-c-form__group">
                 <label for="username" class="pf-c-form__label">
