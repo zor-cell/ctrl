@@ -66,7 +66,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    command: start-dev --import-realm
+    command: start-dev --import-realm --spi-theme--static-max-age=-1 --spi-theme--cache-themes=false --spi-theme--cache-templates=false
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
@@ -86,7 +86,8 @@ services:
       start_period: 30s
     volumes:
       - keycloak_data:/opt/keycloak/data
-      - ./setup/keycloak:/opt/keycloak/data/import/ # import test dataset
+      - ./setup/keycloak/import:/opt/keycloak/data/import/ # import test dataset
+      - ./setup/keycloak/theme:/opt/keycloak/themes/id-austria # import id austria theme
 
   garage:
     platform: linux/amd64
