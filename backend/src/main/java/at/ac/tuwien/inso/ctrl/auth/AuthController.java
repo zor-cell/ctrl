@@ -4,20 +4,17 @@ import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
-import at.ac.tuwien.inso.ctrl.auth.dto.LoginRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.PasswordResetEmailRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.PasswordResetRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
-import at.ac.tuwien.inso.ctrl.security.JwtService;
-import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import jakarta.mail.MessagingException;
+import at.ac.tuwien.inso.ctrl.auth.service.ResetPasswordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final ResetPasswordService passwordResetService;
     private final EmailVerificationService emailVerificationService;
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -58,5 +56,20 @@ public class AuthController {
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest loginRequest) {
     return authService.login(loginRequest);
+  }
+
+  @PostMapping("/forgot-password")
+  @ResponseStatus(HttpStatus.CREATED)
+  public boolean sendPasswordReset(@Valid @RequestBody PasswordResetEmailRequest passwordResetRequest) {
+    LOGGER.trace("Password reset request: {}", passwordResetRequest);
+    passwordResetService.sendPasswordResetEmail(passwordResetRequest);
+    return true;
+  }
+
+  @PostMapping("/reset-password")
+  @ResponseStatus(HttpStatus.CREATED)
+  public boolean resetPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest) {
+    passwordResetService.resetPassword(passwordResetRequest);
+    return true;
   }
 }

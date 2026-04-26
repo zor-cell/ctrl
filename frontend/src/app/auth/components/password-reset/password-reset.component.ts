@@ -6,14 +6,14 @@ import {PasswordResetService} from '../../password-reset-service';import {Button
 
 
 import {FloatLabel} from 'primeng/floatlabel';
-import {InputText} from 'primeng/inputtext';
 import {Message} from 'primeng/message';
 import {AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
+import {Password} from 'primeng/password';
 
 
 @Component({
   selector: 'app-password-reset',
-  imports: [Button, FloatLabel, InputText, Message, ReactiveFormsModule],
+  imports: [Button, FloatLabel, Message, ReactiveFormsModule, Password],
   templateUrl: './password-reset.component.html',
   styleUrl: './password-reset.component.scss',
 })
@@ -25,15 +25,18 @@ export class PasswordResetComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   passwordResetRequest: PasswordResetRequest = {
     token: '',
-    newPassword: '',
+    password: '',
   };
 
-  resetEmailForm = this.fb.group({
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', Validators.required],
-  }, {
-    validators: this.passwordMatchValidator
-  });
+  resetEmailForm = this.fb.group(
+    {
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required],
+    },
+    {
+      validators: this.passwordMatchValidator,
+    },
+  );
 
   showPassword = false;
 
@@ -58,19 +61,20 @@ export class PasswordResetComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-
   submit() {
     if (this.passwordResetRequest.token === '') {
-      this.notificationService.showError('Invalid password reset token. Please use the link from your email.');
+      this.notificationService.showError(
+        'Invalid password reset token. Please use the link from your email.',
+      );
       return;
     }
-    if(this.resetEmailForm.invalid) {
+    if (this.resetEmailForm.invalid) {
       this.resetEmailForm.markAllAsDirty();
       this.resetEmailForm.markAllAsTouched();
       return;
     }
 
-    this.passwordResetRequest.newPassword = this.resetEmailForm.value.password || '';
+    this.passwordResetRequest.password = this.resetEmailForm.value.password || '';
 
     this.passwordResetService.resetPassword(this.passwordResetRequest).subscribe((isValid) => {
       if (isValid) {
