@@ -64,9 +64,6 @@ public class UserControllerIntegrationTest {
     private JwtService jwtService;
 
     @MockitoBean
-    private JwtDecoder jwtDecoder;
-
-    @MockitoBean
     private IdAustriaOidcService idAustriaOidcService;
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());

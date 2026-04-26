@@ -14,7 +14,9 @@ public class IdAustriaConfig {
 
   @Bean
   public JwtDecoder idAustriaJwtDecoder() {
-    NimbusJwtDecoder jwtDecoder = JwtDecoders.fromIssuerLocation(issuerUri);
+    //lazy discovery of oidc issuer uri
+    String jwkSetUri = issuerUri + "/protocol/openid-connect/certs";
+    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 
     // this is a workaround to ensure the correct issuer is used, otherwise when running in
     // production for docker it doesnt work
