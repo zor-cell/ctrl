@@ -93,7 +93,6 @@ public class AuthServiceUnitTest {
 
         authService.register(validRegisterRequest);
 
-        // Capture the user object that was passed to the repository's save method
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
 
@@ -101,7 +100,7 @@ public class AuthServiceUnitTest {
         assertEquals("newUser", savedUser.getUsername());
         assertEquals("new@domain.com", savedUser.getEmail());
         assertEquals("hashedPassword", savedUser.getPassword());
-        assertFalse(savedUser.isEmailVerified()); // Because requireEmailVerification is true
+        assertFalse(savedUser.isEmailVerified());
     }
 
     @Test
@@ -179,7 +178,6 @@ public class AuthServiceUnitTest {
 
     @Test
     void login_ShouldThrowException_WhenUserNotFoundInDatabase() {
-        // This simulates the rare case where AuthenticationManager succeeds but the user is missing from DB
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
 
         assertThrows(UsernameNotFoundException.class, () -> authService.login(validLoginRequest));

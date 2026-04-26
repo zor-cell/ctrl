@@ -58,9 +58,6 @@ public class EmailVerificationIntegrationTest {
   @Autowired
   private UserRepository userRepository;
 
-  @MockitoBean
-  private JwtDecoder jwtDecoder;
-
   @AfterEach
   public void tearDown() {
     emailVerificationRepository.deleteAll();
