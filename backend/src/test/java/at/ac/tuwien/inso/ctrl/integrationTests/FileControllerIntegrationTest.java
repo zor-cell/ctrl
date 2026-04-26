@@ -3,10 +3,8 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -48,7 +45,7 @@ public class FileControllerIntegrationTest {
 
     when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
     when(fileStorageService.resolveFileUrl("posts/media/file.png"))
-        .thenReturn("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png");
+        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/file.png");
 
     mockMvc
         .perform(multipart("/files/post-media").file(file))
@@ -56,7 +53,7 @@ public class FileControllerIntegrationTest {
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
         .andExpect(
             jsonPath("$.mediaUrl")
-                .value("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png"))
+                .value("http://localhost:3900/ctrl-dev-media/posts/media/file.png"))
         .andExpect(jsonPath("$.contentType").value("image/png"))
         .andExpect(jsonPath("$.size").value(3));
 
@@ -76,23 +73,5 @@ public class FileControllerIntegrationTest {
         .perform(multipart("/files/post-media").file(file))
         .andExpect(status().isBadRequest())
         .andExpect(content().string("Only image and video files are supported"));
-  }
-
-  @Test
-  void getMedia_ShouldReturnStoredBytes() throws Exception {
-    byte[] content = new byte[] {1, 2, 3};
-    FileStorageService.StoredFile storedFile =
-        new FileStorageService.StoredFile(content, "image/png", content.length);
-
-    when(fileStorageService.loadFile("posts/media/file.png")).thenReturn(storedFile);
-
-    mockMvc
-        .perform(get("/files/media").param("ref", "posts/media/file.png"))
-        .andExpect(status().isOk())
-        .andExpect(header().string("Content-Type", MediaType.IMAGE_PNG_VALUE))
-        .andExpect(header().longValue("Content-Length", content.length))
-        .andExpect(content().bytes(content));
-
-    verify(fileStorageService).loadFile("posts/media/file.png");
   }
 }

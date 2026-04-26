@@ -37,7 +37,6 @@ public class WebSecurityConfig {
             auth ->
                 auth.requestMatchers(
                         "/api/auth/**",
-                        "/api/files/media",
                         "/api/labels",
                         "/api/topics",
                         "/actuator/health",

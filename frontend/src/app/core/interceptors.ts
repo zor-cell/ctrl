@@ -10,7 +10,7 @@ import {AuthService} from "../auth/auth.service";
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.token();
-  const publicEndpoints = ['/api/auth/', '/api/files/media', '/api/topics', '/api/labels'];
+  const publicEndpoints = ['/api/auth/', '/api/topics', '/api/labels'];
 
   if (!token || !authService.validateSession()) {
     return next(req);

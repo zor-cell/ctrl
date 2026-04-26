@@ -200,7 +200,7 @@ public class PostControllerIntegrationTest {
         null,
         caption,
         "posts/media/file.png",
-        "http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png",
+        "http://localhost:3900/ctrl-dev-media/posts/media/file.png",
         true,
         false,
         List.of(),

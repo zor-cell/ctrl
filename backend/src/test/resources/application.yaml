@@ -24,7 +24,7 @@ spring:
 
 garage:
   url: http://localhost:3900
-  public-url: http://localhost:3900
+  public-url: http://localhost:3900/ctrl-test-media
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: ctrl-test-media

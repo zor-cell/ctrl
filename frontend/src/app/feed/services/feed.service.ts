@@ -35,6 +35,7 @@ interface FeedPostResponse {
   labelIds?: FeedLabelResponse[];
   topicIds?: string[];
   mediaRef?: string;
+  mediaUrl?: string;
   sourceIds?: PostSource[];
   comments?: FeedCommentResponse[];
 }
@@ -84,7 +85,7 @@ export class FeedService {
       userVote: item.userVote ?? null,
       labelIds: item.labelIds?.map(label => [label.name, label.description]) ?? [],
       topicIds: item.topicIds ?? [],
-      videoImageRef: item.mediaRef ? [item.mediaRef] : [],
+      videoImageRef: item.mediaUrl ? [item.mediaUrl] : [],
       sourceIds: item.sourceIds ?? [],
       comments:
         item.comments?.map((comment): PostComment => ({

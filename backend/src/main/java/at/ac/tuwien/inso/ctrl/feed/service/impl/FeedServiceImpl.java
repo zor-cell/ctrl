@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.feed.service.impl;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
@@ -26,6 +27,7 @@ public class FeedServiceImpl implements FeedService {
   private final PostVoteRepository postVoteRepository;
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
+  private final FileStorageService fileStorageService;
 
   @Override
   @Transactional(readOnly = true)
@@ -48,7 +50,7 @@ public class FeedServiceImpl implements FeedService {
     String profilePic =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : fileStorageService.resolveFileUrl(post.getUser().getProfilePicture());
 
     // Current user's post-vote
     String postUserVote = null;
@@ -105,6 +107,7 @@ public class FeedServiceImpl implements FeedService {
         profilePic,
         post.getCaption(),
         post.getMediaRef(),
+        fileStorageService.resolveFileUrl(post.getMediaRef()),
         post.isPublic(),
         post.getUpvotes(),
         post.getDownvotes(),
@@ -121,7 +124,7 @@ public class FeedServiceImpl implements FeedService {
         comment.getCommentId(),
         comment.getUser().getId().toString(),
         comment.getUser().getUsername(),
-        comment.getUser().getProfilePicture(),
+        fileStorageService.resolveFileUrl(comment.getUser().getProfilePicture()),
         comment.getContent(),
         comment.getCreatedAt(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);
