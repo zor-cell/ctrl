@@ -105,7 +105,8 @@ public class UserControllerIntegrationTest {
   @Test
   public void updateUser_shouldUpdateProfile_WhenRequestIsValid() throws Exception {
     UpdateProfileRequest request =
-        new UpdateProfileRequest("Updated Name", "updated@test.com", LocalDate.of(1996, 6, 6));
+        new UpdateProfileRequest(
+            "Updated Name", "updated@test.com", "New bio", LocalDate.of(1996, 6, 6));
 
     mockMvc
         .perform(
@@ -133,7 +134,8 @@ public class UserControllerIntegrationTest {
     userRepository.save(secondUser);
 
     UpdateProfileRequest request =
-        new UpdateProfileRequest("Updated Name", "taken@test.com", LocalDate.of(1995, 5, 5));
+        new UpdateProfileRequest(
+            "Updated Name", "taken@test.com", "New bio", LocalDate.of(1995, 5, 5));
 
     mockMvc
         .perform(

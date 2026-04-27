@@ -66,6 +66,7 @@ public class UserServiceUnitTest {
     testUser.setPassword("encodedOldPassword");
     testUser.setVerified(false);
     testUser.setBirthdate(LocalDate.of(1990, 1, 1));
+    testUser.setBio("bio");
   }
 
   @Test
@@ -75,6 +76,7 @@ public class UserServiceUnitTest {
             testUser.getId(),
             testUser.getUsername(),
             testUser.getName(),
+            testUser.getBio(),
             testUser.getEmail(),
             testUser.getBirthdate(),
             null,
@@ -100,7 +102,7 @@ public class UserServiceUnitTest {
   @Test
   void updateUser_ShouldUpdateSuccessfully_WhenValidRequest() {
     UpdateProfileRequest request =
-        new UpdateProfileRequest("New Name", "new@domain.com", LocalDate.of(1995, 5, 5));
+        new UpdateProfileRequest("New Name", "new@domain.com", "New bio", LocalDate.of(1995, 5, 5));
     when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
     when(userRepository.existsByEmail("new@domain.com")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(testUser);
@@ -116,7 +118,8 @@ public class UserServiceUnitTest {
   @Test
   void updateUser_ShouldThrowException_WhenNewEmailIsAlreadyTaken() {
     UpdateProfileRequest request =
-        new UpdateProfileRequest("New Name", "taken@domain.com", LocalDate.of(1990, 1, 1));
+        new UpdateProfileRequest(
+            "New Name", "taken@domain.com", "New bio", LocalDate.of(1990, 1, 1));
     when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
     when(userRepository.existsByEmail("taken@domain.com")).thenReturn(true);
 
@@ -129,7 +132,8 @@ public class UserServiceUnitTest {
   void updateUser_ShouldThrowException_WhenVerifiedUserChangesName() {
     testUser.setVerified(true);
     UpdateProfileRequest request =
-        new UpdateProfileRequest("Different Name", "test@domain.com", LocalDate.of(1990, 1, 1));
+        new UpdateProfileRequest(
+            "Different Name", "test@domain.com", "New bio", LocalDate.of(1990, 1, 1));
     when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
 
     assertThrows(InvalidRequestException.class, () -> userService.updateUser(testUser, request));
@@ -140,7 +144,8 @@ public class UserServiceUnitTest {
   void updateUser_ShouldThrowException_WhenVerifiedUserChangesBirthdate() {
     testUser.setVerified(true);
     UpdateProfileRequest request =
-        new UpdateProfileRequest("Original Name", "test@domain.com", LocalDate.of(1995, 5, 5));
+        new UpdateProfileRequest(
+            "Original Name", "test@domain.com", "New bio", LocalDate.of(1995, 5, 5));
     when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
 
     assertThrows(InvalidRequestException.class, () -> userService.updateUser(testUser, request));
