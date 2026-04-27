@@ -11,9 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestConfig.class)
 public class CtrlApplicationTests {
 
-    @Test
-    void contextLoads() {
-        // emtpy on purpose! try loading application context (checks for missing dependencies etc.)
-    }
-
+  @Test
+  void contextLoads() {
+    // emtpy on purpose! try loading application context (checks for missing dependencies etc.)
+  }
 }

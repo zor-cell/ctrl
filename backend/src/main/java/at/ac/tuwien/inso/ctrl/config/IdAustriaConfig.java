@@ -14,7 +14,7 @@ public class IdAustriaConfig {
 
   @Bean
   public JwtDecoder idAustriaJwtDecoder() {
-    //lazy discovery of oidc issuer uri
+    // lazy discovery of oidc issuer uri
     String jwkSetUri = issuerUri + "/protocol/openid-connect/certs";
     NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 

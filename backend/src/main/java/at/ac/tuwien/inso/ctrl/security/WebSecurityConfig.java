@@ -46,7 +46,7 @@ public class WebSecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .exceptionHandling( //auth endpoints that reach an exception should return 401
+        .exceptionHandling( // auth endpoints that reach an exception should return 401
             exceptions ->
                 exceptions.authenticationEntryPoint(
                     new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
