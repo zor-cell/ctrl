@@ -11,6 +11,9 @@ import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
 import at.ac.tuwien.inso.ctrl.auth.service.ResetPasswordService;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
+import at.ac.tuwien.inso.ctrl.exception.InvalidTokenException;
+import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import java.lang.invoke.MethodHandles;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +61,21 @@ public class AuthController {
     return authService.login(loginRequest);
   }
 
+  /**
+   * Sends a password reset email to the user with the specified email address.
+   *
+   * This endpoint initiates the password reset process by sending a reset email to the user.
+   * The email contains a link with a unique token that the user can use to reset their password.
+   * The token is valid for 30 minutes.
+   *
+   * @param passwordResetRequest a valid request containing the user's email address
+   * @return {@code true} if the password reset email was successfully sent
+   * @throws ResourceNotFoundException if no user exists with the provided email address
+   * @throws CommunicationException if the email fails to send or if there is an error
+   *         creating the email message
+   * @see PasswordResetEmailRequest
+   * @see ResetPasswordService#sendPasswordResetEmail(PasswordResetEmailRequest)
+   */
   @PostMapping("/forgot-password")
   @ResponseStatus(HttpStatus.CREATED)
   public boolean sendPasswordReset(
@@ -67,6 +85,21 @@ public class AuthController {
     return true;
   }
 
+
+  /**
+   * Resets a user's password using a valid password reset token.
+   *
+   * This endpoint completes the password reset process by validating the reset token
+   * and updating the user's password. The token must be valid, not expired, and not yet used.
+   * After a successful password reset, the token is marked as used and cannot be reused.
+   *
+   * @param passwordResetRequest a valid request containing the reset token and new password
+   * @return {@code true} if the password was successfully reset
+   * @throws InvalidTokenException if the token is not found, has already been used,
+   *         or has expired
+   * @see PasswordResetRequest
+   * @see ResetPasswordService#resetPassword(PasswordResetRequest)
+   */
   @PostMapping("/reset-password")
   @ResponseStatus(HttpStatus.CREATED)
   public boolean resetPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest) {
