@@ -56,7 +56,7 @@ export class FeedService {
       videoImageRef: item.mediaRef ? [item.mediaRef] : [],
       sourceIds: item.sourceIds ?? [],
       comments:
-        item.comments?.map((c) => ({
+        item.comments?.map((c: any) => ({
           commentId: c.commentId,
           userId: c.userId,
           username: c.username,
