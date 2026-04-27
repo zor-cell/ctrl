@@ -3,7 +3,6 @@ import { CommentsComponent } from './comments.component';
 import {expect} from 'vitest';
 
 describe('CommentsComponent', () => {
-  let component: CommentsComponent;
   let fixture: ComponentFixture<CommentsComponent>;
 
   beforeEach(async () => {
@@ -12,7 +11,6 @@ describe('CommentsComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(CommentsComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 

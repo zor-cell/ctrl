@@ -1,3 +1,6 @@
+//TODO: warning should be fixed!
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -19,7 +22,7 @@ export class FeedService {
    * @returns A promise resolving to an array of mapped {@link Post} objects
    */
 
-  async getFeed(page: number = 0, postsPerPage: number = 20): Promise<Post[]> {
+  async getFeed(page = 0, postsPerPage = 20): Promise<Post[]> {
     const response = await firstValueFrom(
       this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}`)
     );
@@ -27,6 +30,7 @@ export class FeedService {
   }
 
   /**
+   *
    * Maps a raw API response object to a typed {@link Post} model.
    * Applies fallback values for optional fields that may be absent in the response.
    *
@@ -52,7 +56,7 @@ export class FeedService {
       videoImageRef: item.mediaRef ? [item.mediaRef] : [],
       sourceIds: item.sourceIds ?? [],
       comments:
-        item.comments?.map((c: any) => ({
+        item.comments?.map((c) => ({
           commentId: c.commentId,
           userId: c.userId,
           username: c.username,

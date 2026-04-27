@@ -108,7 +108,7 @@ describe('EmailVerificationComponent', () => {
   it('should start resend cooldown with "send email" initial state and countdown', () => {
     const timers = vi.useFakeTimers();
 
-    (component as any).startResendCooldown();
+    component.startResendCooldown();
 
     const buttonVerifyElement: HTMLButtonElement = fixture.nativeElement.querySelector('p-button');
     expect(buttonVerifyElement).toBeTruthy();

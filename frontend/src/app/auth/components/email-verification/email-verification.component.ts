@@ -1,15 +1,15 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {ChangeDetectorRef} from '@angular/core';
-import {Button} from 'primeng/button';
-import {FloatLabel} from 'primeng/floatlabel';
-import {InputText} from 'primeng/inputtext';
-import {Message} from 'primeng/message';
-import {NonNullableFormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
-import {NotificationService} from '../../../core/services/notification.service';
-import {EmailVerificationRequest} from '../../dto/EmailVerificationRequest';
-import {AuthService} from '../../auth.service';
-import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectorRef } from '@angular/core';
+import { Button } from 'primeng/button';
+import { FloatLabel } from 'primeng/floatlabel';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { NotificationService } from '../../../core/services/notification.service';
+import { EmailVerificationRequest } from '../../dto/EmailVerificationRequest';
+import { AuthService } from '../../auth.service';
+import { EmailVerificationPageData } from '../../dto/EmailVerificationPageData';
 
 @Component({
   selector: 'app-email-verification',
@@ -18,6 +18,9 @@ import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
   styleUrl: './email-verification.component.scss',
 })
 export class EmailVerificationComponent implements OnDestroy, OnInit {
+  private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
+
   private static readonly RESEND_COOLDOWN_MS = 60_000;
   private static readonly RESEND_COOLDOWN_SECONDS = 60;
 
@@ -34,10 +37,6 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
   codeControl = this.verificationForm.controls.code;
-
-  constructor(private cdr: ChangeDetectorRef, private route: ActivatedRoute) {
-
-  }
 
   submitCode() {
     if (this.verificationForm.invalid) {
@@ -82,19 +81,19 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit() {
-    this.startResendCooldown()
+    this.startResendCooldown();
 
     if (this.route.snapshot.paramMap.has('email') && this.route.snapshot.paramMap.has('username')) {
       this.emailData = {
         username: this.route.snapshot.paramMap.get('username') || '',
-        email: this.route.snapshot.paramMap.get('email') || ''
+        email: this.route.snapshot.paramMap.get('email') || '',
       } as EmailVerificationPageData;
     } else {
       this.notificationService.showError('Missing registration context. Please register again.');
     }
   }
 
-  private startResendCooldown() {
+  public startResendCooldown() {
     this.showResendButton = false;
     this.resendCountdownSeconds = EmailVerificationComponent.RESEND_COOLDOWN_SECONDS;
 
