@@ -26,6 +26,9 @@ services:
       keycloak:
         condition: service_healthy
         restart: false
+      garage:
+        condition: service_healthy
+        restart: false
     restart: on-failure:3
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
@@ -101,7 +104,7 @@ services:
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
       GARAGE_DEFAULT_BUCKET: ctrl-dev-media
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
+      test: [ "CMD", "/garage", "status" ]
       interval: 10s
       timeout: 5s
       retries: 5

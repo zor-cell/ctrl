@@ -1,7 +1,6 @@
 import {Component, computed, inject} from '@angular/core';
 import {RouterModule, Router } from '@angular/router';
 import {AuthService} from "../auth/auth.service";
-import {NotificationService} from "../core/services/notification.service";
 import { ThemeService } from '../core/services/theme.service';
 import {ButtonModule} from 'primeng/button';
 import {MenuItem} from "primeng/api";

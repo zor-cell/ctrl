@@ -25,13 +25,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       nativeQuery = true)
   int backfillNullVerifiedUsers();
 
-
   // query to delete orphan users. this means after a day of the email-address not
   // being registered => Delete user
   @Modifying
-  @Query(value = "DELETE FROM users WHERE is_verified = false" +
-      " AND created_at < NOW() - " +
-      "INTERVAL '1 day'", nativeQuery = true)
+  @Query(
+      value =
+          "DELETE FROM users WHERE is_verified = false"
+              + " AND created_at < NOW() - "
+              + "INTERVAL '1 day'",
+      nativeQuery = true)
   void deleteUnverifiedUsersOlderThanOneDay();
 
   Optional<User> findByEmail(String email);

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Post } from '../../dto/Post';
 import { PostComment } from '../../dto/Comment';
+import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
 
 import { DialogModule } from 'primeng/dialog';
 import { AvatarModule } from 'primeng/avatar';
@@ -77,14 +78,7 @@ export class CommentsComponent {
   }
 
   timeAgo(createdAt: string): string {
-    const diffMs = Date.now() - new Date(createdAt).getTime();
-    const minutes = Math.floor(diffMs / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} min ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    return formatTimeAgo(createdAt);
   }
 
   isVideo(url: string): boolean {

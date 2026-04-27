@@ -2,19 +2,23 @@ package at.ac.tuwien.inso.ctrl.auth.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
-import at.ac.tuwien.inso.ctrl.auth.dto.RegisterRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidEmailVerificationCodeException;
-import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,14 +32,6 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
@@ -44,7 +40,8 @@ public class EmailVerificationService {
   private final TemplateEngine templateEngine;
   private final EmailVerificationRepository emailVerificationRepository;
   private final UserRepository userRepository;
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -90,9 +87,11 @@ public class EmailVerificationService {
       mailSender.send(message);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
-      throw new CommunicationException("Failed to send email. You can register again in 2 minutes.");
+      throw new CommunicationException(
+          "Failed to send email. You can register again in 2 minutes.");
     } catch (MessagingException me) {
-      throw new CommunicationException("Failed to create email. You can register again in 2 minutes.");
+      throw new CommunicationException(
+          "Failed to create email. You can register again in 2 minutes.");
     }
   }
 
@@ -100,12 +99,17 @@ public class EmailVerificationService {
     if (!requireEmailVerification) {
       return new EmailVerificationResponse(true);
     }
-    User user = userRepository.findByUsername(emailVerificationRequest.username())
-        .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
-    EmailVerification verification = emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
-        .orElseThrow(() -> new ResourceNotFoundException("Verification not found for user"));
+    User user =
+        userRepository
+            .findByUsername(emailVerificationRequest.username())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
+    EmailVerification verification =
+        emailVerificationRepository
+            .findEmailVerificationByUser_Id(user.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("Verification not found for user"));
 
-    if (verification.getCode().equals(emailVerificationRequest.code()) && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
+    if (verification.getCode().equals(emailVerificationRequest.code())
+        && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
       emailVerificationRepository.delete(verification);
       user.setEmailVerified(true);
       userRepository.save(user);
@@ -119,16 +123,21 @@ public class EmailVerificationService {
     Context context = new Context();
 
     context.setVariable("verificationCode", code);
-    context.setVariable("redirectUrl", "http://localhost:80/email_verification/" + data.username() + "/" + data.email());
+    context.setVariable(
+        "redirectUrl",
+        "http://localhost:80/email_verification/" + data.username() + "/" + data.email());
     return context;
   }
-  
+
   private void saveVerificationCode(SendEmailRequest sendEmailRequest, String code) {
-    User user = userRepository.findByUsername(sendEmailRequest.username())
+    User user =
+        userRepository
+            .findByUsername(sendEmailRequest.username())
             .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
 
-    emailVerificationRepository.findEmailVerificationByUser_Id(user.getId())
-            .ifPresent(emailVerificationRepository::delete);
+    emailVerificationRepository
+        .findEmailVerificationByUser_Id(user.getId())
+        .ifPresent(emailVerificationRepository::delete);
 
     EmailVerification verification = new EmailVerification();
     verification.setUser(user);
@@ -144,7 +153,8 @@ public class EmailVerificationService {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
 
-      int value = ((hash[0] & 0xFF) << 24)
+      int value =
+          ((hash[0] & 0xFF) << 24)
               | ((hash[1] & 0xFF) << 16)
               | ((hash[2] & 0xFF) << 8)
               | (hash[3] & 0xFF);
@@ -155,5 +165,4 @@ public class EmailVerificationService {
       throw new IllegalStateException("SHA-256 not available", e);
     }
   }
-  
 }

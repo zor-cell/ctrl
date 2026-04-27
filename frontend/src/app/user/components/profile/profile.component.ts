@@ -49,7 +49,8 @@ export class ProfileComponent implements OnInit {
   protected profileForm = this.fb.group({
     name: ['', Validators.required],
     birthdate: [new Date(), Validators.required],
-    email: ['', Validators.required]
+    email: ['', Validators.required],
+    bio: ['']
   });
 
   protected passwordForm = this.fb.group({
@@ -72,6 +73,7 @@ export class ProfileComponent implements OnInit {
         this.profileForm.patchValue({
           name: currentUser.name,
           email: currentUser.email,
+          bio: currentUser.bio ?? '',
           birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date()
         });
 
@@ -109,6 +111,7 @@ export class ProfileComponent implements OnInit {
     this.userService.updateUser({
       name: formValues.name!,
       email: formValues.email!,
+      bio: formValues.bio?.trim() ?? '',
       birthdate: formattedDate
     }).subscribe();
   }
