@@ -1,0 +1,259 @@
+:host ::ng-deep .post-detail-dialog .p-dialog-content {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.post-detail {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: min(50rem, 88vh);
+  background: #fff;
+}
+
+.post-detail__header,
+.post-detail__caption,
+.post-detail__sources-panel,
+.post-detail__comments,
+.post-detail__comment-box {
+  padding: 1.25rem 1.5rem;
+}
+
+.post-detail__header,
+.post-detail__comment-box {
+  display: flex;
+  gap: 1rem;
+}
+
+.post-detail__header {
+  display: grid;
+  grid-template-columns: minmax(12rem, auto) 1fr auto;
+  grid-template-areas:
+    "author chips actions";
+  align-items: start;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.post-detail__body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.post-detail__header-actions,
+.post-detail__author,
+.post-detail__chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.post-detail__author {
+  grid-area: author;
+}
+
+.post-detail__header-actions {
+  grid-area: actions;
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .post-detail__delete-button {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0;
+}
+
+:host ::ng-deep .post-detail__delete-button:hover {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+:host ::ng-deep .post-detail__delete-button:focus,
+:host ::ng-deep .post-detail__delete-button:focus-visible,
+:host ::ng-deep .post-detail__delete-button:active {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0;
+}
+
+.post-detail__avatar {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 800;
+}
+
+.post-detail__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-detail__author strong {
+  color: #334155;
+}
+
+.post-detail__author p,
+.post-detail__empty,
+.post-detail__empty-state p,
+.post-detail__comment span,
+.post-detail__source p {
+  margin: 0;
+  color: #8a8f98;
+}
+
+.post-detail__chips {
+  grid-area: chips;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.post-detail__chips span {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.45rem;
+  background: #f8fafc;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.post-detail__media {
+  display: block;
+  width: 100%;
+  max-height: 36rem;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.post-detail__caption {
+  margin: 0;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.post-detail__sources-panel {
+  padding-block: 0.5rem;
+}
+
+.post-detail__sources {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.post-detail__source {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.post-detail__source h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.post-detail__source a {
+  overflow-wrap: anywhere;
+}
+
+.post-detail__comments {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 12rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.post-detail__comments h2 {
+  margin: 0;
+  color: #334155;
+  font-size: 1.35rem;
+}
+
+.post-detail__comments .post-detail__empty-state {
+  align-self: center;
+}
+
+.post-detail__comment {
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+}
+
+.post-detail__comment p {
+  margin: 0;
+  color: #334155;
+}
+
+.post-detail__empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  color: #a3a3a3;
+}
+
+.post-detail__empty-state i {
+  font-size: 2rem;
+}
+
+.post-detail__comment-box {
+  border-top: 1px solid #e5e7eb;
+}
+
+.post-detail__comment-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #111827;
+  border-radius: 0.75rem;
+  color: #334155;
+  font: inherit;
+}
+
+.post-detail__comment-box button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.post-detail__comment-box button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .post-detail__header {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "author"
+      "chips"
+      "actions";
+  }
+
+  .post-detail__chips {
+    justify-content: flex-start;
+  }
+
+  .post-detail__header-actions {
+    justify-content: flex-start;
+  }
+}

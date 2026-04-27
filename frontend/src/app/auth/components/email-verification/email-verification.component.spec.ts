@@ -102,7 +102,7 @@ describe('EmailVerificationComponent', () => {
     const buttonElement: HTMLButtonElement = fixture.nativeElement.querySelector('p-button');
     expect(buttonElement).toBeTruthy();
     expect(buttonElement.textContent).toContain('Verify');
-    expect(component.showResendButton).toEqual(false)
+    expect(component.showResendButton).toEqual(false);
   });
 
   it('should start resend cooldown with "send email" initial state and countdown', () => {
@@ -110,11 +110,13 @@ describe('EmailVerificationComponent', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (component as any).startResendCooldown();
 
+    component['startResendCooldown']();
+
     const buttonVerifyElement: HTMLButtonElement = fixture.nativeElement.querySelector('p-button');
     expect(buttonVerifyElement).toBeTruthy();
     expect(buttonVerifyElement.textContent).toContain('Verify');
 
-    expect(component.showResendButton).toEqual(false)
+    expect(component.showResendButton).toEqual(false);
     expect(component.resendCountdownSeconds).toEqual(60);
 
     timers.advanceTimersByTime(60000);
@@ -142,7 +144,6 @@ describe('EmailVerificationComponent', () => {
   });
 
   it('should display enter valid code prompt with 5 numbers only', () => {
-
     component.verificationForm.controls.code.setValue('12345');
     component.verificationForm.controls.code.markAllAsTouched();
     fixture.detectChanges();
@@ -150,7 +151,5 @@ describe('EmailVerificationComponent', () => {
     const errorMessageElement = fixture.nativeElement.querySelector('p-message[severity="error"]');
     expect(errorMessageElement).toBeTruthy();
     expect(errorMessageElement.textContent).toContain('Please enter a valid 6-digit code.');
-
   });
-
 });

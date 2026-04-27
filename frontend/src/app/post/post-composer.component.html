@@ -1,0 +1,369 @@
+<input
+  #mediaInput
+  type="file"
+  [accept]="acceptedPostMediaInputTypes"
+  class="sr-only"
+  (change)="onMediaSelected($event)"
+/>
+
+<p-dialog
+  [visible]="visible"
+  [modal]="modal"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="dismissableMask"
+  [style]="{ width: 'min(56rem, 92vw)' }"
+  header="Create Post"
+  (visibleChange)="onVisibleChange($event)"
+  (onHide)="onHide()"
+>
+  @if (currentStep() === 1) {
+    <div class="composer-step">
+      <div class="composer-step__header">
+        <span class="composer-step__number">1</span>
+        <div>
+          <h2>Add an image or video</h2>
+          <p>
+            This is optional. You can also continue without media and create a
+            text-only post.
+          </p>
+        </div>
+      </div>
+
+      <div class="media-dropzone-wrap">
+        <button
+          type="button"
+          class="media-dropzone"
+          (click)="openMediaPicker()"
+        >
+          @if (previewUrl() && previewKind() === 'image') {
+            <img
+              [src]="previewUrl()!"
+              alt="Selected image preview"
+              class="media-dropzone__preview"
+            />
+          } @else if (previewUrl() && previewKind() === 'video') {
+            <video
+              [src]="previewUrl()!"
+              controls
+              class="media-dropzone__preview"
+            ></video>
+          } @else {
+            <span class="media-dropzone__icon">🖼️</span>
+            <span class="media-dropzone__title">Select image or video</span>
+            <span class="media-dropzone__text">
+              Click to choose a file from your device. Supported:
+              {{ acceptedPostMediaFormatsLabel }} · max
+              {{ maxPostMediaSizeLabel }}.
+            </span>
+          }
+        </button>
+
+        @if (selectedMediaFile()) {
+          <button
+            type="button"
+            class="media-remove-button"
+            aria-label="Remove selected media"
+            title="Remove selected media"
+            (click)="removeSelectedMedia()"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        }
+      </div>
+
+      @if (selectedFileName()) {
+        <p class="media-file-name">Selected file: {{ selectedFileName() }}</p>
+        @if (selectedMediaMayTakeLonger()) {
+          <p class="media-file-name media-file-name--notice">
+            This video format may take longer to upload.
+          </p>
+        }
+      }
+
+      <div class="composer-actions">
+        <p-button
+          label="Choose Media"
+          severity="secondary"
+          (onClick)="openMediaPicker()"
+        />
+        <p-button
+          label="Weiter"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          (onClick)="continueToDetails()"
+        />
+      </div>
+    </div>
+  } @else {
+    <form class="composer-form" [formGroup]="postForm">
+      <div class="composer-step__header">
+        <span class="composer-step__number">2</span>
+        <div>
+          <h2>Add post details</h2>
+          <p>
+            Write your caption, decide on visibility, add sources, and choose
+            topics.
+          </p>
+        </div>
+      </div>
+
+      <div class="composer-preview">
+        @if (previewUrl() && previewKind() === 'image') {
+          <img
+            [src]="previewUrl()!"
+            alt="Selected image preview"
+            class="composer-preview__media"
+          />
+        } @else if (previewUrl() && previewKind() === 'video') {
+          <video
+            [src]="previewUrl()!"
+            controls
+            class="composer-preview__media"
+          ></video>
+        }
+      </div>
+
+      <div class="composer-form__grid">
+        <div class="field">
+          <p-floatlabel variant="on">
+            <textarea
+              pTextarea
+              inputId="caption"
+              formControlName="caption"
+              rows="5"
+              [maxlength]="maxCaptionLength"
+              class="field__textarea"
+            ></textarea>
+            <label for="caption">Caption *</label>
+          </p-floatlabel>
+          <p class="field__hint">
+            Required · {{ captionLength() }} / {{ maxCaptionLength }} characters
+          </p>
+          @if (hasCaptionError('required')) {
+            <p class="field__error">Caption is required.</p>
+          }
+          @if (hasCaptionError('blank')) {
+            <p class="field__error">Caption must contain text.</p>
+          }
+          @if (hasCaptionError('maxlength')) {
+            <p class="field__error">
+              Caption must not be longer than {{ maxCaptionLength }} characters.
+            </p>
+          }
+        </div>
+
+        @if (isVerifiedUser) {
+          <div class="visibility-card">
+            <div>
+              <h3>Visibility</h3>
+              <p>Choose whether this post should be public or private.</p>
+            </div>
+            <div class="visibility-toggle">
+              <span>Private</span>
+              <p-toggleswitch formControlName="isPublic" inputId="isPublic" />
+              <span>Public</span>
+            </div>
+          </div>
+        } @else {
+          <div class="visibility-card visibility-card--locked">
+            <div>
+              <h3>Visibility</h3>
+              <p>
+                Because your account is not verified, this post will be saved as
+                private.
+              </p>
+            </div>
+          </div>
+        }
+
+        <div class="ai-card">
+          <div>
+            <h3>AI generated content</h3>
+            <p>Mark this if text, images, or video were generated with AI.</p>
+          </div>
+          <p-toggleswitch formControlName="isAiGenerated" inputId="isAiGenerated" />
+        </div>
+
+        <div class="field">
+          <p-floatlabel variant="on">
+            <p-multiselect
+              inputId="topicIds"
+              formControlName="topicIds"
+              [options]="topicOptions"
+              optionLabel="label"
+              optionValue="value"
+              [showToggleAll]="false"
+              [filter]="true"
+              [selectionLimit]="3"
+              [maxSelectedLabels]="4"
+              display="chip"
+              [loading]="loadingTopics"
+              class="field__multiselect"
+            >
+              <ng-template #selecteditems let-selectedTopics>
+                @if (selectedTopics?.length) {
+                  <div class="topic-chip-list">
+                    @for (topic of selectedTopics; track topic.value) {
+                      <span class="topic-chip">{{ topicOptionLabel(topic) }}</span>
+                    }
+                  </div>
+                }
+              </ng-template>
+            </p-multiselect>
+            <label for="topicIds">Topics</label>
+          </p-floatlabel>
+          @if (selectedTopicsSummary()) {
+            <p class="field__hint">Selected: {{ selectedTopicsSummary() }}</p>
+          } @else if (!loadingTopics && topicOptions.length === 0) {
+            <p class="field__hint">
+              No topics were returned by the backend.
+            </p>
+          }
+        </div>
+      </div>
+
+      <section class="sources-section">
+        <div class="sources-section__header">
+          <div>
+            <h3>Sources</h3>
+            <p>Optional · up to {{ maxSources }} sources.</p>
+          </div>
+
+          <p-button
+            label="Add Source"
+            icon="pi pi-plus"
+            severity="secondary"
+            [disabled]="!canAddSource()"
+            (onClick)="addSource()"
+          />
+        </div>
+
+        <div formArrayName="sources" class="sources-list">
+          @for (source of sources.controls; track $index) {
+            <div
+              class="source-card"
+              [class.source-card--error]="hasCollapsedSourceError($index)"
+              [formGroupName]="$index"
+            >
+              <div class="source-card__title-row">
+                <div>
+                  <h4>Source {{ $index + 1 }}</h4>
+                  @if (!isSourceExpanded($index)) {
+                    <p class="source-card__collapsed-title">
+                      {{ collapsedSourceTitle($index) }}
+                    </p>
+                  }
+                </div>
+                <div class="source-card__actions">
+                  <p-button
+                    [label]="isSourceExpanded($index) ? 'Collapse' : 'Expand'"
+                    severity="secondary"
+                    size="small"
+                    (onClick)="toggleSource($index)"
+                  />
+                  <p-button
+                    label="Remove"
+                    severity="contrast"
+                    size="small"
+                    (onClick)="removeSource($index)"
+                  />
+                </div>
+              </div>
+
+              @if (isSourceExpanded($index)) {
+                <div class="source-card__grid">
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="journal-{{$index}}"
+                      formControlName="journal"
+                      [maxlength]="maxSourceJournalLength"
+                    />
+                    <label for="journal-{{$index}}">Journal</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="author-{{$index}}"
+                      formControlName="author"
+                      [maxlength]="maxSourceAuthorLength"
+                    />
+                    <label for="author-{{$index}}">Author</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="title-{{$index}}"
+                      formControlName="title"
+                      [maxlength]="maxSourceTitleLength"
+                    />
+                    <label for="title-{{$index}}">Title *</label>
+                  </p-floatlabel>
+
+                  <p-floatlabel variant="on">
+                    <input
+                      pInputText
+                      id="url-{{$index}}"
+                      formControlName="url"
+                      [maxlength]="maxSourceUrlLength"
+                    />
+                    <label for="url-{{$index}}">URL</label>
+                  </p-floatlabel>
+
+                  <div class="source-card__date-field">
+                    <p-floatlabel variant="on">
+                      <p-datepicker
+                        inputId="date-{{$index}}"
+                        formControlName="date"
+                        dateFormat="dd.mm.yy"
+                        [showIcon]="false"
+                        appendTo="body"
+                        class="source-card__date-picker"
+                      />
+                      <label for="date-{{$index}}">Date</label>
+                    </p-floatlabel>
+                  </div>
+                </div>
+
+                @if (hasSourceError($index, 'sourceTitleRequired')) {
+                  <p class="source-card__error">
+                    Title is required when you add source information.
+                  </p>
+                }
+
+                @if (hasSourceError($index, 'sourceAuthorOrUrlRequired')) {
+                  <p class="source-card__error">
+                    Add either an author or a URL for this source.
+                  </p>
+                }
+
+                @if (submitAttempted() && sourceLengthErrorMessage($index); as message) {
+                  <p class="source-card__error">{{ message }}</p>
+                }
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <div class="composer-actions">
+        <p-button
+          label="Back"
+          severity="secondary"
+          icon="pi pi-arrow-left"
+          (onClick)="goBackToMedia()"
+        />
+        <p-button
+          [label]="submitButtonLabel()"
+          icon="pi pi-check"
+          [loading]="submitting() && selectedMediaMayTakeLonger()"
+          [disabled]="submitting()"
+          (onClick)="submitPost()"
+        />
+      </div>
+    </form>
+  }
+</p-dialog>

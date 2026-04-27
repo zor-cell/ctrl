@@ -53,7 +53,7 @@ public class User implements UserDetails {
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ChatMember> chatMembers;
 
-  @Column(name = "bio")
+  @Column(name = "bio", length = 280)
   private String bio;
 
   @Column(name = "profile_picture_ref")

@@ -1,0 +1,152 @@
+<p-dialog
+  [visible]="post !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [showHeader]="false"
+  styleClass="post-detail-dialog"
+  [style]="{ width: 'min(45rem, 92vw)' }"
+  (visibleChange)="onVisibleChange($event)"
+>
+  @if (post; as currentPost) {
+    <article class="post-detail">
+      <header class="post-detail__header">
+        <div class="post-detail__author">
+          <span class="post-detail__avatar">
+            @if (currentProfilePicture) {
+              <img [src]="currentProfilePicture" alt="" />
+            } @else {
+              {{ avatarInitial }}
+            }
+          </span>
+          <div>
+            <strong>{{ currentPost.username }}</strong>
+            <p>{{ timeAgo(currentPost.createdAt) }}</p>
+          </div>
+        </div>
+
+        <div class="post-detail__header-actions">
+          <p-button
+            icon="pi pi-trash"
+            ariaLabel="Delete post"
+            severity="danger"
+            [text]="true"
+            styleClass="post-detail__delete-button"
+            (onClick)="requestDeletion()"
+          />
+          <p-button
+            icon="pi pi-times"
+            ariaLabel="Close post detail"
+            severity="secondary"
+            [rounded]="true"
+            [text]="true"
+            (onClick)="closeDialog()"
+          />
+        </div>
+
+        <div class="post-detail__chips">
+          @for (topicId of currentPost.topicIds; track topicId) {
+            <span>{{ topicLabelById(topicId) }}</span>
+          }
+          @for (labelId of currentPost.labelIds; track labelId) {
+            <span>{{ labelId }}</span>
+          }
+        </div>
+      </header>
+
+      <div class="post-detail__body">
+        @if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
+          <img
+            [src]="postMediaUrl(currentPost)!"
+            alt=""
+            class="post-detail__media"
+          />
+        } @else if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
+          <video
+            [src]="postMediaUrl(currentPost)!"
+            controls
+            class="post-detail__media"
+          ></video>
+        }
+
+        <p class="post-detail__caption">{{ currentPost.caption }}</p>
+
+        <section class="post-detail__sources-panel">
+          <p-button
+            [label]="sourcesButtonLabel(currentPost)"
+            icon="pi pi-book"
+            severity="secondary"
+            size="small"
+            [text]="true"
+            (onClick)="toggleSources()"
+          />
+
+          @if (sourcesExpanded()) {
+            @if (postSources(currentPost).length > 0) {
+              <div class="post-detail__sources">
+                @for (source of postSources(currentPost); track source.singleSourceId) {
+                  <article class="post-detail__source">
+                    <h3>{{ source.title || 'Untitled source' }}</h3>
+                    @if (source.author) {
+                      <p>{{ source.author }}</p>
+                    }
+                    @if (source.journal) {
+                      <p>{{ source.journal }}</p>
+                    }
+                    @if (source.url) {
+                      <a [href]="source.url" target="_blank" rel="noreferrer">
+                        {{ displaySourceUrl(source.url) }}
+                      </a>
+                    }
+                    @if (formattedSourceDate(source)) {
+                      <p>{{ formattedSourceDate(source) }}</p>
+                    }
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="post-detail__empty">No sources added.</p>
+            }
+          }
+        </section>
+
+        <section class="post-detail__comments" aria-labelledby="post-detail-comments-title">
+          <h2 id="post-detail-comments-title">Comments ({{ commentCount() }})</h2>
+          @if (topLevelComments(currentPost).length > 0) {
+            @for (comment of topLevelComments(currentPost); track comment.commentId) {
+              <article class="post-detail__comment">
+                <strong>{{ comment.username }}</strong>
+                <span>{{ timeAgo(comment.createdAt) }}</span>
+                <p>{{ comment.content }}</p>
+              </article>
+            }
+          } @else {
+            <div class="post-detail__empty-state">
+              <i class="pi pi-comment"></i>
+              <p>No comments yet.</p>
+            </div>
+          }
+        </section>
+      </div>
+
+      <footer class="post-detail__comment-box">
+        <input
+          type="text"
+          placeholder="Write a comment..."
+          [value]="commentDraft()"
+          (input)="updateCommentDraft($event)"
+          (keydown.enter)="submitComment()"
+        />
+        <button
+          type="button"
+          aria-label="Send comment"
+          [disabled]="!canSubmitComment()"
+          (click)="submitComment()"
+        >
+          <i class="pi pi-send"></i>
+        </button>
+      </footer>
+    </article>
+  }
+</p-dialog>

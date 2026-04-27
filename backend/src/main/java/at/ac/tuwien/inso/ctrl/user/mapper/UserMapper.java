@@ -17,6 +17,7 @@ public class UserMapper {
         user.getUsername(),
         user.getEmail(),
         user.getName(),
+        user.getBio(),
         user.getBirthdate(),
         fileStorageService.resolveFileUrl(user.getProfilePicture()),
         user.getCreatedAt(),

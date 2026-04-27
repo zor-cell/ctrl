@@ -11,6 +11,7 @@ public record FeedPostResponse(
     String userProfilePic,
     String caption,
     String mediaRef,
+    String mediaUrl,
     boolean isPublic,
     Integer upvotes,
     Integer downvotes,

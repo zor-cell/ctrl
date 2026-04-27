@@ -11,12 +11,11 @@ describe('CommentsComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(CommentsComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   // Test cases will be added here
   it("test", () => {
-    expect(true);
+    expect(fixture.componentInstance).toBeTruthy();
   })
 });
