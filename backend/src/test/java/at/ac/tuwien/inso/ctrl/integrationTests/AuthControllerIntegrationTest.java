@@ -577,4 +577,83 @@ public class AuthControllerIntegrationTest {
     assertTrue(passwordEncoder.matches("newPassword", updatedUser.getPassword()));
   }
 
+  @Test
+  public void testResetPassword_withNonExistentToken_shouldReturnUnauthorized() throws Exception {
+
+
+    String validRequest = "{\"token\": \"randomToken\"," +
+        "\"password\": \"" + existingUser.getPassword() + "\"}";
+
+    mockMvc
+        .perform(
+            post(resetPasswordEndpoint)
+                .contentType("application/json")
+                .content(validRequest))
+        .andExpect(status().isUnauthorized());
+
+    Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
+    assertFalse(reset.isPresent());
+
+    Optional<User> updatedUserOpt = userRepository.findById(existingUser.getId());
+    assertTrue(updatedUserOpt.isPresent());
+    User updatedUser = updatedUserOpt.get();
+    assertEquals(existingUser.getPassword(), updatedUser.getPassword());
+  }
+
+  @Test
+  public void testResetPassword_withUsedToken_shouldReturnUnauthorized() throws Exception {
+    PasswordReset passwordReset = new PasswordReset();
+    passwordReset.setUser(existingUser);
+    passwordReset.setToken("valid-token");
+    passwordReset.setExpiresAt(LocalDateTime.now().plusMinutes(2));
+    passwordReset.setUsed(true);
+    passwordResetRepository.save(passwordReset);
+
+    String validRequest = "{\"token\": \""+ passwordReset.getToken() +"\"," +
+        "\"password\": \"" + existingUser.getPassword() + "\"}";
+
+    mockMvc
+        .perform(
+            post(resetPasswordEndpoint)
+                .contentType("application/json")
+                .content(validRequest))
+        .andExpect(status().isUnauthorized());
+
+    Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
+    assertTrue(reset.isPresent());
+
+    Optional<User> updatedUserOpt = userRepository.findById(existingUser.getId());
+    assertTrue(updatedUserOpt.isPresent());
+    User updatedUser = updatedUserOpt.get();
+    assertEquals(existingUser.getPassword(), updatedUser.getPassword());
+  }
+
+  @Test
+  public void testResetPassword_withExpiredToken_shouldReturnUnauthorized() throws Exception {
+    PasswordReset passwordReset = new PasswordReset();
+    passwordReset.setUser(existingUser);
+    passwordReset.setToken("valid-token");
+    passwordReset.setExpiresAt(LocalDateTime.now().minusMinutes(2));
+    passwordReset.setUsed(false);
+    passwordResetRepository.save(passwordReset);
+
+    String validRequest = "{\"token\": \""+ passwordReset.getToken() +"\"," +
+        "\"password\": \"" + existingUser.getPassword() + "\"}";
+
+    mockMvc
+        .perform(
+            post(resetPasswordEndpoint)
+                .contentType("application/json")
+                .content(validRequest))
+        .andExpect(status().isUnauthorized());
+
+    Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
+    assertTrue(reset.isPresent());
+
+    Optional<User> updatedUserOpt = userRepository.findById(existingUser.getId());
+    assertTrue(updatedUserOpt.isPresent());
+    User updatedUser = updatedUserOpt.get();
+    assertEquals(existingUser.getPassword(), updatedUser.getPassword());
+  }
+
 }
