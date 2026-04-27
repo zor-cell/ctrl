@@ -29,8 +29,6 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute);
   private notificationService = inject(NotificationService);
-  private cdr = inject(ChangeDetectorRef);
-  private route = inject(ActivatedRoute);
   private resendCooldownIntervalId: ReturnType<typeof setInterval> | null = null;
 
   verificationForm = this.fb.group({
