@@ -36,10 +36,6 @@ export class CommentsComponent {
   newComment = '';
   replyingTo = signal<PostComment | null>(null);
 
-  close(): void {
-    this.visibleChange.emit(false);
-  }
-
   topLevelComments(): PostComment[] {
     return this.post?.comments.filter(c => c.parentCommentId === null) ?? [];
   }

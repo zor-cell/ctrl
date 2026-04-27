@@ -40,11 +40,9 @@ export class FeedComponent implements OnInit {
 
   protected allPosts = signal<Post[]>([]);
 
-  // Why dialog
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
 
-  // Comments dialog
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
 
@@ -58,7 +56,6 @@ export class FeedComponent implements OnInit {
   async ngOnInit() {
     this.userService.loadUser();
     const posts = await this.feedService.getFeed();
-    console.log(posts);
     this.allPosts.set(posts);
   }
 
@@ -82,7 +79,7 @@ export class FeedComponent implements OnInit {
         userVote: result.userVote,
       });
     } catch (err) {
-      console.error('Post-Vote fehlgeschlagen, wird zurückgesetzt:', err);
+      console.error('Post-vote failed; will be reset:', err);
       this.patchPost(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
