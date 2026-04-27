@@ -29,9 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
@@ -53,8 +51,6 @@ public class EmailVerificationIntegrationTest {
   @Autowired private EmailVerificationRepository emailVerificationRepository;
 
   @Autowired private UserRepository userRepository;
-
-  @MockitoBean private JwtDecoder jwtDecoder;
 
   @AfterEach
   public void tearDown() {
