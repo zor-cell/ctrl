@@ -1,0 +1,359 @@
+package at.ac.tuwien.inso.ctrl.integrationTests;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
+import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
+import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+
+@ExtendWith(SpringExtension.class)
+@Import(TestConfig.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@ActiveProfiles("test")
+@Transactional
+public class AuthControllerIntegrationTests {
+
+  @Autowired private WebApplicationContext webApplicationContext;
+  @Autowired private UserRepository userRepository;
+  @Autowired private EmailVerificationRepository emailVerificationRepository;
+  private ObjectMapper objectMapper;
+
+  @MockitoBean private JwtDecoder jwtDecoder;
+
+  private MockMvc mockMvc;
+  private User testUserUnverified;
+  private User testUserVerified;
+  private String sendEmailEndpoint = "/api/auth/email";
+  private String verifyEndpoint = "/api/auth/verify";
+
+  @BeforeEach
+  public void setUp() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+    objectMapper = new ObjectMapper();
+    testUserUnverified = new User();
+    testUserUnverified.setUsername("testUserUnverified");
+    testUserUnverified.setPassword("password");
+    testUserUnverified.setEmail("test_unverified@test.com");
+    testUserUnverified.setName("Test User");
+    testUserUnverified.setEmailVerified(false);
+    testUserUnverified.setBirthdate(LocalDate.of(1990, 1, 1));
+    userRepository.save(testUserUnverified);
+
+    testUserVerified = new User();
+    testUserVerified.setUsername("testUserVerified");
+    testUserVerified.setPassword("password");
+    testUserVerified.setEmail("test_verified@test.com");
+    testUserVerified.setName("Test User");
+    testUserVerified.setEmailVerified(true);
+    testUserVerified.setBirthdate(LocalDate.of(1990, 1, 1));
+    userRepository.save(testUserVerified);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    emailVerificationRepository.deleteAll();
+    userRepository.deleteAll();
+  }
+
+  @Test
+  public void testResendVerificationEmail_withUnverifiedUser_shouldReturnCreated()
+      throws Exception {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertTrue(verification.isPresent());
+    assertNotNull(verification.get().getCode());
+    assertNotNull(verification.get().getExpiryTime());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withVerifiedUser_shouldReturnBadRequest()
+      throws Exception {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isConflict());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withWrongUsername_shouldReturnUnauthorized()
+      throws Exception {
+    SendEmailRequest request =
+        new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withWrongEmail_shouldReturnUnauthorized()
+      throws Exception {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserUnverified.getUsername(), "wrong@email.com");
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withEmailUsernamesMismatch_shouldReturnNotFound()
+      throws Exception {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withMissingUsername_shouldReturnNotFound()
+      throws Exception {
+    String invalidRequest = "{\"email\": \"test@test.com\"}";
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(invalidRequest))
+        .andExpect(status().isNotFound());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+  @Test
+  public void testResendVerificationEmail_withMissingEmail_shouldReturnNotFound()
+      throws Exception {
+    String invalidRequest = "{\"username\": \"testuser\"}";
+
+    mockMvc
+        .perform(
+            post(sendEmailEndpoint)
+                .contentType("application/json")
+                .content(invalidRequest))
+        .andExpect(status().isNotFound());
+
+    Optional<EmailVerification> verification =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(verification.isPresent());
+  }
+
+
+  @Test
+  public void testVerifyEmail_withValidCode_shouldReturnOkAndVerificationOk()
+      throws Exception {
+    EmailVerification verification = new EmailVerification();
+    verification.setUser(testUserUnverified);
+    verification.setCode("123456");
+    verification.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+    emailVerificationRepository.save(verification);
+
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.verification_ok").value(true));
+
+    Optional<EmailVerification> ver =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    assertFalse(ver.isPresent());
+
+    Optional<User> updatedUserOpt = userRepository.findById(testUserUnverified.getId());
+    assertTrue(updatedUserOpt.isPresent());
+    assertTrue(updatedUserOpt.get().isEmailVerified());
+  }
+
+  @Test
+  public void testVerifyEmail_withInvalidCode_shouldReturnUnAuthorized() throws Exception {
+    EmailVerification verification = new EmailVerification();
+    verification.setUser(testUserUnverified);
+    verification.setCode("123456");
+    verification.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+    emailVerificationRepository.save(verification);
+
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongcode");
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isUnauthorized());
+
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+
+  }
+
+  @Test
+  public void testVerifyEmail_withExpiredCode_shouldReturnBadUnauthorized() throws Exception {
+    EmailVerification verification = new EmailVerification();
+    verification.setUser(testUserUnverified);
+    verification.setCode("123456");
+    verification.setExpiryTime(LocalDateTime.now().minusMinutes(1));
+    emailVerificationRepository.save(verification);
+
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isUnauthorized());
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+  }
+
+  @Test
+  public void testVerifyEmail_withNonExistentUser_shouldReturnNotFound() throws Exception {
+    EmailVerificationRequest request = new EmailVerificationRequest("nonexistent", "123456");
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+  }
+
+  @Test
+  public void testVerifyEmail_withUserButNoVerification_shouldReturnNotFound()
+      throws Exception {
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+  }
+
+  @Test
+  public void testVerifyEmail_withMissingUsername_shouldReturnNotFound() throws Exception {
+    String invalidRequest = "{\"code\": \"123456\"}";
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(invalidRequest))
+        .andExpect(status().isNotFound());
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+  }
+
+  @Test
+  public void testVerifyEmail_withMissingCode_shouldReturnNotFound() throws Exception {
+    String invalidRequest = "{\"username\": \"testuser\"}";
+
+    mockMvc
+        .perform(
+            post(verifyEndpoint)
+                .contentType("application/json")
+                .content(invalidRequest))
+        .andExpect(status().isNotFound());
+
+    User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
+    assertNotNull(unverifiedUser);
+    assertFalse(unverifiedUser.isEmailVerified());
+  }
+}

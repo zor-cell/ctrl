@@ -69,7 +69,7 @@ public class EmailVerificationService {
         throw new ResourceNotFoundException("User not found for verification");
       }
 
-      if (user.get().isVerified()) {
+      if (user.get().isEmailVerified()) {
         throw new UserAlreadyVerifiedException("User is already verified");
       }
 
@@ -88,10 +88,10 @@ public class EmailVerificationService {
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
       throw new CommunicationException(
-          "Failed to send email. You can register again in 2 minutes.");
+          "Failed to send email.");
     } catch (MessagingException me) {
       throw new CommunicationException(
-          "Failed to create email. You can register again in 2 minutes.");
+          "Failed to create email.");
     }
   }
 
