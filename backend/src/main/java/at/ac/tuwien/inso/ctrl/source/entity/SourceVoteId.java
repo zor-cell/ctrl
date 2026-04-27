@@ -13,9 +13,9 @@ import lombok.*;
 @EqualsAndHashCode
 public class SourceVoteId implements Serializable {
 
-    @Column(name = "source_id")
-    private String sourceId;
+  @Column(name = "source_id")
+  private String sourceId;
 
-    @Column(name = "user_id")
-    private String userId;
+  @Column(name = "user_id")
+  private String userId;
 }

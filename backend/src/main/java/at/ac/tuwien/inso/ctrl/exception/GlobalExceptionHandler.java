@@ -38,8 +38,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(value = {EmailNotVerifiedException.class})
   protected ResponseEntity<Object> handleEmailNotVerified(RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(
-        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request
-    );
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
   }
 
   @ExceptionHandler(value = {InvalidPasswordException.class})
@@ -73,17 +72,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @ExceptionHandler(value = {InvalidEmailVerificationCodeException.class})
-  protected ResponseEntity<Object> handleInvalidEmailVerificationCode(RuntimeException ex, WebRequest request) {
+  protected ResponseEntity<Object> handleInvalidEmailVerificationCode(
+      RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(
-        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request
-    );
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
   }
 
   @ExceptionHandler(value = {UserAlreadyVerifiedException.class})
-  protected ResponseEntity<Object> handleUserAlreadyVerified(RuntimeException ex, WebRequest request) {
+  protected ResponseEntity<Object> handleUserAlreadyVerified(
+      RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(
-        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.CONFLICT, request
-    );
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 
   @ExceptionHandler(value = {IllegalStateException.class})

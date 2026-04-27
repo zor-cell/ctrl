@@ -13,15 +13,14 @@ import lombok.*;
 @Table(name = "source_votes")
 public class SourceVote implements VoteEntry {
 
-    @EmbeddedId
-    private SourceVoteId id;
+  @EmbeddedId private SourceVoteId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("sourceId")
-    @JoinColumn(name = "source_id")
-    private Source source;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @MapsId("sourceId")
+  @JoinColumn(name = "source_id")
+  private Source source;
 
-    /** {@code "up"} or {@code "down"} */
-    @Column(name = "vote_type", nullable = false, length = 4)
-    private String voteType;
+  /** {@code "up"} or {@code "down"} */
+  @Column(name = "vote_type", nullable = false, length = 4)
+  private String voteType;
 }
