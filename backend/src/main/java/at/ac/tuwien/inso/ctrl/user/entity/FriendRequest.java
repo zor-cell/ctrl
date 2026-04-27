@@ -19,8 +19,7 @@ import lombok.*;
     })
 public class FriendRequest {
 
-  @EmbeddedId
-  private FriendRequestId id;
+  @EmbeddedId private FriendRequestId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @MapsId("senderId")

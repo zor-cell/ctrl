@@ -16,11 +16,11 @@ public interface SourceService {
   Source createSource(CreateSourceRequest createSourceRequest);
 
   /**
-   * Processes an upvote or downvote for a source.
-   * Submitting the same vote again toggles (removes) the existing vote.
+   * Processes an upvote or downvote for a source. Submitting the same vote again toggles (removes)
+   * the existing vote.
    *
    * @param sourceId the ID of the source to vote on
-   * @param request  contains {@code voteType} ({@code "up"} or {@code "down"})
+   * @param request contains {@code voteType} ({@code "up"} or {@code "down"})
    * @param username the username of the currently authenticated user
    * @return updated vote counts and the user's current vote state
    */

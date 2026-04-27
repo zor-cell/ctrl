@@ -161,7 +161,8 @@ public class UserService {
     Set<UUID> followedIds = followService.getFollowedIds(currentUser);
     Set<UUID> friendIds = followService.getFriendIds(currentUser);
     Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
-    Set<UUID> pendingRequestIncomingIds = friendRequestRepository.findSenderIdsByReceiver(currentUser);
+    Set<UUID> pendingRequestIncomingIds =
+        friendRequestRepository.findSenderIdsByReceiver(currentUser);
 
     List<User> allUsers = userRepository.findByUsernameContainingIgnoreCase(searchTerm);
 
@@ -173,7 +174,12 @@ public class UserService {
         .map(
             user -> {
               UserSearchResponse.RelationshipStatus status =
-                  socialMapper.determineRelationshipStatus(user, followedIds, friendIds, pendingRequestSentIds, pendingRequestIncomingIds);
+                  socialMapper.determineRelationshipStatus(
+                      user,
+                      followedIds,
+                      friendIds,
+                      pendingRequestSentIds,
+                      pendingRequestIncomingIds);
               String displayName = socialMapper.displayName(user, status);
               return socialMapper.toUserSearchResponse(user, status, displayName);
             })
@@ -189,6 +195,6 @@ public class UserService {
   @Scheduled(cron = "0 0 2 * * *")
   @Transactional
   public void conductUserCleanup() {
-        userRepository.deleteUnverifiedUsersOlderThanOneDay();
+    userRepository.deleteUnverifiedUsersOlderThanOneDay();
   }
 }

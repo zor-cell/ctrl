@@ -27,8 +27,6 @@ public class AuthService {
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
 
-
-
   public void register(RegisterRequest registerRequest) {
     String username = registerRequest.username().trim();
     if (userRepository.existsByUsername(username)) {
@@ -39,8 +37,6 @@ public class AuthService {
     if (userRepository.existsByEmail(email)) {
       throw new ResourceAlreadyExistsException("User", "email", email);
     }
-
-
 
     var user =
         User.builder()

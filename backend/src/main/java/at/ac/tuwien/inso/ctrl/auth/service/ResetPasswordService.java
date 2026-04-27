@@ -11,6 +11,10 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.lang.invoke.MethodHandles;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import java.lang.invoke.MethodHandles;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +35,8 @@ public class ResetPasswordService {
   private final TemplateEngine templateEngine;
   private final UserRepository userRepository;
   private final PasswordResetRepository passwordResetRepository;
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Transactional
   public void sendPasswordResetEmail(PasswordResetEmailRequest passwordResetEmailRequest) {
@@ -44,12 +45,11 @@ public class ResetPasswordService {
       Optional<User> user = userRepository.findByEmail(passwordResetEmailRequest.email());
       if (user.isEmpty()) {
         LOGGER.warn("User with email {} not found", passwordResetEmailRequest.email());
-        throw new ResourceNotFoundException("User with email " + passwordResetEmailRequest.email() + " not found");
-
+        throw new ResourceNotFoundException(
+            "User with email " + passwordResetEmailRequest.email() + " not found");
       }
 
       passwordResetRepository.deleteUnusedTokensByUserId(user.get().getId());
-
 
       String token = UUID.randomUUID().toString();
 
@@ -73,16 +73,20 @@ public class ResetPasswordService {
       passwordResetRepository.save(passwordReset);
 
     } catch (MailException e) {
-      throw new CommunicationException("Failed to send email. You can register again in 2 minutes.");
+      throw new CommunicationException(
+          "Failed to send email. You can register again in 2 minutes.");
     } catch (MessagingException me) {
-      throw new CommunicationException("Failed to create email. You can register again in 2 minutes.");
+      throw new CommunicationException(
+          "Failed to create email. You can register again in 2 minutes.");
     }
   }
 
   @Transactional
   public void resetPassword(PasswordResetRequest passwordResetRequest) {
-    PasswordReset passwordReset = passwordResetRepository.findByToken(passwordResetRequest.token())
-        .orElseThrow(() -> new InvalidTokenException("Token not found"));
+    PasswordReset passwordReset =
+        passwordResetRepository
+            .findByToken(passwordResetRequest.token())
+            .orElseThrow(() -> new InvalidTokenException("Token not found"));
 
     if (passwordReset.isUsed()) {
       throw new InvalidTokenException("Token has already been used");
@@ -98,10 +102,7 @@ public class ResetPasswordService {
 
     passwordReset.setUsed(true);
     passwordResetRepository.save(passwordReset);
-
-
   }
-
 
   private Context createContext(String code) {
     Context context = new Context();

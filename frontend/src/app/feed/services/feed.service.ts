@@ -19,7 +19,7 @@ export class FeedService {
    * @returns A promise resolving to an array of mapped {@link Post} objects
    */
 
-  async getFeed(page: number = 0, postsPerPage: number = 20): Promise<Post[]> {
+  async getFeed(page = 0, postsPerPage = 20): Promise<Post[]> {
     const response = await firstValueFrom(
       this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}`)
     );

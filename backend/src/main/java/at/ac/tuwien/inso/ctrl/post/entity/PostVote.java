@@ -13,8 +13,7 @@ import lombok.*;
 @Table(name = "post_votes")
 public class PostVote implements VoteEntry {
 
-  @EmbeddedId
-  private PostVoteId id;
+  @EmbeddedId private PostVoteId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @MapsId("postId")

@@ -107,7 +107,7 @@ describe('EmailVerificationComponent', () => {
 
   it('should start resend cooldown with "send email" initial state and countdown', () => {
     const timers = vi.useFakeTimers();
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (component as any).startResendCooldown();
 
     const buttonVerifyElement: HTMLButtonElement = fixture.nativeElement.querySelector('p-button');

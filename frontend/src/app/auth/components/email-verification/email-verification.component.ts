@@ -28,16 +28,14 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
   private resendCooldownIntervalId: ReturnType<typeof setInterval> | null = null;
 
   verificationForm = this.fb.group({
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
   codeControl = this.verificationForm.controls.code;
-
-  constructor(private cdr: ChangeDetectorRef, private route: ActivatedRoute) {
-
-  }
 
   submitCode() {
     if (this.verificationForm.invalid) {

@@ -1,5 +1,9 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
@@ -10,6 +14,11 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,16 +36,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(SpringExtension.class)
 @Import(TestConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -49,17 +48,13 @@ public class EmailVerificationIntegrationTest {
   private static User testUserUnverified;
   private static User testUserVerified;
 
-  @Autowired
-  private TemplateEngine templateEngine;
+  @Autowired private TemplateEngine templateEngine;
 
-  @Autowired
-  private EmailVerificationRepository emailVerificationRepository;
+  @Autowired private EmailVerificationRepository emailVerificationRepository;
 
-  @Autowired
-  private UserRepository userRepository;
+  @Autowired private UserRepository userRepository;
 
-  @MockitoBean
-  private JwtDecoder jwtDecoder;
+  @MockitoBean private JwtDecoder jwtDecoder;
 
   @AfterEach
   public void tearDown() {
@@ -67,12 +62,12 @@ public class EmailVerificationIntegrationTest {
     userRepository.deleteAll();
   }
 
-
-
   @BeforeEach
   public void setUp() {
     mailSender = TestConfig.javaMailSender();
-    emailVerificationService = new EmailVerificationService(mailSender, templateEngine, emailVerificationRepository, userRepository);
+    emailVerificationService =
+        new EmailVerificationService(
+            mailSender, templateEngine, emailVerificationRepository, userRepository);
     ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
     testUserUnverified = new User();
     testUserUnverified.setUsername("testUserUnverified");
@@ -93,12 +88,13 @@ public class EmailVerificationIntegrationTest {
     testUserVerified.setEmailVerified(true);
     testUserVerified.setBirthdate(LocalDate.of(1990, 1, 1));
     userRepository.save(testUserVerified);
-
   }
 
   @Test
-  public void testSendVerificationEmail_withUnverifiedEmail_shouldSendEmailWithCode() throws MessagingException, IOException {
-    SendEmailRequest request = new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
+  public void testSendVerificationEmail_withUnverifiedEmail_shouldSendEmailWithCode()
+      throws MessagingException, IOException {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
     emailVerificationService.sendVerificationEmail(request);
 
     ArgumentCaptor<MimeMessage> messageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
@@ -110,7 +106,6 @@ public class EmailVerificationIntegrationTest {
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     multipart.writeTo(byteArrayOutputStream);
 
-
     assertEquals(1, mimeMessage.getAllRecipients().length);
     assertEquals(testUserUnverified.getEmail(), mimeMessage.getAllRecipients()[0].toString());
     assertEquals("Welcome to CTRL", mimeMessage.getSubject());
@@ -121,7 +116,6 @@ public class EmailVerificationIntegrationTest {
     String code = matcher.group(1);
 
     assertNotEquals("111111", code);
-
   }
 
   private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {
@@ -129,8 +123,6 @@ public class EmailVerificationIntegrationTest {
 
     Pattern pattern = Pattern.compile("<p class=\"code\"><span>(.*?)</span></p>");
 
-
     return pattern.matcher(htmlContent);
   }
-
 }
