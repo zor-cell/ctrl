@@ -3,6 +3,8 @@ package at.ac.tuwien.inso.ctrl.auth.repository;
 import at.ac.tuwien.inso.ctrl.auth.entity.PasswordReset;
 import java.util.Optional;
 import java.util.UUID;
+
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +18,6 @@ public interface PasswordResetRepository extends JpaRepository<PasswordReset, UU
   void deleteUnusedTokensByUserId(UUID userId);
 
   Optional<PasswordReset> findByToken(String rawToken);
+
+  Optional<PasswordReset> findPasswordResetByUser(User user);
 }
