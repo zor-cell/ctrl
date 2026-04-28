@@ -30,7 +30,7 @@ export class PasswordResetComponent implements OnInit {
 
   resetEmailForm = this.fb.group(
     {
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required]],
       confirmPassword: ['', Validators.required],
     },
     {
