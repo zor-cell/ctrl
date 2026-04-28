@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.feed.mapper;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,9 +23,11 @@ public class FeedMapper {
 
         String postUserVote = postVotes.get(post.getPostId());
 
-        List<FeedPostResponse.LabelResponse> labels = post.getPostLabels().stream()
-                .map(pl -> new FeedPostResponse.LabelResponse(
+        List<LabelResponse> labels = post.getPostLabels().stream()
+                .map(pl -> new LabelResponse(
+                        pl.getLabel().getLabelId(),
                         pl.getLabel().getName(),
+                        pl.getLabel().getEmoji(),
                         pl.getLabel().getExplanation()
                 ))
                 .toList();
