@@ -27,6 +27,9 @@ import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,10 +47,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.context.WebApplicationContext;
 
-/**
- * Integration tests for RelationshipController using shared test users. Tests all REST endpoints
- * with real database and full Spring context.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Import(TestConfig.class)
 @ActiveProfiles("test")
@@ -62,7 +61,9 @@ public class RelationshipControllerIntegrationTest {
 
   @Autowired private UserRepository userRepository;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  @PersistenceContext private EntityManager entityManager;
+
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
   private MockMvc mockMvc;
 
@@ -147,7 +148,7 @@ public class RelationshipControllerIntegrationTest {
   // GET /users/me/friends
 
   @Test
-  public void getFriends_shouldReturnAllFriends() throws Exception {
+  public void getFriends_withoutSearch_shouldReturnAllFriends() throws Exception {
     createMutualFollows(currentUser, alpha);
     createMutualFollows(currentUser, gamma);
 
@@ -168,12 +169,15 @@ public class RelationshipControllerIntegrationTest {
   }
 
   @Test
-  public void getFriends_withSearch_shouldFilterResults() throws Exception {
+  public void getFriends_withSearch_shouldReturnFriendsContainingSearchSubstring()
+      throws Exception {
     createMutualFollows(currentUser, alpha);
+    createMutualFollows(currentUser, beta);
+    createMutualFollows(currentUser, gamma);
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/me/friends").param("q", "alpha").with(user(currentUser)))
+            .perform(get("/api/users/me/friends").param("q", "pha").with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -204,6 +208,7 @@ public class RelationshipControllerIntegrationTest {
   public void getFollowed_shouldReturnAllFollowed() throws Exception {
     createFollow(currentUser, alpha);
     createFollow(currentUser, beta);
+    createMutualFollows(currentUser, gamma);
 
     MvcResult result =
         mockMvc
@@ -214,16 +219,19 @@ public class RelationshipControllerIntegrationTest {
     List<FollowedResponse> responses =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(2, responses.size());
+    assertEquals(3, responses.size());
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("alpha")));
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("beta")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("gamma")));
+    assertTrue(responses.stream().anyMatch(r -> r.username().equals("gamma")));
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("delta")));
   }
 
   @Test
-  public void getFollowed_withSearch_shouldFilterResults() throws Exception {
+  public void getFollowed_withSearch_shouldReturnFollowedContainingSearchSubstring()
+      throws Exception {
     createFollow(currentUser, alpha);
+    createFollow(currentUser, beta);
+    createFollow(currentUser, gamma);
 
     MvcResult result =
         mockMvc
@@ -313,6 +321,9 @@ public class RelationshipControllerIntegrationTest {
                 .with(user(currentUser)))
         .andExpect(status().isNoContent());
 
+    entityManager.flush();
+    entityManager.clear();
+
     Optional<FollowRelation> deleted =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
     assertFalse(deleted.isPresent());
@@ -327,6 +338,9 @@ public class RelationshipControllerIntegrationTest {
             delete("/api/users/me/followed/{username}", alpha.getUsername())
                 .with(user(currentUser)))
         .andExpect(status().isNoContent());
+
+    entityManager.flush();
+    entityManager.clear();
 
     Optional<FollowRelation> currentToFriend =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
@@ -348,8 +362,9 @@ public class RelationshipControllerIntegrationTest {
   // GET /users/me/friend-requests/sent
 
   @Test
-  public void getSentFriendRequests_shouldReturnSentRequests() throws Exception {
+  public void getSentFriendRequests_shouldOnlyReturnSentRequests() throws Exception {
     createFriendRequest(currentUser, alpha);
+    createFriendRequest(beta, currentUser);
 
     MvcResult result =
         mockMvc
@@ -398,8 +413,9 @@ public class RelationshipControllerIntegrationTest {
   // GET /users/me/friend-requests/incoming
 
   @Test
-  public void getIncomingFriendRequests_shouldReturnIncomingRequests() throws Exception {
+  public void getIncomingFriendRequests_shouldOnlyReturnIncomingRequests() throws Exception {
     createFriendRequest(alpha, currentUser);
+    createFriendRequest(currentUser, beta);
 
     MvcResult result =
         mockMvc
@@ -588,7 +604,8 @@ public class RelationshipControllerIntegrationTest {
   }
 
   @Test
-  public void handleFriendRequest_decline_shouldDeleteRequest() throws Exception {
+  public void handleFriendRequest_decline_shouldDeleteRequestAndDeleteAnyFollows()
+      throws Exception {
     createFriendRequest(alpha, currentUser);
 
     String requestBody = "{\"action\": \"DECLINE\"}";
@@ -732,7 +749,6 @@ public class RelationshipControllerIntegrationTest {
         .andExpect(status().isBadRequest())
         .andExpect(content().string("This friend request has expired"));
 
-    // Verify request was deleted
     Optional<FriendRequest> deleted =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
     assertFalse(deleted.isPresent());

@@ -5,9 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
+import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
@@ -18,135 +17,77 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-/**
- * Unit tests for RelationshipMapper. Tests the default methods in the mapper interface. This is a
- * pure unit test with no Spring context.
- */
+@Import(TestConfig.class)
+@ActiveProfiles("test")
+@SpringBootTest
 public class RelationshipMapperUnitTest {
 
-  // Create a test implementation of the mapper interface for testing default
-  // methods
-  private final RelationshipMapper relationshipMapper =
-      new RelationshipMapper() {
-        @Override
-        public FriendResponse toFriendResponse(User user) {
-          return null; // Not tested here
-        }
+  @Autowired private RelationshipMapper relationshipMapper;
+  private User alpha;
+  private User beta;
 
-        @Override
-        public FollowedResponse toFollowedResponse(User user) {
-          return null; // Not tested here
-        }
-
-        @Override
-        public FriendRequestResponse toIncomingFriendRequestResponse(FriendRequest request) {
-          // Manual implementation matching the @Mapping annotations
-          return new FriendRequestResponse(
-              request.getSender().getUsername(),
-              null, // profilePicture
-              true, // isIncoming
-              request.getCreatedAt());
-        }
-
-        @Override
-        public FriendRequestResponse toSentFriendRequestResponse(FriendRequest request) {
-          // Manual implementation matching the @Mapping annotations
-          return new FriendRequestResponse(
-              request.getReceiver().getUsername(),
-              null, // profilePicture
-              false, // isIncoming
-              request.getCreatedAt());
-        }
-
-        @Override
-        public UserSearchResponse toUserSearchResponse(
-            User user,
-            UserSearchResponse.RelationshipStatus relationshipStatus,
-            String displayName) {
-          return null; // Not tested here
-        }
-      };
-
-  // =============================================================================================
-  // displayName tests
-  // =============================================================================================
-
-  @Test
-  public void displayName_verifiedUser_returnsName() {
-    // Create verified user
-    User verifiedUser =
+  @BeforeEach
+  private void setupUsers() {
+    alpha =
         User.builder()
             .id(UUID.randomUUID())
-            .username("verifieduser")
-            .email("verified@test.com")
+            .username("alpha")
+            .email("alpha@test.com")
             .password("password123")
-            .name("Verified User")
+            .name("Alpha User")
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
             .build();
 
-    // Display name should be user's real name when verified (regardless of
-    // relationship)
-    String displayName =
-        relationshipMapper.displayName(
-            verifiedUser, UserSearchResponse.RelationshipStatus.FOLLOWED);
+    beta =
+        User.builder()
+            .id(UUID.randomUUID())
+            .username("beta")
+            .email("beta@test.com")
+            .password("password123")
+            .name("Beta User")
+            .isVerified(false)
+            .emailVerified(true)
+            .birthdate(LocalDate.of(2000, 1, 1))
+            .build();
+  }
 
-    assertEquals("Verified User", displayName);
+  @Test
+  public void displayName_verifiedUser_returnsName() {
+    String displayName =
+        relationshipMapper.displayName(alpha, UserSearchResponse.RelationshipStatus.FOLLOWED);
+
+    assertEquals("Alpha User", displayName);
   }
 
   @Test
   public void displayName_unverifiedFriend_returnsName() {
-    // Create unverified user
-    User unverifiedUser =
-        User.builder()
-            .id(UUID.randomUUID())
-            .username("unverifieduser")
-            .email("unverified@test.com")
-            .password("password123")
-            .name("Unverified Friend")
-            .isVerified(false)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
-    // Display name should be user's real name when friend (even if unverified)
     String displayName =
-        relationshipMapper.displayName(
-            unverifiedUser, UserSearchResponse.RelationshipStatus.FRIEND);
+        relationshipMapper.displayName(beta, UserSearchResponse.RelationshipStatus.FRIEND);
 
-    assertEquals("Unverified Friend", displayName);
+    assertEquals("Beta User", displayName);
   }
 
   @Test
   public void displayName_unverifiedNonFriend_returnsNull() {
-    // Create unverified user
-    User unverifiedUser =
-        User.builder()
-            .id(UUID.randomUUID())
-            .username("unverifieduser")
-            .email("unverified@test.com")
-            .password("password123")
-            .name("Unverified Stranger")
-            .isVerified(false)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
-    // Display name should be null for unverified non-friends
     String displayNameFollowed =
-        relationshipMapper.displayName(
-            unverifiedUser, UserSearchResponse.RelationshipStatus.FOLLOWED);
+        relationshipMapper.displayName(beta, UserSearchResponse.RelationshipStatus.FOLLOWED);
     String displayNameNone =
-        relationshipMapper.displayName(unverifiedUser, UserSearchResponse.RelationshipStatus.NONE);
+        relationshipMapper.displayName(beta, UserSearchResponse.RelationshipStatus.NONE);
     String displayNamePendingSent =
         relationshipMapper.displayName(
-            unverifiedUser, UserSearchResponse.RelationshipStatus.PENDING_REQUEST_SENT);
+            beta, UserSearchResponse.RelationshipStatus.PENDING_REQUEST_SENT);
     String displayNamePendingIncoming =
         relationshipMapper.displayName(
-            unverifiedUser, UserSearchResponse.RelationshipStatus.PENDING_REQUEST_INCOMING);
+            beta, UserSearchResponse.RelationshipStatus.PENDING_REQUEST_INCOMING);
 
     assertNull(displayNameFollowed);
     assertNull(displayNameNone);
@@ -156,44 +97,18 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void displayName_verifiedNonFriend_returnsName() {
-    User verifiedUser =
-        User.builder()
-            .id(UUID.randomUUID())
-            .username("verifieduser")
-            .email("verified@test.com")
-            .password("password123")
-            .name("Verified Followed")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     String displayName =
-        relationshipMapper.displayName(
-            verifiedUser, UserSearchResponse.RelationshipStatus.FOLLOWED);
+        relationshipMapper.displayName(alpha, UserSearchResponse.RelationshipStatus.FOLLOWED);
 
-    assertEquals("Verified Followed", displayName);
+    assertEquals("Alpha User", displayName);
   }
 
   // determineRelationshipStatus
 
   @Test
   public void determineRelationshipStatus_mutualFollow_returnsFriend() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("frienduser")
-            .email("friend@test.com")
-            .password("password123")
-            .name("Friend User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
-    friendIds.add(userId);
+    friendIds.add(alpha.getId());
 
     Set<UUID> followedIds = new HashSet<>();
     Set<UUID> pendingSentIds = new HashSet<>();
@@ -201,110 +116,58 @@ public class RelationshipMapperUnitTest {
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.FRIEND, status);
   }
 
   @Test
   public void determineRelationshipStatus_oneWayFollow_returnsFollowed() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("followeduser")
-            .email("followed@test.com")
-            .password("password123")
-            .name("Followed User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
     Set<UUID> followedIds = new HashSet<>();
-    followedIds.add(userId);
+    followedIds.add(alpha.getId());
     Set<UUID> pendingSentIds = new HashSet<>();
     Set<UUID> pendingIncomingIds = new HashSet<>();
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.FOLLOWED, status);
   }
 
   @Test
   public void determineRelationshipStatus_pendingSent_returnsPendingSent() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("pendinguser")
-            .email("pending@test.com")
-            .password("password123")
-            .name("Pending User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
     Set<UUID> followedIds = new HashSet<>();
     Set<UUID> pendingSentIds = new HashSet<>();
-    pendingSentIds.add(userId);
+    pendingSentIds.add(alpha.getId());
     Set<UUID> pendingIncomingIds = new HashSet<>();
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.PENDING_REQUEST_SENT, status);
   }
 
   @Test
   public void determineRelationshipStatus_pendingIncoming_returnsPendingIncoming() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("pendinguser")
-            .email("pending@test.com")
-            .password("password123")
-            .name("Pending User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
     Set<UUID> followedIds = new HashSet<>();
     Set<UUID> pendingSentIds = new HashSet<>();
     Set<UUID> pendingIncomingIds = new HashSet<>();
-    pendingIncomingIds.add(userId);
+    pendingIncomingIds.add(alpha.getId());
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.PENDING_REQUEST_INCOMING, status);
   }
 
   @Test
   public void determineRelationshipStatus_noRelation_returnsNone() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("strangeruser")
-            .email("stranger@test.com")
-            .password("password123")
-            .name("Stranger User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
     Set<UUID> followedIds = new HashSet<>();
     Set<UUID> pendingSentIds = new HashSet<>();
@@ -312,36 +175,23 @@ public class RelationshipMapperUnitTest {
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.NONE, status);
   }
 
   @Test
   public void determineRelationshipStatus_priority_friendOverFollowed() {
-    UUID userId = UUID.randomUUID();
-    User targetUser =
-        User.builder()
-            .id(userId)
-            .username("user")
-            .email("user@test.com")
-            .password("password123")
-            .name("User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     Set<UUID> friendIds = new HashSet<>();
-    friendIds.add(userId);
+    friendIds.add(alpha.getId());
     Set<UUID> followedIds = new HashSet<>();
-    followedIds.add(userId);
+    followedIds.add(alpha.getId());
     Set<UUID> pendingSentIds = new HashSet<>();
     Set<UUID> pendingIncomingIds = new HashSet<>();
 
     UserSearchResponse.RelationshipStatus status =
         relationshipMapper.determineRelationshipStatus(
-            targetUser, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
 
     assertEquals(UserSearchResponse.RelationshipStatus.FRIEND, status);
   }
@@ -350,96 +200,38 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void toIncomingFriendRequestResponse_mapsCorrectly() {
-    UUID senderId = UUID.randomUUID();
-    User sender =
-        User.builder()
-            .id(senderId)
-            .username("senderuser")
-            .email("sender@test.com")
-            .password("password123")
-            .name("Sender User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
-    UUID receiverId = UUID.randomUUID();
-    User receiver =
-        User.builder()
-            .id(receiverId)
-            .username("receiveruser")
-            .email("receiver@test.com")
-            .password("password123")
-            .name("Receiver User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
     LocalDateTime createdAt = LocalDateTime.now();
     FriendRequest request =
         FriendRequest.builder()
-            .id(new FriendRequestId(senderId, receiverId))
-            .sender(sender)
-            .receiver(receiver)
+            .id(new FriendRequestId(alpha.getId(), beta.getId()))
+            .sender(alpha)
+            .receiver(beta)
             .createdAt(createdAt)
             .expiresAt(createdAt.plusDays(30))
             .build();
 
     FriendRequestResponse response = relationshipMapper.toIncomingFriendRequestResponse(request);
 
-    assertEquals("senderuser", response.username());
-    assertNull(response.profilePicture()); // Currently always null
+    assertEquals("alpha", response.username());
     assertTrue(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
   }
 
   @Test
   public void toSentFriendRequestResponse_mapsCorrectly() {
-    UUID senderId = UUID.randomUUID();
-    User sender =
-        User.builder()
-            .id(senderId)
-            .username("senderuser")
-            .email("sender@test.com")
-            .password("password123")
-            .name("Sender User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
-    // Create receiver
-    UUID receiverId = UUID.randomUUID();
-    User receiver =
-        User.builder()
-            .id(receiverId)
-            .username("receiveruser")
-            .email("receiver@test.com")
-            .password("password123")
-            .name("Receiver User")
-            .isVerified(true)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-
-    // Create friend request
     LocalDateTime createdAt = LocalDateTime.now();
     FriendRequest request =
         FriendRequest.builder()
-            .id(new FriendRequestId(senderId, receiverId))
-            .sender(sender)
-            .receiver(receiver)
+            .id(new FriendRequestId(alpha.getId(), beta.getId()))
+            .sender(alpha)
+            .receiver(beta)
             .createdAt(createdAt)
             .expiresAt(createdAt.plusDays(30))
             .build();
 
-    // Map to sent response
     FriendRequestResponse response = relationshipMapper.toSentFriendRequestResponse(request);
 
-    // For sent request, username should be the receiver's username
-    assertEquals("receiveruser", response.username());
-    assertNull(response.profilePicture()); // Currently always null
+    assertEquals("beta", response.username());
     assertFalse(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
   }

@@ -22,6 +22,7 @@ import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,10 +41,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-/**
- * Integration tests for UserController /users/search endpoint using shared test users. Tests user
- * search functionality with relationship status filtering.
- */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
@@ -54,7 +51,7 @@ public class UserSearchIntegrationTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
   @Autowired private FollowRelationRepository followRelationRepository;
 
@@ -313,11 +310,10 @@ public class UserSearchIntegrationTest {
     List<UserSearchResponse> responses =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    // Should only return verifiedFollower and verifiedUnrelated
-    assertEquals(2, responses.size());
+    assertEquals(1, responses.size());
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bart")));
+    assertFalse(responses.stream().anyMatch(r -> r.username().equals("bart")));
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("bertram")));
   }
 
@@ -499,9 +495,8 @@ public class UserSearchIntegrationTest {
 
     assertEquals(bart.getId(), response.id());
     assertEquals("bart", response.username());
-    assertEquals("Bart Unrelated", response.name());
-    assertNull(response.profilePicture()); // Currently always null
-    assertTrue(response.isVerified());
+    assertEquals("Bart", response.name());
+    assertFalse(response.isVerified());
     assertEquals(UserSearchResponse.RelationshipStatus.NONE, response.relationshipStatus());
   }
 

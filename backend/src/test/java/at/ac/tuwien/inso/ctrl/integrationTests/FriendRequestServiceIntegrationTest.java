@@ -29,19 +29,20 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-/**
- * Integration tests for FriendRequestService using shared test users. Tests service methods
- * directly with real database.
- */
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@Import(TestConfig.class)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 @Transactional
+@AutoConfigureMockMvc
 public class FriendRequestServiceIntegrationTest {
 
   @Autowired private FriendRequestService friendRequestService;
@@ -156,9 +157,6 @@ public class FriendRequestServiceIntegrationTest {
     Optional<FollowRelation> follow =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), gamma.getId()));
     assertFalse(follow.isPresent());
-    assertEquals(currentUser.getId(), follow.get().getFollower().getId());
-    assertEquals(gamma.getId(), follow.get().getFollowed().getId());
-    assertNotNull(follow.get().getSince());
   }
 
   @Test

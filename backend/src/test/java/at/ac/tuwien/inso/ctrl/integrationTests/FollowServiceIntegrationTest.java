@@ -13,6 +13,8 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,19 +25,20 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-/**
- * Integration tests for FollowService using shared test users. Tests service methods directly with
- * real database.
- */
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@Import(TestConfig.class)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 @Transactional
+@AutoConfigureMockMvc
 public class FollowServiceIntegrationTest {
 
   @Autowired private FollowService followService;
@@ -43,6 +46,8 @@ public class FollowServiceIntegrationTest {
   @Autowired private UserRepository userRepository;
 
   @Autowired private FollowRelationRepository followRelationRepository;
+
+  @PersistenceContext private EntityManager entityManager;
 
   protected User currentUser;
   protected User alpha;
@@ -125,6 +130,8 @@ public class FollowServiceIntegrationTest {
   public void getFriends_returnsMutualFollows() {
     createMutualFollows(currentUser, alpha);
     createMutualFollows(currentUser, beta);
+    createFollow(currentUser, gamma);
+    createFollow(delta, currentUser);
 
     List<FriendResponse> friends = followService.getFriends(currentUser, null);
 
@@ -144,7 +151,7 @@ public class FollowServiceIntegrationTest {
   }
 
   @Test
-  public void getFriends_withSearchFilters_correctlyReturns() {
+  public void getFriends_withSearchFilters_correctlyReturnsFriendsWithSearchSubstring() {
     createMutualFollows(currentUser, alpha);
     createMutualFollows(currentUser, beta);
     createMutualFollows(currentUser, delta);
@@ -165,17 +172,18 @@ public class FollowServiceIntegrationTest {
   // getFollowed()
 
   @Test
-  public void getFollowed_returnsAllFollowedUsersButNoFriends() {
+  public void getFollowed_returnsAllFollowedUsersAndFriends() {
     createFollow(currentUser, alpha);
     createFollow(currentUser, beta);
     createMutualFollows(currentUser, gamma);
 
     List<FollowedResponse> followed = followService.getFollowed(currentUser, null);
 
-    assertEquals(2, followed.size());
+    assertEquals(3, followed.size());
     assertTrue(followed.stream().anyMatch(f -> f.username().equals("alpha")));
     assertTrue(followed.stream().anyMatch(f -> f.username().equals("beta")));
-    assertFalse(followed.stream().anyMatch(f -> f.username().equals("gamma")));
+    assertTrue(followed.stream().anyMatch(f -> f.username().equals("gamma")));
+    assertFalse(followed.stream().anyMatch(f -> f.username().equals("delta")));
   }
 
   @Test
@@ -230,6 +238,9 @@ public class FollowServiceIntegrationTest {
 
     followService.unfollow(currentUser, alpha.getUsername());
 
+    entityManager.flush();
+    entityManager.clear();
+
     Optional<FollowRelation> currentToAlpha =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
     Optional<FollowRelation> alphaToCurrent =
@@ -244,6 +255,9 @@ public class FollowServiceIntegrationTest {
     createFollow(currentUser, alpha);
 
     followService.unfollow(currentUser, alpha.getUsername());
+
+    entityManager.flush();
+    entityManager.clear();
 
     Optional<FollowRelation> currentToAlpha =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
