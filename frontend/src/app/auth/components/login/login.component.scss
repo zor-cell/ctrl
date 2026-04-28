@@ -25,3 +25,18 @@
     }
   }
 }
+
+.forgot-password-link {
+  text-align: center;
+  margin-bottom: 1rem;
+
+  a {
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: var(--primary-color);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

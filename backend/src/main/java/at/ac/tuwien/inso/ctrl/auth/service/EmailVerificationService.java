@@ -46,6 +46,14 @@ public class EmailVerificationService {
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
 
+  /**
+   * Sends a verification email to the user with a verification code.
+   *
+   * @param sendEmailRequest the request containing username and email address
+   * @throws UsernameNotFoundException if the username or email is not found
+   * @throws UserAlreadyVerifiedException if the user is already verified
+   * @throws CommunicationException if the email fails to send
+   */
   @Async
   public void sendVerificationEmail(SendEmailRequest sendEmailRequest) {
     LOGGER.info("Sending verification email to: {}", sendEmailRequest.email());
@@ -69,7 +77,7 @@ public class EmailVerificationService {
         throw new ResourceNotFoundException("User not found for verification");
       }
 
-      if (user.get().isVerified()) {
+      if (user.get().isEmailVerified()) {
         throw new UserAlreadyVerifiedException("User is already verified");
       }
 
@@ -88,21 +96,31 @@ public class EmailVerificationService {
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
       throw new CommunicationException(
-          "Failed to send email. You can register again in 2 minutes.");
+          "Failed to send email.");
     } catch (MessagingException me) {
       throw new CommunicationException(
-          "Failed to create email. You can register again in 2 minutes.");
+          "Failed to create email.");
     }
   }
 
+  /**
+   * Verifies the user's email by validating the provided verification code.
+   *
+   * @param emailVerificationRequest the request containing username and verification code
+   * @return a response indicating verification success
+   * @throws ResourceNotFoundException if the user or verification is not found
+   * @throws InvalidEmailVerificationCodeException if the code is invalid or expired
+   */
   public EmailVerificationResponse verifyEmail(EmailVerificationRequest emailVerificationRequest) {
     if (!requireEmailVerification) {
       return new EmailVerificationResponse(true);
     }
+
     User user =
         userRepository
             .findByUsername(emailVerificationRequest.username())
             .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
+
     EmailVerification verification =
         emailVerificationRepository
             .findEmailVerificationByUser_Id(user.getId())
@@ -119,6 +137,13 @@ public class EmailVerificationService {
     }
   }
 
+  /**
+   * Creates a Thymeleaf context for the verification email template.
+   *
+   * @param code the verification code
+   * @param data the email request containing username and email
+   * @return a context containing verification code and redirect URL
+   */
   private Context createContext(String code, SendEmailRequest data) {
     Context context = new Context();
 
@@ -129,6 +154,12 @@ public class EmailVerificationService {
     return context;
   }
 
+  /**
+   * Saves the verification code for the user, replacing any existing code.
+   *
+   * @param sendEmailRequest the request containing username and email
+   * @param code the verification code to save
+   */
   private void saveVerificationCode(SendEmailRequest sendEmailRequest, String code) {
     User user =
         userRepository
@@ -146,6 +177,14 @@ public class EmailVerificationService {
     emailVerificationRepository.save(verification);
   }
 
+  /**
+   * Generates a 6-digit verification code using SHA-256 hash of password and timestamp. (created with AI help)
+   *
+   *
+   * @param password the user's password
+   * @param timeInMs the current time in milliseconds
+   * @return a 6-digit verification code as a string
+   */
   private String generateCode(String password, long timeInMs) {
     String input = password + ":" + timeInMs;
 

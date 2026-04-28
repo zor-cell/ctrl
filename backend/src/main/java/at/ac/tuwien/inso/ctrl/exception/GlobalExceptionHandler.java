@@ -85,6 +85,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ex, ex.getMessage(), new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 
+  @ExceptionHandler(value = {InvalidTokenException.class})
+  protected ResponseEntity<Object> handleInvalidToken(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+  }
+
   @ExceptionHandler(value = {IllegalStateException.class})
   protected ResponseEntity<Object> handleIllegalState(RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(

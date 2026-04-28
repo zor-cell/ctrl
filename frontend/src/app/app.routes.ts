@@ -3,11 +3,15 @@ import { authGuard } from './auth/auth.guard';
 import {LoginComponent} from "./auth/components/login/login.component";
 import {RegisterComponent} from "./auth/components/registration/register.component";
 import {EmailVerificationComponent} from './auth/components/email-verification/email-verification.component';
+import {PasswordResetComponent} from './auth/components/password-reset/password-reset.component';
+import {ForgotPasswordComponent} from './auth/components/forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'reset-password', component: PasswordResetComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
   {
     path: 'feed',
     loadComponent: () =>
