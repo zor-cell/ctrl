@@ -1,13 +1,13 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api',
+  apiUrl: 'http://backend-service/api',
   idAustria: {
-    clientId: 'http://localhost:8080',
-    redirectUri: 'http://localhost:80/verification-callback',
-    authUrl: 'http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/auth',
+    clientId: 'http://backend-service:8080',
+    redirectUri: 'http://backend-service/verification-callback',
+    authUrl: 'http://verification-service/realms/id-austria-mock/protocol/openid-connect/auth',
     scope: 'openid profile'
   },
   auth: {
-    requireEmailVerification: false
+    requireEmailVerification: true
   }
 };
