@@ -240,9 +240,15 @@
 />
 
 <!-- ─── Report Dialog ─── -->
+
 <app-report
-  [post]="selectedPostForReport()"
+  [contentType]="ContentTypeEnum.POST"
+  [contentId]="selectedPostForReport()?.postId"
+  [contentTitle]="selectedPostForReport()?.caption"
+  [userProfilePic]="selectedPostForReport()?.userProfilePic"
+  [username]="selectedPostForReport()?.username"
   [visible]="reportDialogVisible()"
-  (visibleChange)="reportDialogVisible.set($event)"
-/>
+  (visibleChange)="reportDialogVisible.set($event)">
+</app-report>
+
 

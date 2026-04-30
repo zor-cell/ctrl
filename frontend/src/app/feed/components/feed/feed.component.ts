@@ -16,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
 import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
+import {ContentTypeEnum} from '../../../report/dto/report';
 
 @Component({
   selector: 'app-feed',
@@ -209,4 +210,6 @@ export class FeedComponent implements OnInit {
     this.selectedPostForReport.set(post);
     this.reportDialogVisible.set(true);
   }
+
+  protected readonly ContentTypeEnum = ContentTypeEnum;
 }

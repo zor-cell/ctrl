@@ -1,14 +1,15 @@
 <p-dialog
   [visible]="visible"
   (visibleChange)="visibleChange.emit($event)"
+  (onHide)="close()"
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
   [style]="{ width: 'min(56rem, 92vw)' }"
   styleClass="report-dialog"
-  header="Report Post"
+  [header]="'Report ' + getContentTypeLabel()"
 >
-  @if (post) {
+  @if (contentId) {
     <!-- STEP 1: Select Reason -->
     @if (currentStep() === 1) {
       <div class="report-step">
@@ -16,21 +17,21 @@
           <span class="report-step__number">1</span>
           <div>
             <h2>Why are you reporting this?</h2>
-            <p>Select the reason that best describes why you're reporting this post.</p>
+            <p>Select the reason that best describes why you're reporting this {{ getContentTypeLabel() | lowercase }}.</p>
           </div>
         </div>
 
-        <!-- Post Preview -->
+        <!-- Content Preview -->
         <div class="post-preview">
           <div class="post-preview-header">
             <p-avatar
-              [image]="post.userProfilePic"
+              [image]="userProfilePic"
               shape="circle"
               [style]="{ width: '42px', height: '42px' }"
             />
             <div class="post-preview-info">
-              <span class="post-username">{{ post.username }}</span>
-              <p class="post-caption-preview">{{ post.caption }}</p>
+              <span class="post-username">{{ username }}</span>
+              <p class="post-caption-preview">{{ contentTitle }}</p>
             </div>
           </div>
         </div>
@@ -58,7 +59,6 @@
             </p-message>
           }
         </div>
-
 
         <!-- Step 1 Actions -->
         <div class="report-actions">
@@ -88,17 +88,17 @@
             </div>
           </div>
 
-          <!-- Post Preview -->
+          <!-- Content Preview -->
           <div class="post-preview">
             <div class="post-preview-header">
               <p-avatar
-                [image]="post.userProfilePic"
+                [image]="userProfilePic"
                 shape="circle"
                 [style]="{ width: '42px', height: '42px' }"
               />
               <div class="post-preview-info">
-                <span class="post-username">{{ post.username }}</span>
-                <p class="post-caption-preview">{{ post.caption }}</p>
+                <span class="post-username">{{ username }}</span>
+                <p class="post-caption-preview">{{ contentTitle }}</p>
               </div>
             </div>
           </div>

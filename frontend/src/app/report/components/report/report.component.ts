@@ -1,15 +1,15 @@
-import {Component, Input, Output, EventEmitter, signal, inject, OnInit} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Post } from '../../../feed/dto/Post';
+import {Component, EventEmitter, inject, Input, OnInit, Output, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 
-import { DialogModule } from 'primeng/dialog';
-import { AvatarModule } from 'primeng/avatar';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-import { RadioButtonModule } from 'primeng/radiobutton';
-import { SelectModule } from 'primeng/select';
-import { Message } from 'primeng/message';
+import {DialogModule} from 'primeng/dialog';
+import {AvatarModule} from 'primeng/avatar';
+import {ButtonModule} from 'primeng/button';
+import {TextareaModule} from 'primeng/textarea';
+import {RadioButtonModule} from 'primeng/radiobutton';
+import {SelectModule} from 'primeng/select';
+import {Message} from 'primeng/message';
+import {ContentTypeEnum, Report} from '../../dto/report';
 
 @Component({
   selector: 'app-report',
@@ -28,14 +28,22 @@ import { Message } from 'primeng/message';
   templateUrl: './report.component.html',
   styleUrl: './report.component.scss',
 })
-export class ReportComponent implements OnInit{
-  @Input() post: Post | null = null;
+export class ReportComponent implements OnInit {
+  @Input() contentType: ContentTypeEnum = ContentTypeEnum.POST;
+  @Input() contentId: string | undefined;
+  @Input() contentTitle: string | undefined;
+  @Input() userProfilePic: string | undefined;
+  @Input() username: string | undefined;
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
+
   private fb = inject(FormBuilder);
   reportForm!: FormGroup;
   isSubmitting = signal(false);
   currentStep = signal(1);
+  private reportData: Report | null = null;
+
+  readonly ContentTypeEnum = ContentTypeEnum;
 
   readonly reportReasons = [
     { label: 'Bullying or Harassment', value: 'bullying' },
@@ -63,6 +71,16 @@ export class ReportComponent implements OnInit{
     });
   }
 
+  getContentTypeLabel(): string {
+    const labels: Record<ContentTypeEnum, string> = {
+      [ContentTypeEnum.POST]: 'Post',
+      [ContentTypeEnum.COMMENT]: 'Comment',
+      [ContentTypeEnum.ACCOUNT]: 'Account',
+      [ContentTypeEnum.SOURCE]: 'Source',
+    };
+    return labels[this.contentType];
+  }
+
   close(): void {
     this.visibleChange.emit(false);
     this.resetForm();
@@ -81,13 +99,21 @@ export class ReportComponent implements OnInit{
   }
 
   submitReport(): void {
-    if (!this.reportForm.valid) return;
+    if (!this.reportForm.valid || !this.contentId) return;
 
     this.isSubmitting.set(true);
     const formData = this.reportForm.value;
 
+    this.reportData = {
+      reason: formData.reason,
+      detail: formData.description,
+      contentType: this.contentType,
+      contentId: this.contentId
+    };
+
     console.log('Report submitted:', {
-      postId: this.post?.postId,
+      contentId: this.contentId,
+      contentType: this.contentType,
       reason: formData.reason,
       description: formData.description,
     });
@@ -102,7 +128,4 @@ export class ReportComponent implements OnInit{
     this.reportForm.reset();
     this.currentStep.set(1);
   }
-
-
-
 }
