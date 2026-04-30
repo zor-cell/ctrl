@@ -87,9 +87,15 @@
               <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
             </div>
             <p class="comment-content">{{ comment.content }}</p>
-            <button class="reply-btn" (click)="setReplyingTo(comment)">
-              <i class="pi pi-reply"></i> Reply
-            </button>
+            <div class="comment-actions">
+              <button class="reply-btn" (click)="setReplyingTo(comment)">
+                <i class="pi pi-reply"></i> Reply
+              </button>
+              <button class="reply-btn" (click)="reportComment(comment)">
+                <i class="pi pi-flag"></i> Report
+              </button>
+
+            </div>
 
             <!-- Replies -->
             @for (reply of repliesFor(comment.commentId); track reply.commentId) {
@@ -144,3 +150,13 @@
     </div>
   </ng-template>
 </p-dialog>
+
+<app-report
+  [contentType]="ContentTypeEnum.COMMENT"
+  [contentId]="selectedCommentForReport()?.commentId"
+  [contentTitle]="selectedCommentForReport()?.content"
+  [userProfilePic]="selectedCommentForReport()?.userProfilePic"
+  [username]="selectedCommentForReport()?.username"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)">
+</app-report>

@@ -55,6 +55,12 @@ export class FeedComponent implements OnInit {
   protected reportDialogVisible = signal(false);
   protected selectedPostForReport = signal<Post | null>(null);
 
+  //Report source
+  protected reportSourceDialogVisible = signal(false);
+  protected selectedSourceForReport = signal<PostSource | null>(null);
+  protected selectedPostForSourceReport = signal<Post | null>(null);
+
+
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
@@ -212,4 +218,10 @@ export class FeedComponent implements OnInit {
   }
 
   protected readonly ContentTypeEnum = ContentTypeEnum;
+
+  reportSource(postSource: PostSource, post: Post) {
+    this.selectedSourceForReport.set(postSource);
+    this.reportSourceDialogVisible.set(true);
+    this.selectedPostForSourceReport.set(post);
+  }
 }

@@ -132,29 +132,35 @@
   <!-- Source -->
   @if (post.sourceIds.length > 0) {
     <div class="post-source-row">
-      <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
-        <i class="pi pi-external-link"></i>
-        {{ getDomain(post.sourceIds[0].url) }}
-      </a>
-      <button
-        class="action-btn upvote"
-        [class.active]="post.sourceIds[0].userVote === 'up'"
-        (click)="voteSource(post, 'up')"
-        [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-        [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
-      >
-        <i class="pi pi-thumbs-up"></i>
-        <span>{{ post.sourceIds[0].upvotes }}</span>
-      </button>
-      <button
-        class="action-btn downvote"
-        [class.active]="post.sourceIds[0].userVote === 'down'"
-        (click)="voteSource(post, 'down')"
-        [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-        [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
-      >
-        <i class="pi pi-thumbs-down"></i>
-        <span>{{ post.sourceIds[0].downvotes }}</span>
+      <div class="post-source-left">
+        <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ getDomain(post.sourceIds[0].url) }}
+        </a>
+        <button
+          class="action-btn upvote"
+          [class.active]="post.sourceIds[0].userVote === 'up'"
+          (click)="voteSource(post, 'up')"
+          [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
+        >
+          <i class="pi pi-thumbs-up"></i>
+          <span>{{ post.sourceIds[0].upvotes }}</span>
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="post.sourceIds[0].userVote === 'down'"
+          (click)="voteSource(post, 'down')"
+          [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
+        >
+          <i class="pi pi-thumbs-down"></i>
+          <span>{{ post.sourceIds[0].downvotes }}</span>
+        </button>
+      </div>
+
+      <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
+        <i class="pi pi-flag"></i>
       </button>
     </div>
   }
@@ -199,7 +205,7 @@
       </button>
     </div>
 
-    <button class="action-btn flag-btn" (click)="reportPost(post)">
+    <button class="action-btn flag-btn" (click)="reportPost(post)" pTooltip="Report Post" tooltipPosition="top">
       <i class="pi pi-flag"></i>
     </button>
   </div>
@@ -249,6 +255,16 @@
   [username]="selectedPostForReport()?.username"
   [visible]="reportDialogVisible()"
   (visibleChange)="reportDialogVisible.set($event)">
+</app-report>
+
+<app-report
+  [contentType]="ContentTypeEnum.SOURCE"
+  [contentId]="selectedSourceForReport()?.sourceId"
+  [contentTitle]="selectedSourceForReport()?.url"
+  [userProfilePic]="selectedPostForSourceReport()?.userProfilePic"
+  [username]="selectedPostForSourceReport()?.username"
+  [visible]="reportSourceDialogVisible()"
+  (visibleChange)="reportSourceDialogVisible.set($event)">
 </app-report>
 
 

@@ -132,7 +132,7 @@ $radius-sm:    10px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 16px 12px;
+  margin: 16px 6px;
   padding: 4px 10px;
   border-radius: 20px;
   border: 1px solid $border;
@@ -151,7 +151,15 @@ $radius-sm:    10px;
 .post-source-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 14px;
+  .post-source-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 }
+
 
 // ─── Labels ───────────────────────────────────────────
 .post-labels {

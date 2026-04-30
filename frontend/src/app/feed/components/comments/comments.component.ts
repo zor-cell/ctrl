@@ -11,6 +11,8 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { TextareaModule } from 'primeng/textarea';
+import {ReportComponent} from '../../../report/components/report/report.component';
+import {ContentTypeEnum} from '../../../report/dto/report';
 
 @Component({
   selector: 'app-comments',
@@ -24,6 +26,7 @@ import { TextareaModule } from 'primeng/textarea';
     TagModule,
     TooltipModule,
     TextareaModule,
+    ReportComponent,
   ],
   templateUrl: './comments.component.html',
   styleUrl: './comments.component.scss',
@@ -36,16 +39,20 @@ export class CommentsComponent {
   newComment = '';
   replyingTo = signal<PostComment | null>(null);
 
+  // Report dialog
+  protected reportDialogVisible = signal(false);
+  protected selectedCommentForReport = signal<PostComment | null>(null);
+
   close(): void {
     this.visibleChange.emit(false);
   }
 
   topLevelComments(): PostComment[] {
-    return this.post?.comments.filter(c => c.parentCommentId === null) ?? [];
+    return this.post?.comments.filter((c) => c.parentCommentId === null) ?? [];
   }
 
   repliesFor(commentId: string): PostComment[] {
-    return this.post?.comments.filter(c => c.parentCommentId === commentId) ?? [];
+    return this.post?.comments.filter((c) => c.parentCommentId === commentId) ?? [];
   }
 
   setReplyingTo(comment: PostComment): void {
@@ -84,4 +91,11 @@ export class CommentsComponent {
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)$/i.test(url);
   }
+
+  reportComment(comment: PostComment) {
+    this.selectedCommentForReport.set(comment);
+    this.reportDialogVisible.set(true);
+  }
+
+  protected readonly ContentTypeEnum = ContentTypeEnum;
 }

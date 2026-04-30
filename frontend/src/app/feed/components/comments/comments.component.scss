@@ -134,6 +134,15 @@ $radius-sm:   10px;
   gap: 18px;
 }
 
+// ─── Comment Actions ──────────────────────────────────
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+
 // ─── Single Comment ───────────────────────────────────
 .comment {
   display: flex;
@@ -199,7 +208,7 @@ $radius-sm:   10px;
   font-size: 0.75rem;
   color: $text-muted;
   cursor: pointer;
-  padding: 2px 0;
+  padding: 2px 2px;
   margin-top: 2px;
   display: flex;
   align-items: center;
