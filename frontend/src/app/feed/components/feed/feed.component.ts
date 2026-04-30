@@ -6,6 +6,7 @@ import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
 
 import { TabsModule } from 'primeng/tabs';
+import { ReportComponent } from '../../../report/components/report/report.component';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -29,6 +30,7 @@ import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
     TagModule,
     TooltipModule,
     CommentsComponent,
+    ReportComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -47,6 +49,10 @@ export class FeedComponent implements OnInit {
   // Comments dialog
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
+
+  // Report dialog
+  protected reportDialogVisible = signal(false);
+  protected selectedPostForReport = signal<Post | null>(null);
 
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
@@ -197,5 +203,10 @@ export class FeedComponent implements OnInit {
 
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+
+  reportPost(post: Post) {
+    this.selectedPostForReport.set(post);
+    this.reportDialogVisible.set(true);
   }
 }

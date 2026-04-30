@@ -199,7 +199,7 @@
       </button>
     </div>
 
-    <button class="action-btn flag-btn">
+    <button class="action-btn flag-btn" (click)="reportPost(post)">
       <i class="pi pi-flag"></i>
     </button>
   </div>
@@ -238,3 +238,11 @@
   [visible]="commentsDialogVisible()"
   (visibleChange)="commentsDialogVisible.set($event)"
 />
+
+<!-- ─── Report Dialog ─── -->
+<app-report
+  [post]="selectedPostForReport()"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)"
+/>
+

@@ -1,0 +1,159 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(56rem, 92vw)' }"
+  styleClass="report-dialog"
+  header="Report Post"
+>
+  @if (post) {
+    <!-- STEP 1: Select Reason -->
+    @if (currentStep() === 1) {
+      <div class="report-step">
+        <div class="report-step__header">
+          <span class="report-step__number">1</span>
+          <div>
+            <h2>Why are you reporting this?</h2>
+            <p>Select the reason that best describes why you're reporting this post.</p>
+          </div>
+        </div>
+
+        <!-- Post Preview -->
+        <div class="post-preview">
+          <div class="post-preview-header">
+            <p-avatar
+              [image]="post.userProfilePic"
+              shape="circle"
+              [style]="{ width: '42px', height: '42px' }"
+            />
+            <div class="post-preview-info">
+              <span class="post-username">{{ post.username }}</span>
+              <p class="post-caption-preview">{{ post.caption }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-divider"></div>
+
+        <!-- Reason Selection -->
+        <div class="report-section">
+          <h3 class="report-label">Select a reason</h3>
+          <div class="reason-buttons">
+            @for (reason of reportReasons; track reason.value) {
+              <button
+                type="button"
+                class="reason-btn"
+                [class.reason-btn--active]="reportForm.get('reason')?.value === reason.value"
+                (click)="reportForm.get('reason')?.setValue(reason.value)"
+              >
+                {{ reason.label }}
+              </button>
+            }
+          </div>
+          @if (reportForm.get('reason')?.invalid && reportForm.get('reason')?.touched) {
+            <p-message severity="error" size="small" variant="simple">
+              Please select a reason.
+            </p-message>
+          }
+        </div>
+
+
+        <!-- Step 1 Actions -->
+        <div class="report-actions">
+          <p-button
+            label="Cancel"
+            severity="secondary"
+            (onClick)="close()"
+          />
+          <p-button
+            label="Continue"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="continueToDetails()"
+            [disabled]="reportForm.get('reason')?.invalid"
+          />
+        </div>
+      </div>
+    } @else {
+      <!-- STEP 2: Add Details -->
+      <form [formGroup]="reportForm" (ngSubmit)="submitReport()" class="report-form">
+        <div class="report-step">
+          <div class="report-step__header">
+            <span class="report-step__number">2</span>
+            <div>
+              <h2>Add more details</h2>
+              <p>Help us understand the issue better by providing additional context.</p>
+            </div>
+          </div>
+
+          <!-- Post Preview -->
+          <div class="post-preview">
+            <div class="post-preview-header">
+              <p-avatar
+                [image]="post.userProfilePic"
+                shape="circle"
+                [style]="{ width: '42px', height: '42px' }"
+              />
+              <div class="post-preview-info">
+                <span class="post-username">{{ post.username }}</span>
+                <p class="post-caption-preview">{{ post.caption }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-divider"></div>
+
+          <!-- Selected Reason Display -->
+          <div class="report-section">
+            <h3 class="report-label">Reason</h3>
+            <div class="selected-reason">
+              @for (reason of reportReasons; track reason.value) {
+                @if (reason.value === reportForm.get('reason')?.value) {
+                  {{ reason.label }}
+                }
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="report-section">
+            <label class="report-label" for="description">Additional Details *</label>
+            <textarea
+              id="description"
+              formControlName="description"
+              placeholder="Please provide any additional context..."
+              rows="4"
+              class="description-input"
+            ></textarea>
+            @if (reportForm.get('description')?.invalid && reportForm.get('description')?.touched) {
+              <p-message severity="error" size="small" variant="simple">
+                Please provide additional details.
+              </p-message>
+            }
+          </div>
+        </div>
+
+        <!-- Step 2 Actions -->
+        <div class="report-actions">
+          <p-button
+            label="Back"
+            severity="secondary"
+            icon="pi pi-arrow-left"
+            type="button"
+            (onClick)="goBackToReason()"
+            [disabled]="isSubmitting()"
+          />
+          <p-button
+            label="Submit Report"
+            icon="pi pi-check"
+            type="submit"
+            [loading]="isSubmitting()"
+            [disabled]="reportForm.invalid || isSubmitting()"
+          />
+        </div>
+      </form>
+    }
+  }
+</p-dialog>
