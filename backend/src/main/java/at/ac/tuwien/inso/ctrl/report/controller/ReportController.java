@@ -3,7 +3,6 @@ package at.ac.tuwien.inso.ctrl.report.controller;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
-import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -11,7 +10,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,5 +43,12 @@ public class ReportController {
 
       ) {
     return reportService.getReported(ContentTypeEnum.POST, status, page, postsPerPage);
+  }
+
+  @PutMapping("/{id}")
+  public void updateReport(
+      @PathVariable String id,
+      @Valid @RequestBody ReportStatus status) {
+    reportService.updateReportStatus(status, id);
   }
 }

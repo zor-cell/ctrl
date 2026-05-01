@@ -57,6 +57,14 @@ public class ReportServiceImp implements ReportService {
     return reports.stream().map(this::toReportedPostResponse).toList();
   }
 
+  @Override
+  public void updateReportStatus(ReportStatus status, String id) {
+    Report report = reportRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+    report.setStatus(status);
+    reportRepository.save(report);
+
+  }
+
   private ReportedPostResponse toReportedPostResponse(Report report) {
     Post post = postRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Post not found: " + report.getContentId()));
 

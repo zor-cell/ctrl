@@ -24,6 +24,17 @@ export class ReportService {
     );
   }
 
+  public updateStatus(status: ReportStatus, id: string) {
+    return this.httpClient.put<void>(`${this.baseUri}/${id}`, JSON.stringify(status), {
+      headers: { 'Content-Type': 'application/json' },
+    }).pipe(
+      tap(() => {
+        this.notificationService.showSuccess(
+          'Report Updated Successfully!',
+        );
+      }),
+    );
+  }
   async getReportedPosts(
     status = ReportStatus.CREATED,
     page = 0,
