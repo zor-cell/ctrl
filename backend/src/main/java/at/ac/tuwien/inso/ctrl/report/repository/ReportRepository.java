@@ -12,4 +12,6 @@ public interface ReportRepository extends JpaRepository<Report, String> {
   List<Report> findByContentTypeAndStatus(ContentTypeEnum contentType, ReportStatus reportStatus, PageRequest pageable);
 
   List<Report> findByContentType(ContentTypeEnum contentType);
+
+  List<Report> findByStatus(ReportStatus reportStatus, PageRequest pageable);
 }

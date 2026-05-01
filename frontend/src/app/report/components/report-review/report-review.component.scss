@@ -203,6 +203,78 @@ $radius-sm:    10px;
   }
 }
 
+// ─── Source Focus Wrapper ─────────────────────────────
+.source-focus-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid $border;
+
+  h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: var(--p-text-color);
+  }
+
+  .source-focus {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.04);
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+
+    h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--p-text-color);
+    }
+
+    .report-detail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.8rem;
+
+      &.full-width {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .label {
+        font-weight: 600;
+        color: var(--p-text-color);
+        min-width: 80px;
+        flex-shrink: 0;
+      }
+
+      .value,
+      a {
+        color: var(--p-text-color);
+        word-break: break-word;
+        font-size: 0.8rem;
+      }
+
+      .post-source {
+        margin: 0;
+        padding: 4px 8px;
+      }
+    }
+  }
+
+  .post-source-row {
+    margin-top: 8px;
+    padding: 8px 0;
+    border-top: 1px solid $border;
+  }
+}
+
+
 // ─── Post Header ──────────────────────────────────────
 .post-header {
   display: flex;

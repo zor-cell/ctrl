@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.report.controller;
 
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
@@ -42,7 +43,16 @@ public class ReportController {
       @RequestParam(defaultValue = "20") int postsPerPage
 
       ) {
-    return reportService.getReported(ContentTypeEnum.POST, status, page, postsPerPage);
+    return reportService.getReportedPosts(status, page, postsPerPage);
+  }
+
+  @GetMapping("/sources")
+  public List<ReportedSourceResponse> getReportedSourcesWithStatusCreated(
+      @RequestParam(defaultValue = "CREATED") ReportStatus status,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int postsPerPage
+  ) {
+    return reportService.getReportedSources(status, page, postsPerPage);
   }
 
   @PutMapping("/{id}")

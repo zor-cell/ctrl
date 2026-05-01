@@ -6,10 +6,10 @@
   <p-tabs value="posts">
 
     <p-tablist>
-      <p-tab value="posts">
+      <p-tab value="posts" (click)="changeToPosts()">
         <i class="pi pi-file-text"></i> Posts
       </p-tab>
-      <p-tab value="sources">
+      <p-tab value="sources" (click)="changeToSources()">
         <i class="pi pi-link"></i> Sources
       </p-tab>
     </p-tablist>
@@ -28,6 +28,24 @@
           @for (report of reportedPosts(); track report.reportId) {
             <section class="post-card reported-post">
               <ng-container *ngTemplateOutlet="reportedPostCard; context: { report: report }" />
+            </section>
+          }
+        </div>
+      </p-tabpanel>
+
+      <!-- SOURCES TAB -->
+      <!-- SOURCES TAB -->
+      <p-tabpanel value="sources">
+        <div class="sources-list">
+          @if (reportedSources().length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-inbox"></i>
+              <p>No reported sources.</p>
+            </div>
+          }
+          @for (report of reportedSources(); track report.reportId) {
+            <section class="post-card reported-source">
+              <ng-container *ngTemplateOutlet="reportedSourceCard; context: { report: report }" />
             </section>
           }
         </div>
@@ -69,7 +87,7 @@
     </div>
     <div class="report-detail-item">
       <span class="label">Reason:</span>
-      <span class="value">{{ report.reportReason }}</span>
+      <span class="value">{{ getReason(report.reportReason) }}</span>
     </div>
     <div class="report-detail-item full-width">
       <span class="label">Description:</span>
@@ -192,6 +210,7 @@
 </ng-template>
 
 <!-- ─── Reported Source Card Template ─── -->
+<!-- ─── Reported Source Card Template ─── -->
 <ng-template #reportedSourceCard let-report="report">
 
   <!-- Report Info Banner -->
@@ -227,65 +246,54 @@
     </div>
   </div>
 
-  <!-- Post Header (Context for the source) -->
-  <div class="post-header">
-    <div class="post-user">
-      <p-avatar
-        [image]="report.userProfilePic"
-        shape="circle"
-        size="normal"
-        [style]="{ width: '42px', height: '42px' }"
-      />
-      <div class="post-meta">
-        <span class="post-username">{{ report.username }}</span>
-        <span class="post-info">
-          {{ timeAgo(report.createdAt) }}
-          @if (report.topicIds.length > 0) {
-            <span class="separator">·</span>
-            {{ report.topicIds[0] }}
-          }
-        </span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Source (Main Content) -->
-  @if (report.sources.length > 0) {
+  <!-- Source Info -->
+  @if (report.sourceResponse && report.sourceResponse.singleSources.length > 0) {
     <div class="source-focus-wrapper">
-      <div class="source-focus">
-        <h3>Reported Source:</h3>
-        <a class="post-source" [href]="report.sources[0].url" target="_blank" rel="noopener noreferrer">
-          <i class="pi pi-external-link"></i>
-          {{ report.sources[0].url }}
-        </a>
-      </div>
+      <h2>Reported Sources:</h2>
 
-      <div class="post-source-row">
-        <div class="post-source-left">
-          <button
-            class="action-btn upvote"
-            [class.active]="report.sources[0].userVote === 'up'"
-            [attr.aria-label]="'Source upvote – ' + report.sources[0].upvotes"
-          >
-            <i class="pi pi-thumbs-up"></i>
-            <span>{{ report.sources[0].upvotes }}</span>
-          </button>
-          <button
-            class="action-btn downvote"
-            [class.active]="report.sources[0].userVote === 'down'"
-            [attr.aria-label]="'Source downvote – ' + report.sources[0].downvotes"
-          >
-            <i class="pi pi-thumbs-down"></i>
-            <span>{{ report.sources[0].downvotes }}</span>
-          </button>
+      @for (source of report.sourceResponse.singleSources; track source.singleSourceId) {
+        <div class="source-focus">
+
+          @if (source.title) {
+            <div class="report-detail-item">
+              <span class="label">Title:</span>
+              <span class="value">{{ source.title }}</span>
+            </div>
+          }
+
+          @if (source.author) {
+            <div class="report-detail-item">
+              <span class="label">Author:</span>
+              <span class="value">{{ source.author }}</span>
+            </div>
+          }
+
+          @if (source.journal) {
+            <div class="report-detail-item">
+              <span class="label">Journal:</span>
+              <span class="value">{{ source.journal }}</span>
+            </div>
+          }
+
+          @if (source.date) {
+            <div class="report-detail-item">
+              <span class="label">Date:</span>
+              <span class="value">{{ source.date }}</span>
+            </div>
+          }
+
+          @if (source.url) {
+            <div class="report-detail-item">
+              <span class="label">URL:</span>
+              <a class="post-source" [href]="source.url" target="_blank" rel="noopener noreferrer">
+                <i class="pi pi-external-link"></i>
+                {{ source.url }}
+              </a>
+            </div>
+          }
         </div>
-      </div>
+      }
     </div>
-  }
-
-  <!-- Post Caption for context -->
-  @if (report.caption) {
-    <p class="post-caption">Post Context: {{ report.caption }}</p>
   }
 
   <!-- Actions -->

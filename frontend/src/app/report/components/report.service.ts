@@ -5,6 +5,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import {ContentTypeEnum, Report, ReportStatus} from '../dto/report';
 import { firstValueFrom, tap } from 'rxjs';
 import { ReportedPostResponse } from '../dto/ReportedPostResponse';
+import {ReportedSourceResponse} from '../dto/ReportedSourceResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -46,6 +47,18 @@ export class ReportService {
       ),
     );
 
+  }
+
+  async getReportedSource(
+    status = ReportStatus.CREATED,
+    page=0,
+    postsPerPage = 20,
+  ): Promise<ReportedSourceResponse[]> {
+    return await firstValueFrom(
+      this.httpClient.get<ReportedSourceResponse[]>(
+        `${this.baseUri}/sources?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
+      ),
+    );
   }
 
 }

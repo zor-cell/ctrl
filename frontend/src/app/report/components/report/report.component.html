@@ -126,6 +126,7 @@
               placeholder="Please provide any additional context..."
               rows="4"
               class="description-input"
+              maxlength="1000"
             ></textarea>
             @if (reportForm.get('description')?.invalid && reportForm.get('description')?.touched) {
               <p-message severity="error" size="small" variant="simple">

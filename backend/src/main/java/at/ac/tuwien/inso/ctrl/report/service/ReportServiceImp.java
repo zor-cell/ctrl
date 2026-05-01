@@ -2,14 +2,18 @@ package at.ac.tuwien.inso.ctrl.report.service;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
+import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
+import at.ac.tuwien.inso.ctrl.post.dto.response.SourceResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -20,7 +24,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -48,11 +55,11 @@ public class ReportServiceImp implements ReportService {
   }
 
   @Override
-  public List<ReportedPostResponse> getReported(ContentTypeEnum contentType, ReportStatus reportStatus, int page, int postsPerPage) {
+  public List<ReportedPostResponse> getReportedPosts(ReportStatus reportStatus, int page, int postsPerPage) {
     var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
     List<Report> reports;
 
-    reports = reportRepository.findByContentTypeAndStatus(contentType, reportStatus, pageable);
+    reports = reportRepository.findByContentTypeAndStatus(ContentTypeEnum.POST, reportStatus, pageable);
 
     return reports.stream().map(this::toReportedPostResponse).toList();
   }
@@ -63,6 +70,71 @@ public class ReportServiceImp implements ReportService {
     report.setStatus(status);
     reportRepository.save(report);
 
+  }
+
+  @Override
+  public List<ReportedSourceResponse> getReportedSources(ReportStatus status, int page, int postsPerPage) {
+    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
+    List<Report> reports;
+
+    reports = reportRepository.findByContentTypeAndStatus(ContentTypeEnum.SOURCE, status, pageable);
+
+    return reports.stream().map(this::toReportedSourceResponse).toList();
+  }
+
+  private ReportedSourceResponse toReportedSourceResponse(Report report) {
+    Source source = sourceRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Source not found: " + report.getContentId()));
+
+    SourceResponse sourceResponse = toSourceResponse(source);
+
+    return new ReportedSourceResponse(
+        // Report Info
+        report.getReportId(),
+        report.getReason(),
+        report.getDescription(),
+        report.getFromUser().getUsername(),
+        report.getUsernameReported() != null ? report.getUsernameReported().getUsername() : getUserBySource(source),
+        report.getContentType(),
+        report.getStatus(),
+        report.getCreatedAt(),
+        sourceResponse
+    );
+  }
+
+  private String getUserBySource(Source source) {
+    Post post = postRepository.findBySource(source).orElseThrow(() ->
+        new EntityNotFoundException("Post not found for source: " + source.getSourceId()));
+    return post.getExternalAuthor().getDisplayName();
+  }
+
+  private SourceResponse toSourceResponse(Source source) {
+    if (source == null) {
+      throw new EntityNotFoundException("Source not found");
+    }
+
+    List<SingleSourceResponse> singleSourceResponses =
+        source.getSingleSources().stream()
+            .sorted(
+                Comparator.comparing(SingleSource::getTitle).reversed())
+            .map(this::toSingleSourceResponse)
+            .toList();
+
+    return new SourceResponse(
+        source.getSourceId(),
+        source.getUpvotes(),
+        source.getDownvotes(),
+        source.getCreatedAt(),
+        singleSourceResponses);
+  }
+
+  private SingleSourceResponse toSingleSourceResponse(SingleSource source) {
+    return new SingleSourceResponse(
+        source.getSingleSourceId(),
+        source.getJournal(),
+        source.getAuthor(),
+        source.getTitle(),
+        source.getUrl(),
+        source.getDate());
   }
 
   private ReportedPostResponse toReportedPostResponse(Report report) {
