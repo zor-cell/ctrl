@@ -41,7 +41,7 @@ public class FeedServiceImpl implements FeedService {
         .toList();
   }
 
-  private FeedPostResponse toFeedPostResponse(Post post, String userId) {
+  public FeedPostResponse toFeedPostResponse(Post post, String userId) {
     String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
     String username =
         post.isExternalPost()

@@ -1,0 +1,309 @@
+<div class="feed-wrapper">
+
+  <!-- Tabs: Posts / Sources -->
+  <p-tabs value="posts">
+
+    <p-tablist>
+      <p-tab value="posts">
+        <i class="pi pi-file-text"></i> Posts
+      </p-tab>
+      <p-tab value="sources">
+        <i class="pi pi-link"></i> Sources
+      </p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+
+      <!-- POSTS TAB -->
+      <p-tabpanel value="posts">
+        <div class="posts-list">
+          @if (reportedPosts().length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-inbox"></i>
+              <p>No reported posts.</p>
+            </div>
+          }
+          @for (report of reportedPosts(); track report.reportId) {
+            <section class="post-card reported-post">
+              <ng-container *ngTemplateOutlet="reportedPostCard; context: { report: report }" />
+            </section>
+          }
+        </div>
+      </p-tabpanel>
+
+    </p-tabpanels>
+  </p-tabs>
+
+</div>
+
+<!-- ─── Reported Post Card Template ─── -->
+<ng-template #reportedPostCard let-report="report">
+
+  <!-- Report Info Banner -->
+  <div class="report-info-banner">
+    <div class="report-info-left">
+      <div class="report-badge">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Reported</span>
+      </div>
+      <div class="report-meta">
+        <span class="report-status" [ngClass]="'status-' + report.status.toLowerCase()">
+          {{ report.status }}
+        </span>
+      </div>
+    </div>
+    <span class="report-date">{{ timeAgo(report.reportedAt) }}</span>
+  </div>
+
+  <!-- Report Details -->
+  <div class="report-details">
+    <div class="report-detail-item">
+      <span class="label">Reported by:</span>
+      <span class="value">{{ report.reportedByUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reported User:</span>
+      <span class="value">{{ report.reportedUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reason:</span>
+      <span class="value">{{ report.reportReason }}</span>
+    </div>
+    <div class="report-detail-item full-width">
+      <span class="label">Description:</span>
+      <p class="value">{{ report.reportDescription }}</p>
+    </div>
+  </div>
+
+  <!-- Post Header -->
+  <div class="post-header">
+    <div class="post-user">
+      <p-avatar
+        [image]="report.userProfilePic"
+        shape="circle"
+        size="normal"
+        [style]="{ width: '42px', height: '42px' }"
+      />
+      <div class="post-meta">
+        <span class="post-username">{{ report.username }}</span>
+        <span class="post-info">
+          {{ timeAgo(report.createdAt) }}
+          @if (report.topicIds.length > 0) {
+            <span class="separator">·</span>
+            {{ report.topicIds[0] }}
+          }
+        </span>
+      </div>
+    </div>
+
+    <!-- Labels -->
+    <div class="post-header-right">
+      @if (report.labels.length > 0) {
+        <div class="post-labels">
+          @for (label of report.labels; track label.name) {
+            <p-tag
+              [value]="label.name"
+              severity="secondary"
+              styleClass="post-label"
+              [pTooltip]="label.description"
+              tooltipPosition="bottom"
+            />
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Post Video / Image -->
+  @if (report.mediaUrl) {
+    <div class="post-image-wrapper">
+      @if (isVideo(report.mediaUrl)) {
+        <video
+          [src]="report.mediaUrl"
+          class="post-image"
+          controls
+          playsinline
+          preload="metadata"
+        ></video>
+      } @else {
+        <img
+          [src]="report.mediaRef"
+          [alt]="report.caption"
+          class="post-image"
+          loading="lazy"
+        />
+      }
+    </div>
+  }
+
+  <!-- Caption -->
+  <p class="post-caption">{{ report.caption }}</p>
+
+  <!-- Source -->
+  @if (report.sources.length > 0) {
+    <div class="post-source-row">
+      <div class="post-source-left">
+        <a class="post-source" [href]="report.sources[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ getDomain(report.sources[0].url) }}
+        </a>
+        <button
+          class="action-btn upvote"
+          [class.active]="report.sources[0].userVote === 'up'"
+          [attr.aria-label]="'Source upvote – ' + report.sources[0].upvotes"
+        >
+          <i class="pi pi-thumbs-up"></i>
+          <span>{{ report.sources[0].upvotes }}</span>
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="report.sources[0].userVote === 'down'"
+          [attr.aria-label]="'Source downvote – ' + report.sources[0].downvotes"
+        >
+          <i class="pi pi-thumbs-down"></i>
+          <span>{{ report.sources[0].downvotes }}</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="post-actions">
+    <div class="report-actions">
+      <p-button
+        label="Dismiss"
+        severity="secondary"
+        size="small"
+        (onClick)="dismissReport(report.reportId)"
+        icon="pi pi-check"
+      />
+      <p-button
+        label="Action Taken"
+        severity="warn"
+        size="small"
+        (onClick)="markActionTaken(report.reportId)"
+        icon="pi pi-shield"
+      />
+    </div>
+  </div>
+
+</ng-template>
+
+<!-- ─── Reported Source Card Template ─── -->
+<ng-template #reportedSourceCard let-report="report">
+
+  <!-- Report Info Banner -->
+  <div class="report-info-banner">
+    <div class="report-info-left">
+      <div class="report-badge">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Reported</span>
+      </div>
+      <div class="report-meta">
+        <span class="report-reason">{{ report.reportReason }}</span>
+        <span class="report-status" [ngClass]="'status-' + report.status.toLowerCase()">
+          {{ report.status }}
+        </span>
+      </div>
+    </div>
+    <span class="report-date">{{ timeAgo(report.reportedAt) }}</span>
+  </div>
+
+  <!-- Report Details -->
+  <div class="report-details">
+    <div class="report-detail-item">
+      <span class="label">Reported by:</span>
+      <span class="value">{{ report.reportedByUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reported User:</span>
+      <span class="value">{{ report.reportedUsername }}</span>
+    </div>
+    <div class="report-detail-item full-width">
+      <span class="label">Description:</span>
+      <p class="value">{{ report.reportDescription }}</p>
+    </div>
+  </div>
+
+  <!-- Post Header (Context for the source) -->
+  <div class="post-header">
+    <div class="post-user">
+      <p-avatar
+        [image]="report.userProfilePic"
+        shape="circle"
+        size="normal"
+        [style]="{ width: '42px', height: '42px' }"
+      />
+      <div class="post-meta">
+        <span class="post-username">{{ report.username }}</span>
+        <span class="post-info">
+          {{ timeAgo(report.createdAt) }}
+          @if (report.topicIds.length > 0) {
+            <span class="separator">·</span>
+            {{ report.topicIds[0] }}
+          }
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source (Main Content) -->
+  @if (report.sources.length > 0) {
+    <div class="source-focus-wrapper">
+      <div class="source-focus">
+        <h3>Reported Source:</h3>
+        <a class="post-source" [href]="report.sources[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ report.sources[0].url }}
+        </a>
+      </div>
+
+      <div class="post-source-row">
+        <div class="post-source-left">
+          <button
+            class="action-btn upvote"
+            [class.active]="report.sources[0].userVote === 'up'"
+            [attr.aria-label]="'Source upvote – ' + report.sources[0].upvotes"
+          >
+            <i class="pi pi-thumbs-up"></i>
+            <span>{{ report.sources[0].upvotes }}</span>
+          </button>
+          <button
+            class="action-btn downvote"
+            [class.active]="report.sources[0].userVote === 'down'"
+            [attr.aria-label]="'Source downvote – ' + report.sources[0].downvotes"
+          >
+            <i class="pi pi-thumbs-down"></i>
+            <span>{{ report.sources[0].downvotes }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Post Caption for context -->
+  @if (report.caption) {
+    <p class="post-caption">Post Context: {{ report.caption }}</p>
+  }
+
+  <!-- Actions -->
+  <div class="post-actions">
+    <div class="report-actions">
+      <p-button
+        label="Dismiss"
+        severity="secondary"
+        size="small"
+        (onClick)="dismissReport(report.reportId)"
+        icon="pi pi-check"
+      />
+      <p-button
+        label="Action Taken"
+        severity="warn"
+        size="small"
+        (onClick)="markActionTaken(report.reportId)"
+        icon="pi pi-shield"
+      />
+    </div>
+  </div>
+
+</ng-template>

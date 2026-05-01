@@ -1,6 +1,9 @@
 package at.ac.tuwien.inso.ctrl.feed.service;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.report.entity.Report;
+
 import java.util.List;
 
 public interface FeedService {
@@ -15,4 +18,6 @@ public interface FeedService {
    * @return list of feed posts
    */
   List<FeedPostResponse> getFeed(int page, int postsPerPage, String username);
+
+  FeedPostResponse toFeedPostResponse(Post post, String userId);
 }

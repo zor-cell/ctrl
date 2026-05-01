@@ -18,6 +18,11 @@ export const routes: Routes = [
       import('./feed/components/feed/feed.component').then(m => m.FeedComponent),
   },
   {
+    path: 'report',
+    loadComponent: () =>
+      import('./report/components/report-review/report-review.component').then(m => m.ReportReviewComponent),
+  },
+  {
     path: 'post',
     canActivate: [authGuard],
     loadComponent: () =>

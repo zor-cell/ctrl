@@ -12,3 +12,9 @@ export enum ContentTypeEnum {
   ACCOUNT = "ACCOUNT",
   SOURCE = "SOURCE"
 }
+
+export enum ReportStatus {
+  CREATED = 'CREATED',
+  VALIDATED = 'VALIDATED',
+  DECLINED = 'DECLINED',
+}
