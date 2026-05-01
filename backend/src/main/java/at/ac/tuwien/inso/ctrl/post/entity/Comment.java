@@ -1,14 +1,18 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +27,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "comments")
 public class Comment {
+
   @Id
   @Column(name = "comment_id", nullable = false, unique = true)
   private String commentId;
@@ -41,7 +46,17 @@ public class Comment {
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = true)
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean edited = false;
+
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "parent_comment_id", referencedColumnName = "comment_id")
   private Comment parentComment;
+
+  // Needed for cascade-deleting all replies when a parent comment is deleted.
+  // Not exposed via API directly — replies are assembled in the service layer.
+  @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<Comment> replies = new ArrayList<>();
 }

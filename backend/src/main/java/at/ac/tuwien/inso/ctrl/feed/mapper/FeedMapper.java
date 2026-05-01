@@ -8,11 +8,13 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.Map;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 
 @Component
 @RequiredArgsConstructor
 public class FeedMapper {
 
+    private final FileStorageService fileStorageService;
 
     public FeedPostResponse toFeedPostResponse(Post post,
                                                Map<String, String> postVotes,
@@ -52,13 +54,20 @@ public class FeedMapper {
                 .map(pt -> pt.getTopic().getName())
                 .toList();
 
+        String mediaRef = post.getMediaRef();
+
+        // Only internal posts receive presigned URLs
+        if (!post.isExternalPost() && mediaRef != null) {
+            mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
+        }
+
         return new FeedPostResponse(
                 post.getPostId(),
                 authorId,
                 username,
                 profilePic,
                 post.getCaption(),
-                post.getMediaRef(),
+                mediaRef,
                 post.isPublic(),
                 post.getUpvotes(),
                 post.getDownvotes(),

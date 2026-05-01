@@ -130,7 +130,8 @@ export class FeedComponent implements OnInit {
   }
 
   timeAgo(createdAt: string): string {
-    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
+    const diffMs = Date.now() - new Date(normalized).getTime();
     const minutes = Math.floor(diffMs / 60_000);
     if (minutes < 1) return 'just now';
     if (minutes < 60) return `${minutes} min ago`;
