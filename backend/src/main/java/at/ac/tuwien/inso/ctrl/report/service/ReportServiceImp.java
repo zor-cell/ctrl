@@ -4,10 +4,13 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.entity.Report;
+import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,11 +21,21 @@ public class ReportServiceImp implements ReportService {
   private final ReportRepository reportRepository;
   private final PostRepository postRepository;
   private final SourceRepository sourceRepository;
-  
+
   @Override
-  public void makeReport(CreateReportRequest createReportRequest) {
+  public void makeReport(CreateReportRequest createReportRequest, User currentUser) {
     User contentUser = getUserFromContent(createReportRequest);
 
+    Report newReport = Report.builder()
+        .contentId(createReportRequest.contentId())
+        .reason(createReportRequest.reason())
+        .description(createReportRequest.description())
+        .fromUser(currentUser)
+        .usernameReported(contentUser)
+        .contentType(createReportRequest.contentType())
+        .status(ReportStatus.CREATED)
+        .build();
+    reportRepository.save(newReport);
     
   }
   

@@ -1,8 +1,9 @@
 export interface Report {
   reason: string;
-  detail: string;
+  description: string;
   contentType: ContentTypeEnum;
   contentId: string | undefined;
+  reportingUser: string;
 }
 
 export enum ContentTypeEnum {

@@ -1,6 +1,6 @@
 package at.ac.tuwien.inso.ctrl.report.entity;
 
-import at.ac.tuwien.inso.ctrl.post.entity.Post;
+
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,7 +46,7 @@ public class Report {
   private User fromUser;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "reported_user_id", referencedColumnName = "id", nullable = false)
+  @JoinColumn(name = "reported_user_id", referencedColumnName = "id")
   private User usernameReported;
 
   @Enumerated(EnumType.STRING)
@@ -59,6 +59,7 @@ public class Report {
   @Column(name = "created_at")
   private LocalDateTime createdAt = LocalDateTime.now();
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
-  private String status;
+  private ReportStatus status;
 }

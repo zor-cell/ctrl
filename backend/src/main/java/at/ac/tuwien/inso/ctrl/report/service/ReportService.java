@@ -1,10 +1,9 @@
 package at.ac.tuwien.inso.ctrl.report.service;
 
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 
 
 public interface ReportService {
-  void makeReport(CreateReportRequest createReportRequest);
+  void makeReport(CreateReportRequest reportRequest, User user);
 }

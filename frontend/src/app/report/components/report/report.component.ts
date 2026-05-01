@@ -3,6 +3,7 @@ import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 
 import {DialogModule} from 'primeng/dialog';
+import {ReportService} from '../report.service';
 import {AvatarModule} from 'primeng/avatar';
 import {ButtonModule} from 'primeng/button';
 import {TextareaModule} from 'primeng/textarea';
@@ -10,6 +11,7 @@ import {RadioButtonModule} from 'primeng/radiobutton';
 import {SelectModule} from 'primeng/select';
 import {Message} from 'primeng/message';
 import {ContentTypeEnum, Report} from '../../dto/report';
+import {UserService} from '../../../user/user.service';
 
 @Component({
   selector: 'app-report',
@@ -38,9 +40,13 @@ export class ReportComponent implements OnInit {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   private fb = inject(FormBuilder);
+  private reportService = inject(ReportService)
+  private userService = inject(UserService);
   reportForm!: FormGroup;
   isSubmitting = signal(false);
-  currentStep = signal(1);
+  currentStep = signal(1)
+  protected currentUser = this.userService.user;
+
   private reportData: Report | null = null;
 
   readonly ContentTypeEnum = ContentTypeEnum;
@@ -60,8 +66,10 @@ export class ReportComponent implements OnInit {
     { label: 'Other', value: 'other'}
   ];
 
-  ngOnInit(): void {
+  ngOnInit() {
     this.initializeForm();
+    this.userService.loadUser();
+
   }
 
   private initializeForm(): void {
@@ -101,14 +109,20 @@ export class ReportComponent implements OnInit {
   submitReport(): void {
     if (!this.reportForm.valid || !this.contentId) return;
 
+    if (!this.userService.user()?.username) {
+      console.error('User not authenticated');
+      return;
+    }
+
     this.isSubmitting.set(true);
     const formData = this.reportForm.value;
 
     this.reportData = {
       reason: formData.reason,
-      detail: formData.description,
+      description: formData.description,
       contentType: this.contentType,
-      contentId: this.contentId
+      contentId: this.contentId,
+      reportingUser: this.currentUser()?.username || "",
     };
 
     console.log('Report submitted:', {
@@ -118,10 +132,19 @@ export class ReportComponent implements OnInit {
       description: formData.description,
     });
 
-    setTimeout(() => {
-      this.close();
-      this.isSubmitting.set(false);
-    }, 500);
+    this.reportService.createReport(this.reportData).subscribe({
+      next: () => {
+        setTimeout(() => {
+          this.close();
+          this.isSubmitting.set(false);
+        }, 500);      },
+      error: (error) => {
+        console.error('Error submitting report:', error);
+        this.isSubmitting.set(false);
+      }
+    });
+
+
   }
 
   private resetForm(): void {
