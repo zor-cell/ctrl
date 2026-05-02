@@ -42,7 +42,6 @@ export class AuthService {
       const decoded = jwtDecode<CustomJwtPayload>(currentToken);
       const roles = decoded.roles || [];
 
-      console.log(roles)
       if (Array.isArray(roles)) {
         return roles.includes('ROLE_ADMIN');
       }

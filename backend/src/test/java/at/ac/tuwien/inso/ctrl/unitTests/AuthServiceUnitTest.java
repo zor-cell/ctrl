@@ -16,7 +16,7 @@ import at.ac.tuwien.inso.ctrl.auth.service.AuthService;
 import at.ac.tuwien.inso.ctrl.exception.EmailNotVerifiedException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
-import at.ac.tuwien.inso.ctrl.security.JwtService;
+import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDate;

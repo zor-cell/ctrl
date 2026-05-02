@@ -52,6 +52,10 @@ application:
       redirect-uri: "http://localhost:80/verification-callback"
   auth:
     require-email-verification: ${MAIL_REQUIRED}
+  seed:
+    admin:
+      username: ${ADMIN_USERNAME}
+      password: ${ADMIN_PASSWORD}
 
 management:
   health:

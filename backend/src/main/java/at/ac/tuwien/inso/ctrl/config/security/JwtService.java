@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.security;
+package at.ac.tuwien.inso.ctrl.config.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
