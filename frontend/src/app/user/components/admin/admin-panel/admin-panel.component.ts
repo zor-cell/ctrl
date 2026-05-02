@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {AdminService} from "../../../admin.service";
 
 @Component({
@@ -7,7 +7,7 @@ import {AdminService} from "../../../admin.service";
   templateUrl: './admin-panel.component.html',
   styleUrl: './admin-panel.component.scss',
 })
-export class AdminPanelComponent {
+export class AdminPanelComponent implements OnInit {
   private adminService = inject(AdminService);
 
   ngOnInit() {

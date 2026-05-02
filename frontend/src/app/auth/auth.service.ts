@@ -8,7 +8,7 @@ import {Observable, tap} from "rxjs";
 import {NotificationService} from "../core/services/notification.service";
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
-import {jwtDecode, JwtPayload} from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
 import {CustomJwtPayload} from "./dto/CustomJwtPayload";
 
 @Injectable({
