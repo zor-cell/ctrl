@@ -8,9 +8,9 @@ import {Observable, tap} from "rxjs";
 import {NotificationService} from "../core/services/notification.service";
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
-interface JwtPayload {
-  exp?: number;
-}
+import {jwtDecode, JwtPayload} from "jwt-decode";
+import {CustomJwtPayload} from "./dto/CustomJwtPayload";
+
 @Injectable({
   providedIn: 'root',
 })
@@ -30,6 +30,27 @@ export class AuthService {
     }
 
     return !this.isTokenExpired(currentToken);
+  });
+
+  public readonly isAdmin = computed(() => {
+    const currentToken = this.token();
+    if (!currentToken || !this.isAuthenticated()) {
+      return false;
+    }
+
+    try {
+      const decoded = jwtDecode<CustomJwtPayload>(currentToken);
+      const roles = decoded.roles || [];
+
+      console.log(roles)
+      if (Array.isArray(roles)) {
+        return roles.includes('ROLE_ADMIN');
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
   });
 
   public register(registerRequest: RegisterRequest) {
@@ -95,7 +116,7 @@ export class AuthService {
 
   private isTokenExpired(token: string): boolean {
     try {
-      const decoded = this.decodeJwtPayload(token);
+      const decoded = jwtDecode<CustomJwtPayload>(token);
       if (!decoded.exp) {
         return false;
       }
@@ -119,21 +140,5 @@ export class AuthService {
     }
 
     return token;
-  }
-
-  private decodeJwtPayload(token: string): JwtPayload {
-    const [, payload] = token.split('.');
-
-    if (!payload) {
-      throw new Error('JWT payload is missing');
-    }
-
-    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const paddedPayload = normalizedPayload.padEnd(
-      normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
-      '=',
-    );
-
-    return JSON.parse(atob(paddedPayload)) as JwtPayload;
   }
 }

@@ -37,18 +37,33 @@ export class NavigationComponent {
     return items;
   });
 
-  protected profileItems = computed<MenuItem[]>(() => [
-    { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
-    { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
-    { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
-    { separator: true },
-    {
-      label: 'Logout',
-      icon: 'pi pi-sign-out',
-      command: () => {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-      }
+  protected profileItems = computed<MenuItem[]>(() => {
+    const items: MenuItem[] = [
+      { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
+      { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
+      { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
+    ];
+
+    if (this.authService.isAdmin()) {
+      items.push({
+        label: 'Admin Panel',
+        icon: 'pi pi-shield',
+        routerLink: '/admin'
+      });
     }
-  ]);
+
+    items.push(
+      { separator: true },
+      {
+        label: 'Logout',
+        icon: 'pi pi-sign-out',
+        command: () => {
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        }
+      }
+    );
+
+    return items;
+  });
 }

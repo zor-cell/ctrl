@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.entity;
 
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Builder
@@ -50,6 +52,11 @@ public class User implements UserDetails {
   @Column(name = "is_email_verified", nullable = false)
   private boolean emailVerified = false;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role", nullable = false)
+  @Builder.Default
+  private Role role = Role.USER;
+
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ChatMember> chatMembers;
 
@@ -69,7 +76,7 @@ public class User implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of();
+    return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
   }
 
   @Override
