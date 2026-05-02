@@ -170,29 +170,33 @@ public class PostControllerIntegrationTest {
   @Test
   void getProfilePosts_ShouldReturnPostsForRequestedUser() throws Exception {
     User user = createUser("marlene");
+    authenticate(user);
     PostResponse response = createPostResponse(user, "post-1", "Profile post");
 
-    when(postService.getProfilePostsForUser("marlene")).thenReturn(List.of(response));
+    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of(response));
 
     mockMvc
-        .perform(get("/posts/user/marlene"))
+        .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].postId").value("post-1"))
         .andExpect(jsonPath("$[0].caption").value("Profile post"));
 
-    verify(postService).getProfilePostsForUser("marlene");
+    verify(postService).getProfilePostsForUser("marlene", "marlene");
   }
 
   @Test
   void getProfilePosts_ShouldReturnEmptyList_WhenUserHasNoPosts() throws Exception {
-    when(postService.getProfilePostsForUser("marlene")).thenReturn(List.of());
+    User user = createUser("marlene");
+    authenticate(user);
+
+    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of());
 
     mockMvc
-        .perform(get("/posts/user/marlene"))
+        .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
         .andExpect(status().isOk())
         .andExpect(content().json("[]"));
 
-    verify(postService).getProfilePostsForUser("marlene");
+    verify(postService).getProfilePostsForUser("marlene", "marlene");
   }
 
   @Test

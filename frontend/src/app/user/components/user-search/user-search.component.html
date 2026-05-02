@@ -71,12 +71,15 @@
             type="button"
             class="user-item"
             (click)="openUserProfile(user)"
-          >
+            >
             <span class="user-avatar" aria-hidden="true">
-              @if (user.profilePicture) {
-                <img [src]="user.profilePicture" alt="" />
+              @if (hasProfilePicture(user)) {
+                <img
+                  [src]="user.profilePicture"
+                  alt=""
+                  (error)="markProfilePictureFailed(user)" />
               } @else {
-                {{ user.name?.charAt(0) || user.username.charAt(0) }}
+                {{ getInitial(user) }}
               }
             </span>
 

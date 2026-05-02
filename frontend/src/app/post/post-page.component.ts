@@ -17,6 +17,7 @@ import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { NotificationService } from '../core/services/notification.service';
+import { MediaCacheService } from '../core/services/media-cache.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { PostResponse } from './dto/PostResponse';
@@ -46,6 +47,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
   private readonly notificationService = inject(NotificationService);
+  private readonly mediaCacheService = inject(MediaCacheService);
   protected readonly userService = inject(UserService);
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
@@ -351,6 +353,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.getMyPosts().subscribe({
       next: posts => {
         this.myPosts.set(posts);
+        this.cachePostMedia(posts);
         this.loadingPosts.set(false);
       },
       error: () => {
@@ -383,6 +386,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.userService.getPublicProfile(username).subscribe({
       next: profile => {
         this.publicProfile.set(profile);
+        this.mediaCacheService.cacheUrl(profile.profilePicture);
       },
       error: () => {
         this.notificationService.showWarning(
@@ -399,6 +403,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.getProfilePostsForUser(username).subscribe({
       next: posts => {
         this.myPosts.set(posts);
+        this.cachePostMedia(posts);
         this.loadingPosts.set(false);
       },
       error: () => {
@@ -435,6 +440,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
       label: `${topic.emoji} ${topic.name}`,
       value: topic.topicId,
     };
+  }
+
+  private cachePostMedia(posts: PostResponse[]): void {
+    this.mediaCacheService.cacheUrls(posts.map(post => post.mediaUrl));
   }
 
   private revokeAvatarPreview() {

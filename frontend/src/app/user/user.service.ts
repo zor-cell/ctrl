@@ -13,6 +13,7 @@ import {AuthResponse} from "../auth/dto/AuthResponse";
 import {AuthService} from "../auth/auth.service";
 import { UserSearchResult } from './dto/Relationship';
 import { PublicUserProfile } from './dto/PublicUserProfile';
+import { MediaCacheService } from '../core/services/media-cache.service';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +23,7 @@ export class UserService {
   private httpClient = inject(HttpClient);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private mediaCacheService = inject(MediaCacheService);
 
   private _user = signal<UserDetails | null>(null);
   public user = this._user.asReadonly();
@@ -33,7 +35,8 @@ export class UserService {
   public loadUser() {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
-        this._user.set(user)
+        this._user.set(user);
+        this.mediaCacheService.cacheUrl(user.profilePicture);
       }),
       catchError(error => {
         if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
@@ -49,6 +52,8 @@ export class UserService {
   public getPublicProfile(username: string) {
     return this.httpClient.get<PublicUserProfile>(
       `${this.baseUri}/${encodeURIComponent(username)}`
+    ).pipe(
+      tap(profile => this.mediaCacheService.cacheUrl(profile.profilePicture))
     );
   }
 
@@ -56,6 +61,7 @@ export class UserService {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me', updateRequest).pipe(
       tap(user => {
         this._user.set(user);
+        this.mediaCacheService.cacheUrl(user.profilePicture);
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile');
         }
@@ -70,6 +76,7 @@ export class UserService {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me/profile-picture', formData).pipe(
       tap(user => {
         this._user.set(user);
+        this.mediaCacheService.cacheUrl(user.profilePicture);
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile picture');
         }
@@ -117,6 +124,7 @@ export class UserService {
     }).pipe(
       tap(user => {
         this._user.set(user);
+        this.mediaCacheService.cacheUrl(user.profilePicture);
         this.notificationService.showSuccess('Verified Identity');
       })
     );

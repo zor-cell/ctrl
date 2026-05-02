@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
@@ -76,6 +77,17 @@ public class FileStorageService {
     }
   }
 
+  public void deletePostMedia(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank() || !mediaRef.startsWith(POST_MEDIA_PREFIX)) {
+      throw new InvalidRequestException("Invalid post media reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
   private UploadedFile uploadFile(MultipartFile file, String prefix) throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + resolveExtension(file);
     String contentType = file.getContentType();
@@ -118,6 +130,10 @@ public class FileStorageService {
   public String resolveFileUrl(String relativeFilename) {
     if (relativeFilename == null || relativeFilename.isBlank()) {
       return null;
+    }
+
+    if (relativeFilename.startsWith("http://") || relativeFilename.startsWith("https://")) {
+      return relativeFilename;
     }
 
     return publicUrl + "/" + relativeFilename;

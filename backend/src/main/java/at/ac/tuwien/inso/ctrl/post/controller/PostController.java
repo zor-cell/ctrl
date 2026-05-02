@@ -34,8 +34,9 @@ public class PostController {
   }
 
   @GetMapping("/user/{username}")
-  public List<PostResponse> getProfilePosts(@PathVariable String username) {
-    return postService.getProfilePostsForUser(username);
+  public List<PostResponse> getProfilePosts(
+      @PathVariable String username, @AuthenticationPrincipal UserDetails userDetails) {
+    return postService.getProfilePostsForUser(username, userDetails.getUsername());
   }
 
   @PostMapping

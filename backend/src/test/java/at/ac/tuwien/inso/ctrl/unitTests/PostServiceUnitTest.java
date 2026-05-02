@@ -27,6 +27,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,6 +58,8 @@ public class PostServiceUnitTest {
   @Mock private PostVoteRepository postVoteRepository;
 
   @Mock private VoteManager voteManager;
+
+  @Mock private FollowService followService;
 
   @InjectMocks private PostServiceImpl postService;
 
@@ -281,15 +284,41 @@ public class PostServiceUnitTest {
     Post post = Post.builder().postId("post-1").caption("Profile post").build();
     PostResponse response = createResponse("Profile post", true, false, null);
 
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+    when(followService.areFriends(verifiedUser, unverifiedUser)).thenReturn(false);
     when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(post));
     when(postMapper.toResponse(post)).thenReturn(response);
 
-    List<PostResponse> result = postService.getProfilePostsForUser("marlene");
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
 
     assertEquals(List.of(response), result);
     verify(postRepository).findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene");
     verify(postMapper).toResponse(post);
+  }
+
+  @Test
+  void getProfilePostsForUser_withMutualFollow_returnsMappedAllPosts() {
+    Post publicPost = Post.builder().postId("post-1").caption("Public").isPublic(true).build();
+    Post privatePost = Post.builder().postId("post-2").caption("Private").isPublic(false).build();
+    PostResponse publicResponse = createResponse("Public", true, false, null);
+    PostResponse privateResponse = createResponse("Private", false, false, null);
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+    when(followService.areFriends(verifiedUser, unverifiedUser)).thenReturn(true);
+    when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(publicPost, privatePost));
+    when(postMapper.toResponse(publicPost)).thenReturn(publicResponse);
+    when(postMapper.toResponse(privatePost)).thenReturn(privateResponse);
+
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
+
+    assertEquals(List.of(publicResponse, privateResponse), result);
+    verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
+    verify(postMapper).toResponse(publicPost);
+    verify(postMapper).toResponse(privatePost);
   }
 
   @Test

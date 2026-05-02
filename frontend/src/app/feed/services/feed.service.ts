@@ -6,10 +6,12 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
+import { MediaCacheService } from '../../core/services/media-cache.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeedService {
   private readonly httpClient = inject(HttpClient);
+  private readonly mediaCacheService = inject(MediaCacheService);
   private readonly baseUri = `${environment.apiUrl}/feed`;
 
   /**
@@ -26,7 +28,9 @@ export class FeedService {
     const response = await firstValueFrom(
       this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}`)
     );
-    return response.map(this.mapToPost);
+    const posts = response.map(item => this.mapToPost(item));
+    this.cacheFeedMedia(posts);
+    return posts;
   }
 
   /**
@@ -66,5 +70,12 @@ export class FeedService {
           parentCommentId: c.parentCommentId ?? null,
         })) ?? [],
     };
+  }
+
+  private cacheFeedMedia(posts: Post[]): void {
+    this.mediaCacheService.cacheUrls([
+      ...posts.map(post => post.userProfilePic),
+      ...posts.flatMap(post => post.videoImageRef),
+    ]);
   }
 }

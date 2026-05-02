@@ -20,8 +20,11 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
 import at.ac.tuwien.inso.ctrl.security.JwtService;
+import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,6 +59,8 @@ public class PostControllerDatabaseIntegrationTest {
 
   @Autowired private UserRepository userRepository;
 
+  @Autowired private FollowRelationRepository followRelationRepository;
+
   @Autowired private TopicRepository topicRepository;
 
   @Autowired private PostRepository postRepository;
@@ -77,6 +82,7 @@ public class PostControllerDatabaseIntegrationTest {
 
   @BeforeEach
   void setUp() {
+    followRelationRepository.deleteAll();
     postRepository.deleteAll();
     topicRepository.deleteAll();
     userRepository.deleteAll();
@@ -90,6 +96,7 @@ public class PostControllerDatabaseIntegrationTest {
 
   @AfterEach
   void tearDown() {
+    followRelationRepository.deleteAll();
     postRepository.deleteAll();
     topicRepository.deleteAll();
     userRepository.deleteAll();
@@ -176,6 +183,25 @@ public class PostControllerDatabaseIntegrationTest {
   }
 
   @Test
+  void getProfilePosts_withMutualFollow_returnsPrivateAndPublicPosts() throws Exception {
+    saveFollowRelation(otherUser, verifiedUser);
+    saveFollowRelation(verifiedUser, otherUser);
+    savePost("private-post", "Private", false, LocalDateTime.of(2026, 4, 25, 13, 0));
+    savePost("public-post", "Public", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+
+    mockMvc
+        .perform(
+            get("/api/posts/user/marlene")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].postId").value("private-post"))
+        .andExpect(jsonPath("$[0].isPublic").value(false))
+        .andExpect(jsonPath("$[1].postId").value("public-post"))
+        .andExpect(jsonPath("$[1].isPublic").value(true))
+        .andExpect(jsonPath("$.length()").value(2));
+  }
+
+  @Test
   void deletePost_withOwnPost_deletesPost() throws Exception {
     savePost("post-1", "Delete me", false, LocalDateTime.of(2026, 4, 25, 12, 0));
 
@@ -228,6 +254,16 @@ public class PostControllerDatabaseIntegrationTest {
             .downvotes(0)
             .createdAt(createdAt)
             .embedding(new float[768])
+            .build());
+  }
+
+  private void saveFollowRelation(User follower, User followed) {
+    followRelationRepository.save(
+        FollowRelation.builder()
+            .id(new FollowRelationId(follower.getId(), followed.getId()))
+            .follower(follower)
+            .followed(followed)
+            .since(LocalDateTime.now())
             .build());
   }
 }

@@ -102,18 +102,27 @@ export class PostComposerComponent implements OnDestroy {
   protected readonly previewKind = signal<PreviewKind>(null);
   protected readonly selectedFileName = signal<string | null>(null);
   protected readonly selectedMediaFile = signal<File | null>(null);
+  protected readonly uploadedMediaRef = signal<string | null>(null);
+  protected readonly uploadingMedia = signal(false);
   protected readonly submitting = signal(false);
+  protected readonly waitingForMediaBeforeSubmit = signal(false);
   protected readonly submitAttempted = signal(false);
   protected readonly expandedSourceIndex = signal<number | null>(0);
   protected readonly postForm = createPostForm(this.fb);
   protected readonly selectedMediaMayTakeLonger = computed(() =>
     isLongUploadPostVideo(this.selectedMediaFile()),
   );
-  protected readonly submitButtonLabel = computed(() =>
-    this.submitting() && this.selectedMediaMayTakeLonger()
-      ? 'Uploading video...'
-      : 'Create Post',
+  protected readonly continueButtonLabel = computed(() =>
+    'Weiter',
   );
+  protected readonly submitButtonLabel = computed(() =>
+    this.waitingForMediaBeforeSubmit()
+      ? 'Uploading media...'
+      : this.submitting()
+        ? 'Creating post...'
+        : 'Create Post',
+  );
+  private mediaUploadRequestId = 0;
 
   ngOnDestroy() {
     this.revokePreview();
@@ -138,13 +147,23 @@ export class PostComposerComponent implements OnDestroy {
     }
 
     this.revokePreview();
+    this.deleteUploadedMediaIfNeeded();
     this.selectedMediaFile.set(file);
     this.selectedFileName.set(file.name);
+    this.uploadedMediaRef.set(null);
+    this.uploadingMedia.set(false);
+    this.mediaUploadRequestId++;
     this.previewUrl.set(URL.createObjectURL(file));
     this.previewKind.set(resolvePreviewKind(file));
   }
 
   protected continueToDetails() {
+    const media = this.selectedMediaFile();
+
+    if (media && !this.uploadedMediaRef() && !this.uploadingMedia()) {
+      this.startMediaUpload(media);
+    }
+
     this.currentStep.set(2);
   }
 
@@ -227,20 +246,26 @@ export class PostComposerComponent implements OnDestroy {
       return;
     }
 
+    this.submitting.set(true);
     const media = this.selectedMediaFile();
+    const mediaRef = this.uploadedMediaRef();
 
-    if (!media) {
-      this.createPostWithMediaRef(null);
+    if (!media || mediaRef) {
+      this.createPostWithMediaRef(mediaRef);
+      return;
+    }
+
+    if (this.uploadingMedia()) {
+      this.waitingForMediaBeforeSubmit.set(true);
       return;
     }
 
     if (!this.isValidPostMedia(media)) {
+      this.submitting.set(false);
       this.currentStep.set(1);
       this.clearSelectedMedia();
       return;
     }
-
-    this.submitting.set(true);
 
     this.fileService.uploadPostMedia(media).subscribe({
       next: uploadedFile => this.createPostWithMediaRef(uploadedFile.mediaRef),
@@ -283,6 +308,10 @@ export class PostComposerComponent implements OnDestroy {
     return this.postForm.controls.caption.value.length;
   }
 
+  protected isPublicPost(): boolean {
+    return this.postForm.controls.isPublic.value;
+  }
+
   protected topicOptionLabel(topic: TopicOption): string {
     return topic.label;
   }
@@ -322,13 +351,15 @@ export class PostComposerComponent implements OnDestroy {
     this.postService.createPost(request).subscribe({
       next: () => {
         this.submitting.set(false);
+        this.waitingForMediaBeforeSubmit.set(false);
         this.notificationService.showSuccess('Post created successfully.');
         this.created.emit();
         this.visibleChange.emit(false);
-        this.resetFormState();
+        this.resetFormState(false);
       },
       error: () => {
         this.submitting.set(false);
+        this.waitingForMediaBeforeSubmit.set(false);
       },
     });
   }
@@ -345,14 +376,80 @@ export class PostComposerComponent implements OnDestroy {
 
   private clearSelectedMedia() {
     this.revokePreview();
+    this.deleteUploadedMediaIfNeeded();
     this.selectedMediaFile.set(null);
     this.selectedFileName.set(null);
+    this.uploadedMediaRef.set(null);
+    this.uploadingMedia.set(false);
+    this.waitingForMediaBeforeSubmit.set(false);
+    this.mediaUploadRequestId++;
     this.previewKind.set(null);
   }
 
-  private resetFormState() {
+  private deleteUploadedMediaIfNeeded() {
+    const mediaRef = this.uploadedMediaRef();
+    if (!mediaRef) {
+      return;
+    }
+
+    this.fileService.deletePostMedia(mediaRef).subscribe({
+      error: () => {
+        this.notificationService.showWarning(
+          'The previously uploaded media could not be removed.',
+        );
+      },
+    });
+  }
+
+  private startMediaUpload(media: File) {
+    if (!this.isValidPostMedia(media)) {
+      this.clearSelectedMedia();
+      return;
+    }
+
+    const requestId = ++this.mediaUploadRequestId;
+    this.uploadingMedia.set(true);
+
+    this.fileService.uploadPostMedia(media).subscribe({
+      next: uploadedFile => {
+        if (requestId !== this.mediaUploadRequestId) {
+          this.fileService.deletePostMedia(uploadedFile.mediaRef).subscribe();
+          return;
+        }
+
+        this.uploadedMediaRef.set(uploadedFile.mediaRef);
+        this.uploadingMedia.set(false);
+        if (this.waitingForMediaBeforeSubmit()) {
+          this.waitingForMediaBeforeSubmit.set(false);
+          this.createPostWithMediaRef(uploadedFile.mediaRef);
+        }
+      },
+      error: () => {
+        if (requestId === this.mediaUploadRequestId) {
+          this.uploadingMedia.set(false);
+          this.submitting.set(false);
+          this.waitingForMediaBeforeSubmit.set(false);
+        }
+      },
+    });
+  }
+
+  private resetFormState(deleteUploadedMedia = true) {
     this.currentStep.set(1);
-    this.clearSelectedMedia();
+    if (deleteUploadedMedia) {
+      this.clearSelectedMedia();
+    } else {
+      this.revokePreview();
+      this.selectedMediaFile.set(null);
+      this.selectedFileName.set(null);
+      this.uploadedMediaRef.set(null);
+      this.uploadingMedia.set(false);
+      this.waitingForMediaBeforeSubmit.set(false);
+      this.mediaUploadRequestId++;
+      this.previewKind.set(null);
+    }
+    this.uploadingMedia.set(false);
+    this.waitingForMediaBeforeSubmit.set(false);
     this.submitAttempted.set(false);
     this.postForm.reset({
       caption: '',

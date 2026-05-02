@@ -22,6 +22,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -49,6 +50,7 @@ public class PostServiceImpl implements PostService {
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
+  private final FollowService followService;
 
   @Override
   @Transactional
@@ -117,12 +119,21 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<PostResponse> getProfilePostsForUser(String username) {
-    return postRepository
-        .findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(username)
-        .stream()
-        .map(postMapper::toResponse)
-        .toList();
+  public List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername) {
+    User profileOwner = fetchUser(profileUsername);
+    User viewer = fetchUser(viewerUsername);
+
+    boolean canSeePrivatePosts =
+        profileOwner.getId().equals(viewer.getId())
+            || followService.areFriends(profileOwner, viewer);
+
+    List<Post> posts =
+        canSeePrivatePosts
+            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+                profileUsername);
+
+    return posts.stream().map(postMapper::toResponse).toList();
   }
 
   @Override

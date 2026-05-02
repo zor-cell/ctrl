@@ -53,6 +53,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   verifiedOnly = signal<boolean>(false);
 
   searchResults = this.relationshipService.searchResults;
+  failedProfilePictures = signal<Set<string>>(new Set());
 
   private searchInput$ = new Subject<string>();
   private refreshTrigger$ = new Subject<void>();
@@ -216,6 +217,22 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   
   openUserProfile(user: UserSearchResult) {
     this.router.navigate(['/profile', user.username]);
+  }
+
+  hasProfilePicture(user: UserSearchResult): boolean {
+    return Boolean(user.profilePicture) && !this.failedProfilePictures().has(user.id);
+  }
+
+  markProfilePictureFailed(user: UserSearchResult): void {
+    this.failedProfilePictures.update(failedIds => {
+      const nextFailedIds = new Set(failedIds);
+      nextFailedIds.add(user.id);
+      return nextFailedIds;
+    });
+  }
+
+  getInitial(user: UserSearchResult): string {
+    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
   }
 
   canFollow(user: UserSearchResult): boolean {
