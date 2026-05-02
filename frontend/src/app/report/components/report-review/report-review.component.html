@@ -221,7 +221,6 @@
         <span>Reported</span>
       </div>
       <div class="report-meta">
-        <span class="report-reason">{{ report.reportReason }}</span>
         <span class="report-status" [ngClass]="'status-' + report.status.toLowerCase()">
           {{ report.status }}
         </span>
@@ -239,6 +238,10 @@
     <div class="report-detail-item">
       <span class="label">Reported User:</span>
       <span class="value">{{ report.reportedUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reason:</span>
+      <span class="value">{{ getReason(report.reportReason) }}</span>
     </div>
     <div class="report-detail-item full-width">
       <span class="label">Description:</span>
