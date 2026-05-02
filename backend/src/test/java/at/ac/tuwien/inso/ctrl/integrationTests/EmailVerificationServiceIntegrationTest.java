@@ -101,8 +101,6 @@ public class EmailVerificationServiceIntegrationTest {
     testUserVerified.setEmailVerified(true);
     testUserVerified.setBirthdate(LocalDate.of(1990, 1, 1));
     userRepository.save(testUserVerified);
-
-
   }
 
   @Test
@@ -134,69 +132,80 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
+  public void
+      testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
-    assertThrows(UserAlreadyVerifiedException.class, () ->
-        emailVerificationService.sendVerificationEmail(request));
-
+    assertThrows(
+        UserAlreadyVerifiedException.class,
+        () -> emailVerificationService.sendVerificationEmail(request));
   }
 
   @Test
   public void testSendVerificationEmail_withWrongEmail_shouldUsernameNotFoundExceptionException() {
-    SendEmailRequest request =
-        new SendEmailRequest(testUserUnverified.getUsername(), "wrongEmail");
-    assertThrows(UsernameNotFoundException.class, () ->
-        emailVerificationService.sendVerificationEmail(request));
+    SendEmailRequest request = new SendEmailRequest(testUserUnverified.getUsername(), "wrongEmail");
+    assertThrows(
+        UsernameNotFoundException.class,
+        () -> emailVerificationService.sendVerificationEmail(request));
   }
 
   @Test
-  public void testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException() {
-    SendEmailRequest request =
-        new SendEmailRequest("wrongUser", testUserUnverified.getEmail());
-    assertThrows(UsernameNotFoundException.class, () ->
-        emailVerificationService.sendVerificationEmail(request));
+  public void
+      testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException() {
+    SendEmailRequest request = new SendEmailRequest("wrongUser", testUserUnverified.getEmail());
+    assertThrows(
+        UsernameNotFoundException.class,
+        () -> emailVerificationService.sendVerificationEmail(request));
   }
 
   @Test
-  public void testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNotFoundException() {
+  public void
+      testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNotFoundException() {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
-    assertThrows(ResourceNotFoundException.class, () ->
-        emailVerificationService.sendVerificationEmail(request));
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> emailVerificationService.sendVerificationEmail(request));
   }
 
   @Test
-  public void testSendVerificationEmail_whenMailSenderThrowsMailException_shouldThrowCommunicationException() {
+  public void
+      testSendVerificationEmail_whenMailSenderThrowsMailException_shouldThrowCommunicationException() {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
     Mockito.doThrow(new org.springframework.mail.MailException("Mail server error") {})
-        .when(mailSender).send(Mockito.any(MimeMessage.class));
+        .when(mailSender)
+        .send(Mockito.any(MimeMessage.class));
 
     emailVerificationService =
         new EmailVerificationService(
             mailSender, templateEngine, emailVerificationRepository, userRepository);
     ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
     CommunicationException exception =
-        assertThrows(CommunicationException.class, () ->
-            emailVerificationService.sendVerificationEmail(request));
+        assertThrows(
+            CommunicationException.class,
+            () -> emailVerificationService.sendVerificationEmail(request));
 
     assertTrue(exception.getMessage().contains("Failed to send email"));
-
   }
 
   @Test
-  public void testSendVerificationEmail_whenMimeMessageHelperThrowsMessagingException_shouldThrowCommunicationException() throws MessagingException {
+  public void
+      testSendVerificationEmail_whenMimeMessageHelperThrowsMessagingException_shouldThrowCommunicationException()
+          throws MessagingException {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
-    Mockito.when(mailSender.createMimeMessage()).thenAnswer(new Answer<MimeMessage>() {
-      @Override
-      public MimeMessage answer(org.mockito.invocation.InvocationOnMock invocation) throws MessagingException {
-        throw new MessagingException("Failed to create mime message");
-      }
-    });
+    Mockito.when(mailSender.createMimeMessage())
+        .thenAnswer(
+            new Answer<MimeMessage>() {
+              @Override
+              public MimeMessage answer(org.mockito.invocation.InvocationOnMock invocation)
+                  throws MessagingException {
+                throw new MessagingException("Failed to create mime message");
+              }
+            });
 
     emailVerificationService =
         new EmailVerificationService(
@@ -204,8 +213,9 @@ public class EmailVerificationServiceIntegrationTest {
     ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
 
     CommunicationException exception =
-        assertThrows(CommunicationException.class, () ->
-            emailVerificationService.sendVerificationEmail(request));
+        assertThrows(
+            CommunicationException.class,
+            () -> emailVerificationService.sendVerificationEmail(request));
 
     assertTrue(exception.getMessage().contains("Failed to create email."));
   }
@@ -218,17 +228,18 @@ public class EmailVerificationServiceIntegrationTest {
     verification.setExpiryTime(LocalDateTime.now().plusMinutes(1));
     emailVerificationRepository.save(verification);
 
-    EmailVerificationRequest request = new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
     EmailVerificationResponse response = emailVerificationService.verifyEmail(request);
 
-    Optional<EmailVerification> emailVerificationOptional = emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    Optional<EmailVerification> emailVerificationOptional =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
     Optional<User> userOptional = userRepository.findById(testUserUnverified.getId());
 
     assertFalse(emailVerificationOptional.isPresent());
     assertTrue(userOptional.isPresent());
     assertTrue(userOptional.get().isEmailVerified());
     assertTrue(response.verification_ok());
-
   }
 
   @Test
@@ -239,11 +250,16 @@ public class EmailVerificationServiceIntegrationTest {
     verification.setExpiryTime(LocalDateTime.now().plusMinutes(1));
     emailVerificationRepository.save(verification);
 
-    EmailVerificationRequest request = new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
 
-    InvalidEmailVerificationCodeException exception = assertThrows(InvalidEmailVerificationCodeException.class, () -> emailVerificationService.verifyEmail(request));
+    InvalidEmailVerificationCodeException exception =
+        assertThrows(
+            InvalidEmailVerificationCodeException.class,
+            () -> emailVerificationService.verifyEmail(request));
 
-    Optional<EmailVerification> emailVerificationOptional = emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    Optional<EmailVerification> emailVerificationOptional =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
     Optional<User> userOptional = userRepository.findById(testUserUnverified.getId());
 
     assertTrue(emailVerificationOptional.isPresent());
@@ -254,18 +270,24 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
+  public void
+      testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
     EmailVerification verification = new EmailVerification();
     verification.setUser(testUserUnverified);
     verification.setCode("123456");
     verification.setExpiryTime(LocalDateTime.now().minusMinutes(1));
     emailVerificationRepository.save(verification);
 
-    EmailVerificationRequest request = new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
 
-    InvalidEmailVerificationCodeException exception = assertThrows(InvalidEmailVerificationCodeException.class, () -> emailVerificationService.verifyEmail(request));
+    InvalidEmailVerificationCodeException exception =
+        assertThrows(
+            InvalidEmailVerificationCodeException.class,
+            () -> emailVerificationService.verifyEmail(request));
 
-    Optional<EmailVerification> emailVerificationOptional = emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    Optional<EmailVerification> emailVerificationOptional =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
     Optional<User> userOptional = userRepository.findById(testUserUnverified.getId());
 
     assertTrue(emailVerificationOptional.isPresent());
@@ -283,11 +305,15 @@ public class EmailVerificationServiceIntegrationTest {
     verification.setExpiryTime(LocalDateTime.now().minusMinutes(1));
     emailVerificationRepository.save(verification);
 
-    EmailVerificationRequest request = new EmailVerificationRequest("I dont exist", verification.getCode());
+    EmailVerificationRequest request =
+        new EmailVerificationRequest("I dont exist", verification.getCode());
 
-    ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
+    ResourceNotFoundException exception =
+        assertThrows(
+            ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
 
-    Optional<EmailVerification> emailVerificationOptional = emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    Optional<EmailVerification> emailVerificationOptional =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
     Optional<User> userOptional = userRepository.findById(testUserUnverified.getId());
 
     assertTrue(emailVerificationOptional.isPresent());
@@ -295,16 +321,19 @@ public class EmailVerificationServiceIntegrationTest {
     assertFalse(userOptional.get().isEmailVerified());
 
     assertTrue(exception.getMessage().contains("User not found for verification"));
-
   }
 
   @Test
   public void testVerifyEmail_whenVerificationNonExistant_shouldThrowResourceNotFoundException() {
-    EmailVerificationRequest request = new EmailVerificationRequest(testUserUnverified.getUsername(), "anycod");
+    EmailVerificationRequest request =
+        new EmailVerificationRequest(testUserUnverified.getUsername(), "anycod");
 
-    ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
+    ResourceNotFoundException exception =
+        assertThrows(
+            ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
 
-    Optional<EmailVerification> emailVerificationOptional = emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    Optional<EmailVerification> emailVerificationOptional =
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
     Optional<User> userOptional = userRepository.findById(testUserUnverified.getId());
 
     assertFalse(emailVerificationOptional.isPresent());
@@ -312,10 +341,7 @@ public class EmailVerificationServiceIntegrationTest {
     assertFalse(userOptional.get().isEmailVerified());
 
     assertTrue(exception.getMessage().contains("Verification not found for user"));
-
   }
-
-
 
   private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {
     String htmlContent = byteArrayOutputStream.toString();

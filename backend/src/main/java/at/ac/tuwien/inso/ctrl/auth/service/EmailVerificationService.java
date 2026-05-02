@@ -95,11 +95,9 @@ public class EmailVerificationService {
       mailSender.send(message);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
-      throw new CommunicationException(
-          "Failed to send email.");
+      throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {
-      throw new CommunicationException(
-          "Failed to create email.");
+      throw new CommunicationException("Failed to create email.");
     }
   }
 
@@ -178,8 +176,8 @@ public class EmailVerificationService {
   }
 
   /**
-   * Generates a 6-digit verification code using SHA-256 hash of password and timestamp. (created with AI help)
-   *
+   * Generates a 6-digit verification code using SHA-256 hash of password and timestamp. (created
+   * with AI help)
    *
    * @param password the user's password
    * @param timeInMs the current time in milliseconds

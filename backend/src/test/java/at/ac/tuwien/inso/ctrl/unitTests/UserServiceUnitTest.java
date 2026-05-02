@@ -10,11 +10,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
-import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;

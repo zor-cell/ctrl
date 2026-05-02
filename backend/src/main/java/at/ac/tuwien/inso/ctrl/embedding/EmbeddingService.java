@@ -2,10 +2,9 @@ package at.ac.tuwien.inso.ctrl.embedding;
 
 import at.ac.tuwien.inso.ctrl.embedding.dto.EmbeddingRequest;
 import at.ac.tuwien.inso.ctrl.embedding.dto.EmbeddingResponse;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import java.net.http.HttpClient;
 import java.util.List;
-
-import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -78,17 +77,18 @@ public class EmbeddingService {
   private float[] callEmbeddings(EmbeddingRequest request) {
     try {
       var response =
-              restClient
-                      .post()
-                      .uri(baseUrl + "/embeddings")
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .body(request)
-                      .retrieve()
-                      .body(EmbeddingResponse.class);
+          restClient
+              .post()
+              .uri(baseUrl + "/embeddings")
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(request)
+              .retrieve()
+              .body(EmbeddingResponse.class);
 
       return response.data().getFirst().embedding();
-    } catch(ResourceAccessException e) {
-      throw new CommunicationException("The embedding server is currently unreachable. Please try again later.");
+    } catch (ResourceAccessException e) {
+      throw new CommunicationException(
+          "The embedding server is currently unreachable. Please try again later.");
     }
   }
 }

@@ -50,8 +50,9 @@ public class UserSeederConfig {
                         .build());
               }
 
-              //create test users
-              if (!userRepository.existsByUsername("test") && !userRepository.existsByUsername("test1")) {
+              // create test users
+              if (!userRepository.existsByUsername("test")
+                  && !userRepository.existsByUsername("test1")) {
                 userRepository.saveAll(
                     List.of(
                         User.builder()
@@ -63,7 +64,6 @@ public class UserSeederConfig {
                             .emailVerified(true)
                             .role(Role.USER)
                             .build(),
-
                         User.builder()
                             .username("test1")
                             .password(passwordEncoder.encode("test1"))
