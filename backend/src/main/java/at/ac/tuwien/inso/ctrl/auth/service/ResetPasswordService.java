@@ -38,19 +38,14 @@ public class ResetPasswordService {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   /**
-   * Sends a password reset email to the user with the specified email address
-   *    verifies if the email exists
-   *    deletes other reset tokens
-   *    generates a token
-   *    Generates email template
-   *    Sends the email
+   * Sends a password reset email to the user with the specified email address verifies if the email
+   * exists deletes other reset tokens generates a token Generates email template Sends the email
    *
    * @param passwordResetEmailRequest the request containing the user's email address
    * @throws ResourceNotFoundException if no user exists with the provided email address
-   * @throws CommunicationException if the email fails to send or if there is an error
-   *         creating the email message
+   * @throws CommunicationException if the email fails to send or if there is an error creating the
+   *     email message
    * @see PasswordResetEmailRequest
    */
   @Transactional
@@ -96,17 +91,14 @@ public class ResetPasswordService {
     }
   }
 
-
   /**
    * Resets a user's password using a valid reset token.
    *
-   * This method validates the provided token and updates the user's password if valid.
-   * The token is then marked as used to prevent reuse.
-   *
+   * <p>This method validates the provided token and updates the user's password if valid. The token
+   * is then marked as used to prevent reuse.
    *
    * @param passwordResetRequest the request containing the reset token and new password
-   * @throws InvalidTokenException if the token is not found, has already been used,
-   *         or has expired
+   * @throws InvalidTokenException if the token is not found, has already been used, or has expired
    * @see PasswordResetRequest
    */
   @Transactional
@@ -135,8 +127,8 @@ public class ResetPasswordService {
   /**
    * Creates a Thymeleaf context for rendering the password reset email template.
    *
-   * Constructs the password reset redirect URL that will be included in the email.
-   * The URL points to the frontend password reset page with the reset token as a query parameter.
+   * <p>Constructs the password reset redirect URL that will be included in the email. The URL
+   * points to the frontend password reset page with the reset token as a query parameter.
    *
    * @param code the password reset token
    * @return a Thymeleaf {@link Context} containing the redirect URL variable

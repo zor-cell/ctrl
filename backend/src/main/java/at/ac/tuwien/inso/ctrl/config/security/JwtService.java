@@ -1,12 +1,14 @@
-package at.ac.tuwien.inso.ctrl.security;
+package at.ac.tuwien.inso.ctrl.config.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +30,11 @@ public class JwtService {
   }
 
   public String generateToken(UserDetails userDetails) {
+    List<String> roles =
+        userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+
     return Jwts.builder()
+        .claim("roles", roles)
         .subject(userDetails.getUsername())
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))

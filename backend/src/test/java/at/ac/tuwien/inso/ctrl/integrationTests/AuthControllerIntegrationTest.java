@@ -24,7 +24,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +54,6 @@ public class AuthControllerIntegrationTest {
 
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private EmailVerificationRepository emailVerificationRepository;
-
 
   private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
@@ -242,6 +240,7 @@ public class AuthControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isUnauthorized());
   }
+
   @Test
   public void testResendVerificationEmail_withUnverifiedUser_shouldReturnCreated()
       throws Exception {
@@ -283,8 +282,7 @@ public class AuthControllerIntegrationTest {
   @Test
   public void testResendVerificationEmail_withWrongUsername_shouldReturnUnauthorized()
       throws Exception {
-    SendEmailRequest request =
-        new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
+    SendEmailRequest request = new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
 
     mockMvc
         .perform(
@@ -340,10 +338,7 @@ public class AuthControllerIntegrationTest {
     String invalidRequest = "{\"email\": \"test@test.com\"}";
 
     mockMvc
-        .perform(
-            post(sendEmailEndpoint)
-                .contentType("application/json")
-                .content(invalidRequest))
+        .perform(post(sendEmailEndpoint).contentType("application/json").content(invalidRequest))
         .andExpect(status().isNotFound());
 
     Optional<EmailVerification> verification =
@@ -352,15 +347,11 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withMissingEmail_shouldReturnNotFound()
-      throws Exception {
+  public void testResendVerificationEmail_withMissingEmail_shouldReturnNotFound() throws Exception {
     String invalidRequest = "{\"username\": \"testuser\"}";
 
     mockMvc
-        .perform(
-            post(sendEmailEndpoint)
-                .contentType("application/json")
-                .content(invalidRequest))
+        .perform(post(sendEmailEndpoint).contentType("application/json").content(invalidRequest))
         .andExpect(status().isNotFound());
 
     Optional<EmailVerification> verification =
@@ -368,10 +359,8 @@ public class AuthControllerIntegrationTest {
     assertFalse(verification.isPresent());
   }
 
-
   @Test
-  public void testVerifyEmail_withValidCode_shouldReturnOkAndVerificationOk()
-      throws Exception {
+  public void testVerifyEmail_withValidCode_shouldReturnOkAndVerificationOk() throws Exception {
     EmailVerification verification = new EmailVerification();
     verification.setUser(testUserUnverified);
     verification.setCode("123456");
@@ -416,11 +405,9 @@ public class AuthControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isUnauthorized());
 
-
     User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
     assertNotNull(unverifiedUser);
     assertFalse(unverifiedUser.isEmailVerified());
-
   }
 
   @Test
@@ -463,8 +450,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testVerifyEmail_withUserButNoVerification_shouldReturnNotFound()
-      throws Exception {
+  public void testVerifyEmail_withUserButNoVerification_shouldReturnNotFound() throws Exception {
     EmailVerificationRequest request =
         new EmailVerificationRequest(testUserUnverified.getUsername(), "123456");
 
@@ -485,10 +471,7 @@ public class AuthControllerIntegrationTest {
     String invalidRequest = "{\"code\": \"123456\"}";
 
     mockMvc
-        .perform(
-            post(verifyEndpoint)
-                .contentType("application/json")
-                .content(invalidRequest))
+        .perform(post(verifyEndpoint).contentType("application/json").content(invalidRequest))
         .andExpect(status().isNotFound());
 
     User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
@@ -501,10 +484,7 @@ public class AuthControllerIntegrationTest {
     String invalidRequest = "{\"username\": \"testuser\"}";
 
     mockMvc
-        .perform(
-            post(verifyEndpoint)
-                .contentType("application/json")
-                .content(invalidRequest))
+        .perform(post(verifyEndpoint).contentType("application/json").content(invalidRequest))
         .andExpect(status().isNotFound());
 
     User unverifiedUser = userRepository.findById(testUserUnverified.getId()).orElse(null);
@@ -517,10 +497,7 @@ public class AuthControllerIntegrationTest {
     String validRequest = "{\"email\": \"" + existingUser.getEmail() + "\"}";
 
     mockMvc
-        .perform(
-            post(forgotPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(forgotPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isCreated());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -536,10 +513,7 @@ public class AuthControllerIntegrationTest {
     String validRequest = "{\"email\": \" invalidEmail@gmail.com\"}";
 
     mockMvc
-        .perform(
-            post(forgotPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(forgotPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isNotFound());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -555,14 +529,11 @@ public class AuthControllerIntegrationTest {
     passwordReset.setUsed(false);
     passwordResetRepository.save(passwordReset);
 
-    String validRequest = "{\"token\": \"" + passwordReset.getToken() + "\"," +
-        "\"password\": \"newPassword\"}";
+    String validRequest =
+        "{\"token\": \"" + passwordReset.getToken() + "\"," + "\"password\": \"newPassword\"}";
 
     mockMvc
-        .perform(
-            post(resetPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(resetPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isCreated());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -580,15 +551,11 @@ public class AuthControllerIntegrationTest {
   @Test
   public void testResetPassword_withNonExistentToken_shouldReturnUnauthorized() throws Exception {
 
-
-    String validRequest = "{\"token\": \"randomToken\"," +
-        "\"password\": \"" + existingUser.getPassword() + "\"}";
+    String validRequest =
+        "{\"token\": \"randomToken\"," + "\"password\": \"" + existingUser.getPassword() + "\"}";
 
     mockMvc
-        .perform(
-            post(resetPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(resetPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isUnauthorized());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -609,14 +576,16 @@ public class AuthControllerIntegrationTest {
     passwordReset.setUsed(true);
     passwordResetRepository.save(passwordReset);
 
-    String validRequest = "{\"token\": \""+ passwordReset.getToken() +"\"," +
-        "\"password\": \"" + existingUser.getPassword() + "\"}";
+    String validRequest =
+        "{\"token\": \""
+            + passwordReset.getToken()
+            + "\","
+            + "\"password\": \""
+            + existingUser.getPassword()
+            + "\"}";
 
     mockMvc
-        .perform(
-            post(resetPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(resetPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isUnauthorized());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -637,14 +606,16 @@ public class AuthControllerIntegrationTest {
     passwordReset.setUsed(false);
     passwordResetRepository.save(passwordReset);
 
-    String validRequest = "{\"token\": \""+ passwordReset.getToken() +"\"," +
-        "\"password\": \"" + existingUser.getPassword() + "\"}";
+    String validRequest =
+        "{\"token\": \""
+            + passwordReset.getToken()
+            + "\","
+            + "\"password\": \""
+            + existingUser.getPassword()
+            + "\"}";
 
     mockMvc
-        .perform(
-            post(resetPasswordEndpoint)
-                .contentType("application/json")
-                .content(validRequest))
+        .perform(post(resetPasswordEndpoint).contentType("application/json").content(validRequest))
         .andExpect(status().isUnauthorized());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
@@ -655,5 +626,4 @@ public class AuthControllerIntegrationTest {
     User updatedUser = updatedUserOpt.get();
     assertEquals(existingUser.getPassword(), updatedUser.getPassword());
   }
-
 }

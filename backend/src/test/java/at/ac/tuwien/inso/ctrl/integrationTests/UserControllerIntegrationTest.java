@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
-import at.ac.tuwien.inso.ctrl.security.JwtService;
+import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;

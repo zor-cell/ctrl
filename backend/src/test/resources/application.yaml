@@ -46,3 +46,7 @@ application:
       redirect-uri: "http://localhost:4200/verification-callback"
   auth:
     require-email-verification: true
+  seed:
+    admin:
+      username: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin}
