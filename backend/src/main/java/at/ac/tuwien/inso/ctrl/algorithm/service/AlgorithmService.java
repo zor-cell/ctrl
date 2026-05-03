@@ -29,7 +29,7 @@ public class AlgorithmService {
 
     config.setWeightRecency(algorithmConfig.weightRecency());
     config.setWeightExploration(algorithmConfig.weightExploration());
-    config.setWeightSourceQuality(algorithmConfig.weightSource());
+    config.setWeightSourceQuality(algorithmConfig.weightSourceQuality());
     config.setWeightTrending(algorithmConfig.weightTrending());
     config.setWeightTopic(algorithmConfig.weightTopic());
 

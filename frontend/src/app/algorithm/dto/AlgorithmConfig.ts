@@ -1,7 +1,7 @@
 export interface AlgorithmConfig {
   weightRecency: number;
   weightExploration: number;
-  weightSource: number;
+  weightSourceQuality: number;
   weightTrending: number;
   weightTopic: number;
 }
