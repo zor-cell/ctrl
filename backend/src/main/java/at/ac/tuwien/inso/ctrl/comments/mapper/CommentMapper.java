@@ -23,7 +23,7 @@ public class CommentMapper {
                 comment.getCommentId(),
                 comment.getUser().getId(),
                 comment.getUser().getUsername(),
-                comment.getUser().getProfilePicture(),  // adjust to your actual User field name
+                comment.getUser().getProfilePicture(),
                 comment.getCreatedAt().toString(),
                 comment.getContent(),
                 comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null,
