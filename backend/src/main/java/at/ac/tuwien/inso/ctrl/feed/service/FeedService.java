@@ -1,6 +1,8 @@
 package at.ac.tuwien.inso.ctrl.feed.service;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+
 import java.util.List;
 
 public interface FeedService {
@@ -15,4 +17,6 @@ public interface FeedService {
    * @return list of feed posts
    */
   List<FeedPostResponse> getFeed(int page, int postsPerPage, String username);
+
+  List<FeedPostResponse> getPersonalizedFeed(User currentUser, int page, int postsPerPage);
 }

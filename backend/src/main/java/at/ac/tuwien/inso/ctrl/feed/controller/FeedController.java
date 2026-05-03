@@ -3,6 +3,8 @@ package at.ac.tuwien.inso.ctrl.feed.controller;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import java.util.List;
+
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,5 +41,13 @@ public class FeedController {
       @AuthenticationPrincipal UserDetails userDetails) {
     String username = userDetails != null ? userDetails.getUsername() : null;
     return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, username));
+  }
+
+  @GetMapping("/personal")
+  public List<FeedPostResponse> getPersonalizedFeed(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "20") int postsPerPage,
+          @AuthenticationPrincipal User user) {
+    return feedService.getPersonalizedFeed(user, page, postsPerPage);
   }
 }

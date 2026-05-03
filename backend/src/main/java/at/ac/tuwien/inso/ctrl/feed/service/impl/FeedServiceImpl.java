@@ -29,7 +29,7 @@ public class FeedServiceImpl implements FeedService {
   private final PostVoteRepository postVoteRepository;
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
-  private final FeedMapper feedMapper;
+  private final FileStorageService fileStorageService;
 
   @Override
   @Transactional(readOnly = true)
