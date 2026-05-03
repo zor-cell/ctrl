@@ -120,8 +120,9 @@ build:frontend:
   <<: *build_rules
 
 .image_base:
-  image: registry.reset.inso-w.at/pub/docker/kaniko:v1.27.2-debug
-  entrypoint: [""]
+  image: 
+    name: registry.reset.inso-w.at/pub/docker/kaniko:v1.27.2-debug
+    entrypoint: [""]
 
 build:image-backend:
   extends: .image_base
