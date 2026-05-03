@@ -9,12 +9,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, String> {
 
-  @Query("""
+  @Query(
+      """
       SELECT c FROM Comment c
       JOIN FETCH c.user
       LEFT JOIN FETCH c.parentComment
       WHERE c.post.postId = :postId
       """)
   List<Comment> findByPost_PostId(String postId);
-
 }

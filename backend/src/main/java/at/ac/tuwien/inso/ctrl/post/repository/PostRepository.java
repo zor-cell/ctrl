@@ -11,16 +11,17 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, String> {
 
-    boolean existsByExternalPostId(String externalPostId);
+  boolean existsByExternalPostId(String externalPostId);
 
-    List<Post> findAllByUserUsernameOrderByCreatedAtDesc(String username);
+  List<Post> findAllByUserUsernameOrderByCreatedAtDesc(String username);
 
-    Optional<Post> findByPostIdAndUserUsername(String postId, String username);
+  Optional<Post> findByPostIdAndUserUsername(String postId, String username);
 
-    @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
-    Page<Post> findAllPaginated(Pageable pageable);
+  @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
+  Page<Post> findAllPaginated(Pageable pageable);
 
-    @Query("""
+  @Query(
+      """
     SELECT DISTINCT p FROM Post p
     LEFT JOIN FETCH p.user
     LEFT JOIN FETCH p.externalAuthor
@@ -30,6 +31,5 @@ public interface PostRepository extends JpaRepository<Post, String> {
     LEFT JOIN FETCH p.comments c LEFT JOIN FETCH c.user
     WHERE p.postId IN :postIds
     """)
-    List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
-
+  List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
 }

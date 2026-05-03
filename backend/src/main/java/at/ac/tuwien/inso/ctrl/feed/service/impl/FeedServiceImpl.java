@@ -25,66 +25,73 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FeedServiceImpl implements FeedService {
 
-    private final PostRepository postRepository;
-    private final PostVoteRepository postVoteRepository;
-    private final SourceVoteRepository sourceVoteRepository;
-    private final UserRepository userRepository;
-    private final FeedMapper feedMapper;
+  private final PostRepository postRepository;
+  private final PostVoteRepository postVoteRepository;
+  private final SourceVoteRepository sourceVoteRepository;
+  private final UserRepository userRepository;
+  private final FeedMapper feedMapper;
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
+  @Override
+  @Transactional(readOnly = true)
+  public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
 
-        Optional<String> userId = validateInputAndResolveUser(page, postsPerPage, username);
+    Optional<String> userId = validateInputAndResolveUser(page, postsPerPage, username);
 
-        // Step 1: Retrieve only IDs in paginated format
-        var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
-        List<String> postIds = postRepository.findAllPaginated(pageable)
-                .map(Post::getPostId)
-                .toList();
+    // Step 1: Retrieve only IDs in paginated format
+    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
+    List<String> postIds = postRepository.findAllPaginated(pageable).map(Post::getPostId).toList();
 
-        // Step 2: Load associations for these IDs only
-        List<Post> posts = postRepository.findAllWithAssociationsByIds(postIds);
+    // Step 2: Load associations for these IDs only
+    List<Post> posts = postRepository.findAllWithAssociationsByIds(postIds);
 
-        // Step 3: Retrieve votes for all posts at once
-        Map<String, String> postVotes = userId
-                .map(id -> postVoteRepository.findByIdUserIdAndIdPostIdIn(id, postIds)
-                        .stream().collect(Collectors.toMap(
-                                v -> v.getId().getPostId(),
-                                PostVote::getVoteType)))
-                .orElse(Map.of());
+    // Step 3: Retrieve votes for all posts at once
+    Map<String, String> postVotes =
+        userId
+            .map(
+                id ->
+                    postVoteRepository.findByIdUserIdAndIdPostIdIn(id, postIds).stream()
+                        .collect(
+                            Collectors.toMap(v -> v.getId().getPostId(), PostVote::getVoteType)))
+            .orElse(Map.of());
 
-        List<String> sourceIds = posts.stream()
-                .filter(p -> p.getSource() != null)
-                .map(p -> p.getSource().getSourceId())
-                .toList();
+    List<String> sourceIds =
+        posts.stream()
+            .filter(p -> p.getSource() != null)
+            .map(p -> p.getSource().getSourceId())
+            .toList();
 
-        Map<String, String> sourceVotes = userId
-                .map(id -> sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(id, sourceIds)
-                        .stream().collect(Collectors.toMap(
-                                v -> v.getId().getSourceId(),
-                                SourceVote::getVoteType)))
-                .orElse(Map.of());
+    Map<String, String> sourceVotes =
+        userId
+            .map(
+                id ->
+                    sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(id, sourceIds).stream()
+                        .collect(
+                            Collectors.toMap(
+                                v -> v.getId().getSourceId(), SourceVote::getVoteType)))
+            .orElse(Map.of());
 
-        // Step 4: Mapping
-        return posts.stream()
-                .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
-                .toList();
+    // Step 4: Mapping
+    return posts.stream()
+        .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
+        .toList();
+  }
+
+  private String fetchUserId(String username) {
+    return userRepository
+        .findByUsername(username)
+        .map(user -> user.getId().toString())
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+  }
+
+  private Optional<String> validateInputAndResolveUser(
+      int page, int postsPerPage, String username) {
+    if (page < 0) {
+      throw new IllegalArgumentException("Page cannot be negative");
     }
-    private String fetchUserId(String username) {
-        return userRepository.findByUsername(username)
-                .map(user -> user.getId().toString())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    if (postsPerPage < 1 || postsPerPage > 100) {
+      throw new IllegalArgumentException("PostsPerPage must be between 1 and 100");
     }
 
-    private Optional<String> validateInputAndResolveUser(int page, int postsPerPage, String username) {
-        if (page < 0) {
-            throw new IllegalArgumentException("Page cannot be negative");
-        }
-        if (postsPerPage < 1 || postsPerPage > 100) {
-            throw new IllegalArgumentException("PostsPerPage must be between 1 and 100");
-        }
-
-        return Optional.ofNullable(username).map(this::fetchUserId);
-    }
+    return Optional.ofNullable(username).map(this::fetchUserId);
+  }
 }

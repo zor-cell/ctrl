@@ -27,22 +27,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Every 15 minutes:
- * ┌─────────────────────────┐
- * │ 1. Find account ID      │  (tagesschau@ard.social)
- * └────────────┬────────────┘
- *              ↓
- * ┌─────────────────────────┐
- * │ 2. fetch latest posts   │  (max 20 Posts)
- * └────────────┬────────────┘
- *              ↓
- * ┌─────────────────────────┐
- * │ 3. Filter posts         │  (Duplicates)
- * └────────────┬────────────┘
- *              ↓
- * ┌─────────────────────────┐
- * │ 4. Save to database     │  (includes Labels, Topics, Sources)
- * └─────────────────────────┘
+ * Every 15 minutes: ┌─────────────────────────┐ │ 1. Find account ID │ (tagesschau@ard.social)
+ * └────────────┬────────────┘ ↓ ┌─────────────────────────┐ │ 2. fetch latest posts │ (max 20
+ * Posts) └────────────┬────────────┘ ↓ ┌─────────────────────────┐ │ 3. Filter posts │ (Duplicates)
+ * └────────────┬────────────┘ ↓ ┌─────────────────────────┐ │ 4. Save to database │ (includes
+ * Labels, Topics, Sources) └─────────────────────────┘
  */
 @Slf4j
 @Component
