@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.scheduler;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.LabelRepository;
@@ -41,18 +42,21 @@ public class MastodonScheduler {
   private final SourceRepository sourceRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final HttpClient httpClient = HttpClient.newHttpClient();
+  private final EmbeddingService embeddingService;
 
   public MastodonScheduler(
       PostRepository postRepository,
       ExternalAuthorRepository externalAuthorRepository,
       LabelRepository labelRepository,
       TopicRepository topicRepository,
-      SourceRepository sourceRepository) {
+      SourceRepository sourceRepository,
+      EmbeddingService embeddingService) {
     this.postRepository = postRepository;
     this.externalAuthorRepository = externalAuthorRepository;
     this.labelRepository = labelRepository;
     this.topicRepository = topicRepository;
     this.sourceRepository = sourceRepository;
+    this.embeddingService = embeddingService;
   }
 
   @Scheduled(fixedRateString = "PT15M")
@@ -119,6 +123,9 @@ public class MastodonScheduler {
       return false;
     }
 
+    //generate vector embedding
+    float[] vector = embeddingService.embedTextWithImage(captionResult.caption(), mediaRef);
+
     Post post =
         Post.builder()
             .postId(UUID.randomUUID().toString())
@@ -131,6 +138,7 @@ public class MastodonScheduler {
             .upvotes(0)
             .downvotes(0)
             .createdAt(createdAt)
+            .embedding(vector)
             .build();
 
     // Labels hinzufügen

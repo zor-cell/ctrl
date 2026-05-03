@@ -14,7 +14,6 @@ import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -36,29 +35,15 @@ public class FeedServiceImpl implements FeedService {
   @Override
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
-    Optional<String> userId =
-        userRepository.findByUsername(username).map(user -> user.getId().toString());
-
-    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
-    return postRepository.findAll(pageable).stream()
-        .map(post -> toFeedPostResponse(post, userId.orElse(null)))
-        .toList();
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public List<FeedPostResponse> getPersonalizedFeed(User currentUser, int page, int postsPerPage) {
     User user =
         userRepository
-            .findById(currentUser.getId())
+            .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     List<Post> feedPosts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
 
     String userIdStr = user.getId().toString();
-    return feedPosts.stream()
-            .map(post -> toFeedPostResponse(post, userIdStr))
-            .toList();
+    return feedPosts.stream().map(post -> toFeedPostResponse(post, userIdStr)).toList();
   }
 
   private FeedPostResponse toFeedPostResponse(Post post, String userId) {
