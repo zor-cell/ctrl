@@ -35,7 +35,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional(readOnly = true)
     public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
 
-        Optional<String> userId = validateAndResolveUser(page, postsPerPage, username);
+        Optional<String> userId = validateInputAndResolveUser(page, postsPerPage, username);
 
         // Step 1: Retrieve only IDs in paginated format
         var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
@@ -52,7 +52,7 @@ public class FeedServiceImpl implements FeedService {
                         .stream().collect(Collectors.toMap(
                                 v -> v.getId().getPostId(),
                                 PostVote::getVoteType)))
-                .orElse(Map.<String, String>of());
+                .orElse(Map.of());
 
         List<String> sourceIds = posts.stream()
                 .filter(p -> p.getSource() != null)
@@ -64,7 +64,7 @@ public class FeedServiceImpl implements FeedService {
                         .stream().collect(Collectors.toMap(
                                 v -> v.getId().getSourceId(),
                                 SourceVote::getVoteType)))
-                .orElse(Map.<String, String>of());
+                .orElse(Map.of());
 
         // Step 4: Mapping
         return posts.stream()
@@ -77,7 +77,7 @@ public class FeedServiceImpl implements FeedService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
-    private Optional<String> validateAndResolveUser(int page, int postsPerPage, String username) {
+    private Optional<String> validateInputAndResolveUser(int page, int postsPerPage, String username) {
         if (page < 0) {
             throw new IllegalArgumentException("Page cannot be negative");
         }
