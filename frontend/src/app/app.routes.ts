@@ -61,4 +61,11 @@ export const routes: Routes = [
         m => m.VerificationCallbackComponent,
       ),
   },
+  {
+    path: 'algorithm',
+    loadComponent: () =>
+      import('./algorithm/components/config/config.component').then(
+        m => m.AlgorithmConfigComponent,
+      ),
+  },
 ];

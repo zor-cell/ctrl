@@ -41,6 +41,7 @@ export class NavigationComponent {
     { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
     { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
     { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
+    { label: 'Algorithm', icon: 'pi pi-cog', routerLink: '/algorithm' },
     { separator: true },
     {
       label: 'Logout',

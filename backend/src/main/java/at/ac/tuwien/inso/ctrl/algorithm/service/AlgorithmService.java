@@ -1,13 +1,11 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigResponse;
+import at.ac.tuwien.inso.ctrl.algorithm.dto.response.AlgorithmConfigResponse;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
 import at.ac.tuwien.inso.ctrl.algorithm.mapper.AlgorithmMapper;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,17 +15,17 @@ public class AlgorithmService {
   private final AlgorithmRepository algorithmRepository;
   private final AlgorithmMapper algorithmMapper;
 
-  @Transactional()
+  @Transactional
   public AlgorithmConfigResponse getConfig(User currentUser) {
-    var config = getConfigInternal(currentUser.getId());
+    AlgorithmConfig config = getOrCreateConfig(currentUser);
 
     return algorithmMapper.toConfig(config);
   }
 
-  @Transactional()
-  public AlgorithmConfigResponse updateAlgorithmConfig(
+  @Transactional
+  public AlgorithmConfigResponse updateConfig(
       User currentUser, AlgorithmConfigResponse algorithmConfig) {
-    var config = getConfigInternal(currentUser.getId());
+    AlgorithmConfig config = getOrCreateConfig(currentUser);
 
     config.setWeightRecency(algorithmConfig.weightRecency());
     config.setWeightExploration(algorithmConfig.weightExploration());
@@ -38,9 +36,22 @@ public class AlgorithmService {
     return algorithmMapper.toConfig(algorithmRepository.save(config));
   }
 
-  private AlgorithmConfig getConfigInternal(UUID userId) {
+  private AlgorithmConfig getOrCreateConfig(User user) {
     return algorithmRepository
-        .findByUserId(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("Config not found"));
+        .findByUserId(user.getId())
+        .orElseGet(
+            () -> {
+              AlgorithmConfig defaultConfig =
+                  AlgorithmConfig.builder()
+                      .user(user)
+                      .weightRecency(50)
+                      .weightExploration(50)
+                      .weightSourceQuality(50)
+                      .weightTrending(50)
+                      .weightTopic(50)
+                      .build();
+
+              return algorithmRepository.save(defaultConfig);
+            });
   }
 }
