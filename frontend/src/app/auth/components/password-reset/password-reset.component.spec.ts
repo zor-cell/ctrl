@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PasswordResetComponent } from './password-reset.component';
+import {provideRouter} from "@angular/router";
+import {MessageService} from "primeng/api";
 
 describe('PasswordResetComponent', () => {
   let component: PasswordResetComponent;
@@ -9,6 +11,10 @@ describe('PasswordResetComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PasswordResetComponent],
+      providers: [
+        provideRouter([]),
+        {provide: MessageService}
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PasswordResetComponent);

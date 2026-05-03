@@ -1,21 +1,23 @@
 package at.ac.tuwien.inso.ctrl.feed.service.impl;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
-import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
-import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,106 +29,69 @@ public class FeedServiceImpl implements FeedService {
   private final PostVoteRepository postVoteRepository;
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
-  private final FileStorageService fileStorageService;
+  private final FeedMapper feedMapper;
 
   @Override
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
-    Optional<String> userId =
-        userRepository.findByUsername(username).map(user -> user.getId().toString());
 
+    Optional<String> userId = validateInputAndResolveUser(page, postsPerPage, username);
+
+    // Step 1: Retrieve only IDs in paginated format
     var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
-    return postRepository.findAll(pageable).stream()
-        .map(post -> toFeedPostResponse(post, userId.orElse(null)))
+    List<String> postIds = postRepository.findAllPaginated(pageable).map(Post::getPostId).toList();
+
+    // Step 2: Load associations for these IDs only
+    List<Post> posts = postRepository.findAllWithAssociationsByIds(postIds);
+
+    // Step 3: Retrieve votes for all posts at once
+    Map<String, String> postVotes =
+        userId
+            .map(
+                id ->
+                    postVoteRepository.findByIdUserIdAndIdPostIdIn(id, postIds).stream()
+                        .collect(
+                            Collectors.toMap(v -> v.getId().getPostId(), PostVote::getVoteType)))
+            .orElse(Map.of());
+
+    List<String> sourceIds =
+        posts.stream()
+            .filter(p -> p.getSource() != null)
+            .map(p -> p.getSource().getSourceId())
+            .toList();
+
+    Map<String, String> sourceVotes =
+        userId
+            .map(
+                id ->
+                    sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(id, sourceIds).stream()
+                        .collect(
+                            Collectors.toMap(
+                                v -> v.getId().getSourceId(), SourceVote::getVoteType)))
+            .orElse(Map.of());
+
+    // Step 4: Mapping
+    return posts.stream()
+        .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
         .toList();
   }
 
-  private FeedPostResponse toFeedPostResponse(Post post, String userId) {
-    String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
-    String username =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
-    String profilePic =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getAvatarUrl()
-            : fileStorageService.resolveFileUrl(post.getUser().getProfilePicture());
-
-    // Current user's post-vote
-    String postUserVote = null;
-    if (userId != null) {
-      postUserVote =
-          postVoteRepository
-              .findById(new PostVoteId(post.getPostId(), userId))
-              .map(v -> v.getVoteType())
-              .orElse(null);
-    }
-
-    List<FeedPostResponse.LabelResponse> labels =
-        post.getPostLabels().stream()
-            .map(
-                pl ->
-                    new FeedPostResponse.LabelResponse(
-                        pl.getLabel().getName(), pl.getLabel().getExplanation()))
-            .toList();
-
-    // Source-Votes: sourceId + userVote pro SingleSource
-    List<FeedPostResponse.SourceResponse> sources =
-        post.getSource() != null
-            ? post.getSource().getSingleSources().stream()
-                .map(
-                    s -> {
-                      String sourceUserVote = null;
-                      if (userId != null) {
-                        sourceUserVote =
-                            sourceVoteRepository
-                                .findById(new SourceVoteId(post.getSource().getSourceId(), userId))
-                                .map(v -> v.getVoteType())
-                                .orElse(null);
-                      }
-                      return new FeedPostResponse.SourceResponse(
-                          post.getSource().getSourceId(),
-                          s.getUrl(),
-                          post.getSource().getUpvotes(),
-                          post.getSource().getDownvotes(),
-                          sourceUserVote);
-                    })
-                .toList()
-            : List.of();
-
-    List<FeedPostResponse.CommentResponse> comments =
-        post.getComments().stream().map(this::toCommentResponse).toList();
-
-    List<String> topicIds =
-        post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
-
-    return new FeedPostResponse(
-        post.getPostId(),
-        authorId,
-        username,
-        profilePic,
-        post.getCaption(),
-        post.getMediaRef(),
-        fileStorageService.resolveFileUrl(post.getMediaRef()),
-        post.isPublic(),
-        post.getUpvotes(),
-        post.getDownvotes(),
-        postUserVote,
-        post.getCreatedAt(),
-        topicIds,
-        labels,
-        sources,
-        comments);
+  private String fetchUserId(String username) {
+    return userRepository
+        .findByUsername(username)
+        .map(user -> user.getId().toString())
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
   }
 
-  private FeedPostResponse.CommentResponse toCommentResponse(Comment comment) {
-    return new FeedPostResponse.CommentResponse(
-        comment.getCommentId(),
-        comment.getUser().getId().toString(),
-        comment.getUser().getUsername(),
-        fileStorageService.resolveFileUrl(comment.getUser().getProfilePicture()),
-        comment.getContent(),
-        comment.getCreatedAt(),
-        comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);
+  private Optional<String> validateInputAndResolveUser(
+      int page, int postsPerPage, String username) {
+    if (page < 0) {
+      throw new IllegalArgumentException("Page cannot be negative");
+    }
+    if (postsPerPage < 1 || postsPerPage > 100) {
+      throw new IllegalArgumentException("PostsPerPage must be between 1 and 100");
+    }
+
+    return Optional.ofNullable(username).map(this::fetchUserId);
   }
 }
