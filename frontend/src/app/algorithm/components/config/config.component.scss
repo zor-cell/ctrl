@@ -1,0 +1,36 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 58px); //subtract header size
+  padding: 1rem;
+}
+
+.slider-field {
+  margin-bottom: 1rem;
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+
+    label {
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    span {
+      font-size: 0.9rem;
+      color: var(--primary-color, #3b82f6);
+      font-weight: bold;
+    }
+  }
+
+  .hint-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6b7280; // or var(--text-color-secondary)
+    font-size: 0.85rem;
+  }
+}

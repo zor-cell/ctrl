@@ -5,13 +5,15 @@ import {AlgorithmConfig} from "../../dto/AlgorithmConfig";
 import {finalize} from "rxjs";
 import {Slider} from "primeng/slider";
 import {Button} from "primeng/button";
+import {ProgressSpinner} from "primeng/progressspinner";
 
 @Component({
   selector: 'app-config',
   imports: [
     Slider,
     ReactiveFormsModule,
-    Button
+    Button,
+    ProgressSpinner
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
@@ -21,12 +23,11 @@ export class AlgorithmConfigComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
 
   protected isLoading = signal<boolean>(true);
-  protected isSaving = signal<boolean>(false);
 
   protected configForm = this.fb.group({
     weightRecency: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightExploration: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
-    weightSource: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
+    weightSourceQuality: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightTrending: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightTopic: [50, [Validators.required, Validators.min(0), Validators.max(100)]]
   });
@@ -49,11 +50,9 @@ export class AlgorithmConfigComponent implements OnInit {
       return;
     }
 
-    this.isSaving.set(true);
     const formValue = this.configForm.getRawValue() as AlgorithmConfig;
 
     this.algorithmService.updateConfig(formValue)
-      .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (updatedConfig) => {
           this.configForm.patchValue(updatedConfig);

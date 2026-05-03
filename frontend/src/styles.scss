@@ -77,3 +77,9 @@ Styles for global containers
   background-color: var(--p-surface-900);
   border-color: var(--p-surface-700);
 }
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
