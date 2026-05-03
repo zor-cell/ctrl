@@ -1,0 +1,11 @@
+FROM registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+
+WORKDIR /backend
+
+RUN apk add --no-cache curl ffmpeg
+
+COPY --from=build /backend/target/*.jar backend.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "backend.jar"]

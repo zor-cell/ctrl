@@ -1,0 +1,11 @@
+FROM registry.reset.inso-w.at/pub/docker/node:22-alpine
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /frontend/dist/frontend/browser ./dist
+
+EXPOSE 80
+
+CMD ["serve", "-s", "dist", "-l", "80"]

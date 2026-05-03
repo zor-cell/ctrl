@@ -4,13 +4,6 @@ stages:
   - test
   - build
 
-variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
-  DOCKER_HOST: tcp://docker:2375
-  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
-
 .temp: &temp
   rules:
     - when: manual
@@ -30,7 +23,6 @@ lint:backend:
   artifacts:
     expire_in: 1h
     when: on_failure
-  <<: *temp
 
 lint:frontend:
   stage: lint
@@ -44,7 +36,6 @@ lint:frontend:
   artifacts:
     expire_in: 1h
     when: on_failure
-  <<: *temp
 
 
 test:backend:
@@ -75,7 +66,6 @@ test:backend:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: on_failure
-  <<: *temp
 
 test:frontend:
   stage: test
@@ -91,7 +81,6 @@ test:frontend:
     reports:
       junit: ./frontend/test-results/*.xml
     when: on_failure
-  <<: *temp
 
 .build_rules: &build_rules
   rules:
@@ -103,7 +92,7 @@ test:frontend:
 
 build:backend:
   stage: build
-  image: maven:3.9-eclipse-temurin-21
+  image: registry.reset.inso-w.at/pub/docker/debian-mvn
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
@@ -118,7 +107,7 @@ build:backend:
 
 build:frontend:
   stage: build
-  image: node:20
+  image: registry.reset.inso-w.at/pub/docker/node:22-alpine
   cache:
     key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
     paths:
@@ -130,33 +119,32 @@ build:frontend:
       - ./frontend/dist/
   <<: *build_rules
 
-.docker_base:
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+.image_base:
+  image: registry.reset.inso-w.at/pub/docker/kaniko:v1.27.2-debug
+  entrypoint: [""]
 
-build:docker-backend:
-  extends: .docker_base
+build:image-backend:
+  extends: .image_base
   stage: build
   needs:
     - job: build:backend
       artifacts: true
   script:
-    - docker build --cache-from "$CI_REGISTRY_IMAGE/backend:latest" -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/backend:latest" ./backend
-    - docker push "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
+    - /kaniko/executor
+        --context "${CI_PROJECT_DIR}"
+        --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile.ci"
+        --destination "${CI_REGISTRY_IMAGE}/backend:${CI_PIPELINE_ID}"
   <<: *build_rules
 
-build:docker-frontend:
-  extends: .docker_base
+build:image-frontend:
+  extends: .image_base
   stage: build
   needs:
     - job: build:frontend
       artifacts: true
   script:
-    - docker build --cache-from "$CI_REGISTRY_IMAGE/frontend:latest" -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/frontend:latest" ./frontend
-    - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
+    - /kaniko/executor
+        --context "${CI_PROJECT_DIR}"
+        --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile.ci"
+        --destination "${CI_REGISTRY_IMAGE}/frontend:${CI_PIPELINE_ID}"
   <<: *build_rules
