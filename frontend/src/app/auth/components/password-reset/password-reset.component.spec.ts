@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PasswordResetComponent } from './password-reset.component';
-import {ActivatedRoute, provideRouter} from "@angular/router";
+import {provideRouter} from "@angular/router";
 import {MessageService} from "primeng/api";
 
 describe('PasswordResetComponent', () => {
