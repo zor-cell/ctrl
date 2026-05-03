@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,16 +21,22 @@ public class RecommendationService {
     public List<Post> getRecommendedPosts(User user, int page, int size) {
         AlgorithmConfigResponse config = algorithmService.getConfig(user);
 
-        float[] userPreferenceVector = postRepository.calculateUserPreferenceVector(user.getId().toString());
-        if (userPreferenceVector == null || userPreferenceVector.length == 0) {
-            userPreferenceVector = new float[768];
+        List<Float> vectorList = postRepository.calculateUserPreferenceVector(user.getId().toString());
+        float[] userVector;
+        if (vectorList == null || vectorList.isEmpty()) {
+            userVector = new float[768];
+        } else {
+            userVector = new float[vectorList.size()];
+            for (int i = 0; i < vectorList.size(); i++) {
+                userVector[i] = vectorList.get(i) != null ? vectorList.get(i) : 0f;
+            }
         }
 
         int offset = page * size;
 
         return postRepository.findPersonalizedFeed(
                 user.getId().toString(),
-                userPreferenceVector,
+                userVector,
                 config.weightTopic() / 100.0,
                 config.weightRecency() / 100.0,
                 config.weightTrending() / 100.0,
