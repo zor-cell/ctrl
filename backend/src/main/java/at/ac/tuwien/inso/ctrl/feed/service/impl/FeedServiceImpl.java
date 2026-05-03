@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.feed.service.impl;
 
+import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
@@ -10,12 +11,14 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,7 @@ public class FeedServiceImpl implements FeedService {
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
   private final FileStorageService fileStorageService;
+  private final RecommendationService recommendationService;
 
   @Override
   @Transactional(readOnly = true)
@@ -39,6 +43,22 @@ public class FeedServiceImpl implements FeedService {
     return postRepository.findAll(pageable).stream()
         .map(post -> toFeedPostResponse(post, userId.orElse(null)))
         .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<FeedPostResponse> getPersonalizedFeed(User currentUser, int page, int postsPerPage) {
+    User user =
+        userRepository
+            .findById(currentUser.getId())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+    List<Post> feedPosts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
+
+    String userIdStr = user.getId().toString();
+    return feedPosts.stream()
+            .map(post -> toFeedPostResponse(post, userIdStr))
+            .toList();
   }
 
   private FeedPostResponse toFeedPostResponse(Post post, String userId) {

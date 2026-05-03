@@ -3,6 +3,10 @@ package at.ac.tuwien.inso.ctrl.post.entity;
 import at.ac.tuwien.inso.ctrl.common.domain.VoteEntry;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+
+import java.time.Instant;
 
 @Builder
 @Getter
@@ -23,4 +27,8 @@ public class PostVote implements VoteEntry {
   /** {@code "up"} or {@code "down"} */
   @Column(name = "vote_type", nullable = false, length = 4)
   private String voteType;
+
+  @CreationTimestamp
+  @Column(name = "created_at")
+  private Instant createdAt;
 }
