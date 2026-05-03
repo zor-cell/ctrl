@@ -48,15 +48,15 @@ public interface PostRepository extends JpaRepository<Post, String> {
                                 AND f.follower_id = CAST(:userId AS uuid)
                   WHERE p.is_public = true AND p.embedding IS NOT NULL
                   ORDER BY (
-                      -- 1. Topic Interest (Vector Cosine Similarity)
+                      -- Topic Interest (Vector Cosine Similarity)
                       (:wTopic * (1 - (p.embedding <=> CAST(:userVector AS real[])::vector)))
-                      -- 2. Recency (Decays over time. Halves every ~7 days)
+                      -- Recency (Decays over time. Halves every ~7 days)
                       + (:wRecency * EXP(-0.1 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400))
-                      -- 3. Trending (Logarithmic scale of post upvotes)
-                      + (:wTrending * LN(1 + GREATEST(p.upvotes, 0)))
-                      -- 4. Source Quality (Logarithmic scale of source upvotes)
-                      + (:wSource * LN(1 + GREATEST(s.upvotes, 0)))
-                      -- 5. Exploration (Uncomment and adjust join once follower logic exists)
+                      -- Trending (Logarithmic scale of post upvotes)
+                      + (:wTrending * LN(1 + p.upvotes))
+                      -- Source Quality (Logarithmic scale of source upvotes)
+                      + (:wSource * LN(1 + s.upvotes))
+                      -- Exploration
                       + (:wExploration * CASE WHEN f.follower_id IS NULL AND p.user_id != CAST(:userId AS uuid) THEN 1 ELSE 0 END)
                       ) DESC
                   LIMIT :limit OFFSET :offset
