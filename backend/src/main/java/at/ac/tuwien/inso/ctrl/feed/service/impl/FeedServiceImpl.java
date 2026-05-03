@@ -37,19 +37,19 @@ public class FeedServiceImpl implements FeedService {
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
+  private final RecommendationService recommendationService;
 
   @Override
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
+    User user =
+            userRepository
+                    .findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    Optional<String> userId = Optional.of(user.getId().toString());
 
-    Optional<String> userId = validateInputAndResolveUser(page, postsPerPage, username);
-
-    // Step 1: Retrieve only IDs in paginated format
-    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").descending());
-    List<String> postIds = postRepository.findAllPaginated(pageable).map(Post::getPostId).toList();
-
-    // Step 2: Load associations for these IDs only
-    List<Post> posts = postRepository.findAllWithAssociationsByIds(postIds);
+    List<Post> posts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
+    List<String> postIds = posts.stream().map(Post::getPostId).collect(Collectors.toList());
 
     // Step 3: Retrieve votes for all posts at once
     Map<String, String> postVotes =
