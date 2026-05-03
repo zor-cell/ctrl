@@ -1,0 +1,70 @@
+<div class="wrapper">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Feed Algorithm</h2>
+            <p>Tune your personalized content delivery</p>
+        </div>
+
+        @if (isLoading()) {
+            <div class="loading-state" style="text-align: center; padding: 2rem;">
+                <p>Loading your preferences...</p>
+            </div>
+        } @else {
+            <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
+
+                <div class="slider-field">
+                    <div class="slider-header">
+                        <label for="weightRecency">Recency</label>
+                        <span>{{ configForm.controls.weightRecency.value }}%</span>
+                    </div>
+                    <p-slider id="weightRecency" formControlName="weightRecency" [style]="{'width':'100%'}" />
+                    <small class="hint-text">Prioritize newer posts in your feed.</small>
+                </div>
+
+                <div class="slider-field">
+                    <div class="slider-header">
+                        <label for="weightExploration">Exploration</label>
+                        <span>{{ configForm.controls.weightExploration.value }}%</span>
+                    </div>
+                    <p-slider id="weightExploration" formControlName="weightExploration" [style]="{'width':'100%'}" />
+                    <small class="hint-text">Discover posts from accounts you do not follow.</small>
+                </div>
+
+                <div class="slider-field">
+                    <div class="slider-header">
+                        <label for="weightSourceQuality">Source Quality</label>
+                        <span>{{ configForm.controls.weightSource.value }}%</span>
+                    </div>
+                    <p-slider id="weightSourceQuality" formControlName="weightSourceQuality" [style]="{'width':'100%'}" />
+                    <small class="hint-text">Favor highly-rated sources over unverified ones.</small>
+                </div>
+
+                <div class="slider-field">
+                    <div class="slider-header">
+                        <label for="weightTrending">Trending</label>
+                        <span>{{ configForm.controls.weightTrending.value }}%</span>
+                    </div>
+                    <p-slider id="weightTrending" formControlName="weightTrending" [style]="{'width':'100%'}" />
+                    <small class="hint-text">Show highly upvoted content interacting with the community.</small>
+                </div>
+
+                <div class="slider-field">
+                    <div class="slider-header">
+                        <label for="weightTopic">Topic Interest</label>
+                        <span>{{ configForm.controls.weightTopic.value }}%</span>
+                    </div>
+                    <p-slider id="weightTopic" formControlName="weightTopic" [style]="{'width':'100%'}" />
+                    <small class="hint-text">Align content heavily with your explicitly followed topics.</small>
+                </div>
+
+                <p-button
+                        type="submit"
+                        [label]="isSaving() ? 'Saving...' : 'Save Configuration'"
+                        [loading]="isSaving()"
+                        fluid>
+                </p-button>
+
+            </form>
+        }
+    </div>
+</div>

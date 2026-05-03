@@ -62,6 +62,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'algorithm',
+    loadComponent: () =>
+      import('./algorithm/components/config/config.component').then(
+        m => m.AlgorithmConfigComponent,
+      ),
+  },
+  {
     path: 'admin',
     canActivate: [adminGuard],
     loadComponent: () =>

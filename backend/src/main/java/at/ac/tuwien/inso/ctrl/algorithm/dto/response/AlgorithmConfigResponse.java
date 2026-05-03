@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.algorithm.dto;
+package at.ac.tuwien.inso.ctrl.algorithm.dto.response;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
