@@ -42,12 +42,4 @@ public class FeedController {
     String username = userDetails != null ? userDetails.getUsername() : null;
     return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, username));
   }
-
-  @GetMapping("/personal")
-  public List<FeedPostResponse> getPersonalizedFeed(
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "20") int postsPerPage,
-          @AuthenticationPrincipal User user) {
-    return feedService.getPersonalizedFeed(user, page, postsPerPage);
-  }
 }

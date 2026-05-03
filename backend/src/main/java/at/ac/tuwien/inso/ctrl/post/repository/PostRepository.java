@@ -25,7 +25,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
           SELECT p.embedding
           FROM post_votes pv
           JOIN posts p ON pv.post_id = p.post_id
-          WHERE pv.user_id = CAST(:userId AS uuid)
+          WHERE pv.user_id = :userId
             AND pv.vote_type = 'up'
             AND p.embedding IS NOT NULL
           ORDER BY pv.created_at DESC

@@ -17,6 +17,4 @@ public interface FeedService {
    * @return list of feed posts
    */
   List<FeedPostResponse> getFeed(int page, int postsPerPage, String username);
-
-  List<FeedPostResponse> getPersonalizedFeed(User currentUser, int page, int postsPerPage);
 }
