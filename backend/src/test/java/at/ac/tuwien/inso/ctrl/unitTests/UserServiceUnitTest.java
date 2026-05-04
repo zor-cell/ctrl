@@ -15,19 +15,26 @@ import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,11 +53,19 @@ public class UserServiceUnitTest {
 
   @Mock private UserMapper userMapper;
 
+  @Mock private RelationshipMapper socialMapper;
+
   @Mock private PasswordEncoder passwordEncoder;
 
   @Mock private JwtService jwtService;
 
   @Mock private IdAustriaOidcService idAustriaOidcService;
+
+  @Mock private FriendRequestRepository friendRequestRepository;
+
+  @Mock private FileStorageService fileStorageService;
+
+  @Mock private FollowService followService;
 
   @InjectMocks private UserService userService;
 
@@ -97,6 +112,33 @@ public class UserServiceUnitTest {
     when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
 
     assertThrows(UsernameNotFoundException.class, () -> userService.getUser(unknownId));
+  }
+
+  @Test
+  void getPublicProfile_withExistingUser_returnsPublicProfile() {
+    var response =
+        new at.ac.tuwien.inso.ctrl.user.dto.PublicUserProfileResponse(
+            testUser.getId(),
+            testUser.getUsername(),
+            testUser.getName(),
+            testUser.getBio(),
+            "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
+            false);
+    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(userMapper.toPublicUserProfileResponse(testUser)).thenReturn(response);
+
+    var result = userService.getPublicProfile("testUser");
+
+    assertEquals(response, result);
+    verify(userRepository).findByUsername("testUser");
+    verify(userMapper).toPublicUserProfileResponse(testUser);
+  }
+
+  @Test
+  void getPublicProfile_withMissingUser_throwsUsernameNotFoundException() {
+    when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+    assertThrows(UsernameNotFoundException.class, () -> userService.getPublicProfile("missing"));
   }
 
   @Test
@@ -201,6 +243,61 @@ public class UserServiceUnitTest {
   }
 
   @Test
+  void updateProfilePicture_withValidImage_savesUploadedProfilePictureRef() {
+    var file = mock(org.springframework.web.multipart.MultipartFile.class);
+    UserDetailsResponse response =
+        new UserDetailsResponse(
+            testUser.getId(),
+            testUser.getUsername(),
+            testUser.getName(),
+            testUser.getBio(),
+            testUser.getEmail(),
+            testUser.getBirthdate(),
+            "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
+            Instant.now(),
+            false);
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+    when(fileStorageService.uploadProfilePicture(file))
+        .thenReturn("users/profile-pictures/avatar.png");
+    when(userRepository.save(testUser)).thenReturn(testUser);
+    when(userMapper.toUserDetailsResponse(testUser)).thenReturn(response);
+
+    UserDetailsResponse result = userService.updateProfilePicture(testUser, file);
+
+    assertEquals("users/profile-pictures/avatar.png", testUser.getProfilePicture());
+    assertEquals(response, result);
+    verify(fileStorageService).uploadProfilePicture(file);
+    verify(userRepository).save(testUser);
+  }
+
+  @Test
+  void searchUsers_withProfilePicture_returnsResolvedProfilePictureUrl() {
+    User currentUser = createUser("current");
+    testUser.setProfilePicture("users/profile-pictures/avatar.png");
+    when(followService.getFollowedIds(currentUser)).thenReturn(Set.of());
+    when(followService.getFriendIds(currentUser)).thenReturn(Set.of());
+    when(friendRequestRepository.findReceiverIdsBySender(currentUser)).thenReturn(Set.of());
+    when(friendRequestRepository.findSenderIdsByReceiver(currentUser)).thenReturn(Set.of());
+    when(userRepository.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(testUser));
+    when(socialMapper.determineRelationshipStatus(testUser, Set.of(), Set.of(), Set.of(), Set.of()))
+        .thenReturn(UserSearchResponse.RelationshipStatus.NONE);
+    when(socialMapper.displayName(testUser, UserSearchResponse.RelationshipStatus.NONE))
+        .thenReturn(null);
+    when(fileStorageService.resolveFileUrl("users/profile-pictures/avatar.png"))
+        .thenReturn("http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png");
+
+    List<UserSearchResponse> result =
+        userService.searchUsers(currentUser, " test ", false, false, false);
+
+    assertEquals(1, result.size());
+    assertEquals(testUser.getId(), result.get(0).id());
+    assertEquals("testUser", result.get(0).username());
+    assertEquals(
+        "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
+        result.get(0).profilePicture());
+  }
+
+  @Test
   void verifyUser_ShouldUpdateUser_WhenProviderReturnsValidClaims() {
     VerifyIdentityRequest request = new VerifyIdentityRequest("validCode");
     Jwt mockJwt = mock(Jwt.class);
@@ -259,5 +356,14 @@ public class UserServiceUnitTest {
 
     assertThrows(InvalidRequestException.class, () -> userService.verifyUser(testUser, request));
     verify(userRepository, never()).save(any());
+  }
+
+  private User createUser(String username) {
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    user.setUsername(username);
+    user.setEmail(username + "@test.com");
+    user.setName(username);
+    return user;
   }
 }

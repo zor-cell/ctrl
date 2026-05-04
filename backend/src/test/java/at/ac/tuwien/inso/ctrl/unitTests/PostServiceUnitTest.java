@@ -114,6 +114,8 @@ public class PostServiceUnitTest {
     assertTrue(
         savedPost.getPostTopics().stream()
             .anyMatch(postTopic -> postTopic.getTopic().getTopicId().equals("topic-2")));
+    verify(sourceService).createSource(null);
+    verify(embeddingService).embedText("This is my post");
   }
 
   @Test
@@ -252,6 +254,66 @@ public class PostServiceUnitTest {
     assertThrows(UsernameNotFoundException.class, () -> postService.createPost(request, "unknown"));
     verify(sourceService, never()).createSource(any());
     verify(postRepository, never()).save(any());
+  }
+
+  @Test
+  void getPostsForUser_withExistingPosts_returnsMappedPosts() {
+    Post firstPost = Post.builder().postId("post-1").caption("First").build();
+    Post secondPost = Post.builder().postId("post-2").caption("Second").build();
+    PostResponse firstResponse = createResponse("First", false, false, null);
+    PostResponse secondResponse = createResponse("Second", true, false, "posts/media/file.png");
+
+    when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(firstPost, secondPost));
+    when(postMapper.toResponse(firstPost)).thenReturn(firstResponse);
+    when(postMapper.toResponse(secondPost)).thenReturn(secondResponse);
+
+    List<PostResponse> result = postService.getPostsForUser("marlene");
+
+    assertEquals(List.of(firstResponse, secondResponse), result);
+    verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
+    verify(postMapper).toResponse(firstPost);
+    verify(postMapper).toResponse(secondPost);
+  }
+
+  @Test
+  void getProfilePostsForUser_withExistingPosts_returnsMappedPublicPosts() {
+    Post post = Post.builder().postId("post-1").caption("Profile post").build();
+    PostResponse response = createResponse("Profile post", true, false, null);
+
+    when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(post));
+    when(postMapper.toResponse(post)).thenReturn(response);
+
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene");
+
+    assertEquals(List.of(response), result);
+    verify(postRepository).findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene");
+    verify(postMapper).toResponse(post);
+  }
+
+  @Test
+  void deletePost_withOwnPost_deletesPost() {
+    Post post = Post.builder().postId("post-1").user(verifiedUser).build();
+    when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
+        .thenReturn(Optional.of(post));
+
+    postService.deletePost("post-1", "marlene");
+
+    verify(postRepository).delete(post);
+  }
+
+  @Test
+  void deletePost_withMissingOrForeignPost_throwsResourceNotFoundException() {
+    when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
+        .thenReturn(Optional.empty());
+
+    ResourceNotFoundException exception =
+        assertThrows(
+            ResourceNotFoundException.class, () -> postService.deletePost("post-1", "marlene"));
+
+    assertEquals("Post not found", exception.getMessage());
+    verify(postRepository, never()).delete(any());
   }
 
   private User createUser(String username, boolean verified) {

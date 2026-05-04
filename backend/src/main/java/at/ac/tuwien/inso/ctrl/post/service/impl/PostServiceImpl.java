@@ -118,7 +118,9 @@ public class PostServiceImpl implements PostService {
   @Override
   @Transactional(readOnly = true)
   public List<PostResponse> getProfilePostsForUser(String username) {
-    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+    return postRepository
+        .findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(username)
+        .stream()
         .map(postMapper::toResponse)
         .toList();
   }

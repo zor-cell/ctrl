@@ -103,6 +103,64 @@ public class UserControllerIntegrationTest {
   }
 
   @Test
+  public void getPublicProfile_shouldReturnProfile_WhenUserExists() throws Exception {
+    existingUser.setBio("Hello profile");
+    existingUser.setProfilePicture("users/profile-pictures/avatar.png");
+    userRepository.save(existingUser);
+
+    mockMvc
+        .perform(
+            get("/api/users/integrationUser")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.username").value("integrationUser"))
+        .andExpect(jsonPath("$.bio").value("Hello profile"))
+        .andExpect(
+            jsonPath("$.profilePicture")
+                .value("http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png"));
+  }
+
+  @Test
+  public void getPublicProfile_shouldReturnNotFound_WhenUserDoesNotExist() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/users/missingUser")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  public void searchUsers_shouldReturnProfilePictureUrl_WhenUserHasProfilePicture()
+      throws Exception {
+    User targetUser =
+        User.builder()
+            .username("marlene")
+            .password(passwordEncoder.encode("securePass123!"))
+            .name("Marlene")
+            .email("marlene@test.com")
+            .birthdate(LocalDate.of(1997, 7, 7))
+            .profilePicture("users/profile-pictures/marlene.png")
+            .emailVerified(true)
+            .isVerified(true)
+            .build();
+    userRepository.save(targetUser);
+
+    mockMvc
+        .perform(
+            get("/api/users/search")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("q", "mar")
+                .param("excludeFriends", "false")
+                .param("excludeFollowed", "false")
+                .param("verifiedOnly", "false"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].username").value("marlene"))
+        .andExpect(
+            jsonPath("$[0].profilePicture")
+                .value("http://localhost:3900/ctrl-test-media/users/profile-pictures/marlene.png"));
+  }
+
+  @Test
   public void updateUser_shouldUpdateProfile_WhenRequestIsValid() throws Exception {
     UpdateProfileRequest request =
         new UpdateProfileRequest(

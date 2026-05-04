@@ -62,6 +62,31 @@ public class FileControllerIntegrationTest {
   }
 
   @Test
+  void uploadPostMedia_ShouldReturnCreatedMp4Response_WhenVideoIsStored() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "post.mov", "video/quicktime", new byte[] {1, 2, 3});
+    FileStorageService.UploadedFile uploadedFile =
+        new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 3L);
+
+    when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
+    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
+        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
+
+    mockMvc
+        .perform(multipart("/files/post-media").file(file))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.mediaRef").value("posts/media/video.mp4"))
+        .andExpect(
+            jsonPath("$.mediaUrl")
+                .value("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4"))
+        .andExpect(jsonPath("$.contentType").value("video/mp4"))
+        .andExpect(jsonPath("$.size").value(3));
+
+    verify(fileStorageService).uploadPostMedia(any());
+    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
+  }
+
+  @Test
   void uploadPostMedia_ShouldReturnBadRequest_WhenStorageRejectsFile() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile("file", "post.txt", "text/plain", new byte[] {1, 2, 3});

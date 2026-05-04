@@ -135,10 +135,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.loadPublicProfile(profileUsername);
       this.loadProfilePosts(profileUsername);
     } else if (!this.createOnlyMode()) {
-      this.loadMyPosts();
+      this.loadCurrentUserAndPosts();
     }
 
     if (this.createOnlyMode()) {
+      this.refreshCurrentUser();
       this.openCreateDialog();
     }
   }
@@ -359,6 +360,21 @@ export class PostPageComponent implements OnDestroy, OnInit {
           'Your posts could not be loaded from the backend.',
           'Posts unavailable',
         );
+      },
+    });
+  }
+
+  private loadCurrentUserAndPosts() {
+    this.userService.loadUser().subscribe({
+      next: () => this.loadMyPosts(),
+      error: () => this.loadMyPosts(),
+    });
+  }
+
+  private refreshCurrentUser() {
+    this.userService.loadUser().subscribe({
+      error: () => {
+        this.userService.clearUser();
       },
     });
   }

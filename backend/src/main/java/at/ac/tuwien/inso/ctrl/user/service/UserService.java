@@ -158,7 +158,10 @@ public class UserService {
   public UserDetailsResponse verifyUser(User currentUser, VerifyIdentityRequest request) {
     Jwt jwt;
     try {
-      jwt = idAustriaOidcService.getTokenFromCode(request.code());
+      jwt =
+          request.redirectUri() == null || request.redirectUri().isBlank()
+              ? idAustriaOidcService.getTokenFromCode(request.code())
+              : idAustriaOidcService.getTokenFromCode(request.code(), request.redirectUri());
     } catch (Exception e) {
       throw new CommunicationException("Failed to verify identity with external provider");
     }
@@ -221,15 +224,8 @@ public class UserService {
                       friendIds,
                       pendingRequestSentIds,
                       pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, status);
-              String profilePicture = fileStorageService.resolveFileUrl(user.getProfilePicture());
-              return new UserSearchResponse(
-                  user.getId(),
-                  user.getUsername(),
-                  displayName,
-                  profilePicture,
-                  user.isVerified(),
-                  status);
+              String displayName = socialMapper.displayName(user, statuses);
+              return socialMapper.toUserSearchResponse(user, statuses, displayName);
             })
         .toList();
   }

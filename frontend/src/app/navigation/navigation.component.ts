@@ -7,6 +7,7 @@ import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {Menu} from "primeng/menu";
+import {UserService} from "../user/user.service";
 
 @Component({
   selector: 'app-navigation',
@@ -18,6 +19,7 @@ import {Menu} from "primeng/menu";
 export class NavigationComponent {
   private router = inject(Router);
   protected authService = inject(AuthService);
+  private userService = inject(UserService);
   protected themeService = inject(ThemeService);
 
   protected navItems = computed<MenuItem[]>(() => {
@@ -37,6 +39,7 @@ export class NavigationComponent {
     return items;
   });
 
+<<<<<<< HEAD
   protected profileItems = computed<MenuItem[]>(() => {
     const items: MenuItem[] = [
       {label: 'Profile', icon: 'pi pi-user', routerLink: '/profile'},
@@ -52,6 +55,21 @@ export class NavigationComponent {
           icon: 'pi pi-shield',
           routerLink: '/admin'
         });
+=======
+  protected profileItems = computed<MenuItem[]>(() => [
+    { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
+    { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
+    { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
+    { separator: true },
+    {
+      label: 'Logout',
+      icon: 'pi pi-sign-out',
+      command: () => {
+        this.authService.logout();
+        this.userService.clearUser();
+        this.router.navigate(['/login']);
+      }
+>>>>>>> c87e427 (feat(#13): loading error with account switch changed and other frontend stylings)
     }
 
     items.push(

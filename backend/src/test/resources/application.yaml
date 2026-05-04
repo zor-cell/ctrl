@@ -2,6 +2,10 @@ spring:
   application:
     name: ctrl
 
+  task:
+    scheduling:
+      enabled: false
+
   datasource:
     url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:test}
     username: ${POSTGRES_USER:your_user}

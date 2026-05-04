@@ -26,6 +26,10 @@ export class UserService {
   private _user = signal<UserDetails | null>(null);
   public user = this._user.asReadonly();
 
+  public clearUser() {
+    this._user.set(null);
+  }
+
   public loadUser() {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
@@ -107,7 +111,10 @@ export class UserService {
   }
 
   public verifyUser(code: string) {
-    return this.httpClient.put<UserDetails>(this.baseUri + '/me/verify', {code}).pipe(
+    return this.httpClient.put<UserDetails>(this.baseUri + '/me/verify', {
+      code,
+      redirectUri: environment.idAustria.redirectUri,
+    }).pipe(
       tap(user => {
         this._user.set(user);
         this.notificationService.showSuccess('Verified Identity');
