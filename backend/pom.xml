@@ -249,6 +249,23 @@
 					</java>
 				</configuration>
 			</plugin>
+
+			<!-- used to build the docker image into the GitLab registry -->
+			<plugin>
+    			<groupId>com.google.cloud.tools</groupId>
+    			<artifactId>jib-maven-plugin</artifactId>
+    			<version>3.5.1</version>
+    			<configuration>
+        			<extraDirectories>
+            			<paths>
+                			<path>
+                    			<from>../frontend/dist/frontend/browser</from>
+                    			<into>/app/static</into>
+                			</path>
+            			</paths>
+        			</extraDirectories>
+    			</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

@@ -126,32 +126,18 @@ build:frontend:
       - ./frontend/dist/
   <<: *build_rules
 
-.image_base:
-  image: 
-    name: registry.reset.inso-w.at/pub/docker/kaniko:v1.27.2-debug
-    entrypoint: [""]
-  <<: *build_rules
-
-build:image-backend:
-  extends: .image_base
+build:image:
   stage: build
-  needs:
-    - job: build:backend
-      artifacts: true
-  script:
-    - /kaniko/executor
-        --context "${CI_PROJECT_DIR}"
-        --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile.ci"
-        --destination "${CI_REGISTRY_IMAGE}/backend:${CI_PIPELINE_ID}"
-
-build:image-frontend:
-  extends: .image_base
-  stage: build
+  image: registry.reset.inso-w.at/pub/docker/debian-mvn
   needs:
     - job: build:frontend
       artifacts: true
+    - job: build:backend
+      artifacts: true
   script:
-    - /kaniko/executor
-        --context "${CI_PROJECT_DIR}"
-        --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile.ci"
-        --destination "${CI_REGISTRY_IMAGE}/frontend:${CI_PIPELINE_ID}"
+    - mvn jib:build
+        -Djib.from.image=registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+        -Djib.to.image=${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+        -Djib.to.auth.username=${CI_REGISTRY_USER}
+        -Djib.to.auth.password=${CI_REGISTRY_PASSWORD}
+  <<: *build_rules
