@@ -130,6 +130,7 @@ build:frontend:
   image: 
     name: registry.reset.inso-w.at/pub/docker/kaniko:v1.27.2-debug
     entrypoint: [""]
+  <<: *build_rules
 
 build:image-backend:
   extends: .image_base
@@ -142,7 +143,6 @@ build:image-backend:
         --context "${CI_PROJECT_DIR}"
         --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile.ci"
         --destination "${CI_REGISTRY_IMAGE}/backend:${CI_PIPELINE_ID}"
-  <<: *build_rules
 
 build:image-frontend:
   extends: .image_base
@@ -155,4 +155,3 @@ build:image-frontend:
         --context "${CI_PROJECT_DIR}"
         --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile.ci"
         --destination "${CI_REGISTRY_IMAGE}/frontend:${CI_PIPELINE_ID}"
-  <<: *build_rules
