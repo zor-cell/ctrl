@@ -1,8 +1,8 @@
 FROM registry.reset.inso-w.at/pub/docker/debian-mvn
 
-WORKDIR /backend
+#WORKDIR /backend
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ffmpeg
+#RUN apt-get update && apt-get install -y --no-install-recommends curl ffmpeg
 
 COPY ./backend/target/*.jar backend.jar
 
