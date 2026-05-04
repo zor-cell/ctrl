@@ -22,6 +22,10 @@ public class EmbeddingService {
   @Value("${infinity.model}")
   private String model;
 
+  //weights to be applied when creating shared embeddings (sum must equal 1)
+  private float textWeight = 0.6f;
+  private float imageWeight = 0.4f;
+
   // HTTP1 protocol has to be used!
   private final RestClient restClient =
       RestClient.builder()
@@ -61,14 +65,16 @@ public class EmbeddingService {
     float sumSquares = 0f;
     float[] fused = new float[textVec.length];
     for (int i = 0; i < textVec.length; i++) {
-      fused[i] = (textVec[i] + imageVec[i]) / 2.0f;
+      fused[i] = (textVec[i] * textWeight) + (imageVec[i] * imageWeight);
       sumSquares += fused[i] * fused[i];
     }
 
     // normalize vector
     float magnitude = (float) Math.sqrt(sumSquares);
-    for (int i = 0; i < fused.length; i++) {
-      fused[i] /= magnitude;
+    if(magnitude > 0) {
+      for (int i = 0; i < fused.length; i++) {
+        fused[i] /= magnitude;
+      }
     }
 
     return fused;

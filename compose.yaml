@@ -94,6 +94,10 @@ services:
   garage:
     platform: linux/amd64
     image: dxflrs/garage:v2.2.0
+    networks:
+      default:
+        aliases:
+          - ctrl-dev-media.web.garage.localhost #alias public url to this container for internal backend communication
     ports:
       - "3900:3900" # S3 api
       - "3902:3902" # S3 web gui

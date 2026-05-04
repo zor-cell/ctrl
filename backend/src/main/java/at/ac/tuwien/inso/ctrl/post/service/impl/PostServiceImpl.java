@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
@@ -50,6 +51,7 @@ public class PostServiceImpl implements PostService {
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
+  private final FileStorageService fileStorageService;
 
   @Override
   @Transactional
@@ -76,8 +78,9 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    // embed post information (only text for now, image when file storage service is up)
-    float[] embedding = embeddingService.embedText(post.getCaption());
+    // embed post information
+    String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
+    float[] embedding = embeddingService.embedTextWithImage(post.getCaption(), fileUrl);
     post.setEmbedding(embedding);
 
     return postMapper.toResponse(postRepository.save(post));
