@@ -73,9 +73,9 @@ export class FeedService {
   }
 
   private cacheFeedMedia(posts: Post[]): void {
-    this.mediaCacheService.cacheUrls([
-      ...posts.map(post => post.userProfilePic),
-      ...posts.flatMap(post => post.videoImageRef),
-    ]);
+    posts.forEach(post => {
+      this.mediaCacheService.cacheUrl(post.userProfilePic, 'image');
+      post.videoImageRef.forEach(mediaUrl => this.mediaCacheService.cacheUrl(mediaUrl));
+    });
   }
 }

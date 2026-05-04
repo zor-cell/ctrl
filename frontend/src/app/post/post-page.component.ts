@@ -386,7 +386,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.userService.getPublicProfile(username).subscribe({
       next: profile => {
         this.publicProfile.set(profile);
-        this.mediaCacheService.cacheUrl(profile.profilePicture);
+        this.mediaCacheService.cacheUrl(profile.profilePicture, 'image');
       },
       error: () => {
         this.notificationService.showWarning(
@@ -443,7 +443,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private cachePostMedia(posts: PostResponse[]): void {
-    this.mediaCacheService.cacheUrls(posts.map(post => post.mediaUrl));
+    posts.forEach(post => {
+      const kind = postMediaKind(post.mediaRef ?? post.mediaUrl);
+      this.mediaCacheService.cacheUrl(post.mediaUrl, kind);
+    });
   }
 
   private revokeAvatarPreview() {

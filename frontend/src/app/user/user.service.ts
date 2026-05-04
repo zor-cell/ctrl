@@ -36,7 +36,7 @@ export class UserService {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture);
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
       }),
       catchError(error => {
         if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
@@ -53,7 +53,7 @@ export class UserService {
     return this.httpClient.get<PublicUserProfile>(
       `${this.baseUri}/${encodeURIComponent(username)}`
     ).pipe(
-      tap(profile => this.mediaCacheService.cacheUrl(profile.profilePicture))
+      tap(profile => this.mediaCacheService.cacheUrl(profile.profilePicture, 'image'))
     );
   }
 
@@ -61,7 +61,7 @@ export class UserService {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me', updateRequest).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture);
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile');
         }
@@ -76,7 +76,7 @@ export class UserService {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me/profile-picture', formData).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture);
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile picture');
         }
@@ -124,7 +124,7 @@ export class UserService {
     }).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture);
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
         this.notificationService.showSuccess('Verified Identity');
       })
     );
