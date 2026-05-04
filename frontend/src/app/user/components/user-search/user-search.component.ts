@@ -213,6 +213,10 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   private hasStatus(user: UserSearchResult, status: string): boolean {
     return user.relationshipStatuses.some(item => item.status === status);
   }
+  
+  openUserProfile(user: UserSearchResult) {
+    this.router.navigate(['/profile', user.username]);
+  }
 
   canFollow(user: UserSearchResult): boolean {
     // Can follow if not already following, not a friend, and not verified (verified users can be followed)

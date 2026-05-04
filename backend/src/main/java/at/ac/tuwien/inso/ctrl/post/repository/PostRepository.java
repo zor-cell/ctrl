@@ -15,6 +15,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
 
   List<Post> findAllByUserUsernameOrderByCreatedAtDesc(String username);
 
+  List<Post> findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(String username);
+
   Optional<Post> findByPostIdAndUserUsername(String postId, String username);
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")

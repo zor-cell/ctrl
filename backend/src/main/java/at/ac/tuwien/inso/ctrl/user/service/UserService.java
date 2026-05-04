@@ -60,6 +60,14 @@ public class UserService {
     return userMapper.toUserDetailsResponse(user);
   }
 
+  public PublicUserProfileResponse getPublicProfile(String username) {
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    return userMapper.toPublicUserProfileResponse(user);
+  }
+
   @Transactional
   public UserDetailsResponse updateUser(User currentUser, UpdateProfileRequest request) {
     User user = getUserInternal(currentUser.getId());
@@ -213,8 +221,15 @@ public class UserService {
                       friendIds,
                       pendingRequestSentIds,
                       pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, statuses);
-              return socialMapper.toUserSearchResponse(user, statuses, displayName);
+              String displayName = socialMapper.displayName(user, status);
+              String profilePicture = fileStorageService.resolveFileUrl(user.getProfilePicture());
+              return new UserSearchResponse(
+                  user.getId(),
+                  user.getUsername(),
+                  displayName,
+                  profilePicture,
+                  user.isVerified(),
+                  status);
             })
         .toList();
   }

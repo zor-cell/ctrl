@@ -116,6 +116,14 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public List<PostResponse> getProfilePostsForUser(String username) {
+    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+        .map(postMapper::toResponse)
+        .toList();
+  }
+
+  @Override
   @Transactional
   public void deletePost(String postId, String username) {
     Post post =

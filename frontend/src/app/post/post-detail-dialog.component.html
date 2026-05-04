@@ -27,14 +27,16 @@
         </div>
 
         <div class="post-detail__header-actions">
-          <p-button
-            icon="pi pi-trash"
-            ariaLabel="Delete post"
-            severity="danger"
-            [text]="true"
-            styleClass="post-detail__delete-button"
-            (onClick)="requestDeletion()"
-          />
+          @if (canDelete) {
+            <p-button
+              icon="pi pi-trash"
+              ariaLabel="Delete post"
+              severity="danger"
+              [text]="true"
+              styleClass="post-detail__delete-button"
+              (onClick)="requestDeletion()"
+            />
+          }
           <p-button
             icon="pi pi-times"
             ariaLabel="Close post detail"

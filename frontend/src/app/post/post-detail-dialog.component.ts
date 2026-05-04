@@ -27,6 +27,7 @@ export class PostDetailDialogComponent {
   @Input() topicOptions: TopicOption[] = [];
   @Input() currentProfilePicture: string | null = null;
   @Input() avatarInitial = '?';
+  @Input() canDelete = true;
 
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();

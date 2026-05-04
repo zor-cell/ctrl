@@ -1,11 +1,9 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
@@ -45,13 +43,21 @@ public class FileControllerUnitTest {
   }
 
   @Test
-  void uploadPostMedia_ShouldPropagateException_WhenStorageRejectsFile() {
-    when(fileStorageService.uploadPostMedia(file))
-        .thenThrow(new InvalidRequestException("Only image and video files are supported"));
+  void uploadPostMedia_ShouldReturnMp4Response_WhenVideoIsStored() {
+    FileStorageService.UploadedFile uploadedFile =
+        new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 9876L);
 
-    InvalidRequestException exception =
-        assertThrows(InvalidRequestException.class, () -> fileController.uploadPostMedia(file));
+    when(fileStorageService.uploadPostMedia(file)).thenReturn(uploadedFile);
+    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
+        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
 
-    assertEquals("Only image and video files are supported", exception.getMessage());
+    FileUploadResponse response = fileController.uploadPostMedia(file);
+
+    assertEquals("posts/media/video.mp4", response.mediaRef());
+    assertEquals("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4", response.mediaUrl());
+    assertEquals("video/mp4", response.contentType());
+    assertEquals(9876L, response.size());
+    verify(fileStorageService).uploadPostMedia(file);
+    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
   }
 }

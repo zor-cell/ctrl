@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.mapper;
 
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.user.dto.PublicUserProfileResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,16 @@ public class UserMapper {
         user.getBirthdate(),
         fileStorageService.resolveFileUrl(user.getProfilePicture()),
         user.getCreatedAt(),
+        user.isVerified());
+  }
+
+  public PublicUserProfileResponse toPublicUserProfileResponse(User user) {
+    return new PublicUserProfileResponse(
+        user.getId(),
+        user.getUsername(),
+        user.isVerified() ? user.getName() : null,
+        user.getBio(),
+        fileStorageService.resolveFileUrl(user.getProfilePicture()),
         user.isVerified());
   }
 }

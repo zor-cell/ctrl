@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, tap, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { catchError, map, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
@@ -11,6 +11,8 @@ import {UpdatePasswordRequest} from "./dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "./dto/UpdateUsernameRequest";
 import {AuthResponse} from "../auth/dto/AuthResponse";
 import {AuthService} from "../auth/auth.service";
+import { UserSearchResult } from './dto/Relationship';
+import { PublicUserProfile } from './dto/PublicUserProfile';
 
 @Injectable({
   providedIn: 'root',
@@ -40,23 +42,33 @@ export class UserService {
     );
   }
 
-  public updateUser(updateRequest: UpdateProfileRequest) {
+  public getPublicProfile(username: string) {
+    return this.httpClient.get<PublicUserProfile>(
+      `${this.baseUri}/${encodeURIComponent(username)}`
+    );
+  }
+
+  public updateUser(updateRequest: UpdateProfileRequest, showSuccess = true) {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me', updateRequest).pipe(
       tap(user => {
         this._user.set(user);
-        this.notificationService.showSuccess('Updated profile');
+        if (showSuccess) {
+          this.notificationService.showSuccess('Updated profile');
+        }
       })
     );
   }
 
-  public updateProfilePicture(file: File) {
+  public updateProfilePicture(file: File, showSuccess = true) {
     const formData = new FormData();
     formData.append('file', file);
 
     return this.httpClient.put<UserDetails>(this.baseUri + '/me/profile-picture', formData).pipe(
       tap(user => {
         this._user.set(user);
-        this.notificationService.showSuccess('Updated profile picture');
+        if (showSuccess) {
+          this.notificationService.showSuccess('Updated profile picture');
+        }
       })
     );
   }
@@ -69,14 +81,28 @@ export class UserService {
     );
   }
 
-  public updateUsername(request: UpdateUsernameRequest) {
+  public updateUsername(request: UpdateUsernameRequest, showSuccess = true) {
     return this.httpClient.put<AuthResponse>(this.baseUri + '/me/username', request).pipe(
       tap(res => {
         this.authService.updateToken(res.token);
-        this.notificationService.showSuccess('Updated username');
+        if (showSuccess) {
+          this.notificationService.showSuccess('Updated username');
+        }
 
         this.loadUser().subscribe();
       })
+    );
+  }
+
+  public isUsernameAvailable(username: string) {
+    const params = new HttpParams()
+      .set('q', username)
+      .set('excludeFriends', 'false')
+      .set('excludeFollowed', 'false')
+      .set('verifiedOnly', 'false');
+
+    return this.httpClient.get<UserSearchResult[]>(this.baseUri + '/search', { params }).pipe(
+      map(users => !users.some(user => user.username.toLowerCase() === username.toLowerCase()))
     );
   }
 

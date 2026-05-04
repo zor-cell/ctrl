@@ -57,6 +57,9 @@ public class PostControllerIntegrationTest {
     SecurityContextHolder.clearContext();
   }
 
+// Gültiger POST /posts Request -> 201 Created + Post JSON
+
+
   @Test
   void createPost_ShouldReturnCreatedPost_WhenRequestIsValid() throws Exception {
     User user = createUser("marlene");

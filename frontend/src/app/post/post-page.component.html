@@ -1,12 +1,7 @@
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
-    <button
-      type="button"
-      class="profile-avatar"
-      aria-label="Choose profile picture"
-      (click)="openAvatarPicker()"
-    >
+    <div class="profile-avatar profile-avatar--display" aria-hidden="true">
       @if (currentProfilePicture()) {
         <img
           [src]="currentProfilePicture()!"
@@ -16,8 +11,7 @@
       } @else {
         <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
       }
-      <span class="profile-avatar__edit">Change</span>
-    </button>
+    </div>
     @if (updatingAvatar()) {
       <span class="profile-avatar-status" aria-live="polite">Saving...</span>
     }
@@ -32,80 +26,45 @@
 
     <div class="post-profile-card__copy">
       <h1>{{ username() }}</h1>
-      @if (editingBio()) {
-        <div class="profile-bio-editor">
-          <textarea
-            class="profile-bio-editor__input"
-            rows="3"
-            maxlength="280"
-            [value]="bioDraft()"
-            (input)="updateBioDraft($event)"
-            aria-label="Edit bio"
-          ></textarea>
-          <div class="profile-bio-editor__meta">
-            <span>{{ bioLength() }} / {{ maxBioLength }}</span>
-            @if (bioTooLong()) {
-              <span class="profile-bio-editor__error">
-                Bio must not be longer than {{ maxBioLength }} characters.
-              </span>
-            }
-          </div>
-          <div class="profile-bio-editor__actions">
-            <p-button
-              label="Cancel"
-              size="small"
-              severity="secondary"
-              [outlined]="true"
-              [disabled]="updatingBio()"
-              (onClick)="cancelBioEdit()"
-            />
-            <p-button
-              label="Save"
-              size="small"
-              icon="pi pi-check"
-              [loading]="updatingBio()"
-              [disabled]="updatingBio() || bioTooLong()"
-              (onClick)="saveBio()"
-            />
-          </div>
-        </div>
-      } @else {
-        <div class="profile-bio">
-          <p>{{ userBio() }}</p>
+      <div class="profile-bio">
+        <p>{{ userBio() }}</p>
+        @if (canEditProfile()) {
           <p-button
-            label="Edit bio"
+            label="Edit"
             icon="pi pi-pencil"
             size="small"
             severity="secondary"
             [text]="true"
-            (onClick)="startBioEdit()"
+            (onClick)="startProfileEdit()"
           />
-        </div>
-      }
+        }
+      </div>
     </div>
 
-    <div class="post-profile-card__actions">
-      <p-button
-        icon="pi pi-cog"
-        ariaLabel="Open profile settings"
-        severity="secondary"
-        [rounded]="true"
-        (onClick)="openProfileSettings()"
-      />
-      <p-button
-        label="Create Post"
-        icon="pi pi-plus"
-        size="large"
-        (onClick)="openCreateDialog()"
-      />
-    </div>
+    @if (canEditProfile()) {
+      <div class="post-profile-card__actions">
+        <p-button
+          icon="pi pi-cog"
+          ariaLabel="Open profile settings"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="openProfileSettings()"
+        />
+        <p-button
+          label="Create Post"
+          icon="pi pi-plus"
+          size="large"
+          (onClick)="openCreateDialog()"
+        />
+      </div>
+    }
     </header>
 
     <section class="my-posts-section" aria-labelledby="my-posts-title">
       <div class="my-posts-section__header">
         <div>
-          <p class="post-page__eyebrow">Archive</p>
-          <h2 id="my-posts-title">Your posts</h2>
+          <p class="post-page__eyebrow">{{ profileEyebrow() }}</p>
+          <h2 id="my-posts-title">{{ postsHeading() }}</h2>
         </div>
         <span class="my-posts-section__count" aria-live="polite">
           {{ postsCountLabel() }}
@@ -119,7 +78,13 @@
       } @else if (myPosts().length === 0) {
         <div class="posts-empty-card">
           <h3>No posts yet</h3>
-          <p>Your posts will appear here after you create them.</p>
+          <p>
+            @if (publicProfileMode()) {
+              Posts will appear here.
+            } @else {
+              Your posts will appear here after you create them.
+            }
+          </p>
         </div>
       } @else {
         <div class="my-posts-grid">
@@ -145,7 +110,16 @@
 
               <div class="post-card__body">
                 <div class="post-card__meta">
-                  <span>{{ post.isPublic ? 'Public' : 'Private' }}</span>
+                  <span
+                    class="post-visibility-badge"
+                    [class.post-visibility-badge--public]="post.isPublic"
+                    [class.post-visibility-badge--private]="!post.isPublic"
+                    [pTooltip]="post.isPublic ? 'This is a public post.' : 'This is a private post.'"
+                    tooltipPosition="top"
+                    [attr.aria-label]="post.isPublic ? 'Public post' : 'Private post'"
+                  >
+                    <i [class]="post.isPublic ? 'pi pi-globe' : 'pi pi-lock'"></i>
+                  </span>
                 </div>
 
                 <p class="post-card__caption">{{ post.caption }}</p>
@@ -166,11 +140,113 @@
   }
 </section>
 
+<p-dialog
+  header="Edit profile"
+  [visible]="editingProfile()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!updatingProfile()"
+  [style]="{ width: 'min(34rem, 92vw)' }"
+  (visibleChange)="!$event && cancelProfileEdit()"
+>
+  <div class="profile-edit-dialog">
+    <div class="profile-edit-dialog__avatar">
+      <button
+        type="button"
+        class="profile-avatar profile-avatar--dialog"
+        aria-label="Choose profile picture"
+        (click)="openAvatarPicker()"
+      >
+        @if (currentProfilePicture()) {
+          <img
+            [src]="currentProfilePicture()!"
+            alt=""
+            class="profile-avatar__image"
+          />
+        } @else {
+          <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+        }
+        <span class="profile-avatar__edit">Change</span>
+      </button>
+      <p-button
+        label="Choose image"
+        icon="pi pi-image"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="updatingProfile()"
+        (onClick)="openAvatarPicker()"
+      />
+    </div>
+
+    <label class="profile-edit-field">
+      <span>Username</span>
+      <input
+        class="profile-edit-input"
+        type="text"
+        [value]="profileUsernameDraft()"
+        [disabled]="updatingProfile()"
+        (input)="updateUsernameDraft($event)"
+      />
+      <small class="profile-edit-hint" aria-live="polite">
+        @if (checkingUsername()) {
+          Checking username...
+        } @else if (usernameEmpty()) {
+          Username is required.
+        } @else if (usernameAvailable() === false) {
+          This username is already taken.
+        } @else if (usernameChanged() && usernameAvailable() === true) {
+          Username is available.
+        } @else {
+          Your current username.
+        }
+      </small>
+    </label>
+
+    <label class="profile-edit-field">
+      <span>Bio</span>
+      <textarea
+        class="profile-bio-editor__input"
+        rows="4"
+        maxlength="280"
+        [value]="profileBioDraft()"
+        [disabled]="updatingProfile()"
+        (input)="updateBioDraft($event)"
+        aria-label="Edit bio"
+      ></textarea>
+      <span
+        class="profile-bio-editor__meta"
+        [class.profile-bio-editor__meta--error]="bioTooLong()"
+      >
+        {{ bioLength() }} / {{ maxBioLength }}
+      </span>
+    </label>
+
+    <div class="profile-edit-dialog__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="updatingProfile()"
+        (onClick)="cancelProfileEdit()"
+      />
+      <p-button
+        label="Save"
+        icon="pi pi-check"
+        [loading]="updatingProfile()"
+        [disabled]="!canSaveProfile()"
+        (onClick)="saveProfileChanges()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
 <app-post-detail-dialog
   [post]="selectedPost()"
   [topicOptions]="topicOptions()"
   [currentProfilePicture]="currentProfilePicture()"
   [avatarInitial]="avatarInitial()"
+  [canDelete]="canEditProfile()"
   (dismissed)="closePost()"
   (deleteRequested)="requestPostDeletion($event)"
 />

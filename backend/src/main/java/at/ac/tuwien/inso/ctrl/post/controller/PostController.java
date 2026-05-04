@@ -33,6 +33,11 @@ public class PostController {
     return postService.getPostsForUser(userDetails.getUsername());
   }
 
+  @GetMapping("/user/{username}")
+  public List<PostResponse> getProfilePosts(@PathVariable String username) {
+    return postService.getProfilePostsForUser(username);
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public PostResponse createPost(

@@ -39,7 +39,7 @@ public class FileStorageService {
   private static final Set<String> QUICKTIME_MEDIA_TYPES =
       Set.of("video/quicktime", "video/x-quicktime");
   private static final long MAX_FILE_SIZE_BYTES = 100L * 1024L * 1024L;
-  private static final Duration TRANSCODING_TIMEOUT = Duration.ofMinutes(5);
+  private static final Duration TRANSCODING_TIMEOUT = Duration.ofMinutes(3);
   private static final String MP4_MEDIA_TYPE = "video/mp4";
   private static final String POST_MEDIA_PREFIX = "posts/media/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
@@ -152,6 +152,7 @@ public class FileStorageService {
     Path outputFile = Files.createTempFile("post-media-", ".mp4");
 
     try (InputStream inputStream = file.getInputStream()) {
+      // Die hochgeladene Datei wird in die temporäre inputFile kopiert.
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
       transcodeToMp4(inputFile, outputFile);
       return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4");
@@ -163,6 +164,7 @@ public class FileStorageService {
 
   private void transcodeToMp4(Path inputFile, Path outputFile) {
     Path ffmpegLogFile = createFfmpegLogFile();
+    // Terminal Befehl fürs Umwandeln
     List<String> command =
         List.of(
             "ffmpeg",
@@ -192,8 +194,10 @@ public class FileStorageService {
             "+faststart",
             outputFile.toString());
 
+    // Befehl für FFmpeg wird übergeben
     ProcessBuilder processBuilder = new ProcessBuilder(command);
-    processBuilder.redirectErrorStream(true);
+    processBuilder.redirectErrorStream(true); // Normale Ausgabe und Fehlerausgabe zusammenlegen.
+    // Schreib die Ausgabe von FFmpeg in diese Logdatei statt Terminal.
     processBuilder.redirectOutput(ffmpegLogFile.toFile());
 
     try {
@@ -227,6 +231,7 @@ public class FileStorageService {
 
   private Path createFfmpegLogFile() {
     try {
+      // In diese Datei schreibt FFmpeg später, was beim Video-Umwandeln passiert ist.
       return Files.createTempFile("post-media-ffmpeg-", ".log");
     } catch (IOException e) {
       throw new InvalidRequestException("Video conversion is currently unavailable");

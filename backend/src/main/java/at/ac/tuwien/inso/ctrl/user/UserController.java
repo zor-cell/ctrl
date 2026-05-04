@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.PublicUserProfileResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +36,11 @@ public class UserController {
   @GetMapping("/me")
   public UserDetailsResponse getUser(@AuthenticationPrincipal User currentUser) {
     return userService.getUser(currentUser.getId());
+  }
+
+  @GetMapping("/{username}")
+  public PublicUserProfileResponse getPublicProfile(@PathVariable String username) {
+    return userService.getPublicProfile(username);
   }
 
   @PutMapping("/me")

@@ -44,6 +44,7 @@ public class RelationshipMapper {
         request.getCreatedAt());
   }
 
+<<<<<<< HEAD
   public FriendRequestResponse toSentFriendRequestResponse(FriendRequest request) {
     return new FriendRequestResponse(
         request.getReceiver().getUsername(),
@@ -51,6 +52,16 @@ public class RelationshipMapper {
         false,
         request.getCreatedAt());
   }
+=======
+  @Mapping(target = "name", source = "displayName")
+  @Mapping(target = "profilePicture", source = "profilePicture")
+  @Mapping(target = "relationshipStatus", source = "relationshipStatus")
+  UserSearchResponse toUserSearchResponse(
+      User user,
+      UserSearchResponse.RelationshipStatus relationshipStatus,
+      String displayName,
+      String profilePicture);
+>>>>>>> 42eae83 (fix(#13): rebase)
 
   public UserSearchResponse toUserSearchResponse(
       User user, List<RelationshipStatusItem> relationshipStatuses, String displayName) {
