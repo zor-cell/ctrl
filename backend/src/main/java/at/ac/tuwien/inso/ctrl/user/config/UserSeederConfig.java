@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.user.config;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -46,6 +47,7 @@ public class UserSeederConfig {
                         .password(passwordEncoder.encode(adminPassword))
                         .name("System Administrator")
                         .email("admin@system.local")
+                        .birthdate(LocalDate.of(2000, 4, 23))
                         .isVerified(true)
                         .emailVerified(true)
                         .role(Role.ADMIN)
@@ -62,6 +64,7 @@ public class UserSeederConfig {
                             .password(passwordEncoder.encode("test"))
                             .name("Alice Test")
                             .email("alice@test.local")
+                            .birthdate(LocalDate.of(1995, 2, 12))
                             .isVerified(true)
                             .emailVerified(true)
                             .role(Role.USER)
@@ -71,6 +74,7 @@ public class UserSeederConfig {
                             .password(passwordEncoder.encode("test1"))
                             .name("Bob Test")
                             .email("bob@test.local")
+                            .birthdate(LocalDate.of(2003, 7, 16))
                             .isVerified(false)
                             .emailVerified(true)
                             .role(Role.USER)
