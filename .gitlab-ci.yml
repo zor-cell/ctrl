@@ -101,7 +101,7 @@ build:backend:
     paths:
       - .m2/repository
   script:
-    - mvn clean package -DskipTests -f ./backend/
+    - mvn clean package -DskipTests -f ./backend/ -Dmaven.repo.local=.m2/repository
   artifacts:
     expire_in: 1 day
     paths:
@@ -119,7 +119,7 @@ build:frontend:
     paths:
       - .npm
   script:
-    - cd frontend && npm ci && npm run build
+    - cd frontend && npm ci  --cache ../.npm && npm run build
   artifacts:
     expire_in: 1 day
     paths:
@@ -129,13 +129,20 @@ build:frontend:
 build:image:
   stage: build
   image: registry.reset.inso-w.at/pub/docker/debian-mvn
+  cache:
+    key:
+      files:
+        - backend/pom.xml
+      prefix: ${CI_JOB_NAME}
+    paths:
+      - .m2/repository
   needs:
     - job: build:frontend
       artifacts: true
     - job: build:backend
       artifacts: true
   script:
-    - mvn jib:build
+    - mvn jib:build -f ./backend/
         -Djib.to.image=${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
         -Djib.to.auth.username=${CI_REGISTRY_USER}
         -Djib.to.auth.password=${CI_REGISTRY_PASSWORD}
