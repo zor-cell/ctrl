@@ -136,7 +136,6 @@ build:image:
       artifacts: true
   script:
     - mvn jib:build
-        -Djib.from.image=registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
         -Djib.to.image=${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
         -Djib.to.auth.username=${CI_REGISTRY_USER}
         -Djib.to.auth.password=${CI_REGISTRY_PASSWORD}

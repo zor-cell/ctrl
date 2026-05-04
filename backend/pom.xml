@@ -256,14 +256,17 @@
     			<artifactId>jib-maven-plugin</artifactId>
     			<version>3.5.1</version>
     			<configuration>
-        			<extraDirectories>
-            			<paths>
-                			<path>
-                    			<from>../frontend/dist/frontend/browser</from>
-                    			<into>/app/static</into>
-                			</path>
-            			</paths>
-        			</extraDirectories>
+						<from>
+							<image>registry.reset.inso-w.at/pub/docker/eclipse-temurin:25</image>
+						</from>
+        		<extraDirectories>
+            		<paths>
+                		<path>
+                    		<from>../frontend/dist/frontend/browser</from>
+                    		<into>/app/static</into>
+                		</path>
+            		</paths>
+        		</extraDirectories>
     			</configuration>
 			</plugin>
 		</plugins>
