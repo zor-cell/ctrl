@@ -13,7 +13,6 @@ import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Password} from "primeng/password";
-import {DatePipe} from "@angular/common";
 
 @Component({
   selector: 'app-profile',
@@ -27,8 +26,7 @@ import {DatePipe} from "@angular/common";
     Dialog,
     FormsModule,
     ProgressSpinner,
-    Password,
-    DatePipe
+    Password
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
