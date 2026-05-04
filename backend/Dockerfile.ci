@@ -1,4 +1,4 @@
-FROM registry.reset.inso-w.at/pub/docker/eclipse-temurin:25
+FROM registry.reset.inso-w.at/pub/docker/debian-mvn
 
 WORKDIR /backend
 
