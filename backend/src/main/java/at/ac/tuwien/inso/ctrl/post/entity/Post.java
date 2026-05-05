@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
 import at.ac.tuwien.inso.ctrl.common.domain.Votable;
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
@@ -61,7 +62,7 @@ public class Post implements Votable {
 
   @JdbcTypeCode(SqlTypes.VECTOR)
   @Column(name = "embedding")
-  @Array(length = 768)
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
   private float[] embedding;
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,6 +14,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Builder
 @Getter
@@ -37,4 +41,9 @@ public class Topic {
   @OneToMany(mappedBy = "topic")
   @Builder.Default
   private Set<TopicPriority> topicPriorities = new LinkedHashSet<>();
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "embedding")
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
+  private float[] embedding;
 }

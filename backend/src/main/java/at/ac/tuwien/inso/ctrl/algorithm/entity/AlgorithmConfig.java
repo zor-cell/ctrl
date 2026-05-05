@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 
@@ -9,6 +10,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Builder
 @Getter
@@ -27,6 +31,9 @@ public class AlgorithmConfig {
       name = "user_id")
   private User user;
 
+  @Column(name = "weight_interaction")
+  private Integer weightInteraction;
+
   @Column(name = "weight_recency")
   private Integer weightRecency;
 
@@ -41,4 +48,9 @@ public class AlgorithmConfig {
 
   @Column(name = "weight_topic")
   private Integer weightTopic;
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "topic_embedding")
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
+  private float[] topicEmbedding;
 }
