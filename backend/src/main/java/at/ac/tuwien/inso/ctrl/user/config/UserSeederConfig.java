@@ -68,7 +68,6 @@ public class UserSeederConfig {
                             .isVerified(true)
                             .emailVerified(true)
                             .role(Role.USER)
-                            .profilePicture(null) // No profile picture - frontend will show initial
                             .build(),
                         User.builder()
                             .username("test1")
@@ -79,7 +78,6 @@ public class UserSeederConfig {
                             .isVerified(false)
                             .emailVerified(true)
                             .role(Role.USER)
-                            .profilePicture(null) // No profile picture - frontend will show initial
                             .build()));
               }
             });
