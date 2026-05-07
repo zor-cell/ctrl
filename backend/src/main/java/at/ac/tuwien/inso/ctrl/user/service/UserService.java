@@ -8,9 +8,11 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
+import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -35,6 +37,7 @@ public class UserService {
   private final RelationshipMapper socialMapper;
   private final UserRepository userRepository;
   private final FriendRequestRepository friendRequestRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
@@ -160,7 +163,7 @@ public class UserService {
     String searchTerm = query != null ? query.trim().toLowerCase() : "";
 
     Set<UUID> followedIds = followService.getFollowedIds(currentUser);
-    Set<UUID> friendIds = followService.getFriendIds(currentUser);
+    Set<UUID> friendIds = friendRelationRepository.findFriendIds(currentUser);
     Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
     Set<UUID> pendingRequestIncomingIds =
         friendRequestRepository.findSenderIdsByReceiver(currentUser);
@@ -174,15 +177,15 @@ public class UserService {
         .filter(user -> !verifiedOnly || user.isVerified())
         .map(
             user -> {
-              UserSearchResponse.RelationshipStatus status =
-                  socialMapper.determineRelationshipStatus(
+              List<RelationshipStatusItem> statuses =
+                  socialMapper.determineRelationshipStatuses(
                       user,
                       followedIds,
                       friendIds,
                       pendingRequestSentIds,
                       pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, status);
-              return socialMapper.toUserSearchResponse(user, status, displayName);
+              String displayName = socialMapper.displayName(user, statuses);
+              return socialMapper.toUserSearchResponse(user, statuses, displayName);
             })
         .toList();
   }

@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 public record UserSearchResponse(
@@ -8,13 +9,4 @@ public record UserSearchResponse(
     String name,
     String profilePicture,
     boolean isVerified,
-    RelationshipStatus relationshipStatus) {
-
-  public enum RelationshipStatus {
-    NONE,
-    FOLLOWED,
-    FRIEND,
-    PENDING_REQUEST_SENT,
-    PENDING_REQUEST_INCOMING
-  }
-}
+    List<RelationshipStatusItem> relationshipStatuses) {}

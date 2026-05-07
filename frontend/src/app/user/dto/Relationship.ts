@@ -24,13 +24,17 @@ export interface FriendRequest {
   createdAt: string;
 }
 
+export interface RelationshipStatusItem {
+  status: 'FRIEND' | 'FOLLOWED' | 'PENDING_REQUEST_SENT' | 'PENDING_REQUEST_INCOMING';
+}
+
 export interface UserSearchResult {
   id: string;
   username: string;
   name: string | null;
   profilePicture: string | null;
   isVerified: boolean;
-  relationshipStatus: 'NONE' | 'FOLLOWED' | 'FRIEND' | 'PENDING_REQUEST_SENT' | 'PENDING_REQUEST_INCOMING';
+  relationshipStatuses: RelationshipStatusItem[];
 }
 
 export interface SendFriendRequest {
