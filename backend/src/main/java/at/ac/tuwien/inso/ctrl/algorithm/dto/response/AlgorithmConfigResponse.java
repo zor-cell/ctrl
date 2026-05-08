@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record AlgorithmConfigResponse(
+        Integer weightInteraction,
         Integer weightRecency,
         Integer weightExploration,
         Integer weightSourceQuality,
