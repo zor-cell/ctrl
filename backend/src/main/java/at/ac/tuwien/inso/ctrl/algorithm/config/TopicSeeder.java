@@ -5,17 +5,21 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+
+import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@RequiredArgsConstructor
 public class TopicSeeder {
+  private final EmbeddingService embeddingService;
 
   @Bean
   CommandLineRunner seedTopics(TopicRepository topicRepository) {
     return args -> {
-      var now = LocalDateTime.now();
       var defaultTopics =
           List.of(
               new DefaultTopic("Health", "🩺"),
@@ -31,14 +35,13 @@ public class TopicSeeder {
 
       var topicsToCreate =
           defaultTopics.stream()
-              .filter(topic -> !topicRepository.existsById(toTopicId(topic.name())))
+              .filter(topic -> !topicRepository.existsByName(topic.name()))
               .map(
                   topic ->
                       Topic.builder()
-                          .topicId(toTopicId(topic.name()))
                           .name(topic.name())
                           .emoji(topic.emoji())
-                          .createdAt(now)
+                              .embedding(embeddingService.embedText(topic.name()))
                           .build())
               .toList();
 
@@ -46,10 +49,6 @@ public class TopicSeeder {
         topicRepository.saveAll(topicsToCreate);
       }
     };
-  }
-
-  private String toTopicId(String name) {
-    return name.toLowerCase(Locale.ROOT).replace(" ", "_");
   }
 
   private record DefaultTopic(String name, String emoji) {}

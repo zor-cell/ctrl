@@ -4,6 +4,8 @@ import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,8 +51,12 @@ public class AlgorithmConfig {
   @Column(name = "weight_topic")
   private Integer weightTopic;
 
-  @JdbcTypeCode(SqlTypes.VECTOR)
-  @Column(name = "topic_embedding")
-  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
-  private float[] topicEmbedding;
+  @ManyToMany
+  @JoinTable(
+          name = "algorithm_config_topics",
+          joinColumns = @JoinColumn(name = "algorithm_config_id"),
+          inverseJoinColumns = @JoinColumn(name = "topic_id")
+  )
+  @Builder.Default
+  private Set<Topic> topics = new LinkedHashSet<>();
 }

@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.controller;
 
+import at.ac.tuwien.inso.ctrl.algorithm.dto.request.AlgorithmConfigRequest;
 import at.ac.tuwien.inso.ctrl.algorithm.dto.response.AlgorithmConfigResponse;
 import at.ac.tuwien.inso.ctrl.algorithm.service.AlgorithmService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -23,7 +24,7 @@ public class AlgorithmController {
     @PutMapping("/config")
     public AlgorithmConfigResponse updateConfig(
             @AuthenticationPrincipal User user,
-            @Valid @RequestBody AlgorithmConfigResponse config) {
+            @Valid @RequestBody AlgorithmConfigRequest config) {
         return algorithmService.updateConfig(user, config);
     }
 }

@@ -1,11 +1,12 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
 import {AlgorithmService} from "../../algorithm.service";
 import {NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {AlgorithmConfig} from "../../dto/AlgorithmConfig";
+import {AlgorithmConfigResponse} from "../../dto/AlgorithmConfigResponse";
 import {finalize} from "rxjs";
 import {Slider} from "primeng/slider";
 import {Button} from "primeng/button";
 import {ProgressSpinner} from "primeng/progressspinner";
+import {AlgorithmConfigRequest} from "../../dto/AlgorithmConfigRequest";
 
 @Component({
   selector: 'app-config',
@@ -34,7 +35,7 @@ export class AlgorithmConfigComponent implements OnInit {
 
   ngOnInit() {
     this.algorithmService.getConfig().subscribe({
-      next: (config: AlgorithmConfig) => {
+      next: (config: AlgorithmConfigResponse) => {
         this.configForm.patchValue(config);
         this.isLoading.set(false);
       },
@@ -50,7 +51,10 @@ export class AlgorithmConfigComponent implements OnInit {
       return;
     }
 
-    const formValue = this.configForm.getRawValue() as AlgorithmConfig;
+    const formValue = this.configForm.getRawValue() as AlgorithmConfigRequest;
+
+    //TODO: this needs to come from the form inputs
+    formValue.topics = [];
 
     this.algorithmService.updateConfig(formValue)
       .subscribe({

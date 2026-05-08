@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -37,4 +38,23 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   void deleteUnverifiedUsersOlderThanOneDay();
 
   Optional<User> findByEmail(String email);
+
+  /** Calculates the average vector of the user's last 50 upvoted posts. */
+  @Query(
+          value =
+                  """
+                          SELECT unnest(CAST(avg(sub.embedding) AS real[]))
+                          FROM (
+                              SELECT p.embedding
+                              FROM post_votes pv
+                              JOIN posts p ON pv.post_id = p.post_id
+                              WHERE pv.user_id = :userId
+                                AND pv.vote_type = 'up'
+                                AND p.embedding IS NOT NULL
+                              ORDER BY pv.created_at DESC
+                              LIMIT 50
+                          ) sub
+                          """,
+          nativeQuery = true)
+  List<Float> calculateUserInteractionPreferenceVector(@Param("userId") String userId);
 }

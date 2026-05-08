@@ -2,11 +2,11 @@ package at.ac.tuwien.inso.ctrl.algorithm.mapper;
 
 import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 import org.springframework.stereotype.Component;
 
-@Component
-public class TopicMapper {
-  public TopicResponse toResponse(Topic topic) {
-    return new TopicResponse(topic.getTopicId(), topic.getName(), topic.getEmoji());
-  }
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+public interface TopicMapper {
+  TopicResponse toTopicResponse(Topic topic);
 }

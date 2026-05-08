@@ -1,19 +1,25 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
+import at.ac.tuwien.inso.ctrl.algorithm.dto.request.AlgorithmConfigRequest;
 import at.ac.tuwien.inso.ctrl.algorithm.dto.response.AlgorithmConfigResponse;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
+import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.mapper.AlgorithmMapper;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
+import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AlgorithmService {
   private final AlgorithmRepository algorithmRepository;
   private final AlgorithmMapper algorithmMapper;
+  private final TopicRepository topicRepository;
 
   @Transactional
   public AlgorithmConfigResponse getConfig(User currentUser) {
@@ -24,7 +30,7 @@ public class AlgorithmService {
 
   @Transactional
   public AlgorithmConfigResponse updateConfig(
-      User currentUser, AlgorithmConfigResponse algorithmConfig) {
+      User currentUser, AlgorithmConfigRequest algorithmConfig) {
     AlgorithmConfig config = getOrCreateConfig(currentUser);
 
     config.setWeightRecency(algorithmConfig.weightRecency());
@@ -32,6 +38,11 @@ public class AlgorithmService {
     config.setWeightSourceQuality(algorithmConfig.weightSourceQuality());
     config.setWeightTrending(algorithmConfig.weightTrending());
     config.setWeightTopic(algorithmConfig.weightTopic());
+
+    List<Topic> resolvedTopics = topicRepository.findAllById(algorithmConfig.topics());
+
+    config.getTopics().clear();
+    config.getTopics().addAll(resolvedTopics);
 
     return algorithmMapper.toConfig(algorithmRepository.save(config));
   }

@@ -16,25 +16,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
 
   Optional<Post> findByPostIdAndUserUsername(String postId, String username);
 
-  /** Calculates the average vector of the user's last 50 upvoted posts. */
-  @Query(
-      value =
-          """
-                  SELECT unnest(CAST(avg(sub.embedding) AS real[]))
-                  FROM (
-                      SELECT p.embedding
-                      FROM post_votes pv
-                      JOIN posts p ON pv.post_id = p.post_id
-                      WHERE pv.user_id = :userId
-                        AND pv.vote_type = 'up'
-                        AND p.embedding IS NOT NULL
-                      ORDER BY pv.created_at DESC
-                      LIMIT 50
-                  ) sub
-                  """,
-      nativeQuery = true)
-  List<Float> calculateUserPreferenceVector(@Param("userId") String userId);
-
   /**
    * A query that finds the best matching posts when given multiple weights of preference. PgVector
    * operations can be read about here: <a href="https://github.com/pgvector/pgvector</a>
