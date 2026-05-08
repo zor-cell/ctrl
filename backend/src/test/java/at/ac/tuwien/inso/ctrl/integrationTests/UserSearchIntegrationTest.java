@@ -11,13 +11,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -54,6 +58,8 @@ public class UserSearchIntegrationTest {
   private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
   @Autowired private FollowRelationRepository followRelationRepository;
+
+  @Autowired private FriendRelationRepository friendRelationRepository;
 
   @Autowired private FriendRequestRepository friendRequestRepository;
 
@@ -134,6 +140,7 @@ public class UserSearchIntegrationTest {
   @AfterEach
   public void tearDownTestData() {
     friendRequestRepository.deleteAll();
+    friendRelationRepository.deleteAll();
     followRelationRepository.deleteAll();
     userRepository.deleteAll();
   }
@@ -224,7 +231,7 @@ public class UserSearchIntegrationTest {
 
   @Test
   public void searchUsers_excludeFriends_shouldFilterFriends() throws Exception {
-    createMutualFollows(currentUser, bert);
+    createFriendship(currentUser, bert);
 
     MvcResult result =
         mockMvc
@@ -292,7 +299,7 @@ public class UserSearchIntegrationTest {
 
   @Test
   public void searchUsers_combinedFilters_shouldWorkTogether() throws Exception {
-    createMutualFollows(currentUser, dagobert);
+    createFriendship(currentUser, dagobert);
     createFollow(currentUser, bart);
 
     MvcResult result =
@@ -321,7 +328,7 @@ public class UserSearchIntegrationTest {
 
   @Test
   public void searchUsers_statusFriend_shouldBeCorrect() throws Exception {
-    createMutualFollows(currentUser, dagobert);
+    createFriendship(currentUser, dagobert);
 
     MvcResult result =
         mockMvc
@@ -333,8 +340,7 @@ public class UserSearchIntegrationTest {
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
     assertEquals(1, responses.size());
-    assertEquals(
-        UserSearchResponse.RelationshipStatus.FRIEND, responses.get(0).relationshipStatus());
+    assertTrue(hasStatus(responses.get(0), RelationshipStatusItem.RelationshipStatus.FRIEND));
   }
 
   @Test
@@ -351,8 +357,7 @@ public class UserSearchIntegrationTest {
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
     assertEquals(1, responses.size());
-    assertEquals(
-        UserSearchResponse.RelationshipStatus.FOLLOWED, responses.get(0).relationshipStatus());
+    assertTrue(hasStatus(responses.get(0), RelationshipStatusItem.RelationshipStatus.FOLLOWED));
   }
 
   @Test
@@ -369,9 +374,9 @@ public class UserSearchIntegrationTest {
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
     assertEquals(1, responses.size());
-    assertEquals(
-        UserSearchResponse.RelationshipStatus.PENDING_REQUEST_SENT,
-        responses.get(0).relationshipStatus());
+    assertTrue(
+        hasStatus(
+            responses.get(0), RelationshipStatusItem.RelationshipStatus.PENDING_REQUEST_SENT));
   }
 
   @Test
@@ -388,9 +393,9 @@ public class UserSearchIntegrationTest {
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
     assertEquals(1, responses.size());
-    assertEquals(
-        UserSearchResponse.RelationshipStatus.PENDING_REQUEST_INCOMING,
-        responses.get(0).relationshipStatus());
+    assertTrue(
+        hasStatus(
+            responses.get(0), RelationshipStatusItem.RelationshipStatus.PENDING_REQUEST_INCOMING));
   }
 
   @Test
@@ -405,17 +410,14 @@ public class UserSearchIntegrationTest {
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
     assertEquals(3, responses.size());
-    assertTrue(
-        responses.stream()
-            .allMatch(
-                r -> r.relationshipStatus().equals(UserSearchResponse.RelationshipStatus.NONE)));
+    assertTrue(responses.stream().allMatch(r -> r.relationshipStatuses().isEmpty()));
   }
 
   // Display name tests
 
   @Test
   public void searchUsers_displayName_verifiedFriend_shouldShowRealName() throws Exception {
-    createMutualFollows(currentUser, dagobert);
+    createFriendship(currentUser, dagobert);
 
     MvcResult result =
         mockMvc
@@ -464,7 +466,7 @@ public class UserSearchIntegrationTest {
 
   @Test
   public void searchUsers_displayName_unverifiedFriend_shouldShowReal() throws Exception {
-    createMutualFollows(currentUser, bertram);
+    createFriendship(currentUser, bertram);
 
     MvcResult result =
         mockMvc
@@ -496,8 +498,8 @@ public class UserSearchIntegrationTest {
     assertEquals(bart.getId(), response.id());
     assertEquals("bart", response.username());
     assertEquals("Bart", response.name());
-    assertFalse(response.isVerified());
-    assertEquals(UserSearchResponse.RelationshipStatus.NONE, response.relationshipStatus());
+    assertTrue(response.isVerified());
+    assertTrue(response.relationshipStatuses().isEmpty());
   }
 
   // Helper methods
@@ -528,5 +530,21 @@ public class UserSearchIntegrationTest {
             .expiresAt(LocalDateTime.now().plusDays(30))
             .build();
     friendRequestRepository.save(request);
+  }
+
+  private void createFriendship(User user1, User user2) {
+    FriendRelation friendship =
+        FriendRelation.builder()
+            .id(new FriendRelationId(user1.getId(), user2.getId()))
+            .friend1(user1)
+            .friend2(user2)
+            .since(LocalDateTime.now())
+            .build();
+    friendRelationRepository.save(friendship);
+  }
+
+  private boolean hasStatus(
+      UserSearchResponse response, RelationshipStatusItem.RelationshipStatus status) {
+    return response.relationshipStatuses().stream().anyMatch(item -> item.status() == status);
   }
 }

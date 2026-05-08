@@ -1,6 +1,5 @@
 import { Component, inject, ViewChild, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Avatar } from 'primeng/avatar';
 import { Button } from 'primeng/button';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Router } from '@angular/router';
@@ -12,7 +11,7 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-friend-list',
   standalone: true,
-  imports: [CommonModule, Avatar, Button, MenuModule],
+  imports: [CommonModule, Button, MenuModule],
   templateUrl: './friend-list.component.html',
   styleUrl: './friend-list.component.scss',
 })
@@ -45,7 +44,7 @@ export class FriendListComponent {
 
   removeFriend() {
     if (this.selectedUsername) {
-      this.relationshipService.unfollow(this.selectedUsername).subscribe({
+      this.relationshipService.unfriend(this.selectedUsername).subscribe({
         next: () => {
           this.notificationService.showSuccess(`Removed ${this.selectedUsername} from friends`);
           this.eventBus.unfollowed();

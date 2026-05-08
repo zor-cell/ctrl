@@ -11,10 +11,17 @@
       <div class="requests-list">
         @for (request of incomingRequests(); track request.username) {
           <div class="request-item incoming">
-            <p-avatar
-              [image]="request.profilePicture || undefined"
-              [label]="request.username.charAt(0)"
-              shape="circle" />
+            <div class="profile-avatar">
+              @if (request.profilePicture) {
+                <img
+                  [src]="request.profilePicture"
+                  alt=""
+                  class="profile-avatar__image"
+                />
+              } @else {
+                <span class="profile-avatar__initial">{{ request.username.charAt(0) }}</span>
+              }
+            </div>
 
             <div class="request-info">
               <span class="username">&#64;{{ request.username }}</span>
@@ -53,10 +60,17 @@
       <div class="requests-list">
         @for (request of sentRequests(); track request.username) {
           <div class="request-item sent">
-            <p-avatar
-              [image]="request.profilePicture || undefined"
-              [label]="request.username.charAt(0)"
-              shape="circle" />
+            <div class="profile-avatar">
+              @if (request.profilePicture) {
+                <img
+                  [src]="request.profilePicture"
+                  alt=""
+                  class="profile-avatar__image"
+                />
+              } @else {
+                <span class="profile-avatar__initial">{{ request.username.charAt(0) }}</span>
+              }
+            </div>
 
             <div class="request-info">
               <span class="username">&#64;{{ request.username }}</span>

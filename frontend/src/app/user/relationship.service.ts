@@ -71,6 +71,9 @@ export class RelationshipService implements OnDestroy {
       case 'followed':
         this.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
         break;
+      case 'unfriend':
+        this.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
+        break;
       case 'unfollowed':
         forkJoin([
           this.loadFollowed(),
@@ -119,6 +122,10 @@ export class RelationshipService implements OnDestroy {
     return this.http.get<Followed[]>(`${this.baseUri}/followed`, { params }).pipe(
       tap(followed => this._followed.set(followed))
     );
+  }
+
+  unfriend(username: string) {
+    return this.http.delete<void>(`${this.baseUri}/friends/${username}`);
   }
 
   follow(username: string) {
