@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
+import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
@@ -16,48 +17,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class RecommendationService {
+  private final AlgorithmService algorithmService;
   private final PostRepository postRepository;
-  private final AlgorithmRepository algorithmRepository;
   private final UserRepository userRepository;
   private final TopicRepository topicRepository;
 
+  @Transactional
   public List<RecommendedPost> getRecommendedPosts(User user, int page, int size) {
-    Optional<AlgorithmConfig> configOpt = algorithmRepository.findByUserId(user.getId());
-    if (configOpt.isEmpty()) {
-      throw new ResourceNotFoundException("Algorithm configuration not found");
-    }
-    AlgorithmConfig config = configOpt.get();
+    var config = algorithmService.getConfig(user);
 
     List<Float> interactionVectorList =
         userRepository.calculateUserInteractionPreferenceVector(user.getId());
     float[] interactionPreference = vectorFromVectorList(interactionVectorList);
 
-    List<String> topicIds = config.getTopics().stream().map(Topic::getTopicId).toList();
-    List<Float> topicVectorList = topicRepository.calculateTopicPreferenceVector(topicIds);
+    List<Float> topicVectorList = topicRepository.calculateTopicPreferenceVector(config.topics());
     float[] topicPreference = vectorFromVectorList(topicVectorList);
-
-    int offset = page * size;
 
     List<PostScoreProjection> scoredProjections =
         postRepository.findPersonalizedFeed(
             user.getId(),
-            config.getWeightInteraction() / 100.0,
+            config.weightInteraction() / 100.0,
             interactionPreference,
-            config.getWeightTopic() / 100.0,
+            config.weightTopic() / 100.0,
             topicPreference,
-            topicIds,
-            config.getWeightRecency() / 100.0,
-            config.getWeightTrending() / 100.0,
-            config.getWeightSourceQuality() / 100.0,
-            config.getWeightExploration() / 100.0,
+            config.topics(),
+            config.weightRecency() / 100.0,
+            config.weightTrending() / 100.0,
+            config.weightSourceQuality() / 100.0,
+            config.weightExploration() / 100.0,
             size,
-            offset);
+            page * size);
     if (scoredProjections.isEmpty()) {
       return List.of();
     }

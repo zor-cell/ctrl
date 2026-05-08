@@ -17,7 +17,7 @@ public interface TopicRepository extends JpaRepository<Topic, String> {
 
     @Query(
             value = """
-                    SELECT unnest(CAST(avg(t.embedding) AS real[]))
+                    SELECT UNNEST(CAST(AVG(t.embedding) AS real[]))
                     FROM topics t
                     WHERE t.topic_id IN (:topicIds)
                       AND t.embedding IS NOT NULL

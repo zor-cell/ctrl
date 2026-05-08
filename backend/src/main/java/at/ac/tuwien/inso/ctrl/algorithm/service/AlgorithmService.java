@@ -8,6 +8,8 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
+
+import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,10 +29,10 @@ public class AlgorithmService {
   }
 
   @Transactional
-  public AlgorithmConfigDto updateConfig(
-      User currentUser, AlgorithmConfigDto algorithmConfig) {
+  public AlgorithmConfigDto updateConfig(User currentUser, AlgorithmConfigDto algorithmConfig) {
     AlgorithmConfig config = getOrCreateConfig(currentUser);
 
+    config.setWeightInteraction(algorithmConfig.weightInteraction());
     config.setWeightRecency(algorithmConfig.weightRecency());
     config.setWeightExploration(algorithmConfig.weightExploration());
     config.setWeightSourceQuality(algorithmConfig.weightSourceQuality());
@@ -53,12 +55,13 @@ public class AlgorithmService {
               AlgorithmConfig defaultConfig =
                   AlgorithmConfig.builder()
                       .user(user)
-                      .weightInteraction(50)
-                      .weightRecency(50)
-                      .weightExploration(50)
+                      .weightInteraction(70)
+                      .weightRecency(60)
+                      .weightExploration(70)
                       .weightSourceQuality(50)
                       .weightTrending(50)
-                      .weightTopic(50)
+                      .weightTopic(40)
+                      .topics(new HashSet<>())
                       .build();
 
               return algorithmRepository.save(defaultConfig);

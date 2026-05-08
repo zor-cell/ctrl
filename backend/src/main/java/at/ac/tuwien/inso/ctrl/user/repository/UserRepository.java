@@ -41,20 +41,24 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   /** Calculates the average vector of the user's last 50 upvoted posts. */
   @Query(
-          value =
-                  """
-                          SELECT unnest(CAST(avg(sub.embedding) AS real[]))
-                          FROM (
-                              SELECT p.embedding
-                              FROM post_votes pv
-                              JOIN posts p ON pv.post_id = p.post_id
-                              WHERE pv.user_id = CAST(:userId AS varchar)
-                                AND pv.vote_type = 'up'
-                                AND p.embedding IS NOT NULL
-                              ORDER BY pv.created_at DESC
-                              LIMIT 50
-                          ) sub
-                          """,
-          nativeQuery = true)
+      value =
+          """
+          SELECT UNNEST(CAST(AVG(sub.weighted_embedding)AS real[]))
+             FROM (
+                 SELECT
+                     CASE
+                         WHEN pv.vote_type = 'up' THEN p.embedding
+                         WHEN pv.vote_type = 'down' THEN array(select unnest(p.embedding::real[]) * -0.5)::vector
+                         ELSE p.embedding
+                     END as weighted_embedding
+                 FROM post_votes pv
+                 JOIN posts p ON pv.post_id = p.post_id
+                 WHERE pv.user_id = CAST(:userId AS varchar)
+                   AND p.embedding IS NOT NULL
+                 ORDER BY pv.created_at DESC
+                 LIMIT 500
+             ) sub
+          """,
+      nativeQuery = true)
   List<Float> calculateUserInteractionPreferenceVector(@Param("userId") UUID userId);
 }
