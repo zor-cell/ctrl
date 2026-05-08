@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
 --Function to compute the wilson score
+--https://insightful-data-lab.com/2025/08/20/wilson-score-interval/
 CREATE OR REPLACE FUNCTION wilson_score(upvotes integer, downvotes integer)
     RETURNS numeric AS $$
 DECLARE

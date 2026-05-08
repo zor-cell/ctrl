@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.request.AlgorithmConfigRequest;
-import at.ac.tuwien.inso.ctrl.algorithm.dto.response.AlgorithmConfigResponse;
+import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.mapper.AlgorithmMapper;
@@ -21,15 +20,15 @@ public class AlgorithmService {
   private final TopicRepository topicRepository;
 
   @Transactional
-  public AlgorithmConfigResponse getConfig(User currentUser) {
+  public AlgorithmConfigDto getConfig(User currentUser) {
     AlgorithmConfig config = getOrCreateConfig(currentUser);
 
     return algorithmMapper.toConfig(config);
   }
 
   @Transactional
-  public AlgorithmConfigResponse updateConfig(
-      User currentUser, AlgorithmConfigRequest algorithmConfig) {
+  public AlgorithmConfigDto updateConfig(
+      User currentUser, AlgorithmConfigDto algorithmConfig) {
     AlgorithmConfig config = getOrCreateConfig(currentUser);
 
     config.setWeightRecency(algorithmConfig.weightRecency());

@@ -3,8 +3,7 @@ import {environment} from "../../environments/environment";
 import {HttpClient} from "@angular/common/http";
 import {NotificationService} from "../core/services/notification.service";
 import {tap} from "rxjs";
-import {AlgorithmConfigResponse} from "./dto/AlgorithmConfigResponse";
-import {AlgorithmConfigRequest} from "./dto/AlgorithmConfigRequest";
+import {AlgorithmConfig} from "./dto/AlgorithmConfig";
 
 @Injectable({
   providedIn: 'root',
@@ -15,11 +14,11 @@ export class AlgorithmService {
   private notificationService = inject(NotificationService);
 
   public getConfig() {
-    return this.httpClient.get<AlgorithmConfigResponse>(this.baseUri + '/config');
+    return this.httpClient.get<AlgorithmConfig>(this.baseUri + '/config');
   }
 
-  public updateConfig(updateConfigRequest: AlgorithmConfigRequest) {
-    return this.httpClient.put<AlgorithmConfigResponse>(this.baseUri + '/config', updateConfigRequest).pipe(
+  public updateConfig(updateConfigRequest: AlgorithmConfig) {
+    return this.httpClient.put<AlgorithmConfig>(this.baseUri + '/config', updateConfigRequest).pipe(
       tap(config => {
         this.notificationService.showSuccess('Updated algorithm configuration');
       })

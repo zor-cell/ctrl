@@ -1,10 +1,9 @@
-import {TopicResponse} from "../../post/dto/TopicResponse";
-
-export interface AlgorithmConfigResponse {
+export interface AlgorithmConfig {
+  weightInteraction: number;
   weightRecency: number;
   weightExploration: number;
   weightSourceQuality: number;
   weightTrending: number;
   weightTopic: number;
-  topics: TopicResponse[];
+  topics: string[];
 }
