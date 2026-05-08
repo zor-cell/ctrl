@@ -7,10 +7,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, String> {
     boolean existsByName(String name);
+
+    Optional<Topic> findByNameIgnoreCase(String name);
 
     @Query(
             value = """

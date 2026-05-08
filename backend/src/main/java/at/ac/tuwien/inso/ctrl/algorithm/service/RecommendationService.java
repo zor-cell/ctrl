@@ -4,21 +4,18 @@ import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
-import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +29,7 @@ public class RecommendationService {
 
   public List<RecommendedPost> getRecommendedPosts(User user, int page, int size) {
     Optional<AlgorithmConfig> configOpt = algorithmRepository.findByUserId(user.getId());
-    if(configOpt.isEmpty()) {
+    if (configOpt.isEmpty()) {
       throw new ResourceNotFoundException("Algorithm configuration not found");
     }
     AlgorithmConfig config = configOpt.get();
@@ -47,59 +44,64 @@ public class RecommendationService {
 
     int offset = page * size;
 
-    List<PostScoreProjection> scoredProjections = postRepository.findPersonalizedFeed(
-        user.getId(),
-        config.getWeightInteraction() / 100.0,
-        interactionPreference,
-        config.getWeightTopic() / 100.0,
-        topicPreference,
-        topicIds,
-        config.getWeightRecency() / 100.0,
-        config.getWeightTrending() / 100.0,
-        config.getWeightSourceQuality() / 100.0,
-        config.getWeightExploration() / 100.0,
-        size,
-        offset);
+    List<PostScoreProjection> scoredProjections =
+        postRepository.findPersonalizedFeed(
+            user.getId(),
+            config.getWeightInteraction() / 100.0,
+            interactionPreference,
+            config.getWeightTopic() / 100.0,
+            topicPreference,
+            topicIds,
+            config.getWeightRecency() / 100.0,
+            config.getWeightTrending() / 100.0,
+            config.getWeightSourceQuality() / 100.0,
+            config.getWeightExploration() / 100.0,
+            size,
+            offset);
     if (scoredProjections.isEmpty()) {
       return List.of();
     }
 
-    //fetch all posts from the db and create lookup table for retrieval
-    List<String> postIds = scoredProjections.stream()
-            .map(PostScoreProjection::getPostId)
-            .toList();
+    // fetch all posts from the db and create lookup table for retrieval
+    List<String> postIds = scoredProjections.stream().map(PostScoreProjection::getPostId).toList();
     List<Post> fullPosts = postRepository.findAllById(postIds);
-    Map<String, Post> postMap = fullPosts.stream()
-            .collect(Collectors.toMap(Post::getPostId, post -> post));
+    Map<String, Post> postMap =
+        fullPosts.stream().collect(Collectors.toMap(Post::getPostId, post -> post));
 
     return scoredProjections.stream()
-            .map(score -> {
+        .map(
+            score -> {
               Post post = postMap.get(score.getPostId());
-              PostExplanation explanation = new PostExplanation(
+              PostExplanation explanation =
+                  new PostExplanation(
                       score.getScoreInteraction(),
                       score.getScoreTopic(),
                       score.getScoreRecency(),
                       score.getScoreTrending(),
                       score.getScoreSource(),
                       score.getScoreExploration(),
-                      score.getTotalScore()
-              );
+                      score.getTotalScore());
 
               return new RecommendedPost(post, explanation);
             })
-            .toList();
+        .toList();
   }
 
   private float[] vectorFromVectorList(List<Float> vectorList) {
-    float[] vector;
     if (vectorList == null || vectorList.isEmpty()) {
-      vector = new float[EmbeddingModelConfig.MODEL_DIMENSIONS];
-    } else {
-      vector = new float[vectorList.size()];
-      for (int i = 0; i < vectorList.size(); i++) {
-        vector[i] = vectorList.get(i) != null ? vectorList.get(i) : 0f;
+      return null;
+    }
+
+    boolean hasData = false;
+    float[] vector = new float[vectorList.size()];
+    for (int i = 0; i < vectorList.size(); i++) {
+      float val = vectorList.get(i) != null ? vectorList.get(i) : 0f;
+      vector[i] = val;
+      if (val != 0f) {
+        hasData = true;
       }
     }
-    return vector;
+
+    return hasData ? vector : null;
   }
 }

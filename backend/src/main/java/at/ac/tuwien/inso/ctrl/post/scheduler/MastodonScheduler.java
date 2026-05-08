@@ -211,17 +211,14 @@ public class MastodonScheduler {
   }
 
   private Topic findOrCreateTopic(String name) {
-    String id = toId(name);
     return topicRepository
-        .findById(id)
+        .findByNameIgnoreCase(name)
         .orElseGet(
             () ->
                 topicRepository.save(
                     Topic.builder()
-                        .topicId(id)
                         .name(name)
                         .emoji("🏷️")
-                        .createdAt(LocalDateTime.now())
                         .build()));
   }
 

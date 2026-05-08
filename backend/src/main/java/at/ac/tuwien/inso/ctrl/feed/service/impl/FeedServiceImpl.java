@@ -74,7 +74,7 @@ public class FeedServiceImpl implements FeedService {
                     .orElse(Map.of());
 
     return recommendedPosts.stream()
-            .map(post -> feedMapper.toFeedPostResponse(post.getPost(), postVotes, sourceVotes))
+            .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
             .toList();
   }
 

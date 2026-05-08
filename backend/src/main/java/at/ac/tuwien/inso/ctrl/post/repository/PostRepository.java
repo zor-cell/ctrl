@@ -29,16 +29,26 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   WITH computed_scores AS (
                       SELECT p.*,
                              -- User interaction preference (Vector Cosine Similarity) [-1 to 1]
-                             (:wInteraction * (1 - (p.embedding <=> CAST(:interactionVector AS real[])::vector))) AS score_interaction,
-                             -- Topic preference (Vector Cosine Similarity) [-1 to 1] + Exact topic overlap [0 to 1]
-                             (:wTopic * (
-                               (1 - (p.embedding <=> CAST(:topicVector AS real[])::vector))
-                               + (COALESCE((SELECT COUNT(*) FROM post_topics pt WHERE pt.post_id = p.post_id AND pt.topic_id IN (:topicIds)), 0) / 10.0)
-                             )) AS score_topic,
+                             CASE
+                               WHEN CAST(:interactionVector AS real[]) IS NULL THEN 0
+                               ELSE (:wInteraction * (1 - (p.embedding <=> CAST(:interactionVector AS real[])::vector)))
+                             END AS score_interaction,
+                             (
+                               -- Topic preference (Vector Cosine Similarity) [-1 to 1]
+                               CASE
+                                 WHEN CAST(:topicVector AS real[]) IS NULL THEN 0
+                                 ELSE (:wTopic * (1 - (p.embedding <=> CAST(:topicVector AS real[])::vector)))
+                               END
+                              -- Exact topic overlap [0 to 1]
+                               + :wTopic * (COALESCE((SELECT COUNT(*) FROM post_topics pt WHERE pt.post_id = p.post_id AND pt.topic_id IN (:topicIds)), 0) / 10.0)
+                             ) AS score_topic,
                              -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
                              (:wRecency * EXP(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400)) AS score_recency,
                              -- Trending (Logarithmic scale of post upvotes) [0 to 1]
-                             (:wTrending * wilson_score(p.upvotes, p.downvotes)) AS score_trending,
+                             (:wTrending * wilson_score(
+                               COALESCE((SELECT COUNT(*) FROM post_votes pv WHERE pv.post_id = p.post_id AND pv.vote_type = 'up'), 0)::integer,
+                               COALESCE((SELECT COUNT(*) FROM post_votes pv WHERE pv.post_id = p.post_id AND pv.vote_type = 'down'), 0)::integer
+                             )) AS score_trending,
                              -- Source Quality (Logarithmic scale of source upvotes) [0 to 1]
                              (:wSource * wilson_score(s.upvotes, s.downvotes)) AS score_source,
                              -- Exploration [0 or 1]
@@ -47,7 +57,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       LEFT JOIN sources s ON p.source_id = s.source_id
                       LEFT JOIN follow_relations f
                                      ON f.followed_id = p.user_id
-                                    AND f.follower_id = CAST(:userId AS uuid)
+                                    AND f.follower_id = :userId
                       WHERE p.is_public = true
                             AND p.embedding IS NOT NULL
                             AND NOT EXISTS (
