@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,38 +26,51 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(
       value =
           """
-                  SELECT p.*
-                  FROM posts p
-                  LEFT JOIN sources s ON p.source_id = s.source_id
-                  LEFT JOIN follow_relations f
-                                 ON f.followed_id = p.user_id
-                                AND f.follower_id = :userId
-                  -- Count how many topic tags overlap
-                  LEFT JOIN (
-                                SELECT post_id, COUNT(*) as overlap_count
-                                FROM post_topics
-                                WHERE topic_id IN (:topicIds)
-                                GROUP BY post_id
-                            ) topic_overlap ON topic_overlap.post_id = p.post_id
-                  WHERE p.is_public = true AND p.embedding IS NOT NULL
-                  ORDER BY (
-                      -- User interaction preference (Vector Cosine Similarity) [-1 to 1]
-                      (:wInteraction * (1 - (p.embedding <=> CAST(:interactionVector AS real[])::vector)))
-                      -- Topic preference (Vector Cosine Similarity) [-1 to 1], Exact topic overlap [0 to 1]
-                      + (:wTopic * (1 - ((p.embedding <=> CAST(:topicVector AS real[])::vector)) + (COALESCE(topic_overlap.overlap_count, 0) / 10.0)))
-                      -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
-                      + (:wRecency * EXP(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400))
-                      -- Trending (Logarithmic scale of post upvotes)
-                      + (:wTrending * LN(1 + p.upvotes))
-                      -- Source Quality (Logarithmic scale of source upvotes)
-                      + (:wSource * LN(1 + s.upvotes))
-                      -- Exploration
-                      + (:wExploration * CASE WHEN f.follower_id IS NULL AND p.user_id != :userId THEN 1 ELSE 0 END)
-                      ) DESC
+                  WITH computed_scores AS (
+                      SELECT p.*,
+                             -- User interaction preference (Vector Cosine Similarity) [-1 to 1]
+                             (:wInteraction * (1 - (p.embedding <=> CAST(:interactionVector AS real[])::vector))) AS score_interaction,
+                             -- Topic preference (Vector Cosine Similarity) [-1 to 1] + Exact topic overlap [0 to 1]
+                             (:wTopic * (
+                               (1 - (p.embedding <=> CAST(:topicVector AS real[])::vector))
+                               + (COALESCE((SELECT COUNT(*) FROM post_topics pt WHERE pt.post_id = p.post_id AND pt.topic_id IN (:topicIds)), 0) / 10.0)
+                             )) AS score_topic,
+                             -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
+                             (:wRecency * EXP(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400)) AS score_recency,
+                             -- Trending (Logarithmic scale of post upvotes) [0 to 1]
+                             (:wTrending * wilson_score(p.upvotes, p.downvotes)) AS score_trending,
+                             -- Source Quality (Logarithmic scale of source upvotes) [0 to 1]
+                             (:wSource * wilson_score(s.upvotes, s.downvotes)) AS score_source,
+                             -- Exploration [0 or 1]
+                             (:wExploration * CASE WHEN f.follower_id IS NULL AND p.user_id != :userId THEN 1 ELSE 0 END) AS score_exploration
+                      FROM posts p
+                      LEFT JOIN sources s ON p.source_id = s.source_id
+                      LEFT JOIN follow_relations f
+                                     ON f.followed_id = p.user_id
+                                    AND f.follower_id = CAST(:userId AS uuid)
+                      WHERE p.is_public = true
+                            AND p.embedding IS NOT NULL
+                            AND NOT EXISTS (
+                               SELECT 1 FROM seen_posts sp
+                               WHERE sp.user_id = :userId
+                                 AND sp.post_id = p.post_id
+                            )
+                  )
+                  SELECT
+                      c.post_id AS postId,
+                      c.score_interaction AS scoreInteraction,
+                      c.score_topic AS scoreTopic,
+                      c.score_recency AS scoreRecency,
+                      c.score_trending AS scoreTrending,
+                      c.score_source AS scoreSource,
+                      c.score_exploration AS scoreExploration,
+                      (c.score_interaction + c.score_topic + c.score_recency + c.score_trending + c.score_source + c.score_exploration) AS totalScore
+                  FROM computed_scores c
+                  ORDER BY totalScore DESC
                   LIMIT :limit OFFSET :offset
                   """,
       nativeQuery = true)
-  List<Post> findPersonalizedFeed(
+  List<PostScoreProjection> findPersonalizedFeed(
       @Param("userId") UUID userId,
       @Param("wInteraction") double wInteraction,
       @Param("interactionVector") float[] interactionVector,

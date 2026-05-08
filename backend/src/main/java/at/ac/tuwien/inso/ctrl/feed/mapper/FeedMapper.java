@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,81 @@ import org.springframework.stereotype.Component;
 public class FeedMapper {
 
   private final FileStorageService fileStorageService;
+
+  public FeedPostResponse toFeedPostResponse(
+      RecommendedPost recommendedPost,
+      Map<String, String> postVotes,
+      Map<String, String> sourceVotes) {
+    Post post = recommendedPost.getPost();
+
+    String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
+    String username =
+        post.isExternalPost()
+            ? post.getExternalAuthor().getDisplayName()
+            : post.getUser().getUsername();
+    String profilePic =
+        post.isExternalPost()
+            ? post.getExternalAuthor().getAvatarUrl()
+            : post.getUser().getProfilePicture();
+
+    String postUserVote = postVotes.get(post.getPostId());
+
+    List<LabelResponse> labels =
+        post.getPostLabels().stream()
+            .map(
+                pl ->
+                    new LabelResponse(
+                        pl.getLabel().getLabelId(),
+                        pl.getLabel().getName(),
+                        pl.getLabel().getEmoji(),
+                        pl.getLabel().getExplanation()))
+            .toList();
+
+    List<FeedPostResponse.SourceResponse> sources =
+        post.getSource() != null
+            ? post.getSource().getSingleSources().stream()
+                .map(
+                    s ->
+                        new FeedPostResponse.SourceResponse(
+                            post.getSource().getSourceId(),
+                            s.getUrl(),
+                            post.getSource().getUpvotes(),
+                            post.getSource().getDownvotes(),
+                            sourceVotes.get(post.getSource().getSourceId())))
+                .toList()
+            : List.of();
+
+    List<FeedPostResponse.CommentResponse> comments =
+        post.getComments().stream().map(this::toCommentResponse).toList();
+
+    List<String> topicIds =
+        post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
+
+    String mediaRef = post.getMediaRef();
+
+    // Only internal posts receive presigned URLs
+    if (!post.isExternalPost() && mediaRef != null) {
+      mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
+    }
+
+    return new FeedPostResponse(
+        post.getPostId(),
+        authorId,
+        username,
+        profilePic,
+        post.getCaption(),
+        mediaRef,
+        post.isPublic(),
+        post.getUpvotes(),
+        post.getDownvotes(),
+        postUserVote,
+        post.getCreatedAt(),
+        topicIds,
+        labels,
+        sources,
+        comments,
+        recommendedPost.getExplanation());
+  }
 
   public FeedPostResponse toFeedPostResponse(
       Post post, Map<String, String> postVotes, Map<String, String> sourceVotes) {
@@ -83,7 +159,8 @@ public class FeedMapper {
         topicIds,
         labels,
         sources,
-        comments);
+        comments,
+        null);
   }
 
   public FeedPostResponse.CommentResponse toCommentResponse(Comment comment) {

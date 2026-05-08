@@ -9,10 +9,9 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +54,7 @@ public class AlgorithmService {
               AlgorithmConfig defaultConfig =
                   AlgorithmConfig.builder()
                       .user(user)
+                      .weightInteraction(50)
                       .weightRecency(50)
                       .weightExploration(50)
                       .weightSourceQuality(50)

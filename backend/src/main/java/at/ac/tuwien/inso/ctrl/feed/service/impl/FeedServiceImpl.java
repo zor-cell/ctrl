@@ -5,10 +5,7 @@ import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
-import at.ac.tuwien.inso.ctrl.post.entity.Comment;
-import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
-import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
+import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
@@ -48,10 +45,9 @@ public class FeedServiceImpl implements FeedService {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     Optional<String> userId = Optional.of(user.getId().toString());
 
-    List<Post> posts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
-    List<String> postIds = posts.stream().map(Post::getPostId).collect(Collectors.toList());
+    List<RecommendedPost> recommendedPosts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
+    List<String> postIds = recommendedPosts.stream().map(p -> p.getPost().getPostId()).collect(Collectors.toList());
 
-    // Step 3: Retrieve votes for all posts at once
     Map<String, String> postVotes =
             userId
                     .map(
@@ -62,9 +58,9 @@ public class FeedServiceImpl implements FeedService {
                     .orElse(Map.of());
 
     List<String> sourceIds =
-            posts.stream()
-                    .filter(p -> p.getSource() != null)
-                    .map(p -> p.getSource().getSourceId())
+            recommendedPosts.stream()
+                    .filter(p -> p.getPost().getSource() != null)
+                    .map(p -> p.getPost().getSource().getSourceId())
                     .toList();
 
     Map<String, String> sourceVotes =
@@ -77,9 +73,8 @@ public class FeedServiceImpl implements FeedService {
                                                             v -> v.getId().getSourceId(), SourceVote::getVoteType)))
                     .orElse(Map.of());
 
-    // Step 4: Mapping
-    return posts.stream()
-            .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
+    return recommendedPosts.stream()
+            .map(post -> feedMapper.toFeedPostResponse(post.getPost(), postVotes, sourceVotes))
             .toList();
   }
 
