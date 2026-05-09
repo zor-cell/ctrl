@@ -280,7 +280,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withWrongUsername_shouldReturnUnauthorized()
+  public void testResendVerificationEmail_withWrongUsername_shouldReturnCreated()
       throws Exception {
     SendEmailRequest request = new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
 
@@ -289,7 +289,7 @@ public class AuthControllerIntegrationTest {
             post(sendEmailEndpoint)
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<EmailVerification> verification =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -297,7 +297,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withWrongEmail_shouldReturnUnauthorized()
+  public void testResendVerificationEmail_withWrongEmail_shouldReturnCreated()
       throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), "wrong@email.com");
@@ -307,7 +307,7 @@ public class AuthControllerIntegrationTest {
             post(sendEmailEndpoint)
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<EmailVerification> verification =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -315,7 +315,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withEmailUsernamesMismatch_shouldReturnNotFound()
+  public void testResendVerificationEmail_withEmailUsernamesMismatch_shouldReturnCreatedButNotSendEmail()
       throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
@@ -325,7 +325,7 @@ public class AuthControllerIntegrationTest {
             post(sendEmailEndpoint)
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<EmailVerification> verification =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -333,13 +333,13 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withMissingUsername_shouldReturnNotFound()
+  public void testResendVerificationEmail_withMissingUsername_shouldReturnCreated()
       throws Exception {
     String invalidRequest = "{\"email\": \"test@test.com\"}";
 
     mockMvc
         .perform(post(sendEmailEndpoint).contentType("application/json").content(invalidRequest))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<EmailVerification> verification =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -347,12 +347,12 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withMissingEmail_shouldReturnNotFound() throws Exception {
+  public void testResendVerificationEmail_withMissingEmail_shouldReturnCreated() throws Exception {
     String invalidRequest = "{\"username\": \"testuser\"}";
 
     mockMvc
         .perform(post(sendEmailEndpoint).contentType("application/json").content(invalidRequest))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<EmailVerification> verification =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -509,12 +509,12 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testSendPasswordReset_withInvalidEmail_shouldReturnNotFound() throws Exception {
+  public void testSendPasswordReset_withInvalidEmail_shouldReturnCreated() throws Exception {
     String validRequest = "{\"email\": \" invalidEmail@gmail.com\"}";
 
     mockMvc
         .perform(post(forgotPasswordEndpoint).contentType("application/json").content(validRequest))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isCreated());
 
     Optional<PasswordReset> reset = passwordResetRepository.findPasswordResetByUser(existingUser);
     assertFalse(reset.isPresent());

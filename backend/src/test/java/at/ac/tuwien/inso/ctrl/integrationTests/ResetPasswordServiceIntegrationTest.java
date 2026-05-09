@@ -48,8 +48,7 @@ import org.thymeleaf.TemplateEngine;
 @Transactional
 public class ResetPasswordServiceIntegrationTest {
 
-  @Autowired
-  private JavaMailSender mailSender;
+  private static JavaMailSender mailSender;
   private static User testUser;
   private static ResetPasswordService resetPasswordService;
 
@@ -70,6 +69,7 @@ public class ResetPasswordServiceIntegrationTest {
 
   @BeforeEach
   public void setUp() {
+    mailSender = TestConfig.javaMailSender();
     resetPasswordService =
         new ResetPasswordService(
             passwordEncoder, mailSender, templateEngine, userRepository, passwordResetRepository);
@@ -139,7 +139,7 @@ public class ResetPasswordServiceIntegrationTest {
             CommunicationException.class,
             () -> resetPasswordService.sendPasswordResetEmail(request));
 
-    assertTrue(exception.getMessage().contains("Failed to send email"));
+    assertTrue(exception.getMessage().contains("Failed to send email. You can register again in 2 minutes."));
   }
 
   @Test
@@ -174,9 +174,7 @@ public class ResetPasswordServiceIntegrationTest {
       throws MessagingException, IOException {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest("wrongEmail@gmail.com");
 
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> resetPasswordService.sendPasswordResetEmail(request));
+    resetPasswordService.sendPasswordResetEmail(request);
 
     Optional<PasswordReset> resetOptional =
         passwordResetRepository.findPasswordResetByUser(testUser);
@@ -189,9 +187,7 @@ public class ResetPasswordServiceIntegrationTest {
       throws MessagingException, IOException {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest("wrongEmail@gmail.com");
 
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> resetPasswordService.sendPasswordResetEmail(request));
+    resetPasswordService.sendPasswordResetEmail(request);
     Mockito.verify(mailSender, Mockito.never()).send(Mockito.any(MimeMessage.class));
   }
 }
