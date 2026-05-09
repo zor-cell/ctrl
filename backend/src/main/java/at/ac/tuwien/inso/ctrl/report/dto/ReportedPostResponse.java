@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.report.dto;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import java.time.LocalDateTime;
@@ -31,6 +32,6 @@ public record ReportedPostResponse(
     String userVote,
     LocalDateTime createdAt,
     List<String> topicIds,
-    List<FeedPostResponse.LabelResponse> labels,
+    List<LabelResponse> labels,
     List<FeedPostResponse.SourceResponse> sources,
     List<FeedPostResponse.CommentResponse> comments) {}

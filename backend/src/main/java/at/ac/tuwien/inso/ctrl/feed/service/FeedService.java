@@ -18,6 +18,4 @@ public interface FeedService {
    * @return list of feed posts
    */
   List<FeedPostResponse> getFeed(int page, int postsPerPage, String username);
-
-  FeedPostResponse toFeedPostResponse(Post post, String userId);
 }

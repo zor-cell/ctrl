@@ -1,11 +1,14 @@
 package at.ac.tuwien.inso.ctrl.report.service;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SourceResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
@@ -15,7 +18,9 @@ import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,6 +31,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -35,7 +42,10 @@ public class ReportServiceImp implements ReportService {
   private final ReportRepository reportRepository;
   private final PostRepository postRepository;
   private final SourceRepository sourceRepository;
-  private final FeedService feedService;
+  private final PostVoteRepository postVoteRepository;
+  private final SourceVoteRepository sourceVoteRepository;
+  private final UserRepository userRepository;
+  private final FeedMapper feedMapper;
 
   @Override
   public void makeReport(CreateReportRequest createReportRequest, User currentUser) {
@@ -61,7 +71,30 @@ public class ReportServiceImp implements ReportService {
 
     reports = reportRepository.findByContentTypeAndStatus(ContentTypeEnum.POST, reportStatus, pageable);
 
-    return reports.stream().map(this::toReportedPostResponse).toList();
+    List<String> postIds = reports.stream().map(Report::getContentId).toList();
+
+    List<Post> posts = postRepository.findAllWithAssociationsByIds(postIds);
+
+    Map<String, Post> postMap = posts.stream().collect(Collectors.toMap(Post::getPostId, post -> post));
+
+    List<String> sourceIds = posts.stream()
+        .filter(p -> p.getSource() != null)
+        .map(p -> p.getSource().getSourceId())
+        .toList();
+
+    Map<String, String> postVotes = Map.of();
+    Map<String, String> sourceVotes = Map.of();
+
+    return reports.stream()
+        .map(report -> {
+          Post post = postMap.get(report.getContentId());
+          if (post != null) {
+            return toReportedPostResponse(report, post, postVotes, sourceVotes);
+          }
+          return null;
+        })
+        .filter(r -> r != null)
+        .toList();
   }
 
   @Override
@@ -137,10 +170,15 @@ public class ReportServiceImp implements ReportService {
         source.getDate());
   }
 
-  private ReportedPostResponse toReportedPostResponse(Report report) {
-    Post post = postRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Post not found: " + report.getContentId()));
+  private ReportedPostResponse toReportedPostResponse(
+      Report report,
+      Post post,
+      Map<String, String> postVotes,
+      Map<String, String> sourceVotes
+  ) {
 
-    FeedPostResponse feedPostResponse = feedService.toFeedPostResponse(post, null);
+    // Use the same mapping logic as FeedService
+    FeedPostResponse feedPostResponse = feedMapper.toFeedPostResponse(post, postVotes, sourceVotes);
 
     return new ReportedPostResponse(
         // Report Info
@@ -160,7 +198,7 @@ public class ReportServiceImp implements ReportService {
         feedPostResponse.userProfilePic(),
         feedPostResponse.caption(),
         feedPostResponse.mediaRef(),
-        feedPostResponse.mediaUrl(),
+        feedPostResponse.mediaRef(),
         feedPostResponse.isPublic(),
         feedPostResponse.upvotes(),
         feedPostResponse.downvotes(),
