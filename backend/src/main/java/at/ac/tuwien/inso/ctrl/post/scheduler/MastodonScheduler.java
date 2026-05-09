@@ -131,7 +131,7 @@ public class MastodonScheduler {
     }
 
     //generate vector embedding
-    float[] vector = embeddingService.embedTextWithImage(captionResult.caption(), mediaRef);
+    float[] embedding = embeddingService.embedTextWithImage(captionResult.caption(), mediaRef);
 
     Post post =
         Post.builder()
@@ -145,7 +145,7 @@ public class MastodonScheduler {
             .upvotes(0)
             .downvotes(0)
             .createdAt(createdAt)
-            .embedding(vector)
+            .embedding(embedding)
             .build();
 
     // Labels hinzufügen
@@ -160,7 +160,7 @@ public class MastodonScheduler {
     }
 
     // Topics aus Hashtags
-    JsonNode tags = status.path("tags");
+    /*JsonNode tags = status.path("tags");
     if (tags.isArray()) {
       for (JsonNode tag : tags) {
         String tagName = tag.path("name").asText(null);
@@ -169,6 +169,12 @@ public class MastodonScheduler {
           addTopic(post, topic);
         }
       }
+    }*/
+
+    //add topics from our topic pool automatically to mastodon posts
+    List<Topic> matchingTopics = topicRepository.findMatchingTopicsForEmbedding(embedding, 3);
+    for(var topic : matchingTopics) {
+      addTopic(post, topic);
     }
 
     postRepository.save(post);

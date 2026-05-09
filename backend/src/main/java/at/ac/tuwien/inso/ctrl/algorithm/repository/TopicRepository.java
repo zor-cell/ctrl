@@ -24,4 +24,16 @@ public interface TopicRepository extends JpaRepository<Topic, String> {
                     """,
             nativeQuery = true)
     List<Float> calculateTopicPreferenceVector(@Param("topicIds") List<String> topicIds);
+
+  @Query(
+      value =
+          """
+                    SELECT t.*
+                    FROM topics t
+                    WHERE t.embedding IS NOT NULL
+                    ORDER BY t.embedding <=> CAST(:postEmbedding AS vector)
+                    LIMIT :limit
+                    """,
+      nativeQuery = true)
+  List<Topic> findMatchingTopicsForEmbedding(@Param("postEmbedding") float[] postEmbedding, @Param("limit") int limit);
 }
