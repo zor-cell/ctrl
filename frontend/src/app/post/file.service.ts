@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { map } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { FileUploadResponse } from './dto/FileUploadResponse';
@@ -22,5 +23,11 @@ export class FileService {
   deletePostMedia(mediaRef: string) {
     const params = new HttpParams().set('ref', mediaRef);
     return this.httpClient.delete<void>(`${this.baseUri}/post-media`, { params });
+  }
+
+  loadMediaUrl(mediaUrl: string) {
+    return this.httpClient
+      .get(mediaUrl, { responseType: 'blob' })
+      .pipe(map(blob => URL.createObjectURL(blob)));
   }
 }

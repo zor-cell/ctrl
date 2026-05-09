@@ -25,13 +25,15 @@ public class UserMapper {
         user.isVerified());
   }
 
-  public PublicUserProfileResponse toPublicUserProfileResponse(User user) {
+  public PublicUserProfileResponse toPublicUserProfileResponse(
+      User user, boolean canSeePrivatePosts) {
     return new PublicUserProfileResponse(
         user.getId(),
         user.getUsername(),
         user.isVerified() ? user.getName() : null,
         user.getBio(),
         fileStorageService.resolveFileUrl(user.getProfilePicture()),
-        user.isVerified());
+        user.isVerified(),
+        canSeePrivatePosts);
   }
 }

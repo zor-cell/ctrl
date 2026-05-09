@@ -8,6 +8,7 @@ import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class FollowService {
 
   private final FollowRelationRepository followRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final UserRepository userRepository;
   private final RelationshipMapper socialMapper;
 
@@ -81,5 +83,13 @@ public class FollowService {
 
   public boolean isFollowing(User follower, User followed) {
     return followRelationRepository.existsByFollowerAndFollowed(follower, followed);
+  }
+
+  public Set<UUID> getFriendIds(User currentUser) {
+    return friendRelationRepository.findFriendIds(currentUser);
+  }
+
+  public boolean areFriends(User firstUser, User secondUser) {
+    return friendRelationRepository.existsByUsers(firstUser, secondUser);
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
+import { map, tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
 import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
@@ -247,6 +247,12 @@ export class RelationshipService implements OnDestroy {
       .set('verifiedOnly', verifiedOnly.toString());
 
     return this.http.get<UserSearchResult[]>(`${this.searchUri}/search`, { params }).pipe(
+      map(results =>
+        results.map(result => ({
+          ...result,
+          relationshipStatuses: result.relationshipStatuses ?? [],
+        }))
+      ),
       tap(results => {
         this._searchResults.set(results);
         this.cacheProfilePictures(results);

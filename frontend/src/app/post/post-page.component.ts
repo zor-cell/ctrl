@@ -10,14 +10,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { NotificationService } from '../core/services/notification.service';
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { PostResponse } from './dto/PostResponse';
@@ -46,17 +45,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
-  private readonly notificationService = inject(NotificationService);
   private readonly mediaCacheService = inject(MediaCacheService);
+  private readonly notificationService = inject(NotificationService);
   protected readonly userService = inject(UserService);
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
   protected readonly dialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
+  protected readonly profilePictureObjectUrl = signal<string | null>(null);
+  protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
-  protected readonly publicProfile = signal<PublicUserProfile | null>(null);
   protected readonly selectedPost = signal<PostResponse | null>(null);
+  protected readonly publicProfile = signal<PublicUserProfile | null>(null);
+  protected readonly publicProfileUsername = signal<string | null>(null);
   protected readonly loadingPosts = signal(false);
   protected readonly updatingAvatar = signal(false);
   protected readonly editingProfile = signal(false);
@@ -81,17 +83,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
     () => this.username().trim().charAt(0).toUpperCase() || '?',
   );
   protected readonly currentProfilePicture = computed(
-    () =>
-      this.avatarPreviewUrl()
-      ?? this.publicProfile()?.profilePicture
-      ?? this.userService.user()?.profilePicture
-      ?? null,
+    () => this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
     return bio && bio.length > 0 ? bio : 'No bio yet.';
   });
-  protected readonly publicProfileUsername = signal<string | null>(null);
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
   protected readonly canEditProfile = computed(
     () => !this.createOnlyMode() && !this.publicProfileMode(),
@@ -100,7 +97,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly bioTooLong = computed(() => this.bioLength() > this.maxBioLength);
   protected readonly usernameDraftTrimmed = computed(() => this.profileUsernameDraft().trim());
   protected readonly usernameChanged = computed(
-    () => this.usernameDraftTrimmed() !== this.username(),
+    () => this.usernameDraftTrimmed() !== this.userService.user()?.username,
   );
   protected readonly usernameEmpty = computed(() => this.usernameDraftTrimmed().length === 0);
   protected readonly canSaveProfile = computed(
@@ -109,48 +106,63 @@ export class PostPageComponent implements OnDestroy, OnInit {
       && !this.bioTooLong()
       && !this.usernameEmpty()
       && !this.checkingUsername()
-      && (this.usernameAvailable() !== false),
+      && this.usernameAvailable() !== false,
   );
   protected readonly postsCountLabel = computed(() => {
     const count = this.myPosts().length;
     return count === 1 ? '1 post' : `${count} posts`;
   });
-  protected readonly isVerifiedUser = computed(
-    () => this.userService.user()?.isVerified ?? false,
-  );
   protected readonly profileEyebrow = computed(() =>
     this.publicProfileMode() ? 'Profile' : 'Archive',
   );
   protected readonly postsHeading = computed(() =>
     this.publicProfileMode() ? `${this.username()}'s posts` : 'Your posts',
   );
+  protected readonly privatePostsHidden = computed(
+    () => this.publicProfileMode() && this.publicProfile()?.canSeePrivatePosts === false,
+  );
+  protected readonly emptyPostsTitle = computed(() =>
+    this.privatePostsHidden() ? 'Private posts are hidden' : 'No posts yet',
+  );
+  protected readonly emptyPostsMessage = computed(() => {
+    if (this.privatePostsHidden()) {
+      return `Become friends with ${this.username()} to see private posts.`;
+    }
+
+    return this.publicProfileMode()
+      ? 'Public posts will appear here.'
+      : 'Your posts will appear here after you create them.';
+  });
+  protected readonly isVerifiedUser = computed(
+    () => this.userService.user()?.isVerified ?? false,
+  );
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
-  private usernameAvailabilityTimer: ReturnType<typeof setTimeout> | null = null;
+  private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit() {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
     this.publicProfileUsername.set(this.route.snapshot.paramMap.get('username'));
     this.loadTopics();
-    const profileUsername = this.publicProfileUsername();
-    if (profileUsername) {
-      this.loadPublicProfile(profileUsername);
-      this.loadProfilePosts(profileUsername);
+    if (this.publicProfileMode()) {
+      this.loadPublicProfile();
     } else if (!this.createOnlyMode()) {
-      this.loadCurrentUserAndPosts();
+      this.loadProfilePicture(this.userService.user()?.profilePicture);
+      this.loadMyPosts();
     }
 
     if (this.createOnlyMode()) {
-      this.refreshCurrentUser();
       this.openCreateDialog();
     }
   }
 
   ngOnDestroy() {
-    if (this.usernameAvailabilityTimer) {
-      clearTimeout(this.usernameAvailabilityTimer);
+    if (this.usernameCheckTimeout) {
+      clearTimeout(this.usernameCheckTimeout);
     }
     this.revokeAvatarPreview();
+    this.revokeProfilePictureObjectUrl();
+    this.revokePostMediaObjectUrls();
   }
 
   protected openCreateDialog() {
@@ -175,25 +187,19 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openProfileSettings() {
-    if (!this.canEditProfile()) {
-      return;
-    }
-
     this.router.navigate(['/settings']);
   }
 
   protected startProfileEdit() {
-    if (!this.canEditProfile()) {
+    const user = this.userService.user();
+    if (!user) {
       return;
     }
 
-    const user = this.userService.user();
-    this.profileBioDraft.set(user?.bio ?? '');
-    this.profileUsernameDraft.set(user?.username ?? '');
-    this.usernameAvailable.set(true);
-    this.checkingUsername.set(false);
+    this.profileUsernameDraft.set(user.username);
+    this.profileBioDraft.set(user.bio ?? '');
+    this.usernameAvailable.set(null);
     this.selectedProfilePicture.set(null);
-    this.revokeAvatarPreview();
     this.editingProfile.set(true);
   }
 
@@ -206,7 +212,6 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.profileBioDraft.set('');
     this.profileUsernameDraft.set('');
     this.usernameAvailable.set(null);
-    this.checkingUsername.set(false);
     this.selectedProfilePicture.set(null);
     this.revokeAvatarPreview();
   }
@@ -219,7 +224,33 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected updateUsernameDraft(event: Event) {
     const input = event.target as HTMLInputElement;
     this.profileUsernameDraft.set(input.value);
-    this.scheduleUsernameAvailabilityCheck();
+    this.usernameAvailable.set(null);
+
+    if (this.usernameCheckTimeout) {
+      clearTimeout(this.usernameCheckTimeout);
+    }
+
+    if (this.usernameEmpty() || !this.usernameChanged()) {
+      this.checkingUsername.set(false);
+      return;
+    }
+
+    this.checkingUsername.set(true);
+    this.usernameCheckTimeout = setTimeout(() => {
+      const username = this.usernameDraftTrimmed();
+      this.userService.isUsernameAvailable(username).subscribe({
+        next: available => {
+          if (this.usernameDraftTrimmed() === username) {
+            this.usernameAvailable.set(available);
+            this.checkingUsername.set(false);
+          }
+        },
+        error: () => {
+          this.usernameAvailable.set(false);
+          this.checkingUsername.set(false);
+        },
+      });
+    }, 350);
   }
 
   protected saveProfileChanges() {
@@ -235,28 +266,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    if (this.usernameEmpty()) {
-      this.notificationService.showWarning('Username is required.');
-      return;
-    }
-
-    if (this.usernameAvailable() === false) {
-      this.notificationService.showWarning('This username is already taken.');
+    if (!this.canSaveProfile()) {
       return;
     }
 
     this.updatingProfile.set(true);
-    this.userService
-      .updateUser({
-        name: user.name,
-        email: user.email,
-        bio: this.profileBioDraft().trim(),
-        birthdate: user.birthdate,
-      }, false)
-      .subscribe({
-        next: () => this.saveUsernameIfNeeded(),
-        error: () => this.updatingProfile.set(false),
-      });
+    this.userService.updateUser({
+      name: user.name,
+      email: user.email,
+      bio: this.profileBioDraft().trim(),
+      birthdate: user.birthdate,
+    }, false).subscribe({
+      next: () => this.saveUsernameIfNeeded(),
+      error: () => this.updatingProfile.set(false),
+    });
   }
 
   protected openAvatarPicker() {
@@ -291,7 +314,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openPost(post: PostResponse) {
-    this.selectedPost.set(post);
+    this.selectedPost.set(this.withRenderablePostMedia(post));
   }
 
   protected closePost() {
@@ -320,6 +343,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.deletingPost.set(true);
     this.postService.deletePost(post.postId).subscribe({
       next: () => {
+        this.revokePostMediaObjectUrl(post.postId);
         this.myPosts.update(posts =>
           posts.filter(currentPost => currentPost.postId !== post.postId),
         );
@@ -341,7 +365,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return post.mediaUrl;
+    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
@@ -353,7 +377,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.getMyPosts().subscribe({
       next: posts => {
         this.myPosts.set(posts);
-        this.cachePostMedia(posts);
+        this.loadPostMedia(posts);
         this.loadingPosts.set(false);
       },
       error: () => {
@@ -367,43 +391,31 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
   }
 
-  private loadCurrentUserAndPosts() {
-    this.userService.loadUser().subscribe({
-      next: () => this.loadMyPosts(),
-      error: () => this.loadMyPosts(),
-    });
-  }
+  private loadPublicProfile() {
+    const username = this.publicProfileUsername();
+    if (!username) {
+      return;
+    }
 
-  private refreshCurrentUser() {
-    this.userService.loadUser().subscribe({
-      error: () => {
-        this.userService.clearUser();
-      },
-    });
-  }
-
-  private loadPublicProfile(username: string) {
+    this.loadingPosts.set(true);
     this.userService.getPublicProfile(username).subscribe({
       next: profile => {
         this.publicProfile.set(profile);
-        this.mediaCacheService.cacheUrl(profile.profilePicture, 'image');
+        this.loadProfilePicture(profile.profilePicture);
       },
       error: () => {
+        this.loadingPosts.set(false);
         this.notificationService.showWarning(
           'This profile could not be loaded from the backend.',
           'Profile unavailable',
         );
-        this.router.navigate(['/search']);
       },
     });
-  }
 
-  private loadProfilePosts(username: string) {
-    this.loadingPosts.set(true);
     this.postService.getProfilePostsForUser(username).subscribe({
       next: posts => {
         this.myPosts.set(posts);
-        this.cachePostMedia(posts);
+        this.loadPostMedia(posts);
         this.loadingPosts.set(false);
       },
       error: () => {
@@ -442,11 +454,126 @@ export class PostPageComponent implements OnDestroy, OnInit {
     };
   }
 
-  private cachePostMedia(posts: PostResponse[]): void {
-    posts.forEach(post => {
-      const kind = postMediaKind(post.mediaRef ?? post.mediaUrl);
-      this.mediaCacheService.cacheUrl(post.mediaUrl, kind);
+  private saveUsernameIfNeeded() {
+    if (!this.usernameChanged()) {
+      this.saveProfilePictureIfNeeded();
+      return;
+    }
+
+    this.userService.updateUsername(
+      { newUsername: this.usernameDraftTrimmed() },
+      false,
+    ).subscribe({
+      next: () => this.saveProfilePictureIfNeeded(),
+      error: () => this.updatingProfile.set(false),
     });
+  }
+
+  private saveProfilePictureIfNeeded() {
+    const profilePicture = this.selectedProfilePicture();
+    if (!profilePicture) {
+      this.finishProfileSave();
+      return;
+    }
+
+    this.userService.updateProfilePicture(profilePicture, false).subscribe({
+      next: () => this.finishProfileSave(),
+      error: () => this.updatingProfile.set(false),
+    });
+  }
+
+  private finishProfileSave() {
+    this.updatingProfile.set(false);
+    this.editingProfile.set(false);
+    this.selectedProfilePicture.set(null);
+    this.revokeAvatarPreview();
+    this.loadProfilePicture(this.userService.user()?.profilePicture);
+    this.notificationService.showSuccess('Updated profile');
+  }
+
+  private loadPostMedia(posts: PostResponse[]): void {
+    this.revokePostMediaObjectUrls();
+    posts.forEach(post => {
+      const mediaUrl = post.mediaUrl;
+
+      if (!mediaUrl) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(
+        mediaUrl,
+        postMediaKind(post.mediaRef ?? mediaUrl),
+        'high',
+      ).subscribe({
+        next: objectUrl => {
+          if (objectUrl) {
+            this.setPostMediaObjectUrl(post.postId, objectUrl);
+          }
+        },
+      });
+    });
+  }
+
+  private loadProfilePicture(url: string | null | undefined): void {
+    this.revokeProfilePictureObjectUrl();
+
+    if (!url) {
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(url, 'image', 'high').subscribe({
+      next: objectUrl => {
+        if (objectUrl) {
+          this.replaceProfilePictureObjectUrl(objectUrl);
+        }
+      },
+      error: () => this.profilePictureObjectUrl.set(null),
+    });
+  }
+
+  private isProtectedMediaUrl(url: string | null | undefined): boolean {
+    return this.mediaCacheService.isBackendManagedMediaUrl(url);
+  }
+
+  private directMediaUrl(url: string | null | undefined): string | null {
+    if (!url || this.isProtectedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
+  }
+
+  private withRenderablePostMedia(post: PostResponse): PostResponse {
+    const mediaUrl = this.postMediaUrl(post);
+    return mediaUrl ? { ...post, mediaUrl } : post;
+  }
+
+  private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
+    this.revokePostMediaObjectUrl(postId);
+    this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+    this.selectedPost.update(post =>
+      post?.postId === postId ? { ...post, mediaUrl: objectUrl } : post,
+    );
+  }
+
+  private revokePostMediaObjectUrl(postId: string): void {
+    this.postMediaObjectUrls.update(urls => {
+      const remaining = { ...urls };
+      delete remaining[postId];
+      return remaining;
+    });
+  }
+
+  private revokePostMediaObjectUrls(): void {
+    this.postMediaObjectUrls.set({});
+  }
+
+  private replaceProfilePictureObjectUrl(objectUrl: string): void {
+    this.profilePictureObjectUrl.set(objectUrl);
+  }
+
+  private revokeProfilePictureObjectUrl(): void {
+    this.profilePictureObjectUrl.set(null);
   }
 
   private revokeAvatarPreview() {
@@ -455,89 +582,5 @@ export class PostPageComponent implements OnDestroy, OnInit {
       URL.revokeObjectURL(currentAvatarPreviewUrl);
       this.avatarPreviewUrl.set(null);
     }
-  }
-
-  private scheduleUsernameAvailabilityCheck() {
-    if (this.usernameAvailabilityTimer) {
-      clearTimeout(this.usernameAvailabilityTimer);
-    }
-
-    const username = this.usernameDraftTrimmed();
-    if (!username) {
-      this.usernameAvailable.set(false);
-      this.checkingUsername.set(false);
-      return;
-    }
-
-    if (!this.usernameChanged()) {
-      this.usernameAvailable.set(true);
-      this.checkingUsername.set(false);
-      return;
-    }
-
-    this.checkingUsername.set(true);
-    this.usernameAvailable.set(null);
-    this.usernameAvailabilityTimer = setTimeout(() => {
-      this.userService.isUsernameAvailable(username).subscribe({
-        next: available => {
-          if (this.usernameDraftTrimmed() === username) {
-            this.usernameAvailable.set(available);
-            this.checkingUsername.set(false);
-          }
-        },
-        error: () => {
-          this.usernameAvailable.set(null);
-          this.checkingUsername.set(false);
-        },
-      });
-    }, 350);
-  }
-
-  private saveUsernameIfNeeded() {
-    if (!this.usernameChanged()) {
-      this.saveProfilePictureIfNeeded();
-      return;
-    }
-
-    this.userService.updateUsername({ newUsername: this.usernameDraftTrimmed() }, false).subscribe({
-      next: () => this.saveProfilePictureIfNeeded(),
-      error: error => {
-        this.updatingProfile.set(false);
-        if (error instanceof HttpErrorResponse && error.status === 409) {
-          this.usernameAvailable.set(false);
-        }
-      },
-    });
-  }
-
-  private saveProfilePictureIfNeeded() {
-    const file = this.selectedProfilePicture();
-    if (!file) {
-      this.finishProfileUpdate();
-      return;
-    }
-
-    this.updatingAvatar.set(true);
-    this.userService.updateProfilePicture(file, false).subscribe({
-      next: () => {
-        this.updatingAvatar.set(false);
-        this.finishProfileUpdate();
-      },
-      error: () => {
-        this.updatingAvatar.set(false);
-        this.updatingProfile.set(false);
-      },
-    });
-  }
-
-  private finishProfileUpdate() {
-    this.updatingProfile.set(false);
-    this.editingProfile.set(false);
-    this.selectedProfilePicture.set(null);
-    this.profileBioDraft.set('');
-    this.profileUsernameDraft.set('');
-    this.usernameAvailable.set(null);
-    this.revokeAvatarPreview();
-    this.notificationService.showSuccess('Updated profile');
   }
 }

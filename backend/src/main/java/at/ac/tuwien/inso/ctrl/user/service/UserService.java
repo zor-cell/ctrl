@@ -60,12 +60,16 @@ public class UserService {
     return userMapper.toUserDetailsResponse(user);
   }
 
-  public PublicUserProfileResponse getPublicProfile(String username) {
+  public PublicUserProfileResponse getPublicProfile(String username, User currentUser) {
     User user =
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    return userMapper.toPublicUserProfileResponse(user);
+    boolean canSeePrivatePosts =
+        currentUser != null
+            && (user.getId().equals(currentUser.getId())
+                || friendRelationRepository.existsByUsers(user, currentUser));
+    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
   }
 
   @Transactional

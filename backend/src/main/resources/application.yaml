@@ -30,7 +30,7 @@ spring:
 
 garage:
   url: http://garage:3900
-  public-url: http://${GARAGE_BUCKET_NAME:ctrl-dev-media}.web.garage.localhost:3902
+  public-url: http://localhost:8080/api/files/media?ref=
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ${GARAGE_BUCKET_NAME:ctrl-dev-media}
@@ -38,6 +38,13 @@ garage:
 infinity:
   url: http://infinity:7997
   model: ${INFINITY_MODEL}
+
+files:
+  cleanup:
+    orphan-post-media:
+      initial-delay: ${ORPHAN_POST_MEDIA_CLEANUP_INITIAL_DELAY:PT30S}
+      fixed-delay: ${ORPHAN_POST_MEDIA_CLEANUP_FIXED_DELAY:PT30S}
+      min-age: ${ORPHAN_POST_MEDIA_CLEANUP_MIN_AGE:PT1M}
 
 application:
   security:

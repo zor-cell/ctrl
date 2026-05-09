@@ -6,6 +6,7 @@ import { LoginRequest } from './dto/LoginRequest';
 import { RegisterRequest } from './dto/RegisterRequest';
 import {Observable, tap} from "rxjs";
 import {NotificationService} from "../core/services/notification.service";
+import { MediaCacheService } from '../core/services/media-cache.service';
 import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
 import {jwtDecode} from "jwt-decode";
@@ -19,6 +20,7 @@ export class AuthService {
   private readonly baseUri = environment.apiUrl + '/auth';
   private readonly httpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
+  private readonly mediaCacheService = inject(MediaCacheService);
 
   private readonly _token = signal<string | null>(this.getValidTokenOnStartup());
   public readonly token = this._token.asReadonly();
@@ -91,6 +93,7 @@ export class AuthService {
   public logout() {
     localStorage.removeItem(this.TOKEN_KEY);
     this._token.set(null);
+    this.mediaCacheService.clear();
   }
 
   public updateToken(token: string) {

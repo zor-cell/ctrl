@@ -77,14 +77,8 @@
         </div>
       } @else if (myPosts().length === 0) {
         <div class="posts-empty-card">
-          <h3>No posts yet</h3>
-          <p>
-            @if (publicProfileMode()) {
-              Posts will appear here.
-            } @else {
-              Your posts will appear here after you create them.
-            }
-          </p>
+          <h3>{{ emptyPostsTitle() }}</h3>
+          <p>{{ emptyPostsMessage() }}</p>
         </div>
       } @else {
         <div class="my-posts-grid">

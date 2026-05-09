@@ -125,6 +125,8 @@ export class PostComposerComponent implements OnDestroy {
   private mediaUploadRequestId = 0;
 
   ngOnDestroy() {
+    this.mediaUploadRequestId++;
+    this.deleteUploadedMediaIfNeeded();
     this.revokePreview();
   }
 

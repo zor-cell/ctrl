@@ -5,4 +5,5 @@ export interface PublicUserProfile {
   bio: string | null;
   profilePicture: string | null;
   isVerified: boolean;
+  canSeePrivatePosts: boolean;
 }

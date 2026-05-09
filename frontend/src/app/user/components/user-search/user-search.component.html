@@ -75,7 +75,7 @@
             <span class="user-avatar" aria-hidden="true">
               @if (hasProfilePicture(user)) {
                 <img
-                  [src]="user.profilePicture"
+                  [src]="profilePictureUrl(user)"
                   alt=""
                   (error)="markProfilePictureFailed(user)" />
               } @else {

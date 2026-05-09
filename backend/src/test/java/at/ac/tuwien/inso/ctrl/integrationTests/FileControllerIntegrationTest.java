@@ -12,6 +12,9 @@ import at.ac.tuwien.inso.ctrl.exception.GlobalExceptionHandler;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,10 +31,18 @@ public class FileControllerIntegrationTest {
 
   @Mock private FileStorageService fileStorageService;
 
+  @Mock private PostRepository postRepository;
+
+  @Mock private UserRepository userRepository;
+
+  @Mock private FriendRelationRepository friendRelationRepository;
+
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new FileController(fileStorageService))
+        MockMvcBuilders.standaloneSetup(
+                new FileController(
+                    fileStorageService, postRepository, userRepository, friendRelationRepository))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
   }

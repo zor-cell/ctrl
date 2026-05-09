@@ -12,6 +12,7 @@ import { InputIcon } from 'primeng/inputicon';
 
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserSearchResult } from '../../dto/Relationship';
 
@@ -41,6 +42,7 @@ import { UserSearchResult } from '../../dto/Relationship';
 })
 export class UserSearchComponent implements OnInit, OnDestroy {
   private relationshipService = inject(RelationshipService);
+  private mediaCacheService = inject(MediaCacheService);
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
   private router = inject(Router);
@@ -54,6 +56,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
 
   searchResults = this.relationshipService.searchResults;
   failedProfilePictures = signal<Set<string>>(new Set());
+  profilePictureUrls = signal<Record<string, string>>({});
 
   private searchInput$ = new Subject<string>();
   private refreshTrigger$ = new Subject<void>();
@@ -153,6 +156,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
       )
       .pipe(takeUntil(this._destroy$))
       .subscribe({
+        next: users => this.loadProfilePictures(users),
         error: () => {
           this.notificationService.showError('Search failed');
         },
@@ -220,7 +224,11 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   }
 
   hasProfilePicture(user: UserSearchResult): boolean {
-    return Boolean(user.profilePicture) && !this.failedProfilePictures().has(user.id);
+    return Boolean(this.profilePictureUrl(user)) && !this.failedProfilePictures().has(user.id);
+  }
+
+  profilePictureUrl(user: UserSearchResult): string | null {
+    return this.profilePictureUrls()[user.id] ?? this.directProfilePictureUrl(user.profilePicture);
   }
 
   markProfilePictureFailed(user: UserSearchResult): void {
@@ -263,5 +271,41 @@ export class UserSearchComponent implements OnInit, OnDestroy {
 
   navigateToProfile(username: string): void {
     this.router.navigate(['/profile', username]);
+  }
+
+  private loadProfilePictures(users: UserSearchResult[]): void {
+    const activeIds = new Set(users.map(user => user.id));
+    this.profilePictureUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([id, url]) => {
+        if (activeIds.has(id)) {
+          nextUrls[id] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    users.forEach(user => {
+      if (!user.profilePicture) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(user.profilePicture, 'image', 'high').subscribe({
+        next: url => {
+          if (url) {
+            this.profilePictureUrls.update(urls => ({ ...urls, [user.id]: url }));
+          }
+        },
+        error: () => this.markProfilePictureFailed(user),
+      });
+    });
+  }
+
+  private directProfilePictureUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
   }
 }

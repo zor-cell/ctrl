@@ -39,8 +39,9 @@ public class UserController {
   }
 
   @GetMapping("/{username}")
-  public PublicUserProfileResponse getPublicProfile(@PathVariable String username) {
-    return userService.getPublicProfile(username);
+  public PublicUserProfileResponse getPublicProfile(
+      @PathVariable String username, @AuthenticationPrincipal User currentUser) {
+    return userService.getPublicProfile(username, currentUser);
   }
 
   @PutMapping("/me")

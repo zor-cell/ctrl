@@ -4,9 +4,15 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -14,9 +20,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
@@ -88,6 +99,44 @@ public class FileStorageService {
     s3Client.deleteObject(deleteObjectRequest);
   }
 
+  public List<String> listPostMediaRefsOlderThan(Duration minimumAge) {
+    Instant cutoff = Instant.now().minus(minimumAge);
+    List<String> mediaRefs = new ArrayList<>();
+    String continuationToken = null;
+
+    do {
+      ListObjectsV2Request request =
+          ListObjectsV2Request.builder()
+              .bucket(bucketName)
+              .prefix(POST_MEDIA_PREFIX)
+              .continuationToken(continuationToken)
+              .build();
+      ListObjectsV2Response response = s3Client.listObjectsV2(request);
+
+      response.contents().stream()
+          .filter(object -> object.lastModified() != null)
+          .filter(object -> object.lastModified().isBefore(cutoff))
+          .map(object -> object.key())
+          .forEach(mediaRefs::add);
+
+      continuationToken = response.nextContinuationToken();
+    } while (continuationToken != null);
+
+    return mediaRefs;
+  }
+
+  public StoredFile readFile(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      throw new InvalidRequestException("Invalid media reference");
+    }
+
+    GetObjectRequest getObjectRequest =
+        GetObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+    ResponseInputStream<GetObjectResponse> objectStream = s3Client.getObject(getObjectRequest);
+    GetObjectResponse response = objectStream.response();
+    return new StoredFile(objectStream, response.contentType(), response.contentLength());
+  }
+
   private UploadedFile uploadFile(MultipartFile file, String prefix) throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + resolveExtension(file);
     String contentType = file.getContentType();
@@ -136,7 +185,7 @@ public class FileStorageService {
       return relativeFilename;
     }
 
-    return publicUrl + "/" + relativeFilename;
+    return publicUrl + URLEncoder.encode(relativeFilename, StandardCharsets.UTF_8);
   }
 
   private void validatePostMedia(MultipartFile file) {
@@ -193,4 +242,6 @@ public class FileStorageService {
   }
 
   public record UploadedFile(String mediaRef, String contentType, long size) {}
+
+  public record StoredFile(InputStream inputStream, String contentType, long size) {}
 }

@@ -16,6 +16,7 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
@@ -25,6 +26,7 @@ import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
@@ -62,6 +64,8 @@ public class UserServiceUnitTest {
   @Mock private IdAustriaOidcService idAustriaOidcService;
 
   @Mock private FriendRequestRepository friendRequestRepository;
+
+  @Mock private FriendRelationRepository friendRelationRepository;
 
   @Mock private FileStorageService fileStorageService;
 
@@ -123,22 +127,24 @@ public class UserServiceUnitTest {
             testUser.getName(),
             testUser.getBio(),
             "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
-            false);
+            false,
+            true);
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
-    when(userMapper.toPublicUserProfileResponse(testUser)).thenReturn(response);
+    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
 
-    var result = userService.getPublicProfile("testUser");
+    var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
     verify(userRepository).findByUsername("testUser");
-    verify(userMapper).toPublicUserProfileResponse(testUser);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true);
   }
 
   @Test
   void getPublicProfile_withMissingUser_throwsUsernameNotFoundException() {
     when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
 
-    assertThrows(UsernameNotFoundException.class, () -> userService.getPublicProfile("missing"));
+    assertThrows(
+        UsernameNotFoundException.class, () -> userService.getPublicProfile("missing", testUser));
   }
 
   @Test
@@ -274,17 +280,27 @@ public class UserServiceUnitTest {
   void searchUsers_withProfilePicture_returnsResolvedProfilePictureUrl() {
     User currentUser = createUser("current");
     testUser.setProfilePicture("users/profile-pictures/avatar.png");
+    List<RelationshipStatusItem> relationshipStatuses = List.of();
+    UserSearchResponse response =
+        new UserSearchResponse(
+            testUser.getId(),
+            testUser.getUsername(),
+            null,
+            "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
+            testUser.isVerified(),
+            relationshipStatuses);
+
     when(followService.getFollowedIds(currentUser)).thenReturn(Set.of());
-    when(followService.getFriendIds(currentUser)).thenReturn(Set.of());
+    when(friendRelationRepository.findFriendIds(currentUser)).thenReturn(Set.of());
     when(friendRequestRepository.findReceiverIdsBySender(currentUser)).thenReturn(Set.of());
     when(friendRequestRepository.findSenderIdsByReceiver(currentUser)).thenReturn(Set.of());
     when(userRepository.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(testUser));
-    when(socialMapper.determineRelationshipStatus(testUser, Set.of(), Set.of(), Set.of(), Set.of()))
-        .thenReturn(UserSearchResponse.RelationshipStatus.NONE);
-    when(socialMapper.displayName(testUser, UserSearchResponse.RelationshipStatus.NONE))
-        .thenReturn(null);
-    when(fileStorageService.resolveFileUrl("users/profile-pictures/avatar.png"))
-        .thenReturn("http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png");
+    when(socialMapper.determineRelationshipStatuses(
+            testUser, Set.of(), Set.of(), Set.of(), Set.of()))
+        .thenReturn(relationshipStatuses);
+    when(socialMapper.displayName(testUser, relationshipStatuses)).thenReturn(null);
+    when(socialMapper.toUserSearchResponse(testUser, relationshipStatuses, null))
+        .thenReturn(response);
 
     List<UserSearchResponse> result =
         userService.searchUsers(currentUser, " test ", false, false, false);

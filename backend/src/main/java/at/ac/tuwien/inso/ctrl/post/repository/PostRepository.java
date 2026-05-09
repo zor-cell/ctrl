@@ -19,6 +19,20 @@ public interface PostRepository extends JpaRepository<Post, String> {
 
   Optional<Post> findByPostIdAndUserUsername(String postId, String username);
 
+  boolean existsByMediaRef(String mediaRef);
+
+  @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.mediaRef = :mediaRef")
+  Optional<Post> findByMediaRefWithUser(@Param("mediaRef") String mediaRef);
+
+  @Query(
+      """
+      SELECT p FROM Post p
+      JOIN FETCH p.user
+      WHERE p.mediaRef = :mediaRef
+         OR p.mediaRef LIKE CONCAT('%', :mediaRef)
+      """)
+  List<Post> findAllByMediaRefReferenceWithUser(@Param("mediaRef") String mediaRef);
+
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);
 
