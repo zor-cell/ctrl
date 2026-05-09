@@ -121,7 +121,7 @@ test:e2e:
       expire_in: 1h
       reports:
         junit: ./frontend/e2e-test-results/*.xml
-      when: on_failure
+      when: always
   <<: *temp
 
 .build_rules: &build_rules
