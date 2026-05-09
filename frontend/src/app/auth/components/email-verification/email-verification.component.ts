@@ -77,6 +77,7 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
     }
 
     this.authService.resendVerificationEmail(this.emailData).subscribe();
+    this.submitting.set(false);
   }
 
   ngOnDestroy() {

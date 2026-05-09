@@ -15,4 +15,6 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
   int deleteExpiredTokens();
 
   Optional<EmailVerification> findEmailVerificationByUser_Id(UUID userId);
+
+  void deleteByUser_Id(UUID id);
 }

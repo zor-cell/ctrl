@@ -37,4 +37,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   void deleteUnverifiedUsersOlderThanOneDay();
 
   Optional<User> findByEmail(String email);
+
+  List<User> findEmailUnverifiedUsersOlderThanOneDay();
 }
