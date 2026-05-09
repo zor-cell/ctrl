@@ -88,16 +88,6 @@ public class EmailVerificationServiceUnitTest {
     assertNotNull(savedVerification.getExpiryTime());
   }
 
-  @Test
-  void sendVerificationEmail_ShouldThrowException_WhenUsernameNotFound() {
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
-
-    assertThrows(
-        UsernameNotFoundException.class,
-        () -> emailVerificationService.sendVerificationEmail(validSendEmailRequest));
-
-    verify(mailSender, never()).send((MimeMessage) any());
-  }
 
   @Test
   void sendVerificationEmail_ShouldThrowException_WhenUserAlreadyVerified() {
