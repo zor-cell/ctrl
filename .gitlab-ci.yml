@@ -116,7 +116,7 @@ test:e2e:
     POSTGRES_PASSWORD: test
     SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
   script:
-      - cd frontend && npm ci && npm run cypress:run
+      - cd frontend && npm ci && npm run cypress:ci
   artifacts:
       expire_in: 1h
       reports:
