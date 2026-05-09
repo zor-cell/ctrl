@@ -15,7 +15,7 @@ public class TestConfig {
 
   @Bean
   @Primary
-  public static JavaMailSender javaMailSender() {
+  public JavaMailSender javaMailSender() {
     JavaMailSender javaMailSender = mock(JavaMailSender.class);
     when(javaMailSender.createMimeMessage())
         .thenAnswer(invocation -> new MimeMessage((Session) null));

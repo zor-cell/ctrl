@@ -56,7 +56,9 @@ import org.thymeleaf.TemplateEngine;
 @Transactional
 public class EmailVerificationServiceIntegrationTest {
 
-  private static JavaMailSender mailSender;
+  @Autowired
+  private JavaMailSender mailSender;
+
   private static EmailVerificationService emailVerificationService;
   private static User testUserUnverified;
   private static User testUserVerified;
@@ -77,7 +79,6 @@ public class EmailVerificationServiceIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    mailSender = TestConfig.javaMailSender();
     emailVerificationService =
         new EmailVerificationService(
             mailSender, templateEngine, emailVerificationRepository, userRepository);

@@ -48,7 +48,8 @@ import org.thymeleaf.TemplateEngine;
 @Transactional
 public class ResetPasswordServiceIntegrationTest {
 
-  private static JavaMailSender mailSender;
+  @Autowired
+  private JavaMailSender mailSender;
   private static User testUser;
   private static ResetPasswordService resetPasswordService;
 
@@ -69,7 +70,6 @@ public class ResetPasswordServiceIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    mailSender = TestConfig.javaMailSender();
     resetPasswordService =
         new ResetPasswordService(
             passwordEncoder, mailSender, templateEngine, userRepository, passwordResetRepository);

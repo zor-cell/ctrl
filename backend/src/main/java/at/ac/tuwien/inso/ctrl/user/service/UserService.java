@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
-import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
@@ -56,7 +55,6 @@ public class UserService {
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
 
-
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);
     return userMapper.toUserDetailsResponse(user);
@@ -100,11 +98,11 @@ public class UserService {
     User updatedUser = userRepository.save(user);
     if (emailChanged) {
       if (requireEmailVerification) {
-        SendEmailRequest emailRequest = new SendEmailRequest(updatedUser.getUsername(), updatedUser.getEmail());
+        SendEmailRequest emailRequest =
+            new SendEmailRequest(updatedUser.getUsername(), updatedUser.getEmail());
         emailVerificationService.sendVerificationEmail(emailRequest);
       }
     }
-
 
     return userMapper.toUserDetailsResponse(updatedUser);
   }
