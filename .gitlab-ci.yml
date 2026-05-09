@@ -40,7 +40,7 @@ lint:frontend:
     paths:
       - .npm
   script:
-    - cd frontend && npm ci && npm run lint
+    - cd frontend && npm ci && npm run cypress:run
   artifacts:
     expire_in: 1h
     when: on_failure
