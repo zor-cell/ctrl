@@ -118,7 +118,11 @@ test:e2e:
   script:
       - cd frontend && npm ci && npm run cypress:ci
   artifacts:
-      expire_in: 1h
+      expire_in: 7h
+      paths:
+        - frontend/e2e-test-results/
+        - frontend/cypress/screenshots/
+        - frontend/cypress/videos/
       reports:
         junit: ./frontend/e2e-test-results/*.xml
       when: always

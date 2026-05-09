@@ -8,6 +8,10 @@ export default defineConfig({
     video: false,
     screenshotOnRunFailure: true,
     allowCypressEnv: false,
+    reporter: 'cypress-multi-reporters',
+    reporterOptions: {
+      configFile: 'reporter-config.json',
+    },
     env: {
       apiUrl: 'http://localhost:8080',
       TEST_USER: 'testuser@example.com',
