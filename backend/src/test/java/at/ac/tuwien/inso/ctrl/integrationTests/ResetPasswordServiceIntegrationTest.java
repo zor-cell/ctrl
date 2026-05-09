@@ -12,7 +12,6 @@ import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.ResetPasswordService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -139,7 +138,10 @@ public class ResetPasswordServiceIntegrationTest {
             CommunicationException.class,
             () -> resetPasswordService.sendPasswordResetEmail(request));
 
-    assertTrue(exception.getMessage().contains("Failed to send email. You can register again in 2 minutes."));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Failed to send email. You can register again in 2 minutes."));
   }
 
   @Test

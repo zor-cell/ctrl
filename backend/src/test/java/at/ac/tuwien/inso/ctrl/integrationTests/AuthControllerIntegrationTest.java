@@ -280,8 +280,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withWrongUsername_shouldReturnCreated()
-      throws Exception {
+  public void testResendVerificationEmail_withWrongUsername_shouldReturnCreated() throws Exception {
     SendEmailRequest request = new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
 
     mockMvc
@@ -297,8 +296,7 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withWrongEmail_shouldReturnCreated()
-      throws Exception {
+  public void testResendVerificationEmail_withWrongEmail_shouldReturnCreated() throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), "wrong@email.com");
 
@@ -315,8 +313,9 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withEmailUsernamesMismatch_shouldReturnCreatedButNotSendEmail()
-      throws Exception {
+  public void
+      testResendVerificationEmail_withEmailUsernamesMismatch_shouldReturnCreatedButNotSendEmail()
+          throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
 

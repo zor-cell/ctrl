@@ -39,8 +39,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   Optional<User> findByEmail(String email);
 
   @Query(
-      value = "SELECT * FROM users WHERE is_email_verified = false"
-          + " AND created_at < NOW() - INTERVAL '1 day'",
+      value =
+          "SELECT * FROM users WHERE is_email_verified = false"
+              + " AND created_at < NOW() - INTERVAL '1 day'",
       nativeQuery = true)
   List<User> findEmailUnverifiedUsersOlderThanOneDay();
 }

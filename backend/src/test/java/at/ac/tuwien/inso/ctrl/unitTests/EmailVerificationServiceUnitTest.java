@@ -32,7 +32,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -87,7 +86,6 @@ public class EmailVerificationServiceUnitTest {
     assertNotNull(savedVerification.getCode());
     assertNotNull(savedVerification.getExpiryTime());
   }
-
 
   @Test
   void sendVerificationEmail_ShouldThrowException_WhenUserAlreadyVerified() {

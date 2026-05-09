@@ -41,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -240,7 +239,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Verification failed. User does not exist or Token is invalid"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -268,7 +270,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Verification failed. User does not exist or Token is invalid"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -294,7 +299,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Verification failed. User does not exist or Token is invalid"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -314,7 +322,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Verification failed. User does not exist or Token is invalid"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {
