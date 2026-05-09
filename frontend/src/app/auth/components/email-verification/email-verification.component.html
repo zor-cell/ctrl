@@ -46,13 +46,19 @@
       </div>
 
       @if (!showResendButton) {
-        <p-button type="submit" label="Verify"></p-button>
+        <p-button type="submit"
+          [loading]="submitting()"
+          [disabled]="submitting()"
+          label="Verify">
+        </p-button>
       }
       @if (showResendButton) {
         <p-button
           type="button"
           label="Resend email"
           (onClick)="resendEmail()"
+          [disabled]="submitting()"
+          [loading]="submitting()"
         ></p-button>
       }
     </form>
