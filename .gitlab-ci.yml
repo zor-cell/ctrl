@@ -92,6 +92,36 @@ test:frontend:
       junit: ./frontend/test-results/*.xml
     when: on_failure
   <<: *temp
+  
+test:e2e:
+    stage: test
+    image: registry.reset.inso-w.at/pub/docker/node:22-alpine
+    cache:
+        key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
+        paths:
+        - .npm
+    services:
+        - name: $CI_REGISTRY_IMAGE/test-db:pg18-ci
+        alias: db
+        variables:
+            HEALTHCHECK_TCP_PORT: "5432"
+            POSTGRES_DB: testdb
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+    variables:
+        CI_DEBUG_SERVICES: "true"
+        POSTGRES_DB: testdb
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
+        SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
+    script:
+        - cd frontend && npm ci && npm run cypress:run
+    artifacts:
+        expire_in: 1h
+        reports:
+        junit: ./frontend/e2e-test-results/*.xml
+        when: on_failure
+    <<: *temp
 
 .build_rules: &build_rules
   rules:
