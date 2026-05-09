@@ -95,11 +95,12 @@ test:frontend:
   
 test:e2e:
   stage: test
-  image: registry.reset.inso-w.at/pub/docker/node:22-alpine
+  image: registry.reset.inso-w.at/pub/docker/cypress:latest
   cache:
       key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
       paths:
       - .npm
+      - node_modules
   services:
     - name: $CI_REGISTRY_IMAGE/test-db:pg18-ci
       alias: db
