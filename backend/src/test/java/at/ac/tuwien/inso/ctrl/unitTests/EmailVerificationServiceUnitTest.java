@@ -1,5 +1,15 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationRequest;
 import at.ac.tuwien.inso.ctrl.auth.dto.EmailVerificationResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
@@ -14,8 +24,6 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,29 +37,16 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-
 @ExtendWith(MockitoExtension.class)
 public class EmailVerificationServiceUnitTest {
-  @Mock
-  private JavaMailSender mailSender;
+  @Mock private JavaMailSender mailSender;
   @Mock private TemplateEngine templateEngine;
 
   @Mock private EmailVerificationRepository emailVerificationRepository;
 
   @Mock private UserRepository userRepository;
 
-  @InjectMocks
-  private EmailVerificationService emailVerificationService;
+  @InjectMocks private EmailVerificationService emailVerificationService;
 
   private User testUser;
   private SendEmailRequest validSendEmailRequest;

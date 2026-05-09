@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './auth/auth.guard';
+import {adminGuard, authGuard} from './auth/auth.guard';
 import {LoginComponent} from "./auth/components/login/login.component";
 import {RegisterComponent} from "./auth/components/registration/register.component";
 import {EmailVerificationComponent} from './auth/components/email-verification/email-verification.component';
@@ -64,6 +64,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./user/components/verification-callback/verification-callback.component').then(
         m => m.VerificationCallbackComponent,
+      ),
+  },
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./user/components/admin/admin-panel/admin-panel.component').then(
+        m => m.AdminPanelComponent
       ),
   },
 ];

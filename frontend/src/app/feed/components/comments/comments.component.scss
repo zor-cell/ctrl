@@ -67,14 +67,13 @@ $radius-sm:   10px;
   }
 }
 
-// ─── Header Right: Labels + Why Button ────────────────
+// ─── Header Right: Labels ─────────────────────────────
 .post-header-right {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-// ─── Labels ───────────────────────────────────────────
 .post-labels {
   display: flex;
   flex-wrap: wrap;
@@ -87,15 +86,6 @@ $radius-sm:   10px;
   font-size: 0.75rem !important;
   border-radius: 6px !important;
   border: 1px solid $border !important;
-}
-
-// ─── Why Button ───────────────────────────────────────
-:host ::ng-deep .why-btn {
-  font-size: 0.8rem !important;
-  height: 30px !important;
-  padding: 0 12px !important;
-  border-color: $border !important;
-  color: $text-muted !important;
 }
 
 // ─── Post Image ───────────────────────────────────────
@@ -124,6 +114,13 @@ $radius-sm:   10px;
 .comments-divider {
   height: 1px;
   background: $border;
+}
+
+// ─── Loading ──────────────────────────────────────────
+.comments-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
 }
 
 // ─── Comments List ────────────────────────────────────
@@ -182,10 +179,70 @@ $radius-sm:   10px;
   color: $text-muted;
 }
 
+// ─── Edited Badge ─────────────────────────────────────
+.comment-edited {
+  font-size: 0.7rem;
+  color: $text-muted;
+  opacity: 0.7;
+  font-style: italic;
+}
+
 .comment-content {
   font-size: 0.88rem;
   line-height: 1.5;
   margin: 0;
+}
+
+// ─── Comment Actions (Reply / Edit / Delete) ──────────
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 2px 2px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &:hover { color: var(--p-primary-color); }
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: $text-muted;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+
+  &.edit-btn:hover   { color: var(--p-primary-color); }
+  &.delete-btn:hover { color: $downvote; }
+}
+
+// ─── Inline Edit Form ─────────────────────────────────
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 // ─── Empty State ──────────────────────────────────────
@@ -201,21 +258,7 @@ $radius-sm:   10px;
   p { font-size: 0.88rem; margin: 0; }
 }
 
-// ─── Reply ────────────────────────────────────────────
-.reply-btn {
-  background: none;
-  border: none;
-  font-size: 0.75rem;
-  color: $text-muted;
-  cursor: pointer;
-  padding: 2px 2px;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  &:hover { color: var(--p-primary-color); }
-}
-
+// ─── Reply Banner ─────────────────────────────────────
 .replying-to-banner {
   display: flex;
   align-items: center;

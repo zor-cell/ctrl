@@ -68,26 +68,46 @@
       <div class="results-list">
         @for (user of searchResults(); track user.id) {
           <div class="user-item">
-            <p-avatar
-              [image]="user.profilePicture || undefined"
-              [label]="user.name?.charAt(0) || user.username.charAt(0)"
-              shape="circle"
-              styleClass="user-avatar" />
+            <button
+              type="button"
+              class="profile-avatar"
+              (click)="navigateToProfile(user.username)">
+              @if (user.profilePicture) {
+                <img
+                  [src]="user.profilePicture"
+                  alt=""
+                  class="profile-avatar__image"
+                />
+              } @else {
+                <span class="profile-avatar__initial">{{ user.name?.charAt(0) || user.username.charAt(0) }}</span>
+              }
+            </button>
 
             <div class="user-info">
               <span class="name">{{ user.name || user.username }}</span>
               <span class="username">&#64;{{ user.username }}</span>
-              @if (user.isVerified) {
-                <span class="verified-badge">Verified</span>
-              }
-              @if (user.relationshipStatus === 'FRIEND') {
-                <span class="relationship-badge friend">Friend</span>
-              } @else if (user.relationshipStatus === 'FOLLOWED') {
-                <span class="relationship-badge followed">Followed</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_SENT') {
-                <span class="relationship-badge pending-sent">Request Sent</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_INCOMING') {
-                <span class="relationship-badge pending-incoming">Request Incoming</span>
+              @if (user.relationshipStatuses.length > 0 || user.isVerified) {
+                <div class="relationship-badges">
+                  @if (user.isVerified) {
+                    <span class="relationship-badge verified">Verified</span>
+                  }
+                  @for (statusItem of user.relationshipStatuses; track statusItem.status) {
+                    @switch (statusItem.status) {
+                      @case ('FRIEND') {
+                        <span class="relationship-badge friend">Friend</span>
+                      }
+                      @case ('FOLLOWED') {
+                        <span class="relationship-badge followed">Followed</span>
+                      }
+                      @case ('PENDING_REQUEST_SENT') {
+                        <span class="relationship-badge pending-sent">Request Sent</span>
+                      }
+                      @case ('PENDING_REQUEST_INCOMING') {
+                        <span class="relationship-badge pending-incoming">Request Incoming</span>
+                      }
+                    }
+                  }
+                </div>
               }
             </div>
 

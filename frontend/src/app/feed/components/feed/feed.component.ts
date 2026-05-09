@@ -43,11 +43,9 @@ export class FeedComponent implements OnInit {
 
   protected allPosts = signal<Post[]>([]);
 
-  // Why dialog
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
 
-  // Comments dialog
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
 
@@ -68,11 +66,9 @@ export class FeedComponent implements OnInit {
   protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
   protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
 
-  async ngOnInit() {
+  ngOnInit(): void {
     this.userService.loadUser();
-    const posts = await this.feedService.getFeed();
-    console.log(posts);
-    this.allPosts.set(posts);
+    this.loadFeed();  // ← Keine `await`!
   }
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
@@ -95,7 +91,7 @@ export class FeedComponent implements OnInit {
         userVote: result.userVote,
       });
     } catch (err) {
-      console.error('Post-Vote fehlgeschlagen, wird zurückgesetzt:', err);
+      console.error('Post-vote failed; will be reset:', err);
       this.patchPost(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
@@ -139,7 +135,50 @@ export class FeedComponent implements OnInit {
     }
   }
 
+  getDomain(url: string): string {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  }
+
+  timeAgo(createdAt: string): string {
+    const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
+    const diffMs = Date.now() - new Date(normalized).getTime();
+    const minutes = Math.floor(diffMs / 60_000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  openWhyDialog(post: Post): void {
+    this.selectedPost.set(post);
+    this.whyDialogVisible.set(true);
+  }
+
+  closeWhyDialog(): void {
+    this.whyDialogVisible.set(false);
+    this.selectedPost.set(null);
+  }
+
+  openCommentsDialog(post: Post): void {
+    this.selectedPostForComments.set(post);
+    this.commentsDialogVisible.set(true);
+  }
+
+  isVideo(url: string): boolean {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+
   /** Helpers **/
+  private async loadFeed(): Promise<void> {
+    const posts = await this.feedService.getFeed();
+    this.allPosts.set(posts);
+  }
 
   private calcOptimisticVote(
     upvotes: number,
@@ -180,38 +219,6 @@ export class FeedComponent implements OnInit {
       })
     );
   }
-
-  getDomain(url: string): string {
-    try {
-      return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
-  }
-
-  timeAgo(createdAt: string): string {
-    return formatTimeAgo(createdAt);
-  }
-
-  openWhyDialog(post: Post): void {
-    this.selectedPost.set(post);
-    this.whyDialogVisible.set(true);
-  }
-
-  closeWhyDialog(): void {
-    this.whyDialogVisible.set(false);
-    this.selectedPost.set(null);
-  }
-
-  openCommentsDialog(post: Post): void {
-    this.selectedPostForComments.set(post);
-    this.commentsDialogVisible.set(true);
-  }
-
-  isVideo(url: string): boolean {
-    return /\.(mp4|webm|ogg|mov)$/i.test(url);
-  }
-
   reportPost(post: Post) {
     this.selectedPostForReport.set(post);
     this.reportDialogVisible.set(true);

@@ -6,13 +6,12 @@
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '560px', maxHeight: '90vh' }"
   styleClass="comments-dialog"
-  [header]="'Comments (' + (post?.comments?.length ?? 0) + ')'"
+  [header]="'Comments (' + comments().length + ')'"
 >
   @if (post) {
 
-    <!-- ─── Post Preview (1:1 post-header layout) ─── -->
+    <!-- ─── Post Preview ─── -->
     <div class="post-preview">
-
       <div class="post-header">
         <div class="post-user">
           <p-avatar
@@ -37,28 +36,24 @@
           @if (post.labelIds.length > 0) {
             <div class="post-labels">
               @for (label of post.labelIds; track label) {
-                <p-tag [value]="label[0]" severity="secondary" styleClass="post-label" [pTooltip]="label[1]" tooltipPosition="bottom" />
+                <p-tag [value]="label[0]" severity="secondary" styleClass="post-label"
+                       [pTooltip]="label[1]" tooltipPosition="bottom" />
               }
             </div>
           }
         </div>
       </div>
 
-    @if (post.videoImageRef && post.videoImageRef.length > 0) {
-      <div class="preview-image-wrapper">
-        @if (isVideo(post.videoImageRef[0])) {
-          <video
-            [src]="post.videoImageRef[0]"
-            class="preview-image"
-            controls
-            playsinline
-            preload="metadata"
-          ></video>
-        } @else {
-          <img [src]="post.videoImageRef[0]" [alt]="post.caption" class="preview-image" />
-        }
-      </div>
-    }
+      @if (post.videoImageRef && post.videoImageRef.length > 0) {
+        <div class="preview-image-wrapper">
+          @if (isVideo(post.videoImageRef[0])) {
+            <video [src]="post.videoImageRef[0]" class="preview-image"
+                   controls playsinline preload="metadata"></video>
+          } @else {
+            <img [src]="post.videoImageRef[0]" [alt]="post.caption" class="preview-image" />
+          }
+        </div>
+      }
 
       <p class="preview-caption">{{ post.caption }}</p>
     </div>
@@ -67,59 +62,143 @@
 
     <!-- ─── Comments List ─── -->
     <div class="comments-list">
-      @if (topLevelComments().length === 0) {
-        <div class="comments-empty">
-          <i class="pi pi-comment"></i>
-          <p>No comments yet.</p>
+
+      <!-- Loading spinner -->
+      @if (loading()) {
+        <div class="comments-loading">
+          <p-progressSpinner strokeWidth="3" [style]="{ width: '32px', height: '32px' }" />
         </div>
       }
 
-      @for (comment of topLevelComments(); track comment.commentId) {
-        <div class="comment">
-          <p-avatar
-            [image]="comment.userProfilePic"
-            shape="circle"
-            [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
-          />
-          <div class="comment-body">
-            <div class="comment-header">
-              <span class="comment-username">{{ comment.username }}</span>
-              <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
-            </div>
-            <p class="comment-content">{{ comment.content }}</p>
-            <div class="comment-actions">
-              <button class="reply-btn" (click)="setReplyingTo(comment)">
-                <i class="pi pi-reply"></i> Reply
-              </button>
-              <button class="reply-btn" (click)="reportComment(comment)">
-                <i class="pi pi-flag"></i> Report
-              </button>
-
-            </div>
-
-            <!-- Replies -->
-            @for (reply of repliesFor(comment.commentId); track reply.commentId) {
-              <div class="comment reply">
-                <p-avatar
-                  [image]="reply.userProfilePic"
-                  shape="circle"
-                  [style]="{ width: '28px', height: '28px', flexShrink: '0' }"
-                />
-                <div class="comment-body">
-                  <div class="comment-header">
-                    <span class="comment-username">{{ reply.username }}</span>
-                    <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
-                  </div>
-                  <p class="comment-content">{{ reply.content }}</p>
-                </div>
-              </div>
-            }
+      @if (!loading()) {
+        @if (topLevelComments().length === 0) {
+          <div class="comments-empty">
+            <i class="pi pi-comment"></i>
+            <p>No comments yet.</p>
           </div>
-        </div>
+        }
+
+        @for (comment of topLevelComments(); track comment.commentId) {
+          <div class="comment">
+            <p-avatar
+              [image]="comment.userProfilePic"
+              shape="circle"
+              [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
+            />
+            <div class="comment-body">
+              <div class="comment-header">
+                <span class="comment-username">{{ comment.username }}</span>
+                <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
+                @if (comment.edited) {
+                  <span class="comment-edited">edited</span>
+                }
+              </div>
+
+              <!-- Inline Edit Form -->
+              @if (editingCommentId() === comment.commentId) {
+                <div class="edit-form">
+                  <textarea
+                    pInputTextarea
+                    [(ngModel)]="editContent"
+                    [autoResize]="true"
+                    [rows]="2"
+                    class="comment-input"
+                    (keydown.escape)="cancelEdit()"
+                  ></textarea>
+                  <div class="edit-actions">
+                    <p-button label="Save" size="small" [rounded]="true"
+                              [disabled]="!editContent.trim()"
+                              (onClick)="saveEdit(comment.commentId)" />
+                    <p-button label="Cancel" size="small" [rounded]="true"
+                              severity="secondary" [text]="true"
+                              (onClick)="cancelEdit()" />
+                    <p-button class="reply-btn" (click)="reportComment(comment)">
+                      <i class="pi pi-flag"></i> Report
+                    </p-button>
+                  </div>
+                </div>
+              } @else {
+                <p class="comment-content">{{ comment.content }}</p>
+                <div class="comment-actions">
+                  <button class="reply-btn" (click)="setReplyingTo(comment)">
+                    <i class="pi pi-reply"></i> Reply
+                  </button>
+                  @if (isOwnComment(comment)) {
+                    <button class="comment-action-btn edit-btn" (click)="startEdit(comment)"
+                            title="Edit">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button class="comment-action-btn delete-btn" (click)="deleteComment(comment.commentId)"
+                            title="Delete">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- Replies -->
+              @for (reply of repliesFor(comment.commentId); track reply.commentId) {
+                <div class="comment reply">
+                  <p-avatar
+                    [image]="reply.userProfilePic"
+                    shape="circle"
+                    [style]="{ width: '28px', height: '28px', flexShrink: '0' }"
+                  />
+                  <div class="comment-body">
+                    <div class="comment-header">
+                      <span class="comment-username">{{ reply.username }}</span>
+                      <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
+                      @if (reply.edited) {
+                        <span class="comment-edited">edited</span>
+                      }
+                    </div>
+
+                    @if (editingCommentId() === reply.commentId) {
+                      <div class="edit-form">
+                        <textarea
+                          pInputTextarea
+                          [(ngModel)]="editContent"
+                          [autoResize]="true"
+                          [rows]="2"
+                          class="comment-input"
+                          (keydown.escape)="cancelEdit()"
+                        ></textarea>
+                        <div class="edit-actions">
+                          <p-button label="Save" size="small" [rounded]="true"
+                                    [disabled]="!editContent.trim()"
+                                    (onClick)="saveEdit(reply.commentId)" />
+                          <p-button label="Cancel" size="small" [rounded]="true"
+                                    severity="secondary" [text]="true"
+                                    (onClick)="cancelEdit()" />
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="comment-content">{{ reply.content }}</p>
+                      <div class="comment-actions">
+                        @if (isOwnComment(reply)) {
+                          <button class="comment-action-btn edit-btn" (click)="startEdit(reply)"
+                                  title="Edit">
+                            <i class="pi pi-pencil"></i>
+                          </button>
+                          <button class="comment-action-btn delete-btn" (click)="deleteComment(reply.commentId)"
+                                  title="Delete">
+                            <i class="pi pi-trash"></i>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+            </div>
+          </div>
+        }
       }
     </div>
 
   }
+
   <!-- ─── Comment Input ─── -->
   <ng-template pTemplate="footer">
     @if (replyingTo()) {
@@ -131,20 +210,22 @@
       </div>
     }
     <div class="comment-input-row">
-    <textarea
-      pInputTextarea
-      [(ngModel)]="newComment"
-      [autoResize]="true"
-      [rows]="1"
-      [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
-      class="comment-input"
-      (keydown.enter)="$event.preventDefault(); submitComment()"
-    ></textarea>
+      <textarea
+        pInputTextarea
+        [(ngModel)]="newComment"
+        [autoResize]="true"
+        [rows]="1"
+        [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+        class="comment-input"
+        [disabled]="submitting()"
+        (keydown.enter)="$event.preventDefault(); submitComment()"
+      ></textarea>
       <p-button
         icon="pi pi-send"
         [rounded]="true"
         [text]="true"
-        [disabled]="!newComment.trim()"
+        [loading]="submitting()"
+        [disabled]="!newComment.trim() || submitting()"
         (onClick)="submitComment()"
       />
     </div>

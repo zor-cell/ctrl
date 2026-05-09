@@ -19,6 +19,8 @@ services:
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - INFINITY_MODEL=${INFINITY_MODEL}
       - MAIL_REQUIRED=${MAIL_REQUIRED}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

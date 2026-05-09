@@ -13,12 +13,20 @@
     <div class="list-container">
       @for (user of followed(); track user.id) {
         <div class="followed-item">
-          <p-avatar
-            [image]="user.profilePicture || undefined"
-            [label]="user.username.charAt(0)"
-            shape="circle"
-            styleClass="followed-avatar"
-            (click)="navigateToProfile(user.username)" />
+          <button
+            type="button"
+            class="profile-avatar"
+            (click)="navigateToProfile(user.username)">
+            @if (user.profilePicture) {
+              <img
+                [src]="user.profilePicture"
+                alt=""
+                class="profile-avatar__image"
+              />
+            } @else {
+              <span class="profile-avatar__initial">{{ user.username.charAt(0) }}</span>
+            }
+          </button>
 
           <div class="followed-info">
             <span class="username">&#64;{{ user.username }}</span>

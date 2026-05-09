@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.feed.dto.response;
 
+import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,7 +12,6 @@ public record FeedPostResponse(
     String userProfilePic,
     String caption,
     String mediaRef,
-    String mediaUrl,
     boolean isPublic,
     Integer upvotes,
     Integer downvotes,
@@ -21,7 +21,6 @@ public record FeedPostResponse(
     List<LabelResponse> labelIds,
     List<SourceResponse> sourceIds,
     List<CommentResponse> comments) {
-  public record LabelResponse(String name, String description) {}
 
   public record SourceResponse(
       String sourceId,

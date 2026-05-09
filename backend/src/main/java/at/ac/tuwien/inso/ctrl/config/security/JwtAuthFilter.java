@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.security;
+package at.ac.tuwien.inso.ctrl.config.security;
 
 import at.ac.tuwien.inso.ctrl.user.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -38,10 +38,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
       UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+
       if (jwtService.isTokenValid(jwt, userDetails)) {
         UsernamePasswordAuthenticationToken authToken =
             new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
+
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authToken);
       }

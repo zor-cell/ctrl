@@ -41,7 +41,7 @@ export class NotificationService {
       message = apiError.message;
     }
 
-    this.messageService.add({ severity: 'error', summary: `${title} ${status}`, detail: message });
+    this.messageService.add({ severity: 'error', summary: `${title} ${status !== undefined ? status : ''}`, detail: message });
   }
 
   showInfo(message: string, title = 'Information') {

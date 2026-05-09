@@ -1,6 +1,7 @@
 import { Component, inject, input, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, debounceTime, takeUntil, filter } from 'rxjs';
 
 import { InputText } from 'primeng/inputtext';
@@ -8,7 +9,6 @@ import { Button } from 'primeng/button';
 
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
-import { Avatar } from 'primeng/avatar';
 
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
@@ -35,7 +35,6 @@ import { UserSearchResult } from '../../dto/Relationship';
     Button,
     IconField,
     InputIcon,
-    Avatar,
   ],
   templateUrl: './user-search.component.html',
   styleUrl: './user-search.component.scss',
@@ -44,6 +43,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   private relationshipService = inject(RelationshipService);
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
+  private router = inject(Router);
 
   source = input.required<'friends' | 'followed'>();
 
@@ -210,21 +210,37 @@ export class UserSearchComponent implements OnInit, OnDestroy {
     });
   }
 
+  private hasStatus(user: UserSearchResult, status: string): boolean {
+    return user.relationshipStatuses.some(item => item.status === status);
+  }
+
   canFollow(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'NONE' && user.isVerified;
+    // Can follow if not already following, not a friend, and not verified (verified users can be followed)
+    // Actually, looking at the original logic: it was 'NONE' && isVerified
+    // So we can follow if: isVerified AND not FOLLOWED AND not FRIEND AND no pending requests
+    const hasExistingRelation = this.hasStatus(user, 'FOLLOWED') ||
+                                  this.hasStatus(user, 'FRIEND') ||
+                                  this.hasStatus(user, 'PENDING_REQUEST_SENT') ||
+                                  this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
+    return user.isVerified && !hasExistingRelation;
   }
 
   canAddFriend(user: UserSearchResult): boolean {
-    return user.relationshipStatus !== 'FRIEND' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_SENT' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_INCOMING';
+    // Can add friend if not already friends and no pending requests
+    return !this.hasStatus(user, 'FRIEND') &&
+           !this.hasStatus(user, 'PENDING_REQUEST_SENT') &&
+           !this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasIncomingRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_INCOMING';
+    return this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasPendingSentRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_SENT';
+    return this.hasStatus(user, 'PENDING_REQUEST_SENT');
+  }
+
+  navigateToProfile(username: string): void {
+    this.router.navigate(['/profile', username]);
   }
 }
