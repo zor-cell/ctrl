@@ -220,11 +220,6 @@
         <i class="pi pi-exclamation-triangle"></i>
         <span>Reported</span>
       </div>
-      <div class="report-meta">
-        <span class="report-status" [ngClass]="'status-' + report.status.toLowerCase()">
-          {{ report.status }}
-        </span>
-      </div>
     </div>
     <span class="report-date">{{ timeAgo(report.reportedAt) }}</span>
   </div>
