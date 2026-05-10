@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.report.controller;
 
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
@@ -66,6 +67,14 @@ public class ReportController {
       @PathVariable String id,
       @Valid @RequestBody UpdateReportRequest request) {
     reportService.updateReportStatus(request, id);
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @GetMapping("/{id}/summary")
+  public List<ReportSummaryResponse> getAccountReportSummary(
+      @PathVariable String id
+  ) {
+    return reportService.getAccountReportSummary(id);
   }
 
 

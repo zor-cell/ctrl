@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.report.entity;
 
 
+import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,6 +49,10 @@ public class Report {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "reported_user_id", referencedColumnName = "id")
   private User usernameReported;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "reported_external_author_id", referencedColumnName = "external_author_id")
+  private ExternalAuthor externalAuthorReported;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "content_type", nullable = false)

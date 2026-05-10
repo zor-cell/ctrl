@@ -2,10 +2,11 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService } from '../../core/services/notification.service';
-import {ContentTypeEnum, Report, ReportStatus} from '../dto/report';
-import { firstValueFrom, tap } from 'rxjs';
+import {Report, ReportAction, ReportStatus} from '../dto/report';
+import {firstValueFrom, tap} from 'rxjs';
 import { ReportedPostResponse } from '../dto/ReportedPostResponse';
 import {ReportedSourceResponse} from '../dto/ReportedSourceResponse';
+import {ReportSummaryResponse} from '../dto/ReportSummaryResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -25,14 +26,14 @@ export class ReportService {
     );
   }
 
-  public updateStatus(status: ReportStatus, id: string) {
-    return this.httpClient.put<void>(`${this.baseUri}/${id}`, JSON.stringify(status), {
-      headers: { 'Content-Type': 'application/json' },
-    }).pipe(
+  public updateStatus(status: ReportStatus, action: ReportAction, id: string) {
+    return this.httpClient.put<void>(
+      `${this.baseUri}/${id}`,
+      { status, action },
+      { headers: { 'Content-Type': 'application/json' } },
+    ).pipe(
       tap(() => {
-        this.notificationService.showSuccess(
-          'Report Updated Successfully!',
-        );
+        this.notificationService.showSuccess('Report Updated Successfully!');
       }),
     );
   }
@@ -59,6 +60,18 @@ export class ReportService {
         `${this.baseUri}/sources?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
       ),
     );
+  }
+
+  getReportSummary(id: string) {
+    return this.httpClient.get<ReportSummaryResponse[]>(`${this.baseUri}/${id}/summary`).pipe(
+        tap(() => {
+          this.notificationService.showSuccess(
+            'Report Updated Successfully!',
+          );
+        }),
+      )
+
+
   }
 
 }

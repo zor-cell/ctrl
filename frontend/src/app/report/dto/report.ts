@@ -18,3 +18,9 @@ export enum ReportStatus {
   VALIDATED = 'VALIDATED',
   DECLINED = 'DECLINED',
 }
+
+export enum ReportAction {
+  DELETE_ITEM = 'DELETE_ITEM',
+  DELETE_ACCOUNT = 'DELETE_ACCOUNT',
+  NONE = 'NONE'
+}

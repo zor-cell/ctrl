@@ -13,6 +13,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
@@ -55,6 +56,10 @@ public class ReportServiceImp implements ReportService {
   @Override
   public void makeReport(CreateReportRequest createReportRequest, User currentUser) {
     User contentUser = getUserFromContent(createReportRequest);
+    ExternalAuthor externalAuthor = null;
+    if (contentUser == null) {
+      externalAuthor = getExternalAuthorFromContent(createReportRequest);
+    }
 
     Report newReport = Report.builder()
         .contentId(createReportRequest.contentId())
@@ -62,12 +67,15 @@ public class ReportServiceImp implements ReportService {
         .description(createReportRequest.description())
         .fromUser(currentUser)
         .usernameReported(contentUser)
+        .externalAuthorReported(externalAuthor)
         .contentType(createReportRequest.contentType())
         .status(ReportStatus.CREATED)
         .build();
     reportRepository.save(newReport);
     
   }
+
+
 
   @Override
   public List<ReportedPostResponse> getReportedPosts(ReportStatus reportStatus, int page, int postsPerPage) {
@@ -113,6 +121,30 @@ public class ReportServiceImp implements ReportService {
     } else if (request.action() == ReportAction.DELETE_ITEM) {
         deleteReportedItem(report);
     }
+
+  }
+
+  @Override
+  public List<ReportSummaryResponse> getAccountReportSummary(String reportId) {
+    Report report = reportRepository.findById(reportId).orElseThrow(() -> new EntityNotFoundException("Report not found or not validated: " + reportId));
+
+    User user = report.getUsernameReported();
+    List<Report> reports;
+    if (user != null) {
+      reports = reportRepository.findAllByUsernameReportedAndStatus(user, ReportStatus.VALIDATED);
+    } else {
+      reports = reportRepository.findAllByExternalAuthorReportedAndStatus(report.getExternalAuthorReported(), ReportStatus.VALIDATED);
+    }
+
+    if (reports.isEmpty()) {
+      return List.of();
+    }
+
+    return reports.stream().map(r -> new ReportSummaryResponse(
+        r.getContentType(),
+        r.getReason(),
+        r.getDescription()
+    )).toList();
 
   }
 
@@ -262,6 +294,25 @@ public class ReportServiceImp implements ReportService {
         feedPostResponse.sourceIds(),
         feedPostResponse.comments());
 
+  }
+
+  private ExternalAuthor getExternalAuthorFromContent(CreateReportRequest createReportRequest) {
+    if (createReportRequest.contentType().equals(ContentTypeEnum.POST)) {
+      Post post = postRepository.findById(createReportRequest.contentId()).orElseThrow(()
+          -> new EntityNotFoundException("Post not found: " + createReportRequest.contentId()));
+      return post.getExternalAuthor();
+
+    } else if (createReportRequest.contentType().equals(ContentTypeEnum.SOURCE)) {
+
+      Source source = sourceRepository.findById(createReportRequest.contentId()).orElseThrow(()
+          -> new EntityNotFoundException("Source not found: " + createReportRequest.contentId()));
+      Post post = postRepository.findBySource(source).orElseThrow(() ->
+          new EntityNotFoundException("Post not found for source: " + createReportRequest.contentId()));
+      return post.getExternalAuthor();
+
+    } else {
+      throw new IllegalArgumentException("Invalid content type: " + createReportRequest.contentType());
+    }
   }
 
   private User getUserFromContent(CreateReportRequest createReportRequest) {

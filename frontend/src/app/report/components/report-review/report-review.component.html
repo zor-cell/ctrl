@@ -191,25 +191,24 @@
   <div class="post-actions">
     <div class="report-actions">
       <p-button
-        label="Dismiss"
-        severity="secondary"
+        label="Account Violations"
+        severity="info"
         size="small"
-        (onClick)="dismissReport(report.reportId)"
-        icon="pi pi-check"
+        (onClick)="viewReportSummary(report.reportId)"
+        icon="pi pi-list"
       />
       <p-button
-        label="Action Taken"
+        label="Actions"
         severity="warn"
         size="small"
-        (onClick)="markActionTaken(report.reportId)"
-        icon="pi pi-shield"
+        (onClick)="openActionDialog(report)"
+        icon="pi pi-ellipsis-v"
       />
     </div>
   </div>
 
 </ng-template>
 
-<!-- ─── Reported Source Card Template ─── -->
 <!-- ─── Reported Source Card Template ─── -->
 <ng-template #reportedSourceCard let-report="report">
 
@@ -298,20 +297,94 @@
   <div class="post-actions">
     <div class="report-actions">
       <p-button
-        label="Dismiss"
-        severity="success"
+        label="View Account Report History"
+        severity="info"
         size="small"
-        (onClick)="dismissReport(report.reportId)"
-        icon="pi pi-check"
+        (onClick)="viewReportSummary(report.reportId)"
+        icon="pi pi-list"
       />
       <p-button
-        label="Action Taken"
+        label="Actions"
         severity="warn"
         size="small"
-        (onClick)="markActionTaken(report.reportId)"
-        icon="pi pi-shield"
+        (onClick)="openActionDialog(report)"
+        icon="pi pi-ellipsis-v"
       />
     </div>
   </div>
 
 </ng-template>
+
+<!-- Report Summary Dialog -->
+<p-dialog
+  [visible]="summaryDialogVisible()"
+  (visibleChange)="summaryDialogVisible.set($event)"
+  [header]="'Actions Taken on User\'s Content'"
+  [modal]="true"
+  [style]="{width: '50vw'}"
+  [breakpoints]="{'960px': '75vw', '640px': '90vw'}"
+>
+  @if (reportSummaryData().length > 0) {
+    <p-table [value]="reportSummaryData()" [tableStyle]="{ 'min-width': '100%' }">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Type</th>
+          <th>Reason</th>
+          <th>Description</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-data>
+        <tr>
+          <td>
+            <p-tag [value]="data.contentType" [style]="{ 'font-size': '0.875rem' }" />
+          </td>
+          <td>{{ getReason(data.reason) }}</td>
+          <td>{{ data.description }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <div class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>No reports found.</p>
+    </div>
+  }
+</p-dialog>
+
+<p-dialog
+  [visible]="actionDialogVisible()"
+  (visibleChange)="actionDialogVisible.set($event)"
+  header="Report Actions"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+>
+  @if (selectedReport()) {
+    <div class="action-dialog-body">
+      <p-button
+        label="Dismiss"
+        severity="success"
+        size="small"
+        (onClick)="dismissReport(selectedReport()!.reportId); actionDialogVisible.set(false)"
+        icon="pi pi-check"
+      />
+      <p-button
+        [label]="'Take Down ' + selectedReport()!.contentType"
+        severity="warn"
+        size="small"
+        (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM); actionDialogVisible.set(false)"
+        icon="pi pi-shield"
+      />
+      <p-button
+        label="Suspend Account"
+        severity="warn"
+        size="small"
+        (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ACCOUNT); actionDialogVisible.set(false)"
+        icon="pi pi-user-minus"
+      />
+    </div>
+  }
+</p-dialog>
+
+

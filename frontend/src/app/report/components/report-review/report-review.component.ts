@@ -9,11 +9,14 @@ import { Button } from 'primeng/button';
 import { UserService } from '../../../user/user.service';
 import { ReportedPostResponse } from '../../dto/ReportedPostResponse';
 import { ReportService } from '../report.service';
-import { ContentTypeEnum, ReportStatus } from '../../dto/report';
+import { ContentTypeEnum, ReportAction, ReportStatus } from '../../dto/report';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ReportedSourceResponse } from '../../dto/ReportedSourceResponse';
-import {getReportReason, REPORT_REASON_BY_TYPE} from '../../dto/reportReasons';
+import { getReportReason } from '../../dto/reportReasons';
+import { ReportSummaryResponse } from '../../dto/ReportSummaryResponse';
+import { TableModule } from 'primeng/table';
+import { Dialog } from 'primeng/dialog';
 
 @Component({
   selector: 'app-report-review',
@@ -30,6 +33,8 @@ import {getReportReason, REPORT_REASON_BY_TYPE} from '../../dto/reportReasons';
     Button,
     NgTemplateOutlet,
     ConfirmDialog,
+    TableModule,
+    Dialog,
   ],
   providers: [ConfirmationService],
   templateUrl: './report-review.component.html',
@@ -46,9 +51,16 @@ export class ReportReviewComponent implements OnInit {
   protected reportedSources = signal<ReportedSourceResponse[]>([]);
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
+  protected summaryDialogVisible = signal(false);
+  protected reportSummaryData = signal<ReportSummaryResponse[]>([]);
 
-  readonly reportReasons = REPORT_REASON_BY_TYPE;
+  protected actionDialogVisible = signal(false);
+  protected selectedReport = signal<ReportedPostResponse | ReportedSourceResponse | null>(null);
 
+  openActionDialog(report: ReportedPostResponse | ReportedSourceResponse) {
+    this.selectedReport.set(report);
+    this.actionDialogVisible.set(true);
+  }
   async ngOnInit(): Promise<void> {
     this.userService.loadUser();
     await this.changeToPosts();
@@ -63,7 +75,7 @@ export class ReportReviewComponent implements OnInit {
   async changeToSources() {
     const reports = await this.reportService.getReportedSource();
     this.reportedSources.set(reports);
-    console.log(reports)
+    console.log(reports);
     this.currentTab.set(ContentTypeEnum.SOURCE);
   }
 
@@ -86,9 +98,11 @@ export class ReportReviewComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         console.log(`Dismissing report with ID: ${reportId}`);
-        this.reportService.updateStatus(ReportStatus.DECLINED, reportId).subscribe(() => {
-          this.update_reports(reportId);
-        });
+        this.reportService
+          .updateStatus(ReportStatus.DECLINED, ReportAction.NONE, reportId)
+          .subscribe(() => {
+            this.update_reports(reportId);
+          });
       },
       reject: () => {
         console.log(`Dismissal cancelled for report with ID: ${reportId}`);
@@ -109,22 +123,32 @@ export class ReportReviewComponent implements OnInit {
   }
 
   getReason(reason: string) {
-    const reasons = getReportReason(this.currentTab())
+    const reasons = getReportReason(this.currentTab());
     const found = reasons.find((r) => r.value === reason);
 
     return found ? found.label : reason;
-
   }
 
-  markActionTaken(reportId: string) {
+  async viewReportSummary(reportId: string) {
+    try {
+      this.reportService.getReportSummary(reportId).subscribe((data) => {
+        this.reportSummaryData.set(data);
+        this.summaryDialogVisible.set(true);
+      });
+    } catch (error) {
+      console.error('Error loading report summary:', error);
+    }
+  }
+
+  markActionTaken(reportId: string, action: ReportAction) {
     this.confirmationService.confirm({
       message: 'Are you sure you want to take an action against this post?',
       header: 'Confirm Action',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         console.log(`Marking action taken for report with ID: ${reportId}`);
-        this.reportService.updateStatus(ReportStatus.VALIDATED, reportId).subscribe(() => {
-          this.update_reports(reportId)
+        this.reportService.updateStatus(ReportStatus.VALIDATED, action, reportId).subscribe(() => {
+          this.update_reports(reportId);
         });
       },
       reject: () => {
@@ -132,4 +156,6 @@ export class ReportReviewComponent implements OnInit {
       },
     });
   }
+
+  protected readonly ReportAction = ReportAction;
 }
