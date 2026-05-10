@@ -8,6 +8,6 @@ export const environment = {
     scope: 'openid profile'
   },
   auth: {
-    requireEmailVerification: false
+    requireEmailVerification: true
   }
 };
