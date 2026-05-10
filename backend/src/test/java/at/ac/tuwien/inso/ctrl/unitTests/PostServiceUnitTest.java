@@ -286,7 +286,6 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
-    when(followService.areFriends(verifiedUser, unverifiedUser)).thenReturn(false);
     when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(post));
     when(postMapper.toResponse(post)).thenReturn(response);
@@ -307,7 +306,8 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
-    when(followService.areFriends(verifiedUser, unverifiedUser)).thenReturn(true);
+    when(followService.isFollowing(verifiedUser, unverifiedUser)).thenReturn(true);
+    when(followService.isFollowing(unverifiedUser, verifiedUser)).thenReturn(true);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(publicPost, privatePost));
     when(postMapper.toResponse(publicPost)).thenReturn(publicResponse);

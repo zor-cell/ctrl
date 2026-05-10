@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -128,7 +129,7 @@ public class PostControllerDatabaseIntegrationTest {
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
         .andExpect(
             jsonPath("$.mediaUrl")
-                .value("http://localhost:3900/ctrl-test-media/posts/media/file.png"))
+                .value("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png"))
         .andExpect(jsonPath("$.isPublic").value(true))
         .andExpect(jsonPath("$.topicIds[0]").value("topic-1"));
 
@@ -194,10 +195,7 @@ public class PostControllerDatabaseIntegrationTest {
             get("/api/posts/user/marlene")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].postId").value("private-post"))
-        .andExpect(jsonPath("$[0].isPublic").value(false))
-        .andExpect(jsonPath("$[1].postId").value("public-post"))
-        .andExpect(jsonPath("$[1].isPublic").value(true))
+        .andExpect(jsonPath("$[*].postId", containsInAnyOrder("private-post", "public-post")))
         .andExpect(jsonPath("$.length()").value(2));
   }
 

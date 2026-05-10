@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +23,12 @@ public class FileControllerUnitTest {
   @Mock private FileStorageService fileStorageService;
 
   @Mock private MultipartFile file;
+
+  @Mock private PostRepository postRepository;
+
+  @Mock private UserRepository userRepository;
+
+  @Mock private FollowService followService;
 
   @InjectMocks private FileController fileController;
 

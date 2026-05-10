@@ -44,7 +44,7 @@ public class FileStorageServiceUnitTest {
     fileStorageService = new FileStorageService(s3Client, videoTranscodingService);
     ReflectionTestUtils.setField(fileStorageService, "bucketName", "ctrl-test-media");
     ReflectionTestUtils.setField(
-        fileStorageService, "publicUrl", "http://localhost:3900/ctrl-test-media");
+        fileStorageService, "publicUrl", "http://localhost:8080/api/files/media?ref=");
   }
 
   @Test
@@ -160,10 +160,10 @@ public class FileStorageServiceUnitTest {
   }
 
   @Test
-  void resolveFileUrl_withMediaRef_returnsGaragePublicUrl() {
+  void resolveFileUrl_withMediaRef_returnsProtectedBackendUrl() {
     String mediaUrl = fileStorageService.resolveFileUrl("posts/media/file.png");
 
-    assertEquals("http://localhost:3900/ctrl-test-media/posts/media/file.png", mediaUrl);
+    assertEquals("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png", mediaUrl);
   }
 
   @Test

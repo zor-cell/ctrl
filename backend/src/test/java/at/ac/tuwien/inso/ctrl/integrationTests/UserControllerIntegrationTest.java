@@ -117,7 +117,8 @@ public class UserControllerIntegrationTest {
         .andExpect(jsonPath("$.bio").value("Hello profile"))
         .andExpect(
             jsonPath("$.profilePicture")
-                .value("http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png"));
+                .value(
+                    "http://localhost:8080/api/files/media?ref=users%2Fprofile-pictures%2Favatar.png"));
   }
 
   @Test
@@ -157,7 +158,8 @@ public class UserControllerIntegrationTest {
         .andExpect(jsonPath("$[0].username").value("marlene"))
         .andExpect(
             jsonPath("$[0].profilePicture")
-                .value("http://localhost:3900/ctrl-test-media/users/profile-pictures/marlene.png"));
+                .value(
+                    "http://localhost:8080/api/files/media?ref=users%2Fprofile-pictures%2Fmarlene.png"));
   }
 
   @Test

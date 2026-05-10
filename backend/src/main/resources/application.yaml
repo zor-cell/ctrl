@@ -42,9 +42,9 @@ infinity:
 files:
   cleanup:
     orphan-post-media:
-      initial-delay: ${ORPHAN_POST_MEDIA_CLEANUP_INITIAL_DELAY:PT10M}
-      fixed-delay: ${ORPHAN_POST_MEDIA_CLEANUP_FIXED_DELAY:PT30M}
-      min-age: ${ORPHAN_POST_MEDIA_CLEANUP_MIN_AGE:PT30M}
+      initial-delay: ${ORPHAN_POST_MEDIA_CLEANUP_INITIAL_DELAY:PT30S}
+      fixed-delay: ${ORPHAN_POST_MEDIA_CLEANUP_FIXED_DELAY:PT30S}
+      min-age: ${ORPHAN_POST_MEDIA_CLEANUP_MIN_AGE:PT30S}
 
 application:
   security:
