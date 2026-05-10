@@ -1,0 +1,67 @@
+package at.ac.tuwien.inso.ctrl.user.service;
+
+import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
+import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
+import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerification;
+import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerificationStatus;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class BusinessVerificationService {
+  private final BusinessVerificationRepository businessVerificationRepository;
+  private final UserMapper userMapper;
+  private final UserRepository userRepository;
+
+  public void submitBusinessVerification(User currentUser) {
+    if (businessVerificationRepository.existsByBusinessUser(currentUser)) {
+      throw new ResourceAlreadyExistsException("BusinessVerification", "userId", currentUser.getUsername());
+    }
+
+    BusinessVerification verification = new BusinessVerification();
+    verification.setBusinessUser(currentUser);
+    verification.setStatus(BusinessVerificationStatus.PENDING);
+    businessVerificationRepository.save(verification);
+  }
+
+  public List<BusinessVerificationResponse> getAllPendingVerifications() {
+    List<BusinessVerification> pendingVerifications = businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING);
+    return pendingVerifications.stream()
+            .map(verification -> {
+                User user = verification.getBusinessUser();
+                UserDetailsResponse userDetail = userMapper.toUserDetailsResponse(user);
+                return new BusinessVerificationResponse(
+                    userDetail,
+                    verification.getId()
+                );
+            })
+            .collect(Collectors.toList());
+  }
+
+  public void updateVerification(UUID requestId, BusinessVerificationDecisionRequest request) {
+    BusinessVerification verification = businessVerificationRepository.findById(requestId)
+        .orElseThrow(() -> new ResourceAlreadyExistsException("BusinessVerification", "id", requestId.toString()));
+
+    verification.setStatus(request.status());
+
+    businessVerificationRepository.save(verification);
+
+    if (request.status().equals(BusinessVerificationStatus.APPROVED)) {
+      User user = verification.getBusinessUser();
+      user.setVerified(true);
+      userRepository.save(user);
+    }
+  }
+
+}

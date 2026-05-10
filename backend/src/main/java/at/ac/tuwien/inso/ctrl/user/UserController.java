@@ -8,6 +8,8 @@ import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -16,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserController {
   private final UserService userService;
+  private final BusinessVerificationService businessVerificationService;
 
   @GetMapping("/me")
   public UserDetailsResponse getUser(@AuthenticationPrincipal User currentUser) {
@@ -79,5 +83,11 @@ public class UserController {
       @RequestParam(required = false, defaultValue = "false") boolean verifiedOnly) {
 
     return userService.searchUsers(currentUser, q, excludeFriends, excludeFollowed, verifiedOnly);
+  }
+
+  @PostMapping("/me/verify/business")
+  public void submitBusinessVerification(
+      @AuthenticationPrincipal User currentUser) {
+    businessVerificationService.submitBusinessVerification(currentUser);
   }
 }

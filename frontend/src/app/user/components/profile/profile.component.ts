@@ -13,6 +13,7 @@ import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Password} from "primeng/password";
+import {RadioButton} from 'primeng/radiobutton';
 
 @Component({
   selector: 'app-profile',
@@ -39,6 +40,8 @@ export class ProfileComponent implements OnInit {
   protected currentUser = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
   protected isUsernameDialogOpen = signal(false);
+  protected isVerifyDialogOpen = signal(false);
+  protected verificationType = signal<'personal' | 'business'>('personal');
 
   protected createdAt = computed(() => {
     const dateString = this.currentUser()?.createdAt;
@@ -155,6 +158,21 @@ export class ProfileComponent implements OnInit {
     this.isUsernameDialogOpen.set(true);
   }
 
+  protected openVerifyDialog() {
+    this.verificationType.set('personal');
+    this.isVerifyDialogOpen.set(true);
+  }
+
+  protected verifyPersonal() {
+    this.isVerifyDialogOpen.set(false);
+    this.initiateVerification();
+  }
+
+  protected verifyBusiness() {
+    this.isVerifyDialogOpen.set(false);
+    this.initiateBusinessVerification();
+  }
+
   /**
    * Open IDAustria login page to verify user
    */
@@ -170,5 +188,9 @@ export class ProfileComponent implements OnInit {
     });
 
     window.location.href = `${config.authUrl}?${params.toString()}`;
+  }
+
+  protected initiateBusinessVerification() {
+    this.userService.requestBusinessVerification().subscribe();
   }
 }

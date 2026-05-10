@@ -88,4 +88,11 @@ export class UserService {
       })
     );
   }
+  public requestBusinessVerification() {
+    return this.httpClient.post<void>(this.baseUri + '/me/verify/business', {}).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Business verification request submitted');
+      })
+    );
+  }
 }

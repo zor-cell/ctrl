@@ -24,6 +24,12 @@ export const routes: Routes = [
       import('./report/components/report-review/report-review.component').then(m => m.ReportReviewComponent),
   },
   {
+    path: 'business-verification',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./user/components/business-verification/business-verification.component').then(m => m.BusinessVerificationComponent),
+  },
+  {
     path: 'post',
     canActivate: [authGuard],
     loadComponent: () =>

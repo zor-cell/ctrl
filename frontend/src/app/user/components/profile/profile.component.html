@@ -59,7 +59,7 @@
                                 label="Verify Now"
                                 size="small"
                                 severity="secondary"
-                                (onClick)="initiateVerification()"
+                                (onClick)="openVerifyDialog()"
                         >
                         </p-button>
                     }
@@ -170,3 +170,52 @@
         </div>
     </form>
 </p-dialog>
+
+
+<p-dialog header="Verify Account" [modal]="true" [(visible)]="isVerifyDialogOpen" [style]="{ width: '25rem' }">
+  <div class="dialog-form">
+    <p>Select your account type for verification:</p>
+
+    <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
+      <p-button
+        label="Personal Account"
+        (onClick)="verifyPersonal()"
+        styleClass="w-full"
+      >
+        <ng-template pTemplate="content">
+          <div style="text-align: left;">
+            <strong>Personal Account</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
+              Verify via ID Austria
+            </p>
+          </div>
+        </ng-template>
+      </p-button>
+
+      <p-button
+        label="Business Account"
+        severity="secondary"
+        (onClick)="verifyBusiness()"
+        styleClass="w-full"
+      >
+        <ng-template pTemplate="content">
+          <div style="text-align: left;">
+            <strong>Business Account</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
+              Submit business verification request
+            </p>
+          </div>
+        </ng-template>
+      </p-button>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      (onClick)="isVerifyDialogOpen.set(false)"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+
