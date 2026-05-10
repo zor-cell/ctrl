@@ -8,7 +8,7 @@ RUN npm install
 
 # copy source code
 COPY . .
-RUN npm run build
+RUN npm run build -- --configuration=development
 
 FROM nginx:alpine
 

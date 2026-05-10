@@ -1,8 +1,6 @@
 spring:
   application:
     name: ctrl
-  config:
-    import: "optional:configtree:/run/secrets/"
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
     username: ${DB_USERNAME}
@@ -26,7 +24,6 @@ spring:
           auth: true
           starttls:
             enable: true
-        debug: true
 
 garage:
   url: http://garage:3900
@@ -66,9 +63,3 @@ management:
     health:
       show-details:
         always
-
-logging:
-  level:
-    org.springframework.mail: DEBUG
-    org.eclipse.angus.mail: DEBUG
-    jakarta.mail: DEBUG

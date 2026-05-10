@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:db-service}:${DB_PORT:5432}/${DB_NAME}
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  web:
+    resources:
+      static-locations: classpath:/static/,file:/app/static/
+
+server.forward-headers-strategy: native
+
+application:
+  security:
+    id-austria:
+      issuer-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock"
+      client-id: "https://ctrl.nilpfershow.at"
+      client-secret: ${ID_AUSTRIA_SECRET}
+      token-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "https://ctrl.nilpfershow.at/verification-callback"
+  auth:
+    require-email-verification: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+    health:
+      show-details: when-authorized
+
+garage:
+  url: http://filestorage-service:3900
+  public-url: https://ctrl-media.web.garage.nilpferdshow.at
+  bucket-name: ctrl-media
+
+infinity:
+  url: http://embedding-service:7997

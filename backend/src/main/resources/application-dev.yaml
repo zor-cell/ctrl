@@ -1,6 +1,11 @@
 spring:
+  config:
+    import: "optional:configtree:/run/secrets/"
   datasource:
-    url: jdbc:postgresql://localhost:5433/${DB_NAME}
+    url: jdbc:postgresql://db:5432/${DB_NAME}
+  mail:
+    debug: true
+
 
 garage:
   url: http://localhost:3900
@@ -20,3 +25,9 @@ application:
 
 infinity:
   url: http://localhost:7997
+
+logging:
+  level:
+    org.springframework.mail: DEBUG
+    org.eclipse.angus.mail: DEBUG
+    jakarta.mail: DEBUG
