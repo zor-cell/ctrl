@@ -4,4 +4,5 @@ public enum BusinessVerificationStatus {
   APPROVED,
   REJECTED,
   PENDING,
+  NOT_VERIFIED,
 }

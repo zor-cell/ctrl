@@ -4,6 +4,8 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.VerificationStatusResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.VerificationType;
 import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerification;
 import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerificationStatus;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -64,4 +66,19 @@ public class BusinessVerificationService {
     }
   }
 
+  public VerificationStatusResponse getVerificationStatus(User currentUser) {
+
+    BusinessVerification ver = businessVerificationRepository.findByBusinessUser(currentUser);
+    if (ver == null) {
+
+      if (!currentUser.isVerified()) {
+        return new VerificationStatusResponse(VerificationType.PERSONAL, BusinessVerificationStatus.NOT_VERIFIED);
+      } else {
+        return new VerificationStatusResponse(VerificationType.PERSONAL, BusinessVerificationStatus.APPROVED);
+      }
+
+    } else {
+      return new VerificationStatusResponse(VerificationType.BUSINESS, ver.getStatus());
+    }
+  }
 }

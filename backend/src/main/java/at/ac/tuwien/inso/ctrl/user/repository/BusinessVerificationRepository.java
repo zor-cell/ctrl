@@ -12,4 +12,6 @@ public interface BusinessVerificationRepository extends JpaRepository<BusinessVe
   boolean existsByBusinessUser(User currentUser);
 
   List<BusinessVerification> findAllByStatus(BusinessVerificationStatus status);
+
+  BusinessVerification findByBusinessUser(User businessUser);
 }

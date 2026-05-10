@@ -5,4 +5,20 @@ export interface BusinessVerification {
   user: UserDetails;
 }
 
-export type VerificationStatus = 'APPROVED' | 'DENIED' | 'PENDING';
+
+export enum VerificationStatus {
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  PENDING = "PENDING",
+  NOT_VERIFIED = "NOT_VERIFIED"
+}
+
+export enum VerificationType {
+  BUSINESS = "BUSINESS",
+  PERSONAL = "PERSONAL"
+}
+
+export interface VerificationStatusResponse {
+  type: VerificationType;
+  status: VerificationStatus;
+}

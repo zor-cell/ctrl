@@ -11,6 +11,7 @@ import {UpdatePasswordRequest} from "./dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "./dto/UpdateUsernameRequest";
 import {AuthResponse} from "../auth/dto/AuthResponse";
 import {AuthService} from "../auth/auth.service";
+import {VerificationStatusResponse} from './dto/BusinessVerification';
 
 @Injectable({
   providedIn: 'root',
@@ -94,5 +95,10 @@ export class UserService {
         this.notificationService.showSuccess('Business verification request submitted');
       })
     );
+  }
+
+  public getVerificationStatus() {
+    return this.httpClient.get<VerificationStatusResponse>(this.baseUri + '/me/verify', {}).pipe();
+
   }
 }

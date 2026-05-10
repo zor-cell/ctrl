@@ -52,16 +52,18 @@
 
                 <div class="verification-box">
                     @if (user.isVerified) {
-                        <p-message severity="success" variant="simple" size="small">Verified via ID Austria</p-message>
+                        <p-message severity="success" variant="simple" size="small" [text]="getVerificationText()"></p-message>
                     } @else {
-                        <p-message severity="warn" variant="simple" size="small">Your account is unverified</p-message>
-                        <p-button
-                                label="Verify Now"
-                                size="small"
-                                severity="secondary"
-                                (onClick)="openVerifyDialog()"
-                        >
-                        </p-button>
+                        <p-message severity="warn" variant="simple" size="small"[text]="getVerificationText()"></p-message>
+                        @if (currentVerificationStatus()?.status !== VerificationStatus.REJECTED && currentVerificationStatus()?.status !== VerificationStatus.PENDING) {
+                          <p-button
+                                  label="Verify Now"
+                                  size="small"
+                                  severity="secondary"
+                                  (onClick)="openVerifyDialog()"
+                          >
+                          </p-button>
+                        }
                     }
                 </div>
 
@@ -174,13 +176,18 @@
 
 <p-dialog header="Verify Account" [modal]="true" [(visible)]="isVerifyDialogOpen" [style]="{ width: '25rem' }">
   <div class="dialog-form">
-    <p>Select your account type for verification:</p>
+    <p-message
+      severity="contrast"
+      variant="simple"
+      [text]="'Select your account type for verification:'"
+      styleClass="w-full"
+      [ngStyle]="{ 'margin-bottom': '1.5rem'}">
+    </p-message>
 
-    <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
+    <div style="margin: 0.5rem 0; display: flex; flex-direction: row; gap: 1rem; justify-content: center;">
       <p-button
         label="Personal Account"
         (onClick)="verifyPersonal()"
-        styleClass="w-full"
       >
         <ng-template pTemplate="content">
           <div style="text-align: left;">
@@ -194,9 +201,7 @@
 
       <p-button
         label="Business Account"
-        severity="secondary"
         (onClick)="verifyBusiness()"
-        styleClass="w-full"
       >
         <ng-template pTemplate="content">
           <div style="text-align: left;">
