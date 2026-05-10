@@ -36,4 +36,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
   List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
 
   Optional<Post> findBySource(Source source);
+
+  Optional<Post> getPostByPostId(String contentId);
 }

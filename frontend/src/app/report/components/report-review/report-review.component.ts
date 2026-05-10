@@ -13,6 +13,7 @@ import { ContentTypeEnum, ReportStatus } from '../../dto/report';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ReportedSourceResponse } from '../../dto/ReportedSourceResponse';
+import {getReportReason, REPORT_REASON_BY_TYPE} from '../../dto/reportReasons';
 
 @Component({
   selector: 'app-report-review',
@@ -46,20 +47,7 @@ export class ReportReviewComponent implements OnInit {
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
 
-  readonly reportReasons = [
-    { label: 'Bullying or Harassment', value: 'bullying' },
-    { label: 'Self harm', value: 'self_harm' },
-    { label: 'Violence', value: 'violence' },
-    { label: 'Illegal or Restricted items', value: 'illegal' },
-    { label: 'Nudity or sexual content', value: 'nudity' },
-    { label: 'Scam or Fraud', value: 'copyright' },
-    { label: 'Misinformation', value: 'misinformation' },
-    { label: 'Child abuse, exploitation or endangerment', value: 'child_exploitation' },
-    { label: 'Non-consensual intimate images', value: 'non_consensual' },
-    { label: 'Hate speech or discrimination', value: 'hate_speech' },
-    { label: 'Terrorism or violent extremism', value: 'terrorism' },
-    { label: 'Other', value: 'other' },
-  ];
+  readonly reportReasons = REPORT_REASON_BY_TYPE;
 
   async ngOnInit(): Promise<void> {
     this.userService.loadUser();
@@ -121,7 +109,11 @@ export class ReportReviewComponent implements OnInit {
   }
 
   getReason(reason: string) {
-    return this.reportReasons.filter((r) => r.value === reason)[0].label;
+    const reasons = getReportReason(this.currentTab())
+    const found = reasons.find((r) => r.value === reason);
+
+    return found ? found.label : reason;
+
   }
 
   markActionTaken(reportId: string) {

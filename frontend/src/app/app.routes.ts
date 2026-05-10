@@ -19,6 +19,7 @@ export const routes: Routes = [
   },
   {
     path: 'report',
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./report/components/report-review/report-review.component').then(m => m.ReportReviewComponent),
   },

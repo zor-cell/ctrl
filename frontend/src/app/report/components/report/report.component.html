@@ -42,7 +42,7 @@
         <div class="report-section">
           <h3 class="report-label">Select a reason</h3>
           <div class="reason-buttons">
-            @for (reason of reportReasons; track reason.value) {
+            @for (reason of reportReasons(); track reason.value) {
               <button
                 type="button"
                 class="reason-btn"
@@ -109,7 +109,7 @@
           <div class="report-section">
             <h3 class="report-label">Reason</h3>
             <div class="selected-reason">
-              @for (reason of reportReasons; track reason.value) {
+              @for (reason of reportReasons(); track reason.value) {
                 @if (reason.value === reportForm.get('reason')?.value) {
                   {{ reason.label }}
                 }

@@ -3,12 +3,14 @@ package at.ac.tuwien.inso.ctrl.report.controller;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +38,7 @@ public class ReportController {
     reportService.makeReport(request, user);
   }
 
+  @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/posts")
   public List<ReportedPostResponse> getReportedPostsWithStatusCreated(
       @RequestParam(defaultValue = "CREATED") ReportStatus status,
@@ -46,6 +49,7 @@ public class ReportController {
     return reportService.getReportedPosts(status, page, postsPerPage);
   }
 
+  @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/sources")
   public List<ReportedSourceResponse> getReportedSourcesWithStatusCreated(
       @RequestParam(defaultValue = "CREATED") ReportStatus status,
@@ -55,10 +59,14 @@ public class ReportController {
     return reportService.getReportedSources(status, page, postsPerPage);
   }
 
+
+  @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public void updateReport(
       @PathVariable String id,
-      @Valid @RequestBody ReportStatus status) {
-    reportService.updateReportStatus(status, id);
+      @Valid @RequestBody UpdateReportRequest request) {
+    reportService.updateReportStatus(request, id);
   }
+
+
 }

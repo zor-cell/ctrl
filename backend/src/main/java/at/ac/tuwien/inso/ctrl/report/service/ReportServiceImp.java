@@ -5,13 +5,17 @@ import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SourceResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
+import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
@@ -46,6 +50,7 @@ public class ReportServiceImp implements ReportService {
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
+  private final ExternalAuthorRepository externalAuthorRepository;
 
   @Override
   public void makeReport(CreateReportRequest createReportRequest, User currentUser) {
@@ -98,11 +103,59 @@ public class ReportServiceImp implements ReportService {
   }
 
   @Override
-  public void updateReportStatus(ReportStatus status, String id) {
+  public void updateReportStatus(UpdateReportRequest request, String id) {
     Report report = reportRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-    report.setStatus(status);
+    report.setStatus(request.status());
     reportRepository.save(report);
 
+    if (request.action() == ReportAction.DELETE_ACCOUNT) {
+      suspendAccount(report);
+    } else if (request.action() == ReportAction.DELETE_ITEM) {
+        deleteReportedItem(report);
+    }
+
+  }
+
+  private void deleteReportedItem(Report report) {
+    if (report.getContentType() == ContentTypeEnum.POST) {
+        Post post = postRepository.getPostByPostId(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Source not found: " + report.getContentId()));
+        post.setIsRemoved(true);
+        postRepository.save(post);
+
+    } else if (report.getContentType() == ContentTypeEnum.SOURCE) {
+        Source source = sourceRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Source not found: " + report.getContentId()));
+        source.setIsRemoved(true);
+        sourceRepository.save(source);
+    }
+  }
+
+  private void suspendAccount(Report report) {
+    if (report.getUsernameReported() != null) {
+      User user = report.getUsernameReported();
+      if (user != null) {
+        user.setSuspended(true);
+        userRepository.save(user);
+      } else {
+        ContentTypeEnum type = report.getContentType();
+        if (type == ContentTypeEnum.POST) {
+            Post post = postRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Post not found: " + report.getContentId()));
+            ExternalAuthor postUser = post.getExternalAuthor();
+            postUser.setSuspended(true);
+            externalAuthorRepository.save(postUser);
+
+        } else if (type == ContentTypeEnum.SOURCE) {
+          Source source = sourceRepository.findById(report.getContentId()).orElseThrow(() -> new EntityNotFoundException("Source not found: " + report.getContentId()));
+
+
+          Post post = postRepository.findBySource(source).orElseThrow(() ->
+              new EntityNotFoundException("Post not found for source: " + source.getSourceId()));
+          ExternalAuthor author = post.getExternalAuthor();
+          author.setSuspended(true);
+          externalAuthorRepository.save(author);
+        }
+      }
+
+    }
   }
 
   @Override

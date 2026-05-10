@@ -1,4 +1,4 @@
-import {Component, EventEmitter, inject, Input, OnInit, Output, signal} from '@angular/core';
+import {Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, signal, SimpleChanges} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 
@@ -12,6 +12,7 @@ import {SelectModule} from 'primeng/select';
 import {Message} from 'primeng/message';
 import {ContentTypeEnum, Report} from '../../dto/report';
 import {UserService} from '../../../user/user.service';
+import {getReportReason, ReportReason} from '../../dto/reportReasons';
 
 @Component({
   selector: 'app-report',
@@ -30,7 +31,7 @@ import {UserService} from '../../../user/user.service';
   templateUrl: './report.component.html',
   styleUrl: './report.component.scss',
 })
-export class ReportComponent implements OnInit {
+export class ReportComponent implements OnInit, OnChanges {
   @Input() contentType: ContentTypeEnum = ContentTypeEnum.POST;
   @Input() contentId: string | undefined;
   @Input() contentTitle: string | undefined;
@@ -51,25 +52,20 @@ export class ReportComponent implements OnInit {
 
   readonly ContentTypeEnum = ContentTypeEnum;
 
-  readonly reportReasons = [
-    { label: 'Bullying or Harassment', value: 'bullying' },
-    { label: 'Self harm', value: 'self_harm' },
-    { label: 'Violence', value: 'violence' },
-    { label: 'Illegal or Restricted items', value: 'illegal' },
-    { label: 'Nudity or sexual content', value: 'nudity' },
-    { label: 'Scam or Fraud', value: 'copyright' },
-    { label: 'Misinformation', value: 'misinformation' },
-    { label: 'Child abuse, exploitation or endangerment', value: 'child_exploitation' },
-    { label: 'Non-consensual intimate images', value: 'non_consensual' },
-    { label: 'Hate speech or discrimination', value: 'hate_speech' },
-    { label: 'Terrorism or violent extremism', value: 'terrorism' },
-    { label: 'Other', value: 'other'}
-  ];
-
+  reportReasons = signal<ReportReason[]>([]);
   ngOnInit() {
     this.initializeForm();
     this.userService.loadUser();
+    this.updateReasonsByContentType();
 
+  }
+
+  ngOnChanges() {
+    this.updateReasonsByContentType();
+  }
+
+  private updateReasonsByContentType():void {
+    this.reportReasons.set(getReportReason(this.contentType));
   }
 
   private initializeForm(): void {

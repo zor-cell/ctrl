@@ -31,10 +31,15 @@ export class NavigationComponent {
     if (loggedIn) {
       items.push(
         {label: 'Post', icon: 'pi pi-plus', routerLink: '/post'},
-        {label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat'},
-        { label: 'Report', icon: 'pi pi-flag', routerLink: '/report'}
+        {label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat'}
 
     );
+    }
+
+    if (this.authService.isAdmin()) {
+      items.push(
+        { label: 'Report', icon: 'pi pi-flag', routerLink: '/report'}
+      );
     }
     return items;
   });
