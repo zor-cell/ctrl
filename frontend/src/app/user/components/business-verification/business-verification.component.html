@@ -44,12 +44,16 @@
                 label="Approve"
                 severity="success"
                 (onClick)="approveAccount(verification)"
+                [disabled]="loading()"
+                [loading]="loading()"
                 size="small" />
               <p-button
                 icon="pi pi-times"
                 label="Deny"
                 severity="danger"
                 (onClick)="denyAccount(verification)"
+                [disabled]="loading()"
+                [loading]="loading()"
                 size="small" />
             </div>
           </div>

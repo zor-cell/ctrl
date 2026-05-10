@@ -34,9 +34,11 @@ export class BusinessVerificationComponent implements OnInit {
   }
 
   approveAccount(verification: BusinessVerification) {
+    this.loading.set(true);
     this.adminService.reviewRequest(VerificationStatus.APPROVED, verification.id).subscribe({
         next: () => {
           this.loadPendingVerifications();
+
         }
       }
     );
@@ -44,6 +46,7 @@ export class BusinessVerificationComponent implements OnInit {
   }
 
   denyAccount(verification: BusinessVerification) {
+    this.loading.set(true);
     this.adminService.reviewRequest(VerificationStatus.REJECTED, verification.id).subscribe({
         next: () => {
           this.loadPendingVerifications();
