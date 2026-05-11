@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.post.repository;
+package at.ac.tuwien.inso.ctrl.feed.repository;
 
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import java.util.Optional;

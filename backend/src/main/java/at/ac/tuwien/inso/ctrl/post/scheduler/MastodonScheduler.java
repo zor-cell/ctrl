@@ -2,8 +2,8 @@ package at.ac.tuwien.inso.ctrl.post.scheduler;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.feed.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
-import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.LabelRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
@@ -81,7 +81,8 @@ public class MastodonScheduler {
               "mastodon",
               "Mastodon",
               "🐘",
-              "Mastodon is a decentralized social media platform where this post was originally published.");
+              "Mastodon is a decentralized social media platform where this post was originally"
+                  + " published.");
       Label sourceLabel =
           findOrCreateLabel(toId(sourceName), sourceName, sourceEmoji, getExplanation(sourceName));
       int saved = 0;
@@ -367,7 +368,8 @@ public class MastodonScheduler {
       case "Tagesschau" ->
           "Tagesschau is the main news program of ARD, Germany's public broadcasting network.";
       case "BBC News" ->
-          "BBC News is the internationally recognized news division of the British Broadcasting Corporation.";
+          "BBC News is the internationally recognized news division of the British Broadcasting"
+              + " Corporation.";
       default -> sourceName + " is a news source on Mastodon.";
     };
   }

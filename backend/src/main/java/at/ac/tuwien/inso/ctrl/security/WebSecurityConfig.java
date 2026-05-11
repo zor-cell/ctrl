@@ -38,11 +38,34 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
+                        // --- Frontend static resources ---
+                        "/",
+                        "/index.html",
+                        "/*.js",
+                        "/*.css",
+                        "/*.ico",
+                        "/*.png",
+                        "/*.webmanifest",
+                        "/assets/**",
+                        // --- Angular client-side routes (catch-all forwards) ---
+                        "/login",
+                        "/register",
+                        "/reset-password",
+                        "/forgot-password",
+                        "/feed",
+                        "/post",
+                        "/profile",
+                        "/settings",
+                        "/search",
+                        "/email_verification/**",
+                        "/followed",
+                        "/verification-callback",
+                        // --- Public API endpoints ---
                         "/api/auth/**",
                         "/api/labels",
                         "/api/topics",
-                        "/actuator/health",
-                        "/api/feed/**")
+                        "/api/feed/**",
+                        "/actuator/health")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

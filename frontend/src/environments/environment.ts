@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://backend-service/api',
+  apiUrl: 'https://ctrl.nilpferdshow.at/api',
   idAustria: {
     clientId: 'http://backend-service:8080',
     redirectUri: 'http://backend-service/verification-callback',

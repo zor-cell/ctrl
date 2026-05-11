@@ -218,13 +218,13 @@
 				<configuration>
 					<annotationProcessorPaths>
 						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+						<path>
 							<groupId>org.mapstruct</groupId>
 							<artifactId>mapstruct-processor</artifactId>
 							<version>1.6.0.Beta1</version>
-						</path>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
 						</path>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -257,8 +257,10 @@
     			<version>3.5.1</version>
     			<configuration>
 						<from>
-							<image>registry.reset.inso-w.at/pub/docker/eclipse-temurin:25</image>
+						<!--							<image>registry.reset.inso-w.at/pub/docker/eclipse-temurin:25</image> -->
+							<image>eclipse-temurin:25-alpine</image>
 						</from>
+						<allowInsecureRegistries>true</allowInsecureRegistries>
         		<extraDirectories>
             		<paths>
                 		<path>
