@@ -239,7 +239,7 @@ public class PostServiceUnitTest {
 
     assertEquals("Topics not found: missing", exception.getMessage());
     verify(postRepository, never()).save(any());
-    verify(embeddingService, never()).embedText(any());
+    verify(embeddingService, never()).embedText(any(String.class));
   }
 
   @Test
