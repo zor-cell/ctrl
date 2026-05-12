@@ -128,7 +128,7 @@ class FeedUnitTest {
         .thenReturn(List.of());
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(eq(userId), anyList()))
         .thenReturn(List.of());
-    when(feedMapper.toFeedPostResponse(any(), any(), any()))
+    when(feedMapper.toFeedPostResponse(any(Post.class), any(), any()))
         .thenReturn(mock(FeedPostResponse.class));
 
     List<FeedPostResponse> result = feedService.getFeed(0, 10, username);
