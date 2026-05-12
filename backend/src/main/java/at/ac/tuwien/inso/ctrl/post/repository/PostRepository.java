@@ -119,4 +119,28 @@ public interface PostRepository extends JpaRepository<Post, String> {
     WHERE p.postId IN :postIds
     """)
   List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
+  @Query(
+          value = """
+        SELECT p.* FROM posts p
+        WHERE NOT EXISTS (
+            SELECT 1 FROM post_topics pt WHERE pt.post_id = p.post_id
+        )
+        AND p.embedding IS NOT NULL
+        LIMIT :limit
+        OFFSET :offset
+        """,
+          nativeQuery = true)
+  List<Post> findPostsWithoutTopics(@Param("limit") int limit, @Param("offset") int offset);
+
+  @Query(
+          value = """
+        SELECT COUNT(*) FROM posts p
+        WHERE NOT EXISTS (
+            SELECT 1 FROM post_topics pt WHERE pt.post_id = p.post_id
+        )
+        AND p.embedding IS NOT NULL
+        """,
+          nativeQuery = true)
+  long countPostsWithoutTopics();
+
 }
