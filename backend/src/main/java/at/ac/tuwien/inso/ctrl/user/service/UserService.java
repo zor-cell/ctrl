@@ -14,6 +14,8 @@ import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
+
+import java.lang.invoke.MethodHandles;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -21,6 +23,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,6 +44,9 @@ public class UserService {
   private final IdAustriaOidcService idAustriaOidcService;
   private final FileStorageService fileStorageService;
   private final FollowService followService;
+
+  private static final Logger LOGGER =
+          LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);
@@ -120,6 +127,7 @@ public class UserService {
     try {
       jwt = idAustriaOidcService.getTokenFromCode(request.code());
     } catch (Exception e) {
+      LOGGER.error(e.getMessage(), e);
       throw new CommunicationException("Failed to verify identity with external provider");
     }
 
