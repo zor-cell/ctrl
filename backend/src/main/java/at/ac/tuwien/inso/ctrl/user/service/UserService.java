@@ -1,6 +1,10 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
+import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
@@ -23,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,6 +48,12 @@ public class UserService {
   private final IdAustriaOidcService idAustriaOidcService;
   private final FileStorageService fileStorageService;
   private final FollowService followService;
+  private final EmailVerificationService emailVerificationService;
+  private final EmailVerificationRepository emailVerificationRepository;
+  private final PasswordResetRepository passwordResetRepository;
+
+  @Value("${application.auth.require-email-verification:true}")
+  private boolean requireEmailVerification;
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);
@@ -56,6 +67,11 @@ public class UserService {
     String newEmail = request.email().trim();
     if (!user.getEmail().equalsIgnoreCase(newEmail) && userRepository.existsByEmail(newEmail)) {
       throw new ResourceAlreadyExistsException("User", "email", newEmail);
+    }
+
+    boolean emailChanged = false;
+    if (!user.getEmail().equalsIgnoreCase(newEmail)) {
+      emailChanged = true;
     }
 
     String newName = request.name().trim();
@@ -73,8 +89,21 @@ public class UserService {
     user.setEmail(newEmail);
     user.setBio(request.bio() == null ? null : request.bio().trim());
     user.setBirthdate(request.birthdate());
+    if (emailChanged) {
+      if (requireEmailVerification) {
+        user.setEmailVerified(false);
+      }
+    }
 
     User updatedUser = userRepository.save(user);
+    if (emailChanged) {
+      if (requireEmailVerification) {
+        SendEmailRequest emailRequest =
+            new SendEmailRequest(updatedUser.getUsername(), updatedUser.getEmail());
+        emailVerificationService.sendVerificationEmail(emailRequest);
+      }
+    }
+
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 
@@ -199,6 +228,12 @@ public class UserService {
   @Scheduled(cron = "0 0 2 * * *")
   @Transactional
   public void conductUserCleanup() {
+    List<User> users = userRepository.findEmailUnverifiedUsersOlderThanOneDay();
+    for (User user : users) {
+      emailVerificationRepository.deleteByUser_Id(user.getId());
+      passwordResetRepository.deleteUnusedTokensByUserId(user.getId());
+    }
+
     userRepository.deleteUnverifiedUsersOlderThanOneDay();
   }
 }

@@ -66,7 +66,7 @@ export class AuthService {
         if(res) {
           this.notificationService.showSuccess('Email verified successfully');
         } else {
-          this.notificationService.showError('Invalid verification code, try again.');
+          this.notificationService.showError('Invalid verification, try again.');
         }
       })
     );
@@ -75,7 +75,7 @@ export class AuthService {
   public resendVerificationEmail(emailVerificationData: EmailVerificationPageData) {
     return this.httpClient.post<void>(this.baseUri + '/email', emailVerificationData).pipe(
       tap(() => {
-        this.notificationService.showSuccess('Verification email sent');
+        this.notificationService.showSuccess('Verification email sent successfully if correct email was provided. Check your emails.');
       })
     );
   }
