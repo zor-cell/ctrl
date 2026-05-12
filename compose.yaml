@@ -32,16 +32,6 @@ services:
       retries: 5
       start_period: 30s
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-        restart: false
-    restart: on-failure:3
-
   db:
     platform: linux/amd64
     image: pgvector/pgvector:pg18-trixie

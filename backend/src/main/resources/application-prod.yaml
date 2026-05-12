@@ -17,10 +17,10 @@ application:
   security:
     id-austria:
       issuer-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock"
-      client-id: "https://ctrl.nilpfershow.at"
+      client-id: "https://ctrl.nilpferdshow.at"
       client-secret: ${ID_AUSTRIA_SECRET}
       token-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock/protocol/openid-connect/token"
-      redirect-uri: "https://ctrl.nilpfershow.at/verification-callback"
+      redirect-uri: "https://ctrl.nilpferdshow.at/verification-callback"
   auth:
     require-email-verification: true
 

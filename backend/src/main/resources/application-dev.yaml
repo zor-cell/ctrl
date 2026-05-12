@@ -2,7 +2,7 @@ spring:
   config:
     import: "optional:configtree:/run/secrets/"
   datasource:
-    url: jdbc:postgresql://db:5432/${DB_NAME}
+    url: jdbc:postgresql://localhost:5433/${DB_NAME}
   mail:
     debug: true
 
