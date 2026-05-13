@@ -24,14 +24,14 @@ export class NavigationComponent {
     const loggedIn = this.authService.isAuthenticated();
 
     const items: MenuItem[] = [
-      { label: 'Feed', icon: 'pi pi-home', routerLink: '/feed' },
-      { label: 'Search', icon: 'pi pi-search', routerLink: '/search' }
+      { icon: 'pi pi-home', routerLink: '/feed' },
+      { icon: 'pi pi-search', routerLink: '/search' }
     ];
 
     if (loggedIn) {
       items.push(
-        { label: 'Post', icon: 'pi pi-plus', routerLink: '/post' },
-        { label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat' }
+        { icon: 'pi pi-plus', routerLink: '/post' },
+        { icon: 'pi pi-comments', routerLink: '/chat' }
       );
     }
     return items;
@@ -42,7 +42,6 @@ export class NavigationComponent {
       {label: 'Profile', icon: 'pi pi-user', routerLink: '/profile'},
       {label: 'Community', icon: 'pi pi-users', routerLink: '/followed'},
       {label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings'},
-      { label: 'Algorithm', icon: 'pi pi-cog', routerLink: '/algorithm' },
     ];
 
     if (this.authService.isAdmin()) {

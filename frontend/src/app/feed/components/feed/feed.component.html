@@ -55,7 +55,7 @@
     <!-- Algorithm Config Button – floats right inside the tab bar -->
     <div class="tablist-actions">
       <p-button
-        label="Configure Algorithm"
+        label=""
         icon="pi pi-sliders-h"
         severity="secondary"
         size="small"
@@ -84,10 +84,6 @@
         <span class="post-username">{{ post.username }}</span>
         <span class="post-info">
           {{ timeAgo(post.createdAt) }}
-          @if (post.topicIds.length > 0) {
-            <span class="separator">·</span>
-            {{ post.topicIds[0] }}
-          }
         </span>
       </div>
     </div>
