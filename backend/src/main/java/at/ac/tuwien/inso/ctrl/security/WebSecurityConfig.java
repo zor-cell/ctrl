@@ -37,11 +37,14 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
+                // allows all public api endpoints
                 auth.requestMatchers(
                         "/api/auth/**", "/api/labels", "/api/feed/**", "/api/topics/**")
                     .permitAll()
+                    // requires auth for all remaining private api endpoints
                     .requestMatchers("/api/**")
                     .authenticated()
+                    // allows all other traffic (frontend)
                     .anyRequest()
                     .permitAll())
         .exceptionHandling( // auth endpoints that reach an exception should return 401
