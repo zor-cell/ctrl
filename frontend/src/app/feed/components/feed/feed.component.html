@@ -151,6 +151,9 @@
         <i class="pi pi-external-link"></i>
         {{ getDomain(post.sourceIds[0].url) }}
       </a>
+      <i class="pi pi-info-circle hint-icon"
+         pTooltip="Is the source reliable and relevant to the post?"
+         tooltipPosition="right"></i>
       <button
         class="action-btn upvote"
         [class.active]="post.sourceIds[0].userVote === 'up'"
