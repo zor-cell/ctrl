@@ -4,6 +4,7 @@ import { FeedService } from '../../services/feed.service';
 import { Post } from '../../dto/Post';
 import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
+import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
 
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
@@ -28,6 +29,7 @@ import { PostService, VoteType } from '../../../post/post.service';
     TagModule,
     TooltipModule,
     CommentsComponent,
+    AlgorithmConfigComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -45,6 +47,8 @@ export class FeedComponent implements OnInit {
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
 
+  protected algorithmConfigVisible = signal(false);
+
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
@@ -54,7 +58,11 @@ export class FeedComponent implements OnInit {
 
   ngOnInit(): void {
     this.userService.loadUser();
-    this.loadFeed();  // ← Keine `await`!
+    this.loadFeed();
+  }
+
+  openAlgorithmConfig(): void {
+    this.algorithmConfigVisible.set(true);
   }
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {

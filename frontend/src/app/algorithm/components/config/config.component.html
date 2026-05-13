@@ -1,97 +1,124 @@
-<div class="wrapper">
-    <div class="form-container">
-        <div class="form-header">
-            <h2>Feed Algorithm</h2>
-            <p>Tune your personalized content delivery</p>
-        </div>
+<div class="form-container">
 
-        @if (isLoading()) {
-            <div class="loading-spinner">
-                <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
-            </div>
-        } @else {
-            <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
-                <div class="slider-field">
-                    <div class="slider-header">
-                        <label for="weightInteraction">Interaction</label>
-                        <span>{{ configForm.controls.weightInteraction.value }}%</span>
-                    </div>
-                    <p-slider id="weightInteraction" formControlName="weightInteraction" [style]="{'width':'100%'}"/>
-                    <small class="hint-text">Weight content based on your previous likes and comments.</small>
-                </div>
-
-                <div class="slider-field">
-                    <div class="slider-header">
-                        <label for="weightRecency">Recency</label>
-                        <span>{{ configForm.controls.weightRecency.value }}%</span>
-                    </div>
-                    <p-slider id="weightRecency" formControlName="weightRecency" [style]="{'width':'100%'}"/>
-                    <small class="hint-text">Prioritize newer posts in your feed.</small>
-                </div>
-
-                <div class="slider-field">
-                    <div class="slider-header">
-                        <label for="weightExploration">Exploration</label>
-                        <span>{{ configForm.controls.weightExploration.value }}%</span>
-                    </div>
-                    <p-slider id="weightExploration" formControlName="weightExploration" [style]="{'width':'100%'}"/>
-                    <small class="hint-text">Discover posts from accounts you do not follow.</small>
-                </div>
-
-                <div class="slider-field">
-                    <div class="slider-header">
-                        <label for="weightSourceQuality">Source Quality</label>
-                        <span>{{ configForm.controls.weightSourceQuality.value }}%</span>
-                    </div>
-                    <p-slider id="weightSourceQuality" formControlName="weightSourceQuality"
-                              [style]="{'width':'100%'}"/>
-                    <small class="hint-text">Favor highly-rated sources over unverified ones.</small>
-                </div>
-
-                <div class="slider-field">
-                    <div class="slider-header">
-                        <label for="weightTrending">Trending</label>
-                        <span>{{ configForm.controls.weightTrending.value }}%</span>
-                    </div>
-                    <p-slider id="weightTrending" formControlName="weightTrending" [style]="{'width':'100%'}"/>
-                    <small class="hint-text">Show highly upvoted content interacting with the community.</small>
-                </div>
-
-                <div>
-                    <div class="slider-field">
-                        <div class="slider-header">
-                            <label for="weightTopic">Topic Interest</label>
-                            <span>{{ configForm.controls.weightTopic.value }}%</span>
-                        </div>
-                        <p-slider id="weightTopic" formControlName="weightTopic" [style]="{'width':'100%'}"/>
-                        <small class="hint-text">Align content heavily with your explicitly followed topics.</small>
-                    </div>
-
-                    <div class="slider-field">
-                        <label for="topics"
-                               style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Topics</label>
-                        <p-multiSelect
-                                id="topics"
-                                [options]="availableTopics()"
-                                formControlName="topics"
-                                optionLabel="name"
-                                optionValue="topicId"
-                                placeholder="Select Topics"
-                                display="chip"
-                                [selectionLimit]="5"
-                                [style]="{'width':'100%'}">
-                        </p-multiSelect>
-                        <small class="hint-text">Choose topics you want to prioritize in your feed.</small>
-                    </div>
-                </div>
-
-                <p-button
-                        type="submit"
-                        [label]="'Save Configuration'"
-                        fluid>
-                </p-button>
-
-            </form>
-        }
+  @if (isLoading()) {
+    <div class="loading-spinner">
+      <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
     </div>
+  } @else {
+    <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
+
+      <!-- Interaction -->
+      <div class="slider-field slider-interaction">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightInteraction">Interaction</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Weight content based on your previous likes and comments."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightInteraction') }}</span>
+        </div>
+        <p-slider id="weightInteraction" formControlName="weightInteraction" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Recency -->
+      <div class="slider-field slider-recency">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightRecency">Recency</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Prioritize newer posts in your feed."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightRecency') }}</span>
+        </div>
+        <p-slider id="weightRecency" formControlName="weightRecency" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Exploration -->
+      <div class="slider-field slider-exploration">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightExploration">Exploration</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Discover posts from accounts you do not follow."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightExploration') }}</span>
+        </div>
+        <p-slider id="weightExploration" formControlName="weightExploration" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Source Quality -->
+      <div class="slider-field slider-source-quality">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightSourceQuality">Source Quality</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Favor highly-rated sources over unverified ones."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightSourceQuality') }}</span>
+        </div>
+        <p-slider id="weightSourceQuality" formControlName="weightSourceQuality" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Trending -->
+      <div class="slider-field slider-trending">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightTrending">Trending</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Show highly upvoted content interacting with the community."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightTrending') }}</span>
+        </div>
+        <p-slider id="weightTrending" formControlName="weightTrending" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Topic Interest -->
+      <div class="slider-field slider-topic">
+        <div class="slider-header">
+          <div class="slider-label-group">
+            <label for="weightTopic">Topic Interest</label>
+            <i class="pi pi-info-circle hint-icon"
+               pTooltip="Align content heavily with your explicitly followed topics."
+               tooltipPosition="right"></i>
+          </div>
+          <span class="level-badge">{{ getLabel('weightTopic') }}</span>
+        </div>
+        <p-slider id="weightTopic" formControlName="weightTopic" [style]="{'width':'100%'}"/>
+      </div>
+
+      <!-- Topics MultiSelect -->
+      <div class="slider-field">
+        <div class="slider-label-group" style="margin-bottom: 0.5rem;">
+          <label for="topics" style="font-weight: 600;">Topics</label>
+          <i class="pi pi-info-circle hint-icon"
+             pTooltip="Choose up to 5 topics you want to prioritize in your feed."
+             tooltipPosition="right"></i>
+        </div>
+        <p-multiSelect
+          id="topics"
+          [options]="sortedTopics()"
+          formControlName="topics"
+          optionLabel="name"
+          optionValue="topicId"
+          placeholder="Select Topics"
+          display="chip"
+          [selectionLimit]="5"
+          [style]="{'width':'100%'}"
+          (onFilter)="onTopicFilter($event)">
+        </p-multiSelect>
+      </div>
+
+      <p-button
+        type="submit"
+        [label]="'Save Configuration'"
+        fluid>
+      </p-button>
+
+    </form>
+  }
 </div>

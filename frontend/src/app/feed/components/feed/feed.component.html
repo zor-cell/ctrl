@@ -1,55 +1,70 @@
 <div class="feed-wrapper">
 
   <!-- Tabs: Public / Private -->
-  <p-tabs value="private">
+  <div class="tabs-container">
+    <p-tabs value="private">
 
-    <p-tablist>
-      <p-tab value="public">
-        <i class="pi pi-globe"></i> Public
-      </p-tab>
-      <p-tab value="private">
-        <i class="pi pi-lock"></i> Private
-      </p-tab>
-    </p-tablist>
+      <p-tablist>
+        <p-tab value="public">
+          <i class="pi pi-globe"></i> Public
+        </p-tab>
+        <p-tab value="private">
+          <i class="pi pi-lock"></i> Private
+        </p-tab>
+      </p-tablist>
 
-    <p-tabpanels>
+      <p-tabpanels>
 
-      <!-- PUBLIC TAB -->
-      <p-tabpanel value="public">
-        <div class="posts-list">
-          @if (publicPosts().length === 0) {
-            <div class="empty-state">
-              <i class="pi pi-inbox"></i>
-              <p>No public posts yet.</p>
-            </div>
-          }
-          @for (post of publicPosts(); track post.postId) {
-            <section class="post-card">
-              <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-            </section>
-          }
-        </div>
-      </p-tabpanel>
+        <!-- PUBLIC TAB -->
+        <p-tabpanel value="public">
+          <div class="posts-list">
+            @if (publicPosts().length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No public posts yet.</p>
+              </div>
+            }
+            @for (post of publicPosts(); track post.postId) {
+              <section class="post-card">
+                <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+              </section>
+            }
+          </div>
+        </p-tabpanel>
 
-      <!-- PRIVATE TAB -->
-      <p-tabpanel value="private">
-        <div class="posts-list">
-          @if (privatePosts().length === 0) {
-            <div class="empty-state">
-              <i class="pi pi-inbox"></i>
-              <p>No private posts yet.</p>
-            </div>
-          }
-          @for (post of privatePosts(); track post.postId) {
-            <section class="post-card">
-              <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-            </section>
-          }
-        </div>
-      </p-tabpanel>
+        <!-- PRIVATE TAB -->
+        <p-tabpanel value="private">
+          <div class="posts-list">
+            @if (privatePosts().length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No private posts yet.</p>
+              </div>
+            }
+            @for (post of privatePosts(); track post.postId) {
+              <section class="post-card">
+                <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+              </section>
+            }
+          </div>
+        </p-tabpanel>
 
-    </p-tabpanels>
-  </p-tabs>
+      </p-tabpanels>
+    </p-tabs>
+
+    <!-- Algorithm Config Button – floats right inside the tab bar -->
+    <div class="tablist-actions">
+      <p-button
+        label="Configure Algorithm"
+        icon="pi pi-sliders-h"
+        severity="secondary"
+        size="small"
+        [rounded]="true"
+        [outlined]="true"
+        (onClick)="openAlgorithmConfig()"
+      />
+    </div>
+  </div>
 
 </div>
 
@@ -238,3 +253,17 @@
   [visible]="commentsDialogVisible()"
   (visibleChange)="commentsDialogVisible.set($event)"
 />
+
+<!-- ─── Algorithm Config Dialog ─── -->
+<p-dialog
+  header="Configure your Algorithm"
+  [visible]="algorithmConfigVisible()"
+  (visibleChange)="algorithmConfigVisible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '520px' }"
+  styleClass="algorithm-config-dialog"
+>
+  <app-config />
+</p-dialog>

@@ -19,6 +19,23 @@ $radius-sm:    10px;
   padding: 0 0 80px;
 }
 
+// ─── Tabs Container (wraps p-tabs + floating button) ──
+.tabs-container {
+  position: relative;
+}
+
+// ─── Algorithm Config Button (right side of tab bar) ──
+.tablist-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 48px; // match PrimeNG tab bar height
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+  z-index: 1;
+}
+
 // ─── Posts List ───────────────────────────────────────
 .posts-list {
   display: flex;
@@ -256,5 +273,20 @@ $radius-sm:    10px;
   p {
     font-size: 0.93rem;
     margin: 0;
+  }
+}
+
+// ─── Algorithm Config Dialog ──────────────────────────
+:host ::ng-deep .algorithm-config-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
   }
 }
