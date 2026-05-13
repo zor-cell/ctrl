@@ -244,6 +244,7 @@ $radius-sm:    10px;
 :host ::ng-deep .why-dialog {
   border: 1px solid $border !important;
   border-radius: $radius !important;
+  //width: ;
 
   .p-dialog-header {
     border-bottom: 1px solid $border !important;
@@ -271,6 +272,7 @@ $radius-sm:    10px;
   }
 
   p {
+    white-space: pre-line;
     font-size: 0.93rem;
     margin: 0;
   }
