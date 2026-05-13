@@ -63,7 +63,7 @@ $radius-sm:    10px;
   scroll-snap-stop: always;
   flex-shrink: 0;
 
-  height: calc(100vh - 120px); // gleiche Höhe wie .posts-list
+  height: auto;
   display: flex;
   flex-direction: column;
 
