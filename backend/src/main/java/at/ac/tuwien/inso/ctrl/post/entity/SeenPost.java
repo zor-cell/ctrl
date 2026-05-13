@@ -26,6 +26,15 @@ public class SeenPost {
   private String postId;
 
   @CreationTimestamp
-  @Column(name = "seen_at", updatable = false)
-  private LocalDateTime seenAt;
+  @Column(name = "first_seen_at", updatable = false)
+  private LocalDateTime firstSeenAt;
+
+  @Column(name = "last_seen_at")
+  private LocalDateTime lastSeenAt;
+
+  @Column(name = "total_duration_ms")
+  private Long totalDurationMs;
+
+  @Column(name = "view_count")
+  private Integer viewCount;
 }

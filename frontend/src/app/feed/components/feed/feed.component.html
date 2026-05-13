@@ -25,7 +25,11 @@
               </div>
             }
             @for (post of publicPosts(); track post.postId) {
-              <section class="post-card">
+              <section
+                class="post-card"
+                [appPostView]="post.postId"
+                (viewed)="onPostViewed($event)"
+              >
                 <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
               </section>
             }
@@ -42,7 +46,11 @@
               </div>
             }
             @for (post of privatePosts(); track post.postId) {
-              <section class="post-card">
+              <section
+                class="post-card"
+                [appPostView]="post.postId"
+                (viewed)="onPostViewed($event)"
+              >
                 <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
               </section>
             }

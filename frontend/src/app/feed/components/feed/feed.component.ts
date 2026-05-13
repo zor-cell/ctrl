@@ -15,6 +15,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
+import {ViewTrackingService} from '../../../post/services/view-tracking.service';
+import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
 
 @Component({
   selector: 'app-feed',
@@ -30,6 +32,7 @@ import { PostService, VoteType } from '../../../post/post.service';
     TooltipModule,
     CommentsComponent,
     AlgorithmConfigComponent,
+    PostViewDirective,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -38,6 +41,8 @@ export class FeedComponent implements OnInit {
   protected userService = inject(UserService);
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
+
+  readonly viewTracking = inject(ViewTrackingService);
 
   protected allPosts = signal<Post[]>([]);
 
@@ -166,6 +171,10 @@ export class FeedComponent implements OnInit {
 
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+
+  onPostViewed(event: ViewEvent): void {
+    this.viewTracking.track(event);
   }
 
   /** Helpers **/

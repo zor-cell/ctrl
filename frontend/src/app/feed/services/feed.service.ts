@@ -80,7 +80,7 @@ export class FeedService {
       reasons.push(`- suits your selected topics (${score.scoreTopic.toFixed(2)})`);
     }
     if (score.scoreInteraction > THRESHOLD) {
-      reasons.push(`- is similar to posts you liked, commented or shared (${score.scoreInteraction.toFixed(2)})`);
+      reasons.push(`- is similar to posts you liked, commented, watched for a longer period of time or shared (${score.scoreInteraction.toFixed(2)})`);
     }
     if (score.scoreTrending > THRESHOLD) {
       reasons.push(`- is trending (${score.scoreTrending.toFixed(2)})`);
