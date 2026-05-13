@@ -50,16 +50,16 @@ public interface PostRepository extends JpaRepository<Post, String> {
                                END
                              )) AS score_topic,
                              -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
-                             (:wRecency * EXP(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400)) AS score_recency,
+                             (:wRecency * EXP(GREATEST(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400, -700))) AS score_recency,
                              -- Trending (Wilson score post upvotes / downvotes) [0 to 1] TODO is currently more like popularity than trending
                              (:wTrending * wilson_score(
-                                COALESCE((SELECT COUNT(*) FROM post_votes pv WHERE pv.post_id = p.post_id AND pv.vote_type = 'up'), 0)::integer,
-                                COALESCE((SELECT COUNT(*) FROM post_votes pv WHERE pv.post_id = p.post_id AND pv.vote_type = 'down'), 0)::integer
+                                COALESCE(p.upvotes, 0)::integer,
+                                COALESCE(p.downvotes, 0)::integer
                              )) AS score_trending,
                              -- Source Quality (Wilson score of source upvotes / downvotes) [0 to 1]
                              (:wSource * wilson_score(
-                                COALESCE((SELECT COUNT(*) FROM source_votes sv WHERE sv.source_id = s.source_id AND sv.vote_type = 'up'), 0)::integer,
-                                COALESCE((SELECT COUNT(*) FROM source_votes sv WHERE sv.source_id = s.source_id AND sv.vote_type = 'down'), 0)::integer
+                                COALESCE(s.upvotes, 0)::integer,
+                                COALESCE(s.downvotes, 0)::integer
                              )) AS score_source,
                              -- Exploration [0 or 1]
                              (:wExploration * CASE WHEN f.follower_id IS NULL AND p.user_id != :userId THEN 1 ELSE 0 END) AS score_exploration

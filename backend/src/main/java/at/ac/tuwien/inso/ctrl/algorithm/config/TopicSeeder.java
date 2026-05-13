@@ -318,27 +318,42 @@ public class TopicSeeder {
               new DefaultTopic("Arabic", "🇸🇦")
               );
 
-      for (DefaultTopic dt : defaultTopics) {
-        if (!topicRepository.existsByName(dt.name())) {
-          try {
-            log.info("Seeding topic: {}", dt.name());
-            // WICHTIG: Hier wird der externe Service aufgerufen
-            float[] vector = embeddingService.embedText(dt.name());
+      List<DefaultTopic> topicsToSeed = defaultTopics.stream()
+              .filter(dt -> !topicRepository.existsByName(dt.name()))
+              .toList();
 
-            Topic topic = Topic.builder()
-                    .name(dt.name())
-                    .emoji(dt.emoji())
-                    .embedding(vector)
-                    .build();
-
-            topicRepository.save(topic);
-          } catch (Exception e) {
-            log.error("Could not seed topic {}: {}", dt.name(), e.getMessage());
-          }
-        }
+      if (topicsToSeed.isEmpty()) {
+        log.info("Topic seeding finished. No new topics to seed.");
+        return;
       }
-      log.info("Topic seeding finished.");
+
+      log.info("Batch seeding {} new topics...", topicsToSeed.size());
+
+      try {
+        List<String> topicNames = topicsToSeed.stream().map(DefaultTopic::name).toList();
+
+        //call batch embedding
+        List<float[]> embeddings = embeddingService.embedText(topicNames);
+
+        List<Topic> topicsToSave = new java.util.ArrayList<>();
+        for (int i = 0; i < topicsToSeed.size(); i++) {
+          DefaultTopic dt = topicsToSeed.get(i);
+          float[] vector = embeddings.get(i);
+
+          topicsToSave.add(Topic.builder()
+                  .name(dt.name())
+                  .emoji(dt.emoji())
+                  .embedding(vector)
+                  .build());
+        }
+
+        topicRepository.saveAll(topicsToSave);
+        log.info("Topic seeding successfully finished.");
+      } catch (Exception e) {
+        log.error("Could not seed topics in batch: {}", e.getMessage(), e);
+      }
     };
+
   }
 
   private record DefaultTopic(String name, String emoji) {}

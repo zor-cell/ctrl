@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.embedding;
 
+import at.ac.tuwien.inso.ctrl.embedding.dto.EmbeddingData;
 import at.ac.tuwien.inso.ctrl.embedding.dto.EmbeddingRequest;
 import at.ac.tuwien.inso.ctrl.embedding.dto.EmbeddingResponse;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
@@ -34,16 +35,36 @@ public class EmbeddingService {
                   HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()))
           .build();
 
+  /**
+   * Embeds the given string into a vector
+   */
   public float[] embedText(String text) {
     var request = new EmbeddingRequest(model, List.of(text), null);
 
-    return callEmbeddings(request);
+    List<EmbeddingData> embeddings = callEmbeddings(request);
+    return embeddings.getFirst().embedding();
   }
 
+  /**
+   * Embeds the given strings as a batch call into a vectors (order remains the same)
+   */
+  public List<float[]> embedText(List<String> textList) {
+    var request = new EmbeddingRequest(model, textList, null);
+
+    List<EmbeddingData> embeddings = callEmbeddings(request);
+    return embeddings.stream()
+            .map(EmbeddingData::embedding)
+            .toList();
+  }
+
+  /**
+   * Embeds the given image url into a vector
+   */
   public float[] embedImage(String imageUrl) {
     var request = new EmbeddingRequest(model, List.of(imageUrl), "image");
 
-    return callEmbeddings(request);
+    List<EmbeddingData> embeddings = callEmbeddings(request);
+    return embeddings.getFirst().embedding();
   }
 
   /**
@@ -80,7 +101,7 @@ public class EmbeddingService {
     return fused;
   }
 
-  private float[] callEmbeddings(EmbeddingRequest request) {
+  private List<EmbeddingData> callEmbeddings(EmbeddingRequest request) {
     try {
       var response =
           restClient
@@ -91,7 +112,7 @@ public class EmbeddingService {
               .retrieve()
               .body(EmbeddingResponse.class);
 
-      return response.data().getFirst().embedding();
+      return response.data();
     } catch (ResourceAccessException e) {
       throw new CommunicationException(
           "The embedding server is currently unreachable. Please try again later.");

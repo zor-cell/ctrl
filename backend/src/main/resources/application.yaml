@@ -11,6 +11,7 @@ spring:
   sql:
     init:
       mode: always
+      separator: ^
   jpa:
     hibernate:
       ddl-auto: update
