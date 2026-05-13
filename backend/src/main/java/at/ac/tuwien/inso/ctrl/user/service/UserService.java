@@ -14,7 +14,6 @@ import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
-
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -46,7 +45,7 @@ public class UserService {
   private final FollowService followService;
 
   private static final Logger LOGGER =
-          LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);

@@ -38,37 +38,12 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        // --- Frontend static resources ---
-                        "/",
-                        "/index.html",
-                        "/*.js",
-                        "/*.css",
-                        "/*.ico",
-                        "/*.png",
-                        "/*.webmanifest",
-                        "/assets/**",
-                        // --- Angular client-side routes (catch-all forwards) ---
-                        "/login",
-                        "/register",
-                        "/reset-password",
-                        "/forgot-password",
-                        "/feed",
-                        "/post",
-                        "/profile",
-                        "/settings",
-                        "/search",
-                        "/email_verification/**",
-                        "/followed",
-                        "/verification-callback",
-                        // --- Public API endpoints ---
-                        "/api/auth/**",
-                        "/api/labels",
-                        "/api/topics",
-                        "/api/feed/**",
-                        "/actuator/health")
+                        "/api/auth/**", "/api/labels", "/api/feed/**", "/api/topics/**")
                     .permitAll()
+                    .requestMatchers("/api/**")
+                    .authenticated()
                     .anyRequest()
-                    .authenticated())
+                    .permitAll())
         .exceptionHandling( // auth endpoints that reach an exception should return 401
             exceptions ->
                 exceptions.authenticationEntryPoint(
@@ -86,7 +61,11 @@ public class WebSecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
 
     configuration.setAllowedOrigins(
-        List.of("http://localhost:4200", "http://localhost", "http://127.0.0.1"));
+        List.of(
+            "http://localhost:4200",
+            "http://localhost",
+            "http://127.0.0.1",
+            "https://ctrl.nilpferdshow.at"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 
