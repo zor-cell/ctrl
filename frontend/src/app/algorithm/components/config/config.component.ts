@@ -114,8 +114,8 @@ export class AlgorithmConfigComponent implements OnInit {
       return 'Exploratory';
     }
 
-    if (value <= 33) return 'Negligible';
-    if (value <= 66) return 'Medium';
+    if (value <= 33) return 'Irrelevant';
+    if (value <= 66) return 'Relevant';
     return 'Important';
   }
 
