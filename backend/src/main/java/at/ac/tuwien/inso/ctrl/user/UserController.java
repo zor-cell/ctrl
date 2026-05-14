@@ -6,14 +6,11 @@ import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.VerificationStatusResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,11 +18,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,27 +81,5 @@ public class UserController {
       @AuthenticationPrincipal User currentUser,
       @Valid @RequestBody VerifyIdentityRequest request) {
     return userService.verifyUser(currentUser, request);
-  }
-
-  @GetMapping("/search")
-  public List<UserSearchResponse> searchUsers(
-      @AuthenticationPrincipal User currentUser,
-      @RequestParam String q,
-      @RequestParam(required = false, defaultValue = "false") boolean excludeFriends,
-      @RequestParam(required = false, defaultValue = "false") boolean excludeFollowed,
-      @RequestParam(required = false, defaultValue = "false") boolean verifiedOnly) {
-
-    return userService.searchUsers(currentUser, q, excludeFriends, excludeFollowed, verifiedOnly);
-  }
-
-  @PostMapping("/me/verify/business")
-  public void submitBusinessVerification(@AuthenticationPrincipal User currentUser) {
-    businessVerificationService.submitBusinessVerification(currentUser);
-  }
-
-  @GetMapping("/me/verify")
-  public VerificationStatusResponse getVerificationStatus(
-      @AuthenticationPrincipal User currentUser) {
-    return businessVerificationService.getVerificationStatus(currentUser);
   }
 }

@@ -272,30 +272,26 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  // potientially replaceable/reusable with a global search
+  /**
+   * @deprecated Use SearchService.searchUsers() instead. This method is kept for backward compatibility.
+   * Searches for users using the new POST endpoint.
+   */
   searchUsers(
     query: string,
     excludeFriends = false,
     excludeFollowed = false,
     verifiedOnly = false
   ) {
-    const params = new HttpParams()
-      .set('q', query)
-      .set('excludeFriends', excludeFriends.toString())
-      .set('excludeFollowed', excludeFollowed.toString())
-      .set('verifiedOnly', verifiedOnly.toString());
+    const request = {
+      query: query,
+      excludeFriends: excludeFriends,
+      excludeFollowed: excludeFollowed,
+      verifiedOnly: verifiedOnly,
+    };
 
-    return this.http.get<UserSearchResult[]>(`${this.searchUri}/search`, { params }).pipe(
-      map(results =>
-        results.map(result => ({
-          ...result,
-          relationshipStatuses: result.relationshipStatuses ?? [],
-        }))
-      ),
-      tap(results => {
-        this._searchResults.set(results);
-        this.cacheProfilePictures(results);
-      })
+    const searchUri = environment.apiUrl + '/search';
+    return this.http.post<UserSearchResult[]>(`${searchUri}/users`, request).pipe(
+      tap(results => this._searchResults.set(results))
     );
   }
 

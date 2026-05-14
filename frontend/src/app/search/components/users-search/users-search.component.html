@@ -1,0 +1,138 @@
+<div class="users-search">
+  <!-- Search Input -->
+  <div class="search-section">
+    <p-iconField iconPosition="left">
+      <p-inputIcon styleClass="pi pi-search" />
+      <input
+        type="text"
+        pInputText
+        placeholder="Search by username..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchInputChange($event)"
+        (keyup.enter)="onSearch()"
+        class="search-input" />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          class="clear-button"
+          (click)="clearSearch()"
+          title="Clear search">
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </p-iconField>
+    <p-button
+      icon="pi pi-search"
+      (onClick)="onSearch()"
+      label="Search"
+      [loading]="isSearching()" />
+  </div>
+
+  <!-- Filter Toggles -->
+  <div class="filter-section">
+    <p-button
+      [label]="excludeFriends() ? 'Hide Friends' : 'Show Friends'"
+      [icon]="excludeFriends() ? 'pi pi-check' : 'pi pi-times'"
+      [severity]="excludeFriends() ? 'secondary' : 'primary'"
+      (onClick)="toggleFilter('friends')"
+      size="small"
+      [text]="!excludeFriends()" />
+
+    <p-button
+      [label]="excludeFollowed() ? 'Hide Followed' : 'Show Followed'"
+      [icon]="excludeFollowed() ? 'pi pi-check' : 'pi pi-times'"
+      [severity]="excludeFollowed() ? 'secondary' : 'primary'"
+      (onClick)="toggleFilter('followed')"
+      size="small"
+      [text]="!excludeFollowed()" />
+
+    <p-button
+      [label]="verifiedOnly() ? 'Verified Only' : 'All Users'"
+      [icon]="verifiedOnly() ? 'pi pi-check-circle' : 'pi pi-circle'"
+      [severity]="verifiedOnly() ? 'success' : 'primary'"
+      (onClick)="toggleFilter('verified')"
+      size="small"
+      [text]="!verifiedOnly()" />
+  </div>
+
+  <!-- Results -->
+  <div class="results-section">
+    @if (searchQuery().trim().length < 2 && searchResults().length === 0) {
+      <div class="empty-state">
+        <p>Enter at least 2 characters to search</p>
+      </div>
+    } @else if (isSearching()) {
+      <div class="empty-state">
+        <i class="pi pi-spinner pi-spin"></i>
+        <p>Searching...</p>
+      </div>
+    } @else if (searchResults().length === 0) {
+      <div class="empty-state">
+        <p>No users found matching your search and filters</p>
+      </div>
+    } @else {
+      <div class="results-list">
+        @for (user of searchResults(); track user.id) {
+          <div class="user-item">
+            <p-avatar
+              [image]="user.profilePicture || undefined"
+              [label]="user.name?.charAt(0) || user.username.charAt(0)"
+              shape="circle"
+              styleClass="user-avatar" />
+
+            <div class="user-info">
+              <span class="name">{{ user.name || user.username }}</span>
+              <span class="username">&#64;{{ user.username }}</span>
+              @if (user.isVerified) {
+                <span class="verified-badge">Verified</span>
+              }
+              @if (user.relationshipStatus === 'FRIEND') {
+                <span class="relationship-badge friend">Friend</span>
+              } @else if (user.relationshipStatus === 'FOLLOWED') {
+                <span class="relationship-badge followed">Followed</span>
+              } @else if (user.relationshipStatus === 'PENDING_REQUEST_SENT') {
+                <span class="relationship-badge pending-sent">Request Sent</span>
+              } @else if (user.relationshipStatus === 'PENDING_REQUEST_INCOMING') {
+                <span class="relationship-badge pending-incoming">Request Incoming</span>
+              }
+            </div>
+
+            <div class="user-actions">
+              @if (canFollow(user)) {
+                <p-button
+                  icon="pi pi-plus"
+                  label="Follow"
+                  severity="secondary"
+                  (onClick)="followUser(user)"
+                  size="small" />
+              }
+              @if (hasIncomingRequest(user)) {
+                <p-button
+                  icon="pi pi-check"
+                  label="Accept Request"
+                  severity="success"
+                  (onClick)="acceptIncomingRequest(user)"
+                  size="small" />
+              }
+              @if (hasPendingSentRequest(user)) {
+                <p-button
+                  icon="pi pi-clock"
+                  label="Request Sent"
+                  severity="secondary"
+                  [disabled]="true"
+                  size="small" />
+              }
+              @if (canAddFriend(user)) {
+                <p-button
+                  icon="pi pi-user-plus"
+                  label="Add Friend"
+                  (onClick)="sendFriendRequest(user)"
+                  size="small" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,227 @@
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil, debounceTime } from 'rxjs';
+
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { AvatarModule } from 'primeng/avatar';
+
+import { SearchService } from '../../services/search.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { UserSearchResult } from '../../../user/dto/Relationship';
+import { FriendRequestEventBusService } from '../../../user/friend-request-event-bus.service';
+import { RelationshipService } from '../../../user/relationship.service';
+
+/**
+ * Users Search Component
+ *
+ * Features:
+ * - Search by username (triggered by button click or Enter key)
+ * - Filter toggles for friends/following/verified
+ * - Context-aware action buttons based on relationship status
+ * - Accept incoming friend requests directly from search
+ * - Auto-refresh on relationship changes via event bus
+ *
+ * Default filters: excludeFriends=true, excludeFollowed=true
+ */
+@Component({
+  selector: 'app-users-search',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    ButtonModule,
+    IconFieldModule,
+    InputIconModule,
+    AvatarModule,
+  ],
+  templateUrl: './users-search.component.html',
+  styleUrl: './users-search.component.scss',
+})
+export class UsersSearchComponent implements OnInit, OnDestroy {
+  private searchService = inject(SearchService);
+  private notificationService = inject(NotificationService);
+  private eventBus = inject(FriendRequestEventBusService);
+  private relationshipService = inject(RelationshipService);
+
+  // Updated defaults: excludeFriends=true, excludeFollowed=true
+  searchQuery = signal<string>('');
+  excludeFriends = signal<boolean>(true);
+  excludeFollowed = signal<boolean>(true);
+  verifiedOnly = signal<boolean>(false);
+
+  searchResults = signal<UserSearchResult[]>([]);
+  isSearching = signal<boolean>(false);
+
+  private _destroy$ = new Subject<void>();
+  private refreshTrigger$ = new Subject<void>();
+  private searchInput$ = new Subject<string>();
+
+  ngOnInit(): void {
+    // Debounced search input (300ms)
+    this.searchInput$
+      .pipe(
+        takeUntil(this._destroy$),
+        debounceTime(300)
+      )
+      .subscribe((query) => {
+        if (query.length >= 2) {
+          this.performSearch(query);
+        }
+      });
+
+    // Auto-refresh when relationship changes
+    this.refreshTrigger$
+      .pipe(takeUntil(this._destroy$))
+      .subscribe(() => {
+        const query = this.searchQuery().trim();
+        if (query.length >= 2) {
+          this.performSearch(query);
+        }
+      });
+
+    // Listen for relationship changes
+    this.eventBus.actionEvents$
+      .pipe(takeUntil(this._destroy$))
+      .subscribe(() => {
+        this.refreshTrigger$.next();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this._destroy$.next();
+    this._destroy$.complete();
+    this.refreshTrigger$.complete();
+    this.searchInput$.complete();
+  }
+
+  onSearchInputChange(query: string): void {
+    this.searchQuery.set(query);
+    this.searchInput$.next(query.trim());
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+  }
+
+  onSearch(): void {
+    const query = this.searchQuery().trim();
+    if (query.length < 2) {
+      this.notificationService.showError('Please enter at least 2 characters');
+      return;
+    }
+    this.performSearch(query);
+  }
+
+  private performSearch(query: string): void {
+    this.isSearching.set(true);
+
+    const request = {
+      query: query,
+      excludeFriends: this.excludeFriends(),
+      excludeFollowed: this.excludeFollowed(),
+      verifiedOnly: this.verifiedOnly(),
+    };
+
+    this.searchService
+      .searchUsers(request)
+      .pipe(takeUntil(this._destroy$))
+      .subscribe({
+        next: (results) => {
+          this.searchResults.set(results);
+          this.isSearching.set(false);
+        },
+        error: () => {
+          this.notificationService.showError('Search failed');
+          this.isSearching.set(false);
+        },
+      });
+  }
+
+  toggleFilter(filter: 'friends' | 'followed' | 'verified') {
+    switch (filter) {
+      case 'friends':
+        this.excludeFriends.update(v => !v);
+        break;
+      case 'followed':
+        this.excludeFollowed.update(v => !v);
+        break;
+      case 'verified':
+        this.verifiedOnly.update(v => !v);
+        break;
+    }
+
+    // Re-search if there's a query
+    const query = this.searchQuery().trim();
+    if (query.length >= 2) {
+      this.performSearch(query);
+    }
+  }
+
+  followUser(user: UserSearchResult) {
+    this.relationshipService.follow(user.username).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Now following ${user.username}`);
+        this.eventBus.followed(user.username);
+      },
+      error: () => {
+        this.notificationService.showError('Failed to follow user');
+      },
+    });
+  }
+
+  sendFriendRequest(user: UserSearchResult) {
+    this.relationshipService.sendFriendRequest(user.username).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Friend request sent to ${user.username}`);
+        // Refresh the search results to show the updated status
+        const query = this.searchQuery().trim();
+        if (query.length >= 2) {
+          this.performSearch(query);
+        }
+      },
+      error: () => {
+        this.notificationService.showError('Failed to send friend request');
+      },
+    });
+  }
+
+  acceptIncomingRequest(user: UserSearchResult) {
+    this.relationshipService.acceptFriendRequest(user.username).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Accepted friend request from ${user.username}`);
+        // Refresh the search results
+        const query = this.searchQuery().trim();
+        if (query.length >= 2) {
+          this.performSearch(query);
+        }
+      },
+      error: () => {
+        this.notificationService.showError('Failed to accept friend request');
+      },
+    });
+  }
+
+  canFollow(user: UserSearchResult): boolean {
+    return user.relationshipStatus === 'NONE' && user.isVerified;
+  }
+
+  canAddFriend(user: UserSearchResult): boolean {
+    return user.relationshipStatus !== 'FRIEND' &&
+           user.relationshipStatus !== 'PENDING_REQUEST_SENT' &&
+           user.relationshipStatus !== 'PENDING_REQUEST_INCOMING';
+  }
+
+  hasIncomingRequest(user: UserSearchResult): boolean {
+    return user.relationshipStatus === 'PENDING_REQUEST_INCOMING';
+  }
+
+  hasPendingSentRequest(user: UserSearchResult): boolean {
+    return user.relationshipStatus === 'PENDING_REQUEST_SENT';
+  }
+}

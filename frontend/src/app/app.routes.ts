@@ -59,10 +59,8 @@ export const routes: Routes = [
   {
     path: 'search',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./user/components/search-page/search-page.component').then(
-        m => m.SearchPageComponent,
-      ),
+    loadChildren: () =>
+      import('./search/search.routes').then(m => m.searchRoutes),
   },
   {
     path: 'chat',
