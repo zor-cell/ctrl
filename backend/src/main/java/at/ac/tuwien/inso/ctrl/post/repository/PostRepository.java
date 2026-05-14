@@ -94,7 +94,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   LIMIT :limit OFFSET :offset
                   """,
       nativeQuery = true)
-  List<PostScoreProjection> findPersonalizedFeed(
+  List<PostScoreProjection> getRankedPosts(
       @Param("candidatePosts") List<String> candidatePosts,
       @Param("userId") UUID userId,
       @Param("wInteraction") double wInteraction,
@@ -109,36 +109,41 @@ public interface PostRepository extends JpaRepository<Post, String> {
       @Param("limit") int limit,
       @Param("offset") int offset);
 
+  /**
+   * A query that populates a candidate pool with indexed queries so ordering is very efficient.
+   * Retrieves posts that are likely good in different metrics and returns their ids
+   */
   @Query(value = """
     ( --interaction candidates
       SELECT p.post_id FROM posts p
        WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-       ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT 50)
+       ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --topic candidates
         SELECT p.post_id FROM posts p
          WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT 50)
+         ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --recency candidates
         SELECT p.post_id FROM posts p
          WHERE p.is_public = :isPublic
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.created_at DESC LIMIT 50)
+         ORDER BY p.created_at DESC LIMIT :poolSize)
     UNION
     ( --popularity candidates
         SELECT p.post_id FROM posts p
          WHERE p.is_public = :isPublic
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.upvotes DESC LIMIT 50)
+         ORDER BY p.upvotes DESC LIMIT :poolSize)
     """, nativeQuery = true)
-  List<String> findCandidatePool(
+  List<String> getPostCandidatePool(
           @Param("userId") UUID userId,
           @Param("isPublic") boolean isPublic,
           @Param("interactionVector") float[] interactionVector,
-          @Param("topicVector") float[] topicVector
+          @Param("topicVector") float[] topicVector,
+          @Param("poolSize") int poolSize
   );
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")

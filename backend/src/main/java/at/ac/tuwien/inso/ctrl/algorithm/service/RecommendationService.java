@@ -1,19 +1,16 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +29,12 @@ public class RecommendationService {
 
     List<String> topics = config.getTopics().stream().map(Topic::getTopicId).toList();
 
-    List<String> candidatePosts = postRepository.findCandidatePool(user.getId(), true, interactionPreference, topicPreference);
+    List<String> candidatePosts =
+        postRepository.getPostCandidatePool(
+            user.getId(), true, interactionPreference, topicPreference, 50);
 
     List<PostScoreProjection> scoredProjections =
-        postRepository.findPersonalizedFeed(
+        postRepository.getRankedPosts(
             candidatePosts,
             user.getId(),
             config.getWeightInteraction() / 100.0,
