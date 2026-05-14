@@ -38,8 +38,9 @@ public class FeedController {
   public ResponseEntity<List<FeedPostResponse>> getFeed(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int postsPerPage,
+      @RequestParam(defaultValue = "true") boolean publicFeed,
       @AuthenticationPrincipal UserDetails userDetails) {
     String username = userDetails != null ? userDetails.getUsername() : null;
-    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, username));
+    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, publicFeed, username));
   }
 }

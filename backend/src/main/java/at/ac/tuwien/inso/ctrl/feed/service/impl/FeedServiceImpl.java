@@ -38,14 +38,14 @@ public class FeedServiceImpl implements FeedService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<FeedPostResponse> getFeed(int page, int postsPerPage, String username) {
+  public List<FeedPostResponse> getFeed(int page, int postsPerPage, boolean publicFeed, String username) {
     User user =
             userRepository
                     .findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     Optional<String> userId = Optional.of(user.getId().toString());
 
-    List<RecommendedPost> recommendedPosts = recommendationService.getRecommendedPosts(user, page, postsPerPage);
+    List<RecommendedPost> recommendedPosts = recommendationService.getRecommendedPosts(user, page, postsPerPage, publicFeed);
     List<String> postIds = recommendedPosts.stream().map(p -> p.getPost().getPostId()).collect(Collectors.toList());
 
     Map<String, String> postVotes =

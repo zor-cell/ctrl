@@ -47,7 +47,7 @@ class FeedUnitTest {
   @MethodSource("invalidInputs")
   void getFeed_shouldThrow_whenInputIsInvalid(int page, int postsPerPage) {
     assertThrows(
-        IllegalArgumentException.class, () -> feedService.getFeed(page, postsPerPage, null));
+        IllegalArgumentException.class, () -> feedService.getFeed(page, postsPerPage, true, null));
   }
 
   static Stream<Arguments> invalidInputs() {
@@ -66,7 +66,7 @@ class FeedUnitTest {
         .thenReturn(new PageImpl<>(List.of()));
     when(postRepository.findAllWithAssociationsByIds(anyList())).thenReturn(List.of());
 
-    assertDoesNotThrow(() -> feedService.getFeed(page, postsPerPage, null));
+    assertDoesNotThrow(() -> feedService.getFeed(page, postsPerPage, true, null));
   }
 
   static Stream<Arguments> validInputs() {
@@ -91,7 +91,7 @@ class FeedUnitTest {
     FeedPostResponse mockResponse = mock(FeedPostResponse.class);
     when(feedMapper.toFeedPostResponse(post, Map.of(), Map.of())).thenReturn(mockResponse);
 
-    List<FeedPostResponse> result = feedService.getFeed(0, 10, null);
+    List<FeedPostResponse> result = feedService.getFeed(0, 10, true, null);
 
     assertEquals(1, result.size());
     // Ensure that repositories have NOT been queried for votes
@@ -105,7 +105,7 @@ class FeedUnitTest {
         .thenReturn(new PageImpl<>(List.of()));
     when(postRepository.findAllWithAssociationsByIds(List.of())).thenReturn(List.of());
 
-    List<FeedPostResponse> result = feedService.getFeed(0, 10, null);
+    List<FeedPostResponse> result = feedService.getFeed(0, 10, true, null);
 
     assertNotNull(result);
     assertTrue(result.isEmpty());
@@ -131,7 +131,7 @@ class FeedUnitTest {
     when(feedMapper.toFeedPostResponse(any(Post.class), any(), any()))
         .thenReturn(mock(FeedPostResponse.class));
 
-    List<FeedPostResponse> result = feedService.getFeed(0, 10, username);
+    List<FeedPostResponse> result = feedService.getFeed(0, 10,true,  username);
 
     assertEquals(1, result.size());
     // verify that method was called exactly once with exactly these arguments
@@ -162,7 +162,7 @@ class FeedUnitTest {
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(eq(userId), anyList()))
         .thenReturn(List.of());
 
-    feedService.getFeed(0, 10, username);
+    feedService.getFeed(0, 10,true,  username);
 
     // The mapper must be called with the correct vote map
     verify(feedMapper).toFeedPostResponse(post, Map.of("post-42", "UPVOTE"), Map.of());
@@ -172,7 +172,7 @@ class FeedUnitTest {
   void getFeed_withUnknownUsername_shouldThrowUsernameNotFoundException() {
     when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
-    assertThrows(UsernameNotFoundException.class, () -> feedService.getFeed(0, 10, "ghost"));
+    assertThrows(UsernameNotFoundException.class, () -> feedService.getFeed(0, 10, true, "ghost"));
   }
 
   /** Helpers * */

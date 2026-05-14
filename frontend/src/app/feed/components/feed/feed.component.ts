@@ -17,6 +17,10 @@ import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
+import {ProgressBar} from "primeng/progressbar";
+import {Badge} from "primeng/badge";
+import {ReactiveFormsModule} from "@angular/forms";
+import {Slider} from "primeng/slider";
 
 @Component({
   selector: 'app-feed',
@@ -33,6 +37,10 @@ import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/po
     CommentsComponent,
     AlgorithmConfigComponent,
     PostViewDirective,
+    ProgressBar,
+    Badge,
+    ReactiveFormsModule,
+    Slider,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -178,7 +186,7 @@ export class FeedComponent implements OnInit {
   }
 
   /** Helpers **/
-  private async loadFeed(): Promise<void> {
+  protected async loadFeed(): Promise<void> {
     const posts = await this.feedService.getFeed();
     this.allPosts.set(posts);
   }
@@ -222,4 +230,6 @@ export class FeedComponent implements OnInit {
       })
     );
   }
+
+  protected readonly Math = Math;
 }

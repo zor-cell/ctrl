@@ -22,9 +22,9 @@ export class FeedService {
    * @returns A promise resolving to an array of mapped {@link Post} objects
    */
 
-  async getFeed(page = 0, postsPerPage = 20): Promise<Post[]> {
+  async getFeed(page = 0, postsPerPage = 20, isPublic = true): Promise<Post[]> {
     const response = await firstValueFrom(
-      this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}`)
+      this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}&publicFeed=${isPublic}`)
     );
     return response.map(item => this.mapToPost(item));
   }
@@ -65,6 +65,7 @@ export class FeedService {
           content: c.content,
           parentCommentId: c.parentCommentId ?? null,
         })) ?? [],
+      explanation: item.explanation
     };
   }
 

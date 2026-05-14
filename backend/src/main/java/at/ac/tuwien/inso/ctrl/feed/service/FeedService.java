@@ -16,5 +16,5 @@ public interface FeedService {
    * @param username the username of the currently authenticated user (for userVote lookup)
    * @return list of feed posts
    */
-  List<FeedPostResponse> getFeed(int page, int postsPerPage, String username);
+  List<FeedPostResponse> getFeed(int page, int postsPerPage, boolean publicFeed, String username);
 }

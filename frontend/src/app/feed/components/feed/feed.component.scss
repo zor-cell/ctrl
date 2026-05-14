@@ -292,3 +292,90 @@ $radius-sm:    10px;
     padding: 0 !important;
   }
 }
+
+
+
+
+.dialog-grid {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2rem;
+  margin: 2rem 2rem 1rem 2rem;
+}
+
+.score-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.score-row {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.5rem;
+}
+
+.score-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint-icon {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #9ca3af);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+.bi-bar-container {
+  height: 8px !important;
+  border-radius: 4px;
+}
+
+/* Styles for bidirectional bar */
+.bi-bar-container {
+  position: relative;
+  height: 12px;
+  background: var(--surface-variant, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.bi-bar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 12px;
+  background: black;
+  z-index: 2;
+  opacity: 0.3;
+}
+
+.bi-bar {
+  height: 100%;
+  transition: width 0.5s ease-out;
+}
+
+.bi-bar.neg {
+  position: absolute;
+  right: 50%;
+  border-radius: 4px 0 0 4px;
+  background-color: #F43F5E;
+}
+
+.bi-bar.pos {
+  position: absolute;
+  left: 50%;
+  border-radius: 0 4px 4px 0;
+  background-color: #6366F1;
+}

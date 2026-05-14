@@ -21,7 +21,7 @@ public class RecommendationService {
   private final PostRepository postRepository;
 
   @Transactional
-  public List<RecommendedPost> getRecommendedPosts(User user, int page, int size) {
+  public List<RecommendedPost> getRecommendedPosts(User user, int page, int size, boolean publicFeed) {
     var config = algorithmService.getOrCreateConfig(user);
 
     float[] interactionPreference = user.getInteractionPreferenceEmbedding();
@@ -31,7 +31,7 @@ public class RecommendationService {
 
     List<String> candidatePosts =
         postRepository.getPostCandidatePool(
-            user.getId(), true, interactionPreference, topicPreference, 50);
+            user.getId(), publicFeed, interactionPreference, topicPreference, 50);
 
     List<PostScoreProjection> scoredProjections =
         postRepository.getRankedPosts(

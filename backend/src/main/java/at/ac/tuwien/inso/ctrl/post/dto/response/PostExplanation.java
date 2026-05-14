@@ -4,7 +4,7 @@ public record PostExplanation(
     Double scoreInteraction,
     Double scoreTopic,
     Double scoreRecency,
-    Double scoreTrending,
+    Double scorePopularity,
     Double scoreSource,
     Double scoreExploration,
     Double totalScore) {}

@@ -2,8 +2,10 @@
 CREATE INDEX ON posts (created_at DESC)^
 CREATE INDEX ON posts (upvotes DESC)^
 CREATE INDEX IF NOT EXISTS posts_embedding_idx ON posts USING hnsw (embedding vector_cosine_ops)^
-
 CREATE INDEX IF NOT EXISTS topics_embedding_idx ON topics USING hnsw (embedding vector_cosine_ops)^
+
+-- Sets the hnsw index search depth
+SET hnsw.ef_search = 100^
 
 --- Creates a trigger for post votes to be visible on the post entity
 CREATE OR REPLACE FUNCTION update_post_votes_count()
