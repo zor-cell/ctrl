@@ -36,7 +36,7 @@ public class AlgorithmService {
     config.setWeightRecency(algorithmConfig.weightRecency());
     config.setWeightExploration(algorithmConfig.weightExploration());
     config.setWeightSourceQuality(algorithmConfig.weightSourceQuality());
-    config.setWeightTrending(algorithmConfig.weightTrending());
+    config.setWeightPopularity(algorithmConfig.weightPopularity());
     config.setWeightTopic(algorithmConfig.weightTopic());
 
     List<Topic> resolvedTopics = topicRepository.findAllById(algorithmConfig.topics());
@@ -59,7 +59,7 @@ public class AlgorithmService {
                       .weightRecency(60)
                       .weightExploration(70)
                       .weightSourceQuality(50)
-                      .weightTrending(50)
+                      .weightPopularity(50)
                       .weightTopic(40)
                       .topics(new HashSet<>())
                       .build();

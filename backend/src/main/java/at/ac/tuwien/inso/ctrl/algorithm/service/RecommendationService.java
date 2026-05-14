@@ -1,11 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
@@ -15,7 +10,6 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
@@ -53,7 +47,7 @@ public class RecommendationService {
             topicPreference,
             config.topics(),
             config.weightRecency() / 100.0,
-            config.weightTrending() / 100.0,
+            config.weightPopularity() / 100.0,
             config.weightSourceQuality() / 100.0,
             config.weightExploration() / 100.0,
             size,

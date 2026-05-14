@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
-import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 
@@ -12,9 +11,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Array;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Builder
 @Getter
@@ -46,7 +42,7 @@ public class AlgorithmConfig {
   private Integer weightSourceQuality;
 
   @Column(name = "weight_trending")
-  private Integer weightTrending;
+  private Integer weightPopularity;
 
   @Column(name = "weight_topic")
   private Integer weightTopic;

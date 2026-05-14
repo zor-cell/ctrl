@@ -12,7 +12,7 @@ import { TopicService } from '../../topic.service';
 import { MultiSelect, MultiSelectFilterEvent } from 'primeng/multiselect';
 
 type SliderField = 'weightInteraction' | 'weightRecency' | 'weightExploration' |
-  'weightSourceQuality' | 'weightTrending' | 'weightTopic';
+  'weightSourceQuality' | 'weightPopularity' | 'weightTopic';
 
 @Component({
   selector: 'app-config',
@@ -40,7 +40,7 @@ export class AlgorithmConfigComponent implements OnInit {
     weightRecency:       [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightExploration:   [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightSourceQuality: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
-    weightTrending:      [50, [Validators.required, Validators.min(0), Validators.max(100)]],
+    weightPopularity:      [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     weightTopic:         [50, [Validators.required, Validators.min(0), Validators.max(100)]],
     topics: [[] as string[], [Validators.maxLength(5)]],
   });

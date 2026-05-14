@@ -3,7 +3,7 @@ export interface AlgorithmConfig {
   weightRecency: number;
   weightExploration: number;
   weightSourceQuality: number;
-  weightTrending: number;
+  weightPopularity: number;
   weightTopic: number;
   topics: string[];
 }

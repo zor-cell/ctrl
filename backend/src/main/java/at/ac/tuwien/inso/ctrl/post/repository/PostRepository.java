@@ -51,11 +51,11 @@ public interface PostRepository extends JpaRepository<Post, String> {
                              )) AS score_topic,
                              -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
                              (:wRecency * EXP(GREATEST(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400, -700))) AS score_recency,
-                             -- Trending (Wilson score post upvotes / downvotes) [0 to 1] TODO is currently more like popularity than trending
-                             (:wTrending * wilson_score(
+                             -- Trending (Wilson score post upvotes / downvotes) [0 to 1]
+                             (:wPopularity * wilson_score(
                                 COALESCE(p.upvotes, 0)::integer,
                                 COALESCE(p.downvotes, 0)::integer
-                             )) AS score_trending,
+                             )) AS score_popularity,
                              -- Source Quality (Wilson score of source upvotes / downvotes) [0 to 1]
                              (:wSource * wilson_score(
                                 COALESCE(s.upvotes, 0)::integer,
@@ -75,10 +75,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       c.score_interaction AS scoreInteraction,
                       c.score_topic AS scoreTopic,
                       c.score_recency AS scoreRecency,
-                      c.score_trending AS scoreTrending,
+                      c.score_popularity AS scoreTrending,
                       c.score_source AS scoreSource,
                       c.score_exploration AS scoreExploration,
-                      (c.score_interaction + c.score_topic + c.score_recency + c.score_trending + c.score_source + c.score_exploration) AS totalScore
+                      (c.score_interaction + c.score_topic + c.score_recency + c.score_popularity + c.score_source + c.score_exploration) AS totalScore
                   FROM computed_scores c
                   ORDER BY totalScore DESC
                   LIMIT :limit OFFSET :offset
@@ -93,7 +93,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
       @Param("topicVector") float[] topicVector,
       @Param("topicIds") List<String> topicIds,
       @Param("wRecency") double wRecency,
-      @Param("wTrending") double wTrending,
+      @Param("wPopularity") double wPopularity,
       @Param("wSource") double wSource,
       @Param("wExploration") double wExploration,
       @Param("limit") int limit,

@@ -11,6 +11,6 @@ public record AlgorithmConfigDto(
     @NotNull @Min(0) @Max(100) Integer weightRecency,
     @NotNull @Min(0) @Max(100) Integer weightExploration,
     @NotNull @Min(0) @Max(100) Integer weightSourceQuality,
-    @NotNull @Min(0) @Max(100) Integer weightTrending,
+    @NotNull @Min(0) @Max(100) Integer weightPopularity,
     @NotNull @Min(0) @Max(100) Integer weightTopic,
     @NotNull @Size(max = 5) List<String> topics) {}
