@@ -28,9 +28,9 @@ infinity:
 files:
   cleanup:
     orphan-post-media:
-      initial-delay: PT30S
-      fixed-delay: PT30S
-      min-age: PT30S
+      initial-delay: PT10M
+      fixed-delay: PT30M
+      min-age: PT30M
 
 logging:
   level:
