@@ -63,5 +63,5 @@ public class AlgorithmConfig {
   @JdbcTypeCode(SqlTypes.VECTOR)
   @Column(name = "topic_preference_embedding")
   @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
-  private float[] topicPreferenceVector;
+  private float[] topicPreferenceEmbedding;
 }

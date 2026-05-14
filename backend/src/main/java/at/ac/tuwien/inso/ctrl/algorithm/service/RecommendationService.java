@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.algorithm.service;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import at.ac.tuwien.inso.ctrl.embedding.VectorUtils;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
@@ -23,18 +22,14 @@ import org.springframework.stereotype.Service;
 public class RecommendationService {
   private final AlgorithmService algorithmService;
   private final PostRepository postRepository;
-  private final UserRepository userRepository;
-  private final TopicRepository topicRepository;
 
   @Transactional
   public List<RecommendedPost> getRecommendedPosts(User user, int page, int size) {
     var config = algorithmService.getOrCreateConfig(user);
 
-    List<Float> interactionVectorList =
-        userRepository.calculateUserInteractionPreferenceVector(user.getId());
-    float[] interactionPreference = VectorUtils.fromList(interactionVectorList);
+    float[] interactionPreference = user.getInteractionPreferenceEmbedding();
+    float[] topicPreference = config.getTopicPreferenceEmbedding();
 
-    float[] topicPreference = config.getTopicPreferenceVector();
     List<String> topics = config.getTopics().stream().map(Topic::getTopicId).toList();
 
     List<String> candidatePosts = postRepository.findCandidatePool(user.getId(), true, interactionPreference, topicPreference);

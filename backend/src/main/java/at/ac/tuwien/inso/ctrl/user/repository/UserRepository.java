@@ -43,21 +43,31 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(
       value =
           """
-          SELECT UNNEST(CAST(AVG(sub.weighted_embedding)AS real[]))
-             FROM (
-                 SELECT
-                     CASE
-                         WHEN pv.vote_type = 'up' THEN p.embedding
-                         WHEN pv.vote_type = 'down' THEN array(select unnest(p.embedding::real[]) * -0.5)::vector
-                         ELSE p.embedding
-                     END as weighted_embedding
-                 FROM post_votes pv
-                 JOIN posts p ON pv.post_id = p.post_id
-                 WHERE pv.user_id = CAST(:userId AS varchar)
-                   AND p.embedding IS NOT NULL
-                 ORDER BY pv.created_at DESC
-                 LIMIT 500
-             ) sub
+          SELECT UNNEST(CAST(AVG(sub.weighted_embedding) AS real[]))
+          FROM (
+              SELECT
+                ARRAY(
+                    SELECT elem * CAST(
+                        CASE
+                            -- Explicit downvote [-0.5]
+                            WHEN pv.vote_type = 'down' THEN -0.5
+                            -- Explicit upvote [1.0 to 2.0]
+                            WHEN pv.vote_type = 'up' THEN 1.0 + LEAST(COALESCE(sp.total_duration_ms, 0) / 30000.0, 1.0)
+                            -- Implicit retention: [0 to 0.5]
+                            ELSE LEAST(COALESCE(sp.total_duration_ms, 0) / 30000.0, 1.0) * 0.5
+                        END
+                    AS float8)
+                    FROM UNNEST(p.embedding::real[]) AS elem
+                )::vector AS weighted_embedding
+              FROM seen_posts sp
+              JOIN posts p ON sp.post_id = p.post_id
+              LEFT JOIN post_votes pv ON sp.post_id = pv.post_id AND CAST(sp.user_id AS varchar) = pv.user_id
+              WHERE sp.user_id = :userId
+                AND p.embedding IS NOT NULL
+                AND (pv.vote_type IS NOT NULL OR sp.total_duration_ms > 1500)
+              ORDER BY sp.last_seen_at DESC
+              LIMIT 500
+          ) sub
           """,
       nativeQuery = true)
   List<Float> calculateUserInteractionPreferenceVector(@Param("userId") UUID userId);

@@ -23,6 +23,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -52,6 +53,7 @@ public class PostServiceImpl implements PostService {
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
   private final FileStorageService fileStorageService;
+  private final UserPreferenceService userPreferenceService;
 
   @Override
   @Transactional
@@ -96,7 +98,7 @@ public class PostServiceImpl implements PostService {
     PostVoteId voteId = new PostVoteId(postId, user.getId().toString());
     Optional<PostVote> existingVote = postVoteRepository.findById(voteId);
 
-    return voteManager.processVote(
+    VoteResponse response = voteManager.processVote(
         post,
         existingVote,
         newVoteType,
@@ -109,6 +111,10 @@ public class PostServiceImpl implements PostService {
           postVoteRepository.save(existingVote.get());
         },
         /* saveEntity */ () -> postRepository.save(post));
+
+    //update user preference asynchronously
+    userPreferenceService.updateInteractionVectorAsync(user.getId());
+    return response;
   }
 
   /** Helpers * */

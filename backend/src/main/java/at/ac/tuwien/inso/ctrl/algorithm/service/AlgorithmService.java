@@ -46,11 +46,11 @@ public class AlgorithmService {
     config.getTopics().addAll(resolvedTopics);
 
     if (resolvedTopics.isEmpty()) {
-      config.setTopicPreferenceVector(null);
+      config.setTopicPreferenceEmbedding(null);
     } else {
       List<String> topicIds = resolvedTopics.stream().map(Topic::getTopicId).toList();
       List<Float> vectorList = topicRepository.calculateTopicPreferenceVector(topicIds);
-      config.setTopicPreferenceVector(VectorUtils.fromList(vectorList));
+      config.setTopicPreferenceEmbedding(VectorUtils.fromList(vectorList));
     }
 
     return algorithmMapper.toConfig(algorithmRepository.save(config));
