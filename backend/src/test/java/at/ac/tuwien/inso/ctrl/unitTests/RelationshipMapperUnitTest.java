@@ -197,7 +197,7 @@ public class RelationshipMapperUnitTest {
     assertEquals("alpha", response.username());
     assertEquals("Alpha User", response.name());
     assertEquals(
-        "http://localhost:8080/api/files/media?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
+        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
         response.profilePicture());
     assertTrue(response.isVerified());
     assertEquals(statuses, response.relationshipStatuses());
@@ -219,7 +219,7 @@ public class RelationshipMapperUnitTest {
 
     assertEquals("alpha", response.username());
     assertEquals(
-        "http://localhost:8080/api/files/media?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
+        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
         response.profilePicture());
     assertTrue(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
@@ -253,7 +253,7 @@ public class RelationshipMapperUnitTest {
   private static class TestFileStorageService extends FileStorageService {
 
     TestFileStorageService() {
-      super(null, null);
+      super(null, null, null);
     }
 
     @Override
@@ -261,7 +261,8 @@ public class RelationshipMapperUnitTest {
       if (relativeFilename == null) {
         return null;
       }
-      return "http://localhost:8080/api/files/media?ref=" + relativeFilename.replace("/", "%2F");
+      return "http://localhost:8080/api/files/media-url?ref="
+          + relativeFilename.replace("/", "%2F");
     }
   }
 }

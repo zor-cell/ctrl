@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.file;
 
 import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
+import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -59,12 +60,12 @@ public class FileController {
   @GetMapping("/media")
   public ResponseEntity<InputStreamResource> getMedia(
       @RequestParam String ref, @AuthenticationPrincipal UserDetails userDetails) {
-    if (userDetails == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
-    }
-
-    assertCanAccess(ref, userDetails.getUsername());
-    FileStorageService.StoredFile file = fileStorageService.readFile(ref);
+    boolean shouldReadFromPublicBucket =
+        assertCanAccess(ref, userDetails == null ? null : userDetails.getUsername());
+    FileStorageService.StoredFile file =
+        shouldReadFromPublicBucket
+            ? fileStorageService.readPublicFile(ref)
+            : fileStorageService.readPrivateFile(ref);
 
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(file.contentType()))
@@ -78,17 +79,34 @@ public class FileController {
         .body(new InputStreamResource(file.inputStream()));
   }
 
-  private void assertCanAccess(String ref, String username) {
+  @GetMapping("/media-url")
+  public MediaUrlResponse getMediaUrl(
+      @RequestParam String ref, @AuthenticationPrincipal UserDetails userDetails) {
+    boolean shouldReadFromPublicBucket =
+        assertCanAccess(ref, userDetails == null ? null : userDetails.getUsername());
+    FileStorageService.PresignedFileUrl presignedFileUrl =
+        shouldReadFromPublicBucket
+            ? fileStorageService.createPublicPresignedUrl(ref)
+            : fileStorageService.createPrivatePresignedUrl(ref);
+
+    return new MediaUrlResponse(presignedFileUrl.mediaUrl(), presignedFileUrl.expiresAt());
+  }
+
+  private boolean assertCanAccess(String ref, String username) {
     if (ref == null || ref.isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid media reference");
     }
 
     if (ref.startsWith(PROFILE_PICTURE_PREFIX)) {
-      return;
+      return true;
     }
 
     if (!ref.startsWith(POST_MEDIA_PREFIX)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid media reference");
+    }
+
+    if (username == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
     }
 
     List<Post> matchingPosts = postRepository.findAllByMediaRefReferenceWithUser(ref);
@@ -114,5 +132,7 @@ public class FileController {
     if (!canAccess) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Media access denied");
     }
+
+    return matchingPosts.stream().anyMatch(Post::isPublic);
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, map, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -36,7 +36,7 @@ export class UserService {
     return this.httpClient.get<UserDetails>(this.baseUri + '/me', {context: SILENT_ERROR_CONTEXT}).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high');
       }),
       catchError(error => {
         if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
@@ -53,7 +53,7 @@ export class UserService {
     return this.httpClient.get<PublicUserProfile>(
       `${this.baseUri}/${encodeURIComponent(username)}`
     ).pipe(
-      tap(profile => this.mediaCacheService.cacheUrl(profile.profilePicture, 'image'))
+      tap(profile => this.mediaCacheService.cacheUrl(profile.profilePicture, 'image', 'high'))
     );
   }
 
@@ -61,7 +61,7 @@ export class UserService {
     return this.httpClient.put<UserDetails>(this.baseUri + '/me', updateRequest).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high');
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile');
         }
@@ -72,11 +72,19 @@ export class UserService {
   public updateProfilePicture(file: File, showSuccess = true) {
     const formData = new FormData();
     formData.append('file', file);
+    const token = this.authService.token();
+    const options = token
+      ? { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+      : {};
 
-    return this.httpClient.put<UserDetails>(this.baseUri + '/me/profile-picture', formData).pipe(
+    return this.httpClient.put<UserDetails>(
+      this.baseUri + '/me/profile-picture',
+      formData,
+      options,
+    ).pipe(
       tap(user => {
         this._user.set(user);
-        this.mediaCacheService.cacheUrl(user.profilePicture, 'image');
+        this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high');
         if (showSuccess) {
           this.notificationService.showSuccess('Updated profile picture');
         }

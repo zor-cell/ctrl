@@ -270,6 +270,6 @@ export class RelationshipService implements OnDestroy {
   }
 
   private cacheProfilePictures(users: { profilePicture: string | null }[]): void {
-    users.forEach(user => this.mediaCacheService.cacheUrl(user.profilePicture, 'image'));
+    users.forEach(user => this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high'));
   }
 }

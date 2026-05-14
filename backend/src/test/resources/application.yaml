@@ -28,10 +28,13 @@ spring:
 
 garage:
   url: http://localhost:3900
-  public-url: http://localhost:8080/api/files/media?ref=
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: PT2M
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: ctrl-test-media
+  private-bucket-name: ctrl-test-private-media
+  public-bucket-name: ctrl-test-public-media
 
 infinity:
   url: http://localhost:7997

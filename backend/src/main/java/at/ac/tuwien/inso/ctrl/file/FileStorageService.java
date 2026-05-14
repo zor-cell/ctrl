@@ -23,12 +23,15 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -51,13 +54,23 @@ public class FileStorageService {
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
 
   private final S3Client s3Client;
+  private final S3Presigner s3Presigner;
   private final VideoTranscodingService videoTranscodingService;
 
   @Value("${garage.bucket-name}")
   private String bucketName;
 
+  @Value("${garage.private-bucket-name:${garage.bucket-name}}")
+  private String privateBucketName;
+
+  @Value("${garage.public-bucket-name:${garage.bucket-name}}")
+  private String publicBucketName;
+
   @Value("${garage.public-url}")
   private String publicUrl;
+
+  @Value("${garage.presigned-url-duration:PT2M}")
+  private Duration presignedUrlDuration;
 
   /**
    * Uploads a given file to the S3 file storage and returns a relative filename (or unique object
@@ -73,7 +86,7 @@ public class FileStorageService {
       if (isQuickTimeVideo(file)) {
         return transcodeAndUploadQuickTimeVideo(file);
       }
-      return uploadFile(file, POST_MEDIA_PREFIX);
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to upload file", e);
     }
@@ -82,7 +95,7 @@ public class FileStorageService {
   public String uploadProfilePicture(MultipartFile file) {
     try {
       validateProfilePicture(file);
-      return uploadFile(file, PROFILE_PICTURE_PREFIX).mediaRef();
+      return uploadFile(file, PROFILE_PICTURE_PREFIX, publicBucketName).mediaRef();
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to upload profile picture", e);
     }
@@ -94,12 +107,53 @@ public class FileStorageService {
     }
 
     DeleteObjectRequest deleteObjectRequest =
-        DeleteObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+        DeleteObjectRequest.builder().bucket(privateBucketName).key(mediaRef).build();
 
     s3Client.deleteObject(deleteObjectRequest);
   }
 
+  public void deletePublicPostMedia(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank() || !mediaRef.startsWith(POST_MEDIA_PREFIX)) {
+      throw new InvalidRequestException("Invalid post media reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
+  public void movePostMediaToPublicBucket(String mediaRef) {
+    if (mediaRef == null
+        || mediaRef.isBlank()
+        || !mediaRef.startsWith(POST_MEDIA_PREFIX)
+        || mediaRef.startsWith("http://")
+        || mediaRef.startsWith("https://")
+        || privateBucketName.equals(publicBucketName)) {
+      return;
+    }
+
+    CopyObjectRequest copyObjectRequest =
+        CopyObjectRequest.builder()
+            .sourceBucket(privateBucketName)
+            .sourceKey(mediaRef)
+            .destinationBucket(publicBucketName)
+            .destinationKey(mediaRef)
+            .build();
+
+    s3Client.copyObject(copyObjectRequest);
+    deletePostMedia(mediaRef);
+  }
+
   public List<String> listPostMediaRefsOlderThan(Duration minimumAge) {
+    return listPostMediaRefsOlderThan(minimumAge, privateBucketName);
+  }
+
+  public List<String> listPublicPostMediaRefsOlderThan(Duration minimumAge) {
+    return listPostMediaRefsOlderThan(minimumAge, publicBucketName);
+  }
+
+  private List<String> listPostMediaRefsOlderThan(Duration minimumAge, String bucketName) {
     Instant cutoff = Instant.now().minus(minimumAge);
     List<String> mediaRefs = new ArrayList<>();
     String continuationToken = null;
@@ -125,7 +179,43 @@ public class FileStorageService {
     return mediaRefs;
   }
 
+  public StoredFile readPublicFile(String mediaRef) {
+    return readFile(mediaRef, publicBucketName);
+  }
+
+  public StoredFile readPrivateFile(String mediaRef) {
+    return readFile(mediaRef, privateBucketName);
+  }
+
   public StoredFile readFile(String mediaRef) {
+    return readPrivateFile(mediaRef);
+  }
+
+  public PresignedFileUrl createPublicPresignedUrl(String mediaRef) {
+    return createPresignedUrl(mediaRef, publicBucketName);
+  }
+
+  public PresignedFileUrl createPrivatePresignedUrl(String mediaRef) {
+    return createPresignedUrl(mediaRef, privateBucketName);
+  }
+
+  private PresignedFileUrl createPresignedUrl(String mediaRef, String bucketName) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      throw new InvalidRequestException("Invalid media reference");
+    }
+
+    Instant expiresAt = Instant.now().plus(presignedUrlDuration);
+    GetObjectRequest getObjectRequest =
+        GetObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+    PresignedGetObjectRequest presignedRequest =
+        s3Presigner.presignGetObject(
+            request ->
+                request.signatureDuration(presignedUrlDuration).getObjectRequest(getObjectRequest));
+
+    return new PresignedFileUrl(presignedRequest.url().toString(), expiresAt);
+  }
+
+  private StoredFile readFile(String mediaRef, String bucketName) {
     if (mediaRef == null || mediaRef.isBlank()) {
       throw new InvalidRequestException("Invalid media reference");
     }
@@ -138,6 +228,11 @@ public class FileStorageService {
   }
 
   private UploadedFile uploadFile(MultipartFile file, String prefix) throws IOException {
+    return uploadFile(file, prefix, bucketName);
+  }
+
+  private UploadedFile uploadFile(MultipartFile file, String prefix, String bucketName)
+      throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + resolveExtension(file);
     String contentType = file.getContentType();
 
@@ -158,6 +253,12 @@ public class FileStorageService {
 
   private UploadedFile uploadFile(
       Path filePath, String prefix, String contentType, String extension) throws IOException {
+    return uploadFile(filePath, prefix, contentType, extension, bucketName);
+  }
+
+  private UploadedFile uploadFile(
+      Path filePath, String prefix, String contentType, String extension, String bucketName)
+      throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + extension;
 
     PutObjectRequest putObjectRequest =
@@ -214,7 +315,7 @@ public class FileStorageService {
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
       videoTranscodingService.transcodeToMp4(inputFile, outputFile);
-      return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4");
+      return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
@@ -244,4 +345,6 @@ public class FileStorageService {
   public record UploadedFile(String mediaRef, String contentType, long size) {}
 
   public record StoredFile(InputStream inputStream, String contentType, long size) {}
+
+  public record PresignedFileUrl(String mediaUrl, Instant expiresAt) {}
 }

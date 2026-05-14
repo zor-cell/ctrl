@@ -5,7 +5,8 @@ spring:
 garage:
   url: http://localhost:3900
   presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
-  public-url: http://localhost:8080/api/files/media?ref=
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
@@ -30,3 +31,8 @@ files:
       initial-delay: PT30S
       fixed-delay: PT30S
       min-age: PT30S
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    at.ac.tuwien.inso.ctrl.config.security: DEBUG

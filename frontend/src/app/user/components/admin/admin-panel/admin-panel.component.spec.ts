@@ -4,8 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminService } from '../../../admin.service';
 import { AdminPanelComponent } from './admin-panel.component';
-import {HttpClientTestingModule, HttpTestingController} from '@angular/common/http/testing';
-import {afterEach} from 'vitest';
 
 describe('AdminPanelComponent', () => {
   let component: AdminPanelComponent;

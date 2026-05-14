@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
@@ -51,6 +52,7 @@ public class PostServiceImpl implements PostService {
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
   private final FollowService followService;
+  private final FileStorageService fileStorageService;
 
   @Override
   @Transactional
@@ -81,7 +83,12 @@ public class PostServiceImpl implements PostService {
     float[] embedding = embeddingService.embedText(post.getCaption());
     post.setEmbedding(embedding);
 
-    return postMapper.toResponse(postRepository.save(post));
+    Post savedPost = postRepository.save(post);
+    if (savedPost.isPublic()) {
+      fileStorageService.movePostMediaToPublicBucket(savedPost.getMediaRef());
+    }
+
+    return postMapper.toResponse(savedPost);
   }
 
   @Override
@@ -146,10 +153,24 @@ public class PostServiceImpl implements PostService {
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
     postRepository.delete(post);
+    deleteLocalPostMedia(post);
   }
 
   private boolean resolveIsPublic(CreatePostRequest request, boolean isVerified) {
     return isVerified && Boolean.TRUE.equals(request.isPublic());
+  }
+
+  private void deleteLocalPostMedia(Post post) {
+    String mediaRef = post.getMediaRef();
+    if (mediaRef == null || mediaRef.startsWith("http://") || mediaRef.startsWith("https://")) {
+      return;
+    }
+
+    if (post.isPublic()) {
+      fileStorageService.deletePublicPostMedia(mediaRef);
+    } else {
+      fileStorageService.deletePostMedia(mediaRef);
+    }
   }
 
   private Set<PostTopic> buildPostTopics(Post post, List<String> topicIds) {

@@ -17,6 +17,7 @@ services:
       - GARAGE_PRIVATE_BUCKET_NAME=${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
       - GARAGE_PUBLIC_BUCKET_NAME=${GARAGE_PUBLIC_BUCKET_NAME:-ctrl-dev-media-public}
       - GARAGE_PRESIGN_URL=${GARAGE_PRESIGN_URL:-http://localhost:3900}
+      - GARAGE_PRESIGNED_URL_DURATION=${GARAGE_PRESIGNED_URL_DURATION:-PT2M}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
       - ID_AUSTRIA_REDIRECT_URI=${ID_AUSTRIA_REDIRECT_URI:-http://localhost:80/verification-callback}
       - MAIL_USERNAME=${MAIL_USERNAME}
@@ -27,6 +28,9 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       db:
+        condition: service_healthy
+        restart: false
+      garage:
         condition: service_healthy
         restart: false
     restart: on-failure:3
@@ -105,7 +109,7 @@ services:
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
       GARAGE_DEFAULT_BUCKET: ${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
+      test: [ "CMD", "/garage", "status" ]
       interval: 10s
       timeout: 5s
       retries: 5

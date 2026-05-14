@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,6 +19,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
@@ -76,6 +78,8 @@ public class PostControllerDatabaseIntegrationTest {
 
   @MockitoBean private MastodonScheduler mastodonScheduler;
 
+  @MockitoBean private FileStorageService fileStorageService;
+
   private User verifiedUser;
   private User otherUser;
   private String verifiedUserToken;
@@ -93,6 +97,11 @@ public class PostControllerDatabaseIntegrationTest {
     topicRepository.save(Topic.builder().topicId("topic-1").name("Politics").emoji("P").build());
     verifiedUserToken = jwtService.generateToken(verifiedUser);
     otherUserToken = jwtService.generateToken(otherUser);
+    when(fileStorageService.resolveFileUrl(anyString()))
+        .thenAnswer(
+            invocation ->
+                "http://localhost:8080/api/files/media-url?ref="
+                    + invocation.getArgument(0, String.class).replace("/", "%2F"));
   }
 
   @AfterEach
@@ -129,7 +138,7 @@ public class PostControllerDatabaseIntegrationTest {
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
         .andExpect(
             jsonPath("$.mediaUrl")
-                .value("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png"))
+                .value("http://localhost:8080/api/files/media-url?ref=posts%2Fmedia%2Ffile.png"))
         .andExpect(jsonPath("$.isPublic").value(true))
         .andExpect(jsonPath("$.topicIds[0]").value("topic-1"));
 

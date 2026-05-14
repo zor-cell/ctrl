@@ -16,6 +16,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -61,6 +62,8 @@ public class PostServiceUnitTest {
 
   @Mock private FollowService followService;
 
+  @Mock private FileStorageService fileStorageService;
+
   @InjectMocks private PostServiceImpl postService;
 
   private User verifiedUser;
@@ -78,11 +81,16 @@ public class PostServiceUnitTest {
   void createPost_ShouldSavePostWithContent_WhenRequestIsValid() {
     CreatePostRequest request =
         new CreatePostRequest(
-            "This is my post", "media/image.png", true, true, List.of("topic-1", "topic-2"), null);
+            "This is my post",
+            "posts/media/image.png",
+            true,
+            true,
+            List.of("topic-1", "topic-2"),
+            null);
     Topic topicOne = Topic.builder().topicId("topic-1").name("Politics").build();
     Topic topicTwo = Topic.builder().topicId("topic-2").name("Science").build();
     float[] embedding = new float[] {0.1f, 0.2f};
-    PostResponse response = createResponse("This is my post", true, true, "media/image.png");
+    PostResponse response = createResponse("This is my post", true, true, "posts/media/image.png");
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(sourceService.createSource(null)).thenReturn(source);
@@ -103,7 +111,7 @@ public class PostServiceUnitTest {
     assertEquals(verifiedUser, savedPost.getUser());
     assertEquals(source, savedPost.getSource());
     assertEquals("This is my post", savedPost.getCaption());
-    assertEquals("media/image.png", savedPost.getMediaRef());
+    assertEquals("posts/media/image.png", savedPost.getMediaRef());
     assertTrue(savedPost.isPublic());
     assertTrue(savedPost.isAiGenerated());
     assertEquals(0, savedPost.getUpvotes());
@@ -119,6 +127,7 @@ public class PostServiceUnitTest {
             .anyMatch(postTopic -> postTopic.getTopic().getTopicId().equals("topic-2")));
     verify(sourceService).createSource(null);
     verify(embeddingService).embedText("This is my post");
+    verify(fileStorageService).movePostMediaToPublicBucket("posts/media/image.png");
   }
 
   @Test
@@ -139,6 +148,7 @@ public class PostServiceUnitTest {
     verify(postRepository).save(postCaptor.capture());
 
     assertFalse(postCaptor.getValue().isPublic());
+    verify(fileStorageService, never()).movePostMediaToPublicBucket(any());
   }
 
   @Test
@@ -330,6 +340,46 @@ public class PostServiceUnitTest {
     postService.deletePost("post-1", "marlene");
 
     verify(postRepository).delete(post);
+    verify(fileStorageService, never()).deletePostMedia(any());
+    verify(fileStorageService, never()).deletePublicPostMedia(any());
+  }
+
+  @Test
+  void deletePost_withPublicMedia_deletesMediaFromPublicBucket() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .mediaRef("posts/media/file.png")
+            .isPublic(true)
+            .build();
+    when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
+        .thenReturn(Optional.of(post));
+
+    postService.deletePost("post-1", "marlene");
+
+    verify(postRepository).delete(post);
+    verify(fileStorageService).deletePublicPostMedia("posts/media/file.png");
+    verify(fileStorageService, never()).deletePostMedia(any());
+  }
+
+  @Test
+  void deletePost_withPrivateMedia_deletesMediaFromPrivateBucket() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .mediaRef("posts/media/file.png")
+            .isPublic(false)
+            .build();
+    when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
+        .thenReturn(Optional.of(post));
+
+    postService.deletePost("post-1", "marlene");
+
+    verify(postRepository).delete(post);
+    verify(fileStorageService).deletePostMedia("posts/media/file.png");
+    verify(fileStorageService, never()).deletePublicPostMedia(any());
   }
 
   @Test

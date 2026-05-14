@@ -33,6 +33,16 @@ public class PostMediaCleanupScheduler {
       deleted++;
     }
 
+    for (String mediaRef :
+        fileStorageService.listPublicPostMediaRefsOlderThan(orphanPostMediaMinAge)) {
+      if (postRepository.existsByMediaRef(mediaRef)) {
+        continue;
+      }
+
+      fileStorageService.deletePublicPostMedia(mediaRef);
+      deleted++;
+    }
+
     if (deleted > 0) {
       log.info("Deleted {} orphan post media files", deleted);
     }

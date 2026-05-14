@@ -9,8 +9,14 @@ export type MediaCachePriority = 'low' | 'normal' | 'high';
 
 interface CachedObjectUrl {
   objectUrl: string;
+  expiresAt: number | null;
   priority: MediaCachePriority;
   lastUsedAt: number;
+}
+
+interface PresignedMediaUrlResponse {
+  mediaUrl: string;
+  expiresAt: string;
 }
 
 @Injectable({
@@ -44,7 +50,11 @@ export class MediaCacheService {
     return this.resolveProtectedMediaUrl(normalizedUrl, priority);
   }
 
-  cacheUrl(url: string | null | undefined, kind?: MediaCacheKind | null): void {
+  cacheUrl(
+    url: string | null | undefined,
+    kind?: MediaCacheKind | null,
+    priority: MediaCachePriority = 'normal',
+  ): void {
     if (!this.canCache(url)) {
       return;
     }
@@ -52,7 +62,7 @@ export class MediaCacheService {
     const normalizedUrl = this.normalizeMediaUrl(url);
 
     if (this.isProtectedMediaUrl(normalizedUrl)) {
-      this.resolveProtectedMediaUrl(normalizedUrl, 'normal').subscribe();
+      this.resolveProtectedMediaUrl(normalizedUrl, priority).subscribe();
       return;
     }
 
@@ -70,12 +80,15 @@ export class MediaCacheService {
     this.preloadImage(normalizedUrl);
   }
 
-  cacheUrls(urls: (string | null | undefined)[]): void {
-    urls.forEach(url => this.cacheUrl(url));
+  cacheUrls(
+    urls: (string | null | undefined)[],
+    priority: MediaCachePriority = 'normal',
+  ): void {
+    urls.forEach(url => this.cacheUrl(url, null, priority));
   }
 
   clear(): void {
-    this.cachedObjectUrls.forEach(entry => URL.revokeObjectURL(entry.objectUrl));
+    this.cachedObjectUrls.forEach(entry => this.revokeIfBlobUrl(entry.objectUrl));
     this.cachedObjectUrls.clear();
     this.pendingObjectUrls.clear();
     this.cachedUrls.clear();
@@ -84,7 +97,7 @@ export class MediaCacheService {
 
   private resolveProtectedMediaUrl(url: string, priority: MediaCachePriority): Observable<string> {
     const cachedEntry = this.cachedObjectUrls.get(url);
-    if (cachedEntry) {
+    if (cachedEntry && !this.isExpired(cachedEntry)) {
       cachedEntry.lastUsedAt = Date.now();
       if (this.priorityRank(priority) > this.priorityRank(cachedEntry.priority)) {
         cachedEntry.priority = priority;
@@ -92,14 +105,22 @@ export class MediaCacheService {
       return of(cachedEntry.objectUrl);
     }
 
+    if (cachedEntry) {
+      this.cachedObjectUrls.delete(url);
+    }
+
     const pendingObjectUrl = this.pendingObjectUrls.get(url);
     if (pendingObjectUrl) {
       return pendingObjectUrl;
     }
 
-    const request$ = this.httpClient.get(url, { responseType: 'blob' }).pipe(
-      map(blob => URL.createObjectURL(blob)),
-      map(objectUrl => this.rememberObjectUrl(url, objectUrl, priority)),
+    const request$ = this.httpClient.get<PresignedMediaUrlResponse>(url).pipe(
+      map(response => this.rememberObjectUrl(
+        url,
+        response.mediaUrl,
+        priority,
+        Date.parse(response.expiresAt),
+      )),
       finalize(() => this.pendingObjectUrls.delete(url)),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
@@ -112,13 +133,14 @@ export class MediaCacheService {
     url: string,
     objectUrl: string,
     priority: MediaCachePriority,
+    expiresAt: number | null = null,
   ): string {
     if (this.cachedObjectUrls.size >= this.maxCachedUrls) {
       const evictionUrl = this.findEvictionCandidateUrl();
       if (evictionUrl) {
         const evictionEntry = this.cachedObjectUrls.get(evictionUrl);
         if (evictionEntry) {
-          URL.revokeObjectURL(evictionEntry.objectUrl);
+          this.revokeIfBlobUrl(evictionEntry.objectUrl);
         }
         this.cachedObjectUrls.delete(evictionUrl);
       }
@@ -126,10 +148,19 @@ export class MediaCacheService {
 
     this.cachedObjectUrls.set(url, {
       objectUrl,
+      expiresAt,
       priority,
       lastUsedAt: Date.now(),
     });
     return objectUrl;
+  }
+
+  private isExpired(entry: CachedObjectUrl): boolean {
+    if (entry.expiresAt === null || Number.isNaN(entry.expiresAt)) {
+      return false;
+    }
+
+    return Date.now() > entry.expiresAt - 5000;
   }
 
   private findEvictionCandidateUrl(): string | null {
@@ -165,7 +196,7 @@ export class MediaCacheService {
   }
 
   private isProtectedMediaUrl(url: string): boolean {
-    return url.includes('/api/files/media?ref=');
+    return url.includes('/api/files/media?ref=') || url.includes('/api/files/media-url?ref=');
   }
 
   isBackendManagedMediaUrl(url: string | null | undefined): boolean {
@@ -182,7 +213,7 @@ export class MediaCacheService {
       return url;
     }
 
-    return `${environment.apiUrl}/files/media?ref=${encodeURIComponent(legacyMediaRef)}`;
+    return `${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(legacyMediaRef)}`;
   }
 
   private extractLegacyGarageMediaRef(url: string): string | null {
@@ -232,6 +263,12 @@ export class MediaCacheService {
     image.onload = () => this.rememberUrl(url);
     image.onerror = () => this.pendingUrls.delete(url);
     image.src = url;
+  }
+
+  private revokeIfBlobUrl(url: string): void {
+    if (url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
   }
 
   private preloadVideoMetadata(url: string): void {

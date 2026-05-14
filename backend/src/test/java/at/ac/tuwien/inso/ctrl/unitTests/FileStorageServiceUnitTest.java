@@ -28,12 +28,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @ExtendWith(MockitoExtension.class)
 public class FileStorageServiceUnitTest {
 
   @Mock private S3Client s3Client;
+
+  @Mock private S3Presigner s3Presigner;
 
   @Mock private VideoTranscodingService videoTranscodingService;
 
@@ -41,10 +46,12 @@ public class FileStorageServiceUnitTest {
 
   @BeforeEach
   void setUp() {
-    fileStorageService = new FileStorageService(s3Client, videoTranscodingService);
+    fileStorageService = new FileStorageService(s3Client, s3Presigner, videoTranscodingService);
     ReflectionTestUtils.setField(fileStorageService, "bucketName", "ctrl-test-media");
+    ReflectionTestUtils.setField(fileStorageService, "privateBucketName", "ctrl-test-private");
+    ReflectionTestUtils.setField(fileStorageService, "publicBucketName", "ctrl-test-public");
     ReflectionTestUtils.setField(
-        fileStorageService, "publicUrl", "http://localhost:8080/api/files/media?ref=");
+        fileStorageService, "publicUrl", "http://localhost:8080/api/files/media-url?ref=");
   }
 
   @Test
@@ -59,7 +66,7 @@ public class FileStorageServiceUnitTest {
     assertTrue(uploadedFile.mediaRef().endsWith(".png"));
     assertEquals("image/png", uploadedFile.contentType());
     assertEquals(3L, uploadedFile.size());
-    assertEquals("ctrl-test-media", request.bucket());
+    assertEquals("ctrl-test-private", request.bucket());
     assertEquals(uploadedFile.mediaRef(), request.key());
     assertEquals("image/png", request.contentType());
     verify(videoTranscodingService, never()).transcodeToMp4(any(), any());
@@ -142,7 +149,34 @@ public class FileStorageServiceUnitTest {
     assertTrue(mediaRef.startsWith("users/profile-pictures/"));
     assertTrue(mediaRef.endsWith(".jpeg"));
     assertEquals(mediaRef, request.key());
+    assertEquals("ctrl-test-public", request.bucket());
     assertEquals("image/jpeg", request.contentType());
+  }
+
+  @Test
+  void movePostMediaToPublicBucket_withPostMediaRef_copiesToPublicAndDeletesPrivate() {
+    fileStorageService.movePostMediaToPublicBucket("posts/media/file.png");
+
+    ArgumentCaptor<CopyObjectRequest> copyCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
+    verify(s3Client).copyObject(copyCaptor.capture());
+    CopyObjectRequest copyRequest = copyCaptor.getValue();
+    assertEquals("ctrl-test-private", copyRequest.sourceBucket());
+    assertEquals("posts/media/file.png", copyRequest.sourceKey());
+    assertEquals("ctrl-test-public", copyRequest.destinationBucket());
+    assertEquals("posts/media/file.png", copyRequest.destinationKey());
+
+    ArgumentCaptor<DeleteObjectRequest> deleteCaptor =
+        ArgumentCaptor.forClass(DeleteObjectRequest.class);
+    verify(s3Client).deleteObject(deleteCaptor.capture());
+    assertEquals("ctrl-test-private", deleteCaptor.getValue().bucket());
+    assertEquals("posts/media/file.png", deleteCaptor.getValue().key());
+  }
+
+  @Test
+  void movePostMediaToPublicBucket_withExternalUrl_doesNothing() {
+    fileStorageService.movePostMediaToPublicBucket("https://mastodon.example/image.png");
+
+    verifyNoInteractions(s3Client);
   }
 
   @Test
@@ -163,7 +197,8 @@ public class FileStorageServiceUnitTest {
   void resolveFileUrl_withMediaRef_returnsProtectedBackendUrl() {
     String mediaUrl = fileStorageService.resolveFileUrl("posts/media/file.png");
 
-    assertEquals("http://localhost:8080/api/files/media?ref=posts%2Fmedia%2Ffile.png", mediaUrl);
+    assertEquals(
+        "http://localhost:8080/api/files/media-url?ref=posts%2Fmedia%2Ffile.png", mediaUrl);
   }
 
   @Test

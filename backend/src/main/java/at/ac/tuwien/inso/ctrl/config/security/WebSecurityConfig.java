@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -39,12 +40,16 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
+                    .requestMatchers(
                         "/api/auth/**",
                         "/api/labels",
                         "/api/topics",
                         "/actuator/health",
-                        "/api/feed/**")
+                        "/api/feed/**",
+                        "/api/files/media",
+                        "/api/files/media-url")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

@@ -32,5 +32,5 @@ docker compose exec -T garage /garage bucket website --allow "$GARAGE_PUBLIC_BUC
 
 echo "Importing access keys..."
 docker compose exec -T garage /garage key import --yes "$GARAGE_ACCESS_KEY" "$GARAGE_SECRET_KEY" -n backend-key || true
-docker compose exec -T garage /garage bucket allow --read --write --owner "$GARAGE_PRIVATE_BUCKET_NAME" --key backend-key || true
-docker compose exec -T garage /garage bucket allow --read --write --owner "$GARAGE_PUBLIC_BUCKET_NAME" --key backend-key || true
+docker compose exec -T garage /garage bucket allow --read --write --owner "$GARAGE_PRIVATE_BUCKET_NAME" --key "$GARAGE_ACCESS_KEY" || true
+docker compose exec -T garage /garage bucket allow --read --write --owner "$GARAGE_PUBLIC_BUCKET_NAME" --key "$GARAGE_ACCESS_KEY" || true
