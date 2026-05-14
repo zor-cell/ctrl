@@ -30,10 +30,13 @@ spring:
 
 garage:
   url: http://garage:3900
+  presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
   public-url: http://localhost:8080/api/files/media?ref=
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
-  bucket-name: ${GARAGE_BUCKET_NAME:ctrl-dev-media}
+  bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
 
 infinity:
   url: http://infinity:7997

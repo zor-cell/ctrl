@@ -13,7 +13,10 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GARAGE_ACCESS_KEY=${GARAGE_ACCESS_KEY}
       - GARAGE_SECRET_KEY=${GARAGE_SECRET_KEY}
-      - GARAGE_BUCKET_NAME=${GARAGE_BUCKET_NAME:-ctrl-dev-media}
+      - GARAGE_BUCKET_NAME=${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
+      - GARAGE_PRIVATE_BUCKET_NAME=${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
+      - GARAGE_PUBLIC_BUCKET_NAME=${GARAGE_PUBLIC_BUCKET_NAME:-ctrl-dev-media-public}
+      - GARAGE_PRESIGN_URL=${GARAGE_PRESIGN_URL:-http://localhost:3900}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
       - ID_AUSTRIA_REDIRECT_URI=${ID_AUSTRIA_REDIRECT_URI:-http://localhost:80/verification-callback}
       - MAIL_USERNAME=${MAIL_USERNAME}
@@ -100,7 +103,7 @@ services:
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
       GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
-      GARAGE_DEFAULT_BUCKET: ctrl-dev-media
+      GARAGE_DEFAULT_BUCKET: ${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
       interval: 10s
