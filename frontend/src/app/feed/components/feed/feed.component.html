@@ -75,7 +75,7 @@
         size="small"
         [rounded]="true"
         [outlined]="true"
-        (onClick)="openAlgorithmConfig()"
+        routerLink="/algorithm"
       />
     </div>
   </div>
@@ -300,6 +300,15 @@
             }"
           />
       </div>
+
+          <div class="score-label">
+            <span>Total Relevancy
+                <i class="pi pi-info-circle hint-icon"
+                   pTooltip="This total is calculated by summing the weighted impact of your feed configuration. The maximum attainable ranking for a post is 6."
+                   tooltipPosition="right"></i>
+            </span>
+              <span><strong>{{post.explanation.totalScore.toFixed(2)}} out of 6</strong></span>
+          </div>
       </div>
   }
   <ng-template pTemplate="footer">

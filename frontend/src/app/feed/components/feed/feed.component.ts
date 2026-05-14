@@ -21,6 +21,7 @@ import {ProgressBar} from "primeng/progressbar";
 import {Badge} from "primeng/badge";
 import {ReactiveFormsModule} from "@angular/forms";
 import {Slider} from "primeng/slider";
+import {RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-feed',
@@ -41,6 +42,7 @@ import {Slider} from "primeng/slider";
     Badge,
     ReactiveFormsModule,
     Slider,
+    RouterLink,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
