@@ -1,8 +1,9 @@
 -- Creates an index for post comparison
-CREATE INDEX ON posts (created_at DESC)^
-CREATE INDEX ON posts (upvotes DESC)^
-CREATE INDEX IF NOT EXISTS posts_embedding_idx ON posts USING hnsw (embedding vector_cosine_ops)^
-CREATE INDEX IF NOT EXISTS topics_embedding_idx ON topics USING hnsw (embedding vector_cosine_ops)^
+CREATE INDEX IF NOT EXISTS idx_posts_public_recency ON posts (created_at DESC) WHERE is_public = true^
+CREATE INDEX IF NOT EXISTS idx_posts_private_recency ON posts (created_at DESC) WHERE is_public = false^
+CREATE INDEX IF NOT EXISTS idx_posts_popularity ON posts (upvotes DESC)^
+CREATE INDEX IF NOT EXISTS idx_posts_embedding ON posts USING hnsw (embedding vector_cosine_ops)^
+CREATE INDEX IF NOT EXISTS idx_topics_embedding ON topics USING hnsw (embedding vector_cosine_ops)^
 
 -- Sets the hnsw index search depth
 SET hnsw.ef_search = 100^

@@ -116,35 +116,57 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(value = """
     ( --interaction candidates
       SELECT p.post_id FROM posts p
-       WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
+       WHERE p.is_public = true AND p.embedding IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
        ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --topic candidates
         SELECT p.post_id FROM posts p
-         WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
+         WHERE p.is_public = true AND p.embedding IS NOT NULL
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
          ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --recency candidates
         SELECT p.post_id FROM posts p
-         WHERE p.is_public = :isPublic
+         WHERE p.is_public = true
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
          ORDER BY p.created_at DESC LIMIT :poolSize)
     UNION
     ( --popularity candidates
         SELECT p.post_id FROM posts p
-         WHERE p.is_public = :isPublic
+         WHERE p.is_public = true
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
          ORDER BY p.upvotes DESC LIMIT :poolSize)
     """, nativeQuery = true)
-  List<String> getPostCandidatePool(
+  List<String> getPublicPostCandidatePool(
           @Param("userId") UUID userId,
-          @Param("isPublic") boolean isPublic,
           @Param("interactionVector") float[] interactionVector,
           @Param("topicVector") float[] topicVector,
           @Param("poolSize") int poolSize
   );
+
+  @Query(
+      value =
+          """
+    SELECT p.post_id FROM posts p
+    WHERE p.is_public = false
+        AND EXISTS (
+           -- friend is a mutual follow relation
+           SELECT 1 FROM follow_relations f
+           WHERE (f.follower_id = :userId AND f.followed_id = p.user_id)
+              OR (f.follower_id = p.user_id AND f.followed_id = :userId)
+           HAVING COUNT(*) = 2
+        )
+        AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+    ORDER BY p.created_at DESC
+    LIMIT :poolSize
+    """,
+      nativeQuery = true)
+  List<String> getPrivatePostCandidatePool(
+      @Param("userId") UUID userId,
+      @Param("interactionVector") float[] interactionVector,
+      @Param("topicVector") float[] topicVector,
+      @Param("poolSize") int poolSize);
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);

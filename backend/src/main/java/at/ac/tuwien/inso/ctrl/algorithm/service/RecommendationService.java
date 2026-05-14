@@ -30,8 +30,8 @@ public class RecommendationService {
     List<String> topics = config.getTopics().stream().map(Topic::getTopicId).toList();
 
     List<String> candidatePosts =
-        postRepository.getPostCandidatePool(
-            user.getId(), publicFeed, interactionPreference, topicPreference, 50);
+        postRepository.getPublicPostCandidatePool(
+            user.getId(), interactionPreference, topicPreference, 50);
 
     List<PostScoreProjection> scoredProjections =
         postRepository.getRankedPosts(
@@ -51,6 +51,29 @@ public class RecommendationService {
     if (scoredProjections.isEmpty()) {
       return List.of();
     }
+
+    //TODO this is a workaround for private feed to be also shown
+    List<String> candidatePostsPriv =
+            postRepository.getPrivatePostCandidatePool(
+                    user.getId(), interactionPreference, topicPreference, 50);
+
+    List<PostScoreProjection> scoredProjectionsPriv =
+            postRepository.getRankedPosts(
+                    candidatePostsPriv,
+                    user.getId(),
+                    config.getWeightInteraction() / 100.0,
+                    interactionPreference,
+                    config.getWeightTopic() / 100.0,
+                    topicPreference,
+                    topics,
+                    config.getWeightRecency() / 100.0,
+                    config.getWeightPopularity() / 100.0,
+                    config.getWeightSourceQuality() / 100.0,
+                    config.getWeightExploration() / 100.0,
+                    size,
+                    page * size);
+
+    scoredProjections.addAll(scoredProjectionsPriv);
 
     // fetch all posts from the db and create lookup table for retrieval
     List<String> postIds = scoredProjections.stream().map(PostScoreProjection::getPostId).toList();
