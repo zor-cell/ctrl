@@ -68,13 +68,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       LEFT JOIN follow_relations f
                                      ON f.followed_id = p.user_id
                                     AND f.follower_id = :userId
-                      WHERE p.is_public = true
-                            AND p.embedding IS NOT NULL
-                            AND NOT EXISTS (
-                               SELECT 1 FROM seen_posts sp
-                               WHERE sp.user_id = :userId
-                                 AND sp.post_id = p.post_id
-                            )
+                      WHERE p.post_id IN (:candidatePosts)
                   )
                   SELECT
                       c.post_id AS postId,
@@ -91,6 +85,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   """,
       nativeQuery = true)
   List<PostScoreProjection> findPersonalizedFeed(
+      @Param("candidatePosts") List<String> candidatePosts,
       @Param("userId") UUID userId,
       @Param("wInteraction") double wInteraction,
       @Param("interactionVector") float[] interactionVector,
@@ -103,6 +98,38 @@ public interface PostRepository extends JpaRepository<Post, String> {
       @Param("wExploration") double wExploration,
       @Param("limit") int limit,
       @Param("offset") int offset);
+
+  @Query(value = """
+    ( --interaction candidates
+      SELECT p.post_id FROM posts p
+       WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+       ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT 50)
+    UNION
+    ( --topic candidates
+        SELECT p.post_id FROM posts p
+         WHERE p.is_public = :isPublic AND p.embedding IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+         ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT 50)
+    UNION
+    ( --recency candidates
+        SELECT p.post_id FROM posts p
+         WHERE p.is_public = :isPublic
+         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+         ORDER BY p.created_at DESC LIMIT 50)
+    UNION
+    ( --popularity candidates
+        SELECT p.post_id FROM posts p
+         WHERE p.is_public = :isPublic
+         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+         ORDER BY p.upvotes DESC LIMIT 50)
+    """, nativeQuery = true)
+  List<String> findCandidatePool(
+          @Param("userId") UUID userId,
+          @Param("isPublic") boolean isPublic,
+          @Param("interactionVector") float[] interactionVector,
+          @Param("topicVector") float[] topicVector
+  );
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);

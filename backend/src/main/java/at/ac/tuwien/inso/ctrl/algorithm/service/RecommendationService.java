@@ -41,8 +41,11 @@ public class RecommendationService {
     List<Float> topicVectorList = topicRepository.calculateTopicPreferenceVector(config.topics());
     float[] topicPreference = vectorFromVectorList(topicVectorList);
 
+    List<String> candidatePosts = postRepository.findCandidatePool(user.getId(), true, interactionPreference, topicPreference);
+
     List<PostScoreProjection> scoredProjections =
         postRepository.findPersonalizedFeed(
+            candidatePosts,
             user.getId(),
             config.weightInteraction() / 100.0,
             interactionPreference,

@@ -1,5 +1,8 @@
--- Creates an index for the cosine distance comparison
+-- Creates an index for post comparison
+CREATE INDEX ON posts (created_at DESC)^
+CREATE INDEX ON posts (upvotes DESC)^
 CREATE INDEX IF NOT EXISTS posts_embedding_idx ON posts USING hnsw (embedding vector_cosine_ops)^
+
 CREATE INDEX IF NOT EXISTS topics_embedding_idx ON topics USING hnsw (embedding vector_cosine_ops)^
 
 --- Creates a trigger for post votes to be visible on the post entity

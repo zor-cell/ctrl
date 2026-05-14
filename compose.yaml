@@ -50,7 +50,7 @@ services:
     platform: linux/amd64
     image: pgvector/pgvector:pg18-trixie
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
