@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { Subscription } from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
@@ -139,17 +140,15 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+  private routeParamsSubscription: Subscription | null = null;
 
   ngOnInit() {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
-    this.publicProfileUsername.set(this.route.snapshot.paramMap.get('username'));
     this.loadTopics();
-    if (this.publicProfileMode()) {
-      this.loadPublicProfile();
-    } else if (!this.createOnlyMode()) {
-      this.loadProfilePicture(this.userService.user()?.profilePicture);
-      this.loadMyPosts();
-    }
+
+    this.routeParamsSubscription = this.route.paramMap.subscribe(params => {
+      this.loadProfileForRoute(params.get('username'));
+    });
 
     if (this.createOnlyMode()) {
       this.openCreateDialog();
@@ -157,6 +156,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   ngOnDestroy() {
+    this.routeParamsSubscription?.unsubscribe();
     if (this.usernameCheckTimeout) {
       clearTimeout(this.usernameCheckTimeout);
     }
@@ -389,6 +389,26 @@ export class PostPageComponent implements OnDestroy, OnInit {
         );
       },
     });
+  }
+
+  private loadProfileForRoute(username: string | null): void {
+    this.publicProfileUsername.set(username);
+    this.publicProfile.set(null);
+    this.selectedPost.set(null);
+    this.postPendingDeletion.set(null);
+    this.myPosts.set([]);
+    this.revokeProfilePictureObjectUrl();
+    this.revokePostMediaObjectUrls();
+
+    if (this.publicProfileMode()) {
+      this.loadPublicProfile();
+      return;
+    }
+
+    if (!this.createOnlyMode()) {
+      this.loadProfilePicture(this.userService.user()?.profilePicture);
+      this.loadMyPosts();
+    }
   }
 
   private loadPublicProfile() {

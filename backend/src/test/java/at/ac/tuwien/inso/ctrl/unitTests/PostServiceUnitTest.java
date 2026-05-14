@@ -27,8 +27,8 @@ import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,7 +60,7 @@ public class PostServiceUnitTest {
 
   @Mock private VoteManager voteManager;
 
-  @Mock private FollowService followService;
+  @Mock private FriendRelationRepository friendRelationRepository;
 
   @Mock private FileStorageService fileStorageService;
 
@@ -308,7 +308,7 @@ public class PostServiceUnitTest {
   }
 
   @Test
-  void getProfilePostsForUser_withMutualFollow_returnsMappedAllPosts() {
+  void getProfilePostsForUser_withFriendRelation_returnsMappedAllPosts() {
     Post publicPost = Post.builder().postId("post-1").caption("Public").isPublic(true).build();
     Post privatePost = Post.builder().postId("post-2").caption("Private").isPublic(false).build();
     PostResponse publicResponse = createResponse("Public", true, false, null);
@@ -316,8 +316,7 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
-    when(followService.isFollowing(verifiedUser, unverifiedUser)).thenReturn(true);
-    when(followService.isFollowing(unverifiedUser, verifiedUser)).thenReturn(true);
+    when(friendRelationRepository.existsByUsers(verifiedUser, unverifiedUser)).thenReturn(true);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(publicPost, privatePost));
     when(postMapper.toResponse(publicPost)).thenReturn(publicResponse);

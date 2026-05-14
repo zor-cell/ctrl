@@ -25,9 +25,12 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -64,6 +67,8 @@ public class PostControllerDatabaseIntegrationTest {
 
   @Autowired private FollowRelationRepository followRelationRepository;
 
+  @Autowired private FriendRelationRepository friendRelationRepository;
+
   @Autowired private TopicRepository topicRepository;
 
   @Autowired private PostRepository postRepository;
@@ -88,6 +93,7 @@ public class PostControllerDatabaseIntegrationTest {
   @BeforeEach
   void setUp() {
     followRelationRepository.deleteAll();
+    friendRelationRepository.deleteAll();
     postRepository.deleteAll();
     topicRepository.deleteAll();
     userRepository.deleteAll();
@@ -107,6 +113,7 @@ public class PostControllerDatabaseIntegrationTest {
   @AfterEach
   void tearDown() {
     followRelationRepository.deleteAll();
+    friendRelationRepository.deleteAll();
     postRepository.deleteAll();
     topicRepository.deleteAll();
     userRepository.deleteAll();
@@ -193,9 +200,8 @@ public class PostControllerDatabaseIntegrationTest {
   }
 
   @Test
-  void getProfilePosts_withMutualFollow_returnsPrivateAndPublicPosts() throws Exception {
-    saveFollowRelation(otherUser, verifiedUser);
-    saveFollowRelation(verifiedUser, otherUser);
+  void getProfilePosts_withFriendRelation_returnsPrivateAndPublicPosts() throws Exception {
+    saveFriendRelation(otherUser, verifiedUser);
     savePost("private-post", "Private", false, LocalDateTime.of(2026, 4, 25, 13, 0));
     savePost("public-post", "Public", true, LocalDateTime.of(2026, 4, 25, 12, 0));
 
@@ -270,6 +276,16 @@ public class PostControllerDatabaseIntegrationTest {
             .id(new FollowRelationId(follower.getId(), followed.getId()))
             .follower(follower)
             .followed(followed)
+            .since(LocalDateTime.now())
+            .build());
+  }
+
+  private void saveFriendRelation(User firstUser, User secondUser) {
+    friendRelationRepository.save(
+        FriendRelation.builder()
+            .id(new FriendRelationId(firstUser.getId(), secondUser.getId()))
+            .friend1(firstUser)
+            .friend2(secondUser)
             .since(LocalDateTime.now())
             .build());
   }

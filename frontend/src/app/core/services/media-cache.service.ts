@@ -208,12 +208,20 @@ export class MediaCacheService {
   }
 
   private normalizeMediaUrl(url: string): string {
+    if (this.isMediaRef(url)) {
+      return `${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(url)}`;
+    }
+
     const legacyMediaRef = this.extractLegacyGarageMediaRef(url);
     if (!legacyMediaRef) {
       return url;
     }
 
     return `${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(legacyMediaRef)}`;
+  }
+
+  private isMediaRef(url: string): boolean {
+    return url.startsWith('users/profile-pictures/') || url.startsWith('posts/media/');
   }
 
   private extractLegacyGarageMediaRef(url: string): string | null {

@@ -5,8 +5,8 @@ import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -38,7 +38,7 @@ public class FileController {
   private final FileStorageService fileStorageService;
   private final PostRepository postRepository;
   private final UserRepository userRepository;
-  private final FollowService followService;
+  private final FriendRelationRepository friendRelationRepository;
 
   @PostMapping(value = "/post-media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
@@ -126,8 +126,7 @@ public class FileController {
                 post ->
                     post.isPublic()
                         || post.getUser().getId().equals(viewer.getId())
-                        || (followService.isFollowing(post.getUser(), viewer)
-                            && followService.isFollowing(viewer, post.getUser())));
+                        || friendRelationRepository.existsByUsers(post.getUser(), viewer));
 
     if (!canAccess) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Media access denied");

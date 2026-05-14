@@ -22,8 +22,8 @@ import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -51,7 +51,7 @@ public class PostServiceImpl implements PostService {
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
   private final VoteManager voteManager;
-  private final FollowService followService;
+  private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
 
   @Override
@@ -132,8 +132,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || (followService.isFollowing(profileOwner, viewer)
-                && followService.isFollowing(viewer, profileOwner));
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
         canSeePrivatePosts
