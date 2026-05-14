@@ -1,6 +1,8 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
+import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.embedding.VectorUtils;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
@@ -26,14 +28,14 @@ public class RecommendationService {
 
   @Transactional
   public List<RecommendedPost> getRecommendedPosts(User user, int page, int size) {
-    var config = algorithmService.getConfig(user);
+    var config = algorithmService.getOrCreateConfig(user);
 
     List<Float> interactionVectorList =
         userRepository.calculateUserInteractionPreferenceVector(user.getId());
-    float[] interactionPreference = vectorFromVectorList(interactionVectorList);
+    float[] interactionPreference = VectorUtils.fromList(interactionVectorList);
 
-    List<Float> topicVectorList = topicRepository.calculateTopicPreferenceVector(config.topics());
-    float[] topicPreference = vectorFromVectorList(topicVectorList);
+    float[] topicPreference = config.getTopicPreferenceVector();
+    List<String> topics = config.getTopics().stream().map(Topic::getTopicId).toList();
 
     List<String> candidatePosts = postRepository.findCandidatePool(user.getId(), true, interactionPreference, topicPreference);
 
@@ -41,15 +43,15 @@ public class RecommendationService {
         postRepository.findPersonalizedFeed(
             candidatePosts,
             user.getId(),
-            config.weightInteraction() / 100.0,
+            config.getWeightInteraction() / 100.0,
             interactionPreference,
-            config.weightTopic() / 100.0,
+            config.getWeightTopic() / 100.0,
             topicPreference,
-            config.topics(),
-            config.weightRecency() / 100.0,
-            config.weightPopularity() / 100.0,
-            config.weightSourceQuality() / 100.0,
-            config.weightExploration() / 100.0,
+            topics,
+            config.getWeightRecency() / 100.0,
+            config.getWeightPopularity() / 100.0,
+            config.getWeightSourceQuality() / 100.0,
+            config.getWeightExploration() / 100.0,
             size,
             page * size);
     if (scoredProjections.isEmpty()) {
@@ -79,23 +81,5 @@ public class RecommendationService {
               return new RecommendedPost(post, explanation);
             })
         .toList();
-  }
-
-  private float[] vectorFromVectorList(List<Float> vectorList) {
-    if (vectorList == null || vectorList.isEmpty()) {
-      return null;
-    }
-
-    boolean hasData = false;
-    float[] vector = new float[vectorList.size()];
-    for (int i = 0; i < vectorList.size(); i++) {
-      float val = vectorList.get(i) != null ? vectorList.get(i) : 0f;
-      vector[i] = val;
-      if (val != 0f) {
-        hasData = true;
-      }
-    }
-
-    return hasData ? vector : null;
   }
 }

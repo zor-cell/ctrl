@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 
@@ -11,6 +12,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Builder
 @Getter
@@ -55,4 +59,9 @@ public class AlgorithmConfig {
   )
   @Builder.Default
   private Set<Topic> topics = new LinkedHashSet<>();
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "topic_preference_embedding")
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
+  private float[] topicPreferenceVector;
 }

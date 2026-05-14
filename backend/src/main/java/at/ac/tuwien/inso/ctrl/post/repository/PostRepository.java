@@ -51,7 +51,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                              )) AS score_topic,
                              -- Recency (Exponential decay, halves every ~2.5 days) [0 to 1]
                              (:wRecency * EXP(GREATEST(-0.3 * EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400, -700))) AS score_recency,
-                             -- Trending (Wilson score post upvotes / downvotes) [0 to 1]
+                             -- Popularity (Wilson score post upvotes / downvotes) [0 to 1]
                              (:wPopularity * wilson_score(
                                 COALESCE(p.upvotes, 0)::integer,
                                 COALESCE(p.downvotes, 0)::integer
@@ -61,8 +61,18 @@ public interface PostRepository extends JpaRepository<Post, String> {
                                 COALESCE(s.upvotes, 0)::integer,
                                 COALESCE(s.downvotes, 0)::integer
                              )) AS score_source,
-                             -- Exploration [0 or 1]
-                             (:wExploration * CASE WHEN f.follower_id IS NULL AND p.user_id != :userId THEN 1 ELSE 0 END) AS score_exploration
+                             -- Exploration [0 to 1]
+                            (
+                             CASE
+                               -- Slider favors Exploration (> 0.5): Boost unfollowed users
+                               WHEN :wExploration > 0.5 AND f.follower_id IS NULL AND (p.user_id IS NULL OR p.user_id != :userId)
+                                 THEN (:wExploration - 0.5) * 2.0
+                               -- Slider favors Following (< 0.5): Boost followed users
+                               WHEN :wExploration < 0.5 AND f.follower_id IS NOT NULL
+                                 THEN (0.5 - :wExploration) * 2.0
+                               ELSE 0.0
+                             END
+                             ) AS score_exploration
                       FROM posts p
                       LEFT JOIN sources s ON p.source_id = s.source_id
                       LEFT JOIN follow_relations f
