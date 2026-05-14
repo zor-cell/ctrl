@@ -1,9 +1,13 @@
 export interface CommentResponse {
   commentId: string;
+  userId?: string;
   username: string;
+  userProfilePic?: string;
   content: string;
   createdAt: string;
   parentCommentId: string | null;
+  edited?: boolean;
+  replies?: CommentResponse[];
 }
 
 export interface PostResponse {

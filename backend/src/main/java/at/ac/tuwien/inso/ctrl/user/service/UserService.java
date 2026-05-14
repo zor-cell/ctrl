@@ -60,6 +60,18 @@ public class UserService {
     return userMapper.toUserDetailsResponse(user);
   }
 
+  public PublicUserProfileResponse getPublicProfile(String username, User currentUser) {
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    boolean canSeePrivatePosts =
+        currentUser != null
+            && (user.getId().equals(currentUser.getId())
+                || friendRelationRepository.existsByUsers(user, currentUser));
+    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
+  }
+
   @Transactional
   public UserDetailsResponse updateUser(User currentUser, UpdateProfileRequest request) {
     User user = getUserInternal(currentUser.getId());
@@ -150,7 +162,10 @@ public class UserService {
   public UserDetailsResponse verifyUser(User currentUser, VerifyIdentityRequest request) {
     Jwt jwt;
     try {
-      jwt = idAustriaOidcService.getTokenFromCode(request.code());
+      jwt =
+          request.redirectUri() == null || request.redirectUri().isBlank()
+              ? idAustriaOidcService.getTokenFromCode(request.code())
+              : idAustriaOidcService.getTokenFromCode(request.code(), request.redirectUri());
     } catch (Exception e) {
       throw new CommunicationException("Failed to verify identity with external provider");
     }

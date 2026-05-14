@@ -1,34 +1,38 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AdminService } from '../../../admin.service';
 import { AdminPanelComponent } from './admin-panel.component';
-import {HttpClientTestingModule, HttpTestingController} from '@angular/common/http/testing';
-import {afterEach} from 'vitest';
 
 describe('AdminPanelComponent', () => {
   let component: AdminPanelComponent;
   let fixture: ComponentFixture<AdminPanelComponent>;
-  let httpMock: HttpTestingController;
+  let adminService: { getPendingVerifications: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    adminService = {
+      getPendingVerifications: vi.fn().mockReturnValue(of(undefined)),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [AdminPanelComponent, HttpClientTestingModule],
+      imports: [AdminPanelComponent],
+      providers: [
+        {
+          provide: AdminService,
+          useValue: adminService,
+        },
+      ],
     }).compileComponents();
 
-    httpMock = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(AdminPanelComponent);
     component = fixture.componentInstance;
-
-    fixture.detectChanges()
-
-    const req = httpMock.expectOne(req => req.url.includes('/admin/verifications/pending'));
-    req.flush(null)
-  });
-
-  afterEach(() => {
-    httpMock.verify();
+    fixture.detectChanges();
+    await fixture.whenStable();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+    expect(adminService.getPendingVerifications).toHaveBeenCalledOnce();
   });
 });

@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -39,12 +40,16 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
+                    .requestMatchers(
                         "/api/auth/**",
                         "/api/labels",
                         "/api/topics",
                         "/actuator/health",
-                        "/api/feed/**")
+                        "/api/feed/**",
+                        "/api/files/media",
+                        "/api/files/media-url")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
@@ -69,11 +74,13 @@ public class WebSecurityConfig {
 
     configuration.setAllowedOrigins(
         List.of("http://localhost:4200", "http://localhost", "http://127.0.0.1"));
+    /*configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));*/
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 
     // header for jwt auth
-    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+    configuration.setAllowedHeaders(
+        List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

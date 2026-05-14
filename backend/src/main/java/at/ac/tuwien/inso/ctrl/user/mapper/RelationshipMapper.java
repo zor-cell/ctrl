@@ -22,6 +22,10 @@ public class RelationshipMapper {
   private final FileStorageService fileStorageService;
 
   public FriendResponse toFriendResponse(User user) {
+    if (user == null) {
+      return null;
+    }
+
     return new FriendResponse(
         user.getId(),
         user.getUsername(),
@@ -30,6 +34,10 @@ public class RelationshipMapper {
   }
 
   public FollowedResponse toFollowedResponse(User user) {
+    if (user == null) {
+      return null;
+    }
+
     return new FollowedResponse(
         user.getId(),
         user.getUsername(),
@@ -37,23 +45,37 @@ public class RelationshipMapper {
   }
 
   public FriendRequestResponse toIncomingFriendRequestResponse(FriendRequest request) {
+    if (request == null) {
+      return null;
+    }
+
+    User sender = request.getSender();
     return new FriendRequestResponse(
-        request.getSender().getUsername(),
-        fileStorageService.resolveFileUrl(request.getSender().getProfilePicture()),
+        sender == null ? null : sender.getUsername(),
+        sender == null ? null : fileStorageService.resolveFileUrl(sender.getProfilePicture()),
         true,
         request.getCreatedAt());
   }
 
   public FriendRequestResponse toSentFriendRequestResponse(FriendRequest request) {
+    if (request == null) {
+      return null;
+    }
+
+    User receiver = request.getReceiver();
     return new FriendRequestResponse(
-        request.getReceiver().getUsername(),
-        fileStorageService.resolveFileUrl(request.getReceiver().getProfilePicture()),
+        receiver == null ? null : receiver.getUsername(),
+        receiver == null ? null : fileStorageService.resolveFileUrl(receiver.getProfilePicture()),
         false,
         request.getCreatedAt());
   }
 
   public UserSearchResponse toUserSearchResponse(
       User user, List<RelationshipStatusItem> relationshipStatuses, String displayName) {
+    if (user == null) {
+      return null;
+    }
+
     return new UserSearchResponse(
         user.getId(),
         user.getUsername(),

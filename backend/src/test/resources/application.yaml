@@ -2,10 +2,14 @@ spring:
   application:
     name: ctrl
 
+  task:
+    scheduling:
+      enabled: false
+
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:test}
-    username: ${POSTGRES_USER:your_user}
-    password: ${POSTGRES_PASSWORD:your_password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${POSTGRES_DB:${DB_NAME:ctrl}}}
+    username: ${POSTGRES_USER:${DB_USERNAME:your_user}}
+    password: ${POSTGRES_PASSWORD:${DB_PASSWORD:your_password}}
     driver-class-name: org.postgresql.Driver
 
   sql:
@@ -24,10 +28,13 @@ spring:
 
 garage:
   url: http://localhost:3900
-  public-url: http://localhost:3900/ctrl-test-media
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: PT2M
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: ctrl-test-media
+  private-bucket-name: ctrl-test-private-media
+  public-bucket-name: ctrl-test-public-media
 
 infinity:
   url: http://localhost:7997

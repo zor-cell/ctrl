@@ -9,6 +9,8 @@ import {FloatLabel} from "primeng/floatlabel";
 import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {Password} from "primeng/password";
+import {switchMap} from "rxjs";
+import {UserService} from "../../../user/user.service";
 
 @Component({
   selector: 'app-login',
@@ -27,6 +29,7 @@ import {Password} from "primeng/password";
 })
 export class LoginComponent {
   private authService = inject(AuthService);
+  private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
   private router = inject(Router);
 
@@ -43,8 +46,11 @@ export class LoginComponent {
     }
 
     const loginRequest: LoginRequest = this.loginForm.getRawValue();
-    this.authService.login(loginRequest).subscribe(() => {
-      this.router.navigate(['/profile']);
-    });
+    this.authService
+      .login(loginRequest)
+      .pipe(switchMap(() => this.userService.loadUser()))
+      .subscribe(() => {
+        this.router.navigate(['/profile']);
+      });
   }
 }

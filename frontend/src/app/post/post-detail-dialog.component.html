@@ -27,14 +27,16 @@
         </div>
 
         <div class="post-detail__header-actions">
-          <p-button
-            icon="pi pi-trash"
-            ariaLabel="Delete post"
-            severity="danger"
-            [text]="true"
-            styleClass="post-detail__delete-button"
-            (onClick)="requestDeletion()"
-          />
+          @if (canDelete) {
+            <p-button
+              icon="pi pi-trash"
+              ariaLabel="Delete post"
+              severity="danger"
+              [text]="true"
+              styleClass="post-detail__delete-button"
+              (onClick)="requestDeletion()"
+            />
+          }
           <p-button
             icon="pi pi-times"
             ariaLabel="Close post detail"
@@ -111,18 +113,121 @@
           }
         </section>
 
-        <section class="post-detail__comments" aria-labelledby="post-detail-comments-title">
+        <section class="post-detail__comments comments-list" aria-labelledby="post-detail-comments-title">
           <h2 id="post-detail-comments-title">Comments ({{ commentCount() }})</h2>
-          @if (topLevelComments(currentPost).length > 0) {
-            @for (comment of topLevelComments(currentPost); track comment.commentId) {
-              <article class="post-detail__comment">
-                <strong>{{ comment.username }}</strong>
-                <span>{{ timeAgo(comment.createdAt) }}</span>
-                <p>{{ comment.content }}</p>
+          @if (loadingComments()) {
+            <div class="comments-loading">
+              <i class="pi pi-spin pi-spinner"></i>
+              <p>Loading comments...</p>
+            </div>
+          } @else if (topLevelComments().length > 0) {
+            @for (comment of topLevelComments(); track comment.commentId) {
+              <article class="comment">
+                <span class="comment-avatar" aria-hidden="true">
+                  @if (comment.userProfilePic) {
+                    <img [src]="comment.userProfilePic" alt="" />
+                  } @else {
+                    {{ commentAvatarInitial(comment) }}
+                  }
+                </span>
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-username">{{ comment.username }}</span>
+                    <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
+                    @if (comment.edited) {
+                      <span class="comment-edited">edited</span>
+                    }
+                  </div>
+
+                  @if (editingCommentId() === comment.commentId) {
+                    <div class="edit-form">
+                      <textarea
+                        class="comment-input"
+                        rows="2"
+                        [value]="editDraft()"
+                        (input)="updateEditDraft($event)"
+                        (keydown.escape)="cancelEdit()"
+                      ></textarea>
+                      <div class="edit-actions">
+                        <button type="button" [disabled]="!editDraft().trim()" (click)="saveEdit(comment.commentId)">
+                          Save
+                        </button>
+                        <button type="button" (click)="cancelEdit()">Cancel</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <p class="comment-content">{{ comment.content }}</p>
+                    <div class="comment-actions">
+                      <button type="button" class="reply-btn" (click)="setReplyingTo(comment)">
+                        <i class="pi pi-reply"></i>
+                        Reply
+                      </button>
+                      @if (isOwnComment(comment)) {
+                        <button type="button" class="comment-action-btn edit-btn" aria-label="Edit comment" (click)="startEdit(comment)">
+                          <i class="pi pi-pencil"></i>
+                        </button>
+                        <button type="button" class="comment-action-btn delete-btn" aria-label="Delete comment" (click)="deleteComment(comment.commentId)">
+                          <i class="pi pi-trash"></i>
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  @for (reply of repliesFor(comment.commentId); track reply.commentId) {
+                    <article class="comment comment--reply">
+                      <span class="comment-avatar comment-avatar--reply" aria-hidden="true">
+                        @if (reply.userProfilePic) {
+                          <img [src]="reply.userProfilePic" alt="" />
+                        } @else {
+                          {{ commentAvatarInitial(reply) }}
+                        }
+                      </span>
+                      <div class="comment-body">
+                        <div class="comment-header">
+                          <span class="comment-username">{{ reply.username }}</span>
+                          <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
+                          @if (reply.edited) {
+                            <span class="comment-edited">edited</span>
+                          }
+                        </div>
+
+                        @if (editingCommentId() === reply.commentId) {
+                          <div class="edit-form">
+                            <textarea
+                              class="comment-input"
+                              rows="2"
+                              [value]="editDraft()"
+                              (input)="updateEditDraft($event)"
+                              (keydown.escape)="cancelEdit()"
+                            ></textarea>
+                            <div class="edit-actions">
+                              <button type="button" [disabled]="!editDraft().trim()" (click)="saveEdit(reply.commentId)">
+                                Save
+                              </button>
+                              <button type="button" (click)="cancelEdit()">Cancel</button>
+                            </div>
+                          </div>
+                        } @else {
+                          <p class="comment-content">{{ reply.content }}</p>
+                          @if (isOwnComment(reply)) {
+                            <div class="comment-actions">
+                              <button type="button" class="comment-action-btn edit-btn" aria-label="Edit reply" (click)="startEdit(reply)">
+                                <i class="pi pi-pencil"></i>
+                              </button>
+                              <button type="button" class="comment-action-btn delete-btn" aria-label="Delete reply" (click)="deleteComment(reply.commentId)">
+                                <i class="pi pi-trash"></i>
+                              </button>
+                            </div>
+                          }
+                        }
+                      </div>
+                    </article>
+                  }
+                </div>
               </article>
             }
           } @else {
-            <div class="post-detail__empty-state">
+            <div class="comments-empty">
               <i class="pi pi-comment"></i>
               <p>No comments yet.</p>
             </div>
@@ -131,21 +236,34 @@
       </div>
 
       <footer class="post-detail__comment-box">
-        <input
-          type="text"
-          placeholder="Write a comment..."
-          [value]="commentDraft()"
-          (input)="updateCommentDraft($event)"
-          (keydown.enter)="submitComment()"
-        />
-        <button
-          type="button"
-          aria-label="Send comment"
-          [disabled]="!canSubmitComment()"
-          (click)="submitComment()"
-        >
-          <i class="pi pi-send"></i>
-        </button>
+        @if (replyingTo()) {
+          <div class="replying-to-banner">
+            <span>
+              Replying to <strong>{{ replyingTo()!.username }}</strong>
+            </span>
+            <button type="button" class="cancel-reply-btn" aria-label="Cancel reply" (click)="cancelReply()">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        }
+        <div class="comment-input-row">
+          <input
+            type="text"
+            [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+            [value]="commentDraft()"
+            [disabled]="submittingComment()"
+            (input)="updateCommentDraft($event)"
+            (keydown.enter)="submitComment()"
+          />
+          <button
+            type="button"
+            aria-label="Send comment"
+            [disabled]="!canSubmitComment() || submittingComment()"
+            (click)="submitComment()"
+          >
+            <i class="pi pi-send"></i>
+          </button>
+        </div>
       </footer>
     </article>
   }

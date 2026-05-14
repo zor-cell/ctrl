@@ -12,6 +12,9 @@ import at.ac.tuwien.inso.ctrl.exception.GlobalExceptionHandler;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,10 +31,18 @@ public class FileControllerIntegrationTest {
 
   @Mock private FileStorageService fileStorageService;
 
+  @Mock private PostRepository postRepository;
+
+  @Mock private UserRepository userRepository;
+
+  @Mock private FriendRelationRepository friendRelationRepository;
+
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new FileController(fileStorageService))
+        MockMvcBuilders.standaloneSetup(
+                new FileController(
+                    fileStorageService, postRepository, userRepository, friendRelationRepository))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
   }
@@ -59,6 +70,31 @@ public class FileControllerIntegrationTest {
 
     verify(fileStorageService).uploadPostMedia(any());
     verify(fileStorageService).resolveFileUrl("posts/media/file.png");
+  }
+
+  @Test
+  void uploadPostMedia_ShouldReturnCreatedMp4Response_WhenVideoIsStored() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "post.mov", "video/quicktime", new byte[] {1, 2, 3});
+    FileStorageService.UploadedFile uploadedFile =
+        new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 3L);
+
+    when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
+    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
+        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
+
+    mockMvc
+        .perform(multipart("/files/post-media").file(file))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.mediaRef").value("posts/media/video.mp4"))
+        .andExpect(
+            jsonPath("$.mediaUrl")
+                .value("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4"))
+        .andExpect(jsonPath("$.contentType").value("video/mp4"))
+        .andExpect(jsonPath("$.size").value(3));
+
+    verify(fileStorageService).uploadPostMedia(any());
+    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
   }
 
   @Test

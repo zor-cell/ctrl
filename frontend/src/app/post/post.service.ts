@@ -52,6 +52,12 @@ export class PostService {
     return this.httpClient.get<PostResponse[]>(`${this.baseUri}/me`);
   }
 
+  getProfilePostsForUser(username: string) {
+    return this.httpClient.get<PostResponse[]>(
+      `${this.baseUri}/user/${encodeURIComponent(username)}`
+    );
+  }
+
   /**
    * Sends an upvote or downvote for a post to the backend.
    * Sending the same vote type again toggles (removes) the existing vote.
