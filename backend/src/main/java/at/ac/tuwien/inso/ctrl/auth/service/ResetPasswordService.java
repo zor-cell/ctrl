@@ -31,7 +31,7 @@ import org.thymeleaf.context.Context;
 @RequiredArgsConstructor
 public class ResetPasswordService {
   private final PasswordEncoder passwordEncoder;
-  private final JavaMailSender mailSender;
+  private final GmailService gmailService;
   private final TemplateEngine templateEngine;
   private final UserRepository userRepository;
   private final PasswordResetRepository passwordResetRepository;
@@ -64,16 +64,9 @@ public class ResetPasswordService {
       String token = UUID.randomUUID().toString();
 
       Context context = createContext(token);
-      MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
       String htmlContent = templateEngine.process("passwordResetTemplate", context);
 
-      helper.setTo(passwordResetEmailRequest.email());
-      helper.setSubject("Reset CTRL Password!");
-      helper.setText(htmlContent, true);
-
-      mailSender.send(message);
+      gmailService.sendHtmlEmail(passwordResetEmailRequest.email(), "Reset CTRL Password!", htmlContent);
 
       LocalDateTime expiration = LocalDateTime.now().plusMinutes(30);
       PasswordReset passwordReset = new PasswordReset();
@@ -88,6 +81,9 @@ public class ResetPasswordService {
     } catch (MessagingException me) {
       throw new CommunicationException(
           "Failed to create email. You can register again in 2 minutes.");
+    } catch (Exception e) {
+      LOGGER.error("Failed to send or create password reset email", e);
+      throw new CommunicationException("Failed to send or create email.");
     }
   }
 
