@@ -101,7 +101,7 @@ build:backend:
     paths:
       - .m2/repository
   script:
-    - mvn clean package -DskipTests -f ./backend/ -Dmaven.repo.local=.m2/repository
+    - mvn clean package -DskipTests -f ./backend/ -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2/repository
   artifacts:
     expire_in: 1 day
     paths:
@@ -119,7 +119,7 @@ build:frontend:
     paths:
       - .npm
   script:
-    - cd frontend && npm ci  --cache ../.npm && npm run build
+    - cd frontend && npm ci --cache ../.npm && npm run build
   artifacts:
     expire_in: 1 day
     paths:
@@ -147,4 +147,5 @@ build:image:
         -Djib.to.tags=latest
         -Djib.to.auth.username=${CI_REGISTRY_USER}
         -Djib.to.auth.password=${CI_REGISTRY_PASSWORD}
+        -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2/repository
   <<: *build_rules
