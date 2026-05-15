@@ -34,6 +34,16 @@ $radius-sm:    10px;
   z-index: 1;
 }
 
+// ─── Refresh Button Spin ───────────────────────────────
+@keyframes spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+:host ::ng-deep .refresh-btn.spinning .p-button-icon {
+  animation: spin-once 0.6s linear 1;
+}
+
 // ─── Posts List ───────────────────────────────────────
 .posts-list {
   display: flex;

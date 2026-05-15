@@ -62,11 +62,12 @@
 
     <!-- Algorithm Config Button – floats right inside the tab bar -->
     <div class="tablist-actions">
-        <p-button
-                icon="pi pi-refresh"
-                (onClick)="loadFeed()"
-                severity="secondary"
-                [text]="true" />
+      <p-button
+        icon="pi pi-refresh"
+        (onClick)="loadFeed()"
+        severity="secondary"
+        [text]="true"
+        [styleClass]="isSpinning() ? 'refresh-btn spinning' : 'refresh-btn'" />
 
       <p-button
         label=""
@@ -246,70 +247,70 @@
   styleClass="why-dialog"
 >
   @if (selectedPost(); as post) {
-      <div class="dialog-grid">
-          <div class="text-secondary">
-              Our algorithm analyzed this post against your profile.
-              The bars below show the <strong>relative impact</strong> of each factor on the total score.
-          </div>
+    <div class="dialog-grid">
+      <div class="text-secondary">
+        Our algorithm analyzed this post against your profile.
+        The bars below show the <strong>relative impact</strong> of each factor on the total score.
+      </div>
 
       <div class="score-grid">
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
           label: 'Interests',
           score: post.explanation.scoreInteraction,
           total: post.explanation.totalScore,
           description: 'Based on your past activity. It tracks how similar this content is to posts you have liked, commented on, or spent time watching.'
             }"
-          />
+        />
 
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
           label: 'Topics',
           score: post.explanation.scoreTopic,
           total: post.explanation.totalScore,
           description: 'Matches the specific topics you have selected in your profile.'
         }"></ng-container>
 
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
               label: 'Recency',
               score: post.explanation.scoreRecency,
                 total: post.explanation.totalScore,
                 description: 'Prioritizes fresh content. Newer posts get a boost to ensure your feed stays up-to-date and relevant.'
             }"
-          />
+        />
 
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
               label: 'Source Quality',
               score: post.explanation.scoreSource,
                 total: post.explanation.totalScore,
                 description: 'Measures the reliability and community trust of the source or author behind the post.'
             }"
-          />
+        />
 
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
               label: 'Popularity',
               score: post.explanation.scorePopularity,
                 total: post.explanation.totalScore,
                 description: 'Reflects current community engagement. Posts with high upvote rates and active discussions are boosted.'
             }"
-          />
+        />
 
-          <ng-container *ngTemplateOutlet="divergingBar; context: {
+        <ng-container *ngTemplateOutlet="divergingBar; context: {
               label: 'Exploration',
               score: post.explanation.scoreExploration,
                 total: post.explanation.totalScore,
                 description: 'Introduces new content outside your usual circle.'
             }"
-          />
+        />
       </div>
 
-          <div class="score-label">
+      <div class="score-label">
             <span>Total Relevancy
                 <i class="pi pi-info-circle hint-icon"
                    pTooltip="This total is calculated by summing the weighted impact of your feed configuration. The maximum attainable ranking for a post is 6."
                    tooltipPosition="right"></i>
             </span>
-              <span><strong>{{post.explanation.totalScore.toFixed(2)}} out of 6</strong></span>
-          </div>
+        <span><strong>{{post.explanation.totalScore.toFixed(2)}} out of 6</strong></span>
       </div>
+    </div>
   }
   <ng-template pTemplate="footer">
     <p-button
@@ -323,28 +324,28 @@
 
 <!-- Reusable Template for the Bi-directional Bar -->
 <ng-template #divergingBar let-label="label" let-score="score" let-total="total" let-description="description">
-    @let percent = (score / total) * 100;
-    <div class="score-row">
-        <div class="score-label">
+  @let percent = (score / total) * 100;
+  <div class="score-row">
+    <div class="score-label">
             <span>{{ label }}
-                <i class="pi pi-info-circle hint-icon"
+              <i class="pi pi-info-circle hint-icon"
                  [pTooltip]="description"
                  tooltipPosition="right"></i>
             </span>
-            <span>{{ percent >= 0 ? '+' : '' }}{{ percent.toFixed(1) }}%</span>
-        </div>
-        <div class="bi-bar-container">
-            @if(score == 0) {
-                <div class="bi-bar-center"></div>
-            }
-            @if (score < 0) {
-                <div class="bi-bar neg" [style.width.%]="Math.abs(score) * 50"></div>
-            }
-            @if (score > 0) {
-                <div class="bi-bar pos" [style.width.%]="score * 50"></div>
-            }
-        </div>
+      <span>{{ percent >= 0 ? '+' : '' }}{{ percent.toFixed(1) }}%</span>
     </div>
+    <div class="bi-bar-container">
+      @if(score == 0) {
+        <div class="bi-bar-center"></div>
+      }
+      @if (score < 0) {
+        <div class="bi-bar neg" [style.width.%]="Math.abs(score) * 50"></div>
+      }
+      @if (score > 0) {
+        <div class="bi-bar pos" [style.width.%]="score * 50"></div>
+      }
+    </div>
+  </div>
 </ng-template>
 
 <!-- ─── Comments Dialog ─── -->

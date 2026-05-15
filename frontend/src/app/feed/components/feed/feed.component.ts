@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, ElementRef } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
 import { Post } from '../../dto/Post';
@@ -17,10 +18,7 @@ import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
-import {ProgressBar} from "primeng/progressbar";
-import {Badge} from "primeng/badge";
 import {ReactiveFormsModule} from "@angular/forms";
-import {Slider} from "primeng/slider";
 import {RouterLink} from "@angular/router";
 
 @Component({
@@ -51,8 +49,6 @@ export class FeedComponent implements OnInit {
 
   readonly viewTracking = inject(ViewTrackingService);
 
-  protected allPosts = signal<Post[]>([]);
-
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
 
@@ -60,6 +56,10 @@ export class FeedComponent implements OnInit {
   protected selectedPostForComments = signal<Post | null>(null);
 
   protected algorithmConfigVisible = signal(false);
+  protected isRefreshing = signal(false);
+  protected isSpinning = signal(false);
+
+  private readonly elRef = inject(ElementRef);
 
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
@@ -73,9 +73,9 @@ export class FeedComponent implements OnInit {
     this.loadFeed();
   }
 
-  openAlgorithmConfig(): void {
-    this.algorithmConfigVisible.set(true);
-  }
+  //openAlgorithmConfig(): void {
+  //  this.algorithmConfigVisible.set(true);
+  //}
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
@@ -186,12 +186,24 @@ export class FeedComponent implements OnInit {
 
   /** Helpers **/
   protected loadFeed() {
-    this.feedService.getFeed(true).subscribe(posts => {
-      this.publicPosts.set(posts);
-    })
-    this.feedService.getFeed(false).subscribe(posts => {
-      this.privatePosts.set(posts);
+    this.isRefreshing.set(true);
+    this.isSpinning.set(true);
+    setTimeout(() => this.isSpinning.set(false), 600);
+
+    forkJoin([
+      this.feedService.getFeed(true),
+      this.feedService.getFeed(false),
+    ]).subscribe(([publicPosts, privatePosts]) => {
+      this.publicPosts.set(publicPosts);
+      this.privatePosts.set(privatePosts);
+      this.isRefreshing.set(false);
+      this.scrollFeedToTop();
     });
+  }
+
+  private scrollFeedToTop(): void {
+    const lists = this.elRef.nativeElement.querySelectorAll('.posts-list') as NodeListOf<HTMLElement>;
+    lists.forEach(el => el.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   private calcOptimisticVote(
