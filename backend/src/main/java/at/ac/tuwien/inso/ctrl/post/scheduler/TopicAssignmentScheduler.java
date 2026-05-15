@@ -37,7 +37,7 @@ public class TopicAssignmentScheduler {
   private final TopicRepository topicRepository;
 
   // @Scheduled(fixedRateString = "PT30M")
-  @Scheduled(fixedDelay = 60000) // Alle 60 Sekunden statt alle 30 Min
+  @Scheduled(fixedDelay = 300000) // Every 5 minutes instead of every 30 minutes
   @Transactional
   public void assignTopics() {
     log.info("TopicAssignmentScheduler started");
