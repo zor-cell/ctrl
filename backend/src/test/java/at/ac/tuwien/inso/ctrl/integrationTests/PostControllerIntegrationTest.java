@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +57,8 @@ public class PostControllerIntegrationTest {
   void tearDown() {
     SecurityContextHolder.clearContext();
   }
+
+  // Gültiger POST /posts Request -> 201 Created + Post JSON
 
   @Test
   void createPost_ShouldReturnCreatedPost_WhenRequestIsValid() throws Exception {
@@ -165,6 +168,38 @@ public class PostControllerIntegrationTest {
   }
 
   @Test
+  void getProfilePosts_ShouldReturnPostsForRequestedUser() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+    PostResponse response = createPostResponse(user, "post-1", "Profile post");
+
+    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of(response));
+
+    mockMvc
+        .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].postId").value("post-1"))
+        .andExpect(jsonPath("$[0].caption").value("Profile post"));
+
+    verify(postService).getProfilePostsForUser("marlene", "marlene");
+  }
+
+  @Test
+  void getProfilePosts_ShouldReturnEmptyList_WhenUserHasNoPosts() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+
+    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[]"));
+
+    verify(postService).getProfilePostsForUser("marlene", "marlene");
+  }
+
+  @Test
   void deletePost_ShouldReturnNoContent_WhenPostBelongsToUser() throws Exception {
     User user = createUser("marlene");
     authenticate(user);
@@ -172,6 +207,22 @@ public class PostControllerIntegrationTest {
     mockMvc
         .perform(delete("/posts/post-1").principal(authenticationFor(user)))
         .andExpect(status().isNoContent());
+
+    verify(postService).deletePost("post-1", "marlene");
+  }
+
+  @Test
+  void deletePost_ShouldReturnNotFound_WhenPostDoesNotBelongToUser() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+    doThrow(new ResourceNotFoundException("Post not found"))
+        .when(postService)
+        .deletePost("post-1", "marlene");
+
+    mockMvc
+        .perform(delete("/posts/post-1").principal(authenticationFor(user)))
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Post not found"));
 
     verify(postService).deletePost("post-1", "marlene");
   }

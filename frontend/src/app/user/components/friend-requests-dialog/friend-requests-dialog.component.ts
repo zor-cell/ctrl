@@ -1,7 +1,6 @@
 import { Component, inject, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Button } from 'primeng/button';
-import { Avatar } from 'primeng/avatar';
 import { Divider } from 'primeng/divider';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -21,7 +20,7 @@ import { FriendRequest } from '../../dto/Relationship';
 @Component({
   selector: 'app-friend-requests-dialog',
   standalone: true,
-  imports: [CommonModule, Button, Avatar, Divider],
+  imports: [CommonModule, Button, Divider],
   templateUrl: './friend-requests-dialog.component.html',
   styleUrl: './friend-requests-dialog.component.scss',
 })

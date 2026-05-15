@@ -1,6 +1,7 @@
 import { Component, inject, input, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, debounceTime, takeUntil, filter } from 'rxjs';
 
 import { InputText } from 'primeng/inputtext';
@@ -8,10 +9,10 @@ import { Button } from 'primeng/button';
 
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
-import { Avatar } from 'primeng/avatar';
 
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserSearchResult } from '../../dto/Relationship';
 
@@ -35,15 +36,16 @@ import { UserSearchResult } from '../../dto/Relationship';
     Button,
     IconField,
     InputIcon,
-    Avatar,
   ],
   templateUrl: './user-search.component.html',
   styleUrl: './user-search.component.scss',
 })
 export class UserSearchComponent implements OnInit, OnDestroy {
   private relationshipService = inject(RelationshipService);
+  private mediaCacheService = inject(MediaCacheService);
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
+  private router = inject(Router);
 
   source = input.required<'friends' | 'followed'>();
 
@@ -53,6 +55,8 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   verifiedOnly = signal<boolean>(false);
 
   searchResults = this.relationshipService.searchResults;
+  failedProfilePictures = signal<Set<string>>(new Set());
+  profilePictureUrls = signal<Record<string, string>>({});
 
   private searchInput$ = new Subject<string>();
   private refreshTrigger$ = new Subject<void>();
@@ -152,6 +156,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
       )
       .pipe(takeUntil(this._destroy$))
       .subscribe({
+        next: users => this.loadProfilePictures(users),
         error: () => {
           this.notificationService.showError('Search failed');
         },
@@ -210,21 +215,97 @@ export class UserSearchComponent implements OnInit, OnDestroy {
     });
   }
 
+  private hasStatus(user: UserSearchResult, status: string): boolean {
+    return user.relationshipStatuses.some(item => item.status === status);
+  }
+  
+  openUserProfile(user: UserSearchResult) {
+    this.router.navigate(['/profile', user.username]);
+  }
+
+  hasProfilePicture(user: UserSearchResult): boolean {
+    return Boolean(this.profilePictureUrl(user)) && !this.failedProfilePictures().has(user.id);
+  }
+
+  profilePictureUrl(user: UserSearchResult): string | null {
+    return this.profilePictureUrls()[user.id] ?? this.directProfilePictureUrl(user.profilePicture);
+  }
+
+  markProfilePictureFailed(user: UserSearchResult): void {
+    this.failedProfilePictures.update(failedIds => {
+      const nextFailedIds = new Set(failedIds);
+      nextFailedIds.add(user.id);
+      return nextFailedIds;
+    });
+  }
+
+  getInitial(user: UserSearchResult): string {
+    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
+  }
+
   canFollow(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'NONE' && user.isVerified;
+    // Can follow if not already following, not a friend, and not verified (verified users can be followed)
+    // Actually, looking at the original logic: it was 'NONE' && isVerified
+    // So we can follow if: isVerified AND not FOLLOWED AND not FRIEND AND no pending requests
+    const hasExistingRelation = this.hasStatus(user, 'FOLLOWED') ||
+                                  this.hasStatus(user, 'FRIEND') ||
+                                  this.hasStatus(user, 'PENDING_REQUEST_SENT') ||
+                                  this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
+    return user.isVerified && !hasExistingRelation;
   }
 
   canAddFriend(user: UserSearchResult): boolean {
-    return user.relationshipStatus !== 'FRIEND' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_SENT' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_INCOMING';
+    // Can add friend if not already friends and no pending requests
+    return !this.hasStatus(user, 'FRIEND') &&
+           !this.hasStatus(user, 'PENDING_REQUEST_SENT') &&
+           !this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasIncomingRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_INCOMING';
+    return this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasPendingSentRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_SENT';
+    return this.hasStatus(user, 'PENDING_REQUEST_SENT');
+  }
+
+  navigateToProfile(username: string): void {
+    this.router.navigate(['/profile', username]);
+  }
+
+  private loadProfilePictures(users: UserSearchResult[]): void {
+    const activeIds = new Set(users.map(user => user.id));
+    this.profilePictureUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([id, url]) => {
+        if (activeIds.has(id)) {
+          nextUrls[id] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    users.forEach(user => {
+      if (!user.profilePicture) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(user.profilePicture, 'image', 'high').subscribe({
+        next: url => {
+          if (url) {
+            this.profilePictureUrls.update(urls => ({ ...urls, [user.id]: url }));
+          }
+        },
+        error: () => this.markProfilePictureFailed(user),
+      });
+    });
+  }
+
+  private directProfilePictureUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
   }
 }

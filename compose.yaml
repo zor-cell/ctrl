@@ -13,8 +13,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GARAGE_ACCESS_KEY=${GARAGE_ACCESS_KEY}
       - GARAGE_SECRET_KEY=${GARAGE_SECRET_KEY}
-      - GARAGE_BUCKET_NAME=${GARAGE_BUCKET_NAME:-ctrl-dev-media}
+      - GARAGE_BUCKET_NAME=${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
+      - GARAGE_PRIVATE_BUCKET_NAME=${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
+      - GARAGE_PUBLIC_BUCKET_NAME=${GARAGE_PUBLIC_BUCKET_NAME:-ctrl-dev-media-public}
+      - GARAGE_PRESIGN_URL=${GARAGE_PRESIGN_URL:-http://localhost:3900}
+      - GARAGE_PRESIGNED_URL_DURATION=${GARAGE_PRESIGNED_URL_DURATION:-PT2M}
       - ID_AUSTRIA_SECRET=${ID_AUSTRIA_SECRET}
+      - ID_AUSTRIA_REDIRECT_URI=${ID_AUSTRIA_REDIRECT_URI:-http://localhost:80/verification-callback}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - INFINITY_MODEL=${INFINITY_MODEL}
@@ -23,6 +28,9 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       db:
+        condition: service_healthy
+        restart: false
+      garage:
         condition: service_healthy
         restart: false
       infinity:
@@ -34,7 +42,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 120s
+      start_period: 30s
 
   frontend:
     build: ./frontend
@@ -50,7 +58,7 @@ services:
     platform: linux/amd64
     image: pgvector/pgvector:pg18-trixie
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
@@ -94,10 +102,6 @@ services:
   garage:
     platform: linux/amd64
     image: dxflrs/garage:v2.2.0
-    networks:
-      default:
-        aliases:
-          - ctrl-dev-media.web.garage.localhost #alias public url to this container for internal backend communication
     ports:
       - "3900:3900" # S3 api
       - "3902:3902" # S3 web gui
@@ -106,9 +110,9 @@ services:
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
       GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_SECRET_KEY}
-      GARAGE_DEFAULT_BUCKET: ctrl-dev-media
+      GARAGE_DEFAULT_BUCKET: ${GARAGE_PRIVATE_BUCKET_NAME:-ctrl-dev-media-private}
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:3903/health || exit 1" ]
+      test: [ "CMD", "/garage", "status" ]
       interval: 10s
       timeout: 5s
       retries: 5

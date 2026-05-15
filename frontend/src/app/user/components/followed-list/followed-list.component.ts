@@ -1,6 +1,5 @@
 import { Component, inject, ViewChild, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Avatar } from 'primeng/avatar';
 import { Button } from 'primeng/button';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Router } from '@angular/router';
@@ -12,7 +11,7 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-followed-list',
   standalone: true,
-  imports: [CommonModule, Avatar, Button, MenuModule],
+  imports: [CommonModule, Button, MenuModule],
   templateUrl: './followed-list.component.html',
   styleUrl: './followed-list.component.scss',
 })

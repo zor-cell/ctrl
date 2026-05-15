@@ -12,15 +12,21 @@ import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.FriendRequestService;
+import at.ac.tuwien.inso.ctrl.user.service.FriendshipService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,15 +49,19 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @Import(TestConfig.class)
 @Transactional
 @AutoConfigureMockMvc
-public class FriendRequestServiceIntegrationTest {
+public class FriendshipServiceIntegrationTest {
 
-  @Autowired private FriendRequestService friendRequestService;
+  @Autowired private FriendshipService friendshipService;
 
   @Autowired private FollowRelationRepository followRelationRepository;
+
+  @Autowired private FriendRelationRepository friendRelationRepository;
 
   @Autowired private FriendRequestRepository friendRequestRepository;
 
   @Autowired private UserRepository userRepository;
+
+  @PersistenceContext private EntityManager entityManager;
 
   protected User currentUser;
   protected User alpha;
@@ -70,6 +80,7 @@ public class FriendRequestServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/currentuser-avatar.jpg")
             .build();
     currentUser = userRepository.save(currentUser);
 
@@ -82,6 +93,7 @@ public class FriendRequestServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/alpha-avatar.jpg")
             .build();
     alpha = userRepository.save(alpha);
 
@@ -94,6 +106,7 @@ public class FriendRequestServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture(null) // No profile picture
             .build();
     beta = userRepository.save(beta);
 
@@ -106,6 +119,7 @@ public class FriendRequestServiceIntegrationTest {
             .isVerified(false)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture(null) // No profile picture
             .build();
     gamma = userRepository.save(gamma);
 
@@ -118,6 +132,7 @@ public class FriendRequestServiceIntegrationTest {
             .isVerified(false)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/delta-avatar.jpg")
             .build();
     delta = userRepository.save(delta);
   }
@@ -125,14 +140,120 @@ public class FriendRequestServiceIntegrationTest {
   @AfterEach
   public void tearDownTestData() {
     friendRequestRepository.deleteAll();
+    friendRelationRepository.deleteAll();
     followRelationRepository.deleteAll();
     userRepository.deleteAll();
+  }
+
+  // getFriends()
+
+  @Test
+  public void getFriends_returnsFriendsFromFriendRelation() {
+    createFriendship(currentUser, alpha);
+    createFriendship(currentUser, beta);
+    createFollow(currentUser, gamma);
+    createFollow(delta, currentUser);
+
+    List<FriendResponse> friends = friendshipService.getFriends(currentUser, null);
+
+    assertEquals(2, friends.size());
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("alpha")));
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("beta")));
+    assertFalse(friends.stream().anyMatch(f -> f.username().equals("gamma")));
+    assertFalse(friends.stream().anyMatch(f -> f.username().equals("delta")));
+  }
+
+  @Test
+  public void getFriends_doesNotReturnOneWayFollows() {
+    createFollow(currentUser, alpha);
+    createFollow(beta, currentUser);
+
+    List<FriendResponse> friends = friendshipService.getFriends(currentUser, null);
+
+    assertTrue(friends.isEmpty());
+  }
+
+  @Test
+  public void getFriends_withSearchFilters_correctlyReturnsFriendsWithSearchSubstring() {
+    createFriendship(currentUser, alpha);
+    createFriendship(currentUser, beta);
+    createFriendship(currentUser, delta);
+
+    List<FriendResponse> friends = friendshipService.getFriends(currentUser, "ta");
+
+    assertEquals(2, friends.size());
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("beta")));
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("delta")));
+  }
+
+  @Test
+  public void getFriends_withoutFriends_returnsEmptyResult() {
+    List<FriendResponse> friends = friendshipService.getFriends(currentUser, null);
+    assertTrue(friends.isEmpty());
+  }
+
+  // unfriend()
+
+  @Test
+  public void unfriend_removesFriendship() {
+    createFriendship(currentUser, alpha);
+
+    friendshipService.unfriend(currentUser, alpha.getUsername());
+
+    entityManager.flush();
+    entityManager.clear();
+
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
+    assertFalse(friendship.isPresent(), "Friendship should be removed");
+  }
+
+  @Test
+  public void unfriend_leavesFollowsIntact() {
+    createFollow(currentUser, alpha);
+    createFollow(beta, currentUser);
+    createFriendship(currentUser, gamma);
+
+    friendshipService.unfriend(currentUser, gamma.getUsername());
+
+    entityManager.flush();
+    entityManager.clear();
+
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), gamma.getId()));
+    assertFalse(friendship.isPresent(), "Friendship should be removed");
+
+    Optional<FollowRelation> currentToAlpha =
+        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
+    Optional<FollowRelation> betaToAlpha =
+        followRelationRepository.findById(new FollowRelationId(beta.getId(), currentUser.getId()));
+
+    assertTrue(currentToAlpha.isPresent());
+    assertTrue(betaToAlpha.isPresent());
+  }
+
+  @Test
+  public void unfriend_nonExistentFriendship_noError() {
+    // Should not throw any exception when trying to unfriend someone who is not a
+    // friend
+    assertDoesNotThrow(
+        () -> friendshipService.unfriend(currentUser, alpha.getUsername()),
+        "Unfriending a non-friend should not throw an error");
+  }
+
+  @Test
+  public void unfriend_nonExistentUser_throwsNotFound() {
+    NotFoundException exception =
+        assertThrows(
+            NotFoundException.class, () -> friendshipService.unfriend(currentUser, "ghost123"));
+
+    assertEquals("User with identifier 'ghost123' not found.", exception.getMessage());
   }
 
   // sendRequest()
   @Test
   public void sendRequest_toVerified_createsImmediateFollow() {
-    friendRequestService.sendRequest(currentUser, alpha.getUsername());
+    friendshipService.sendRequest(currentUser, alpha.getUsername());
 
     Optional<FriendRequest> request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -148,7 +269,7 @@ public class FriendRequestServiceIntegrationTest {
 
   @Test
   public void sendRequest_toUnverified_noImmediateFollow() {
-    friendRequestService.sendRequest(currentUser, gamma.getUsername());
+    friendshipService.sendRequest(currentUser, gamma.getUsername());
 
     Optional<FriendRequest> request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), gamma.getId()));
@@ -162,7 +283,7 @@ public class FriendRequestServiceIntegrationTest {
   @Test
   public void sendRequest_requestHasCorrectExpirationDate() {
     LocalDateTime beforeSend = LocalDateTime.now();
-    friendRequestService.sendRequest(currentUser, alpha.getUsername());
+    friendshipService.sendRequest(currentUser, alpha.getUsername());
     LocalDateTime afterSend = LocalDateTime.now();
 
     // Verify request expiration date (should be 30 days from creation)
@@ -192,7 +313,7 @@ public class FriendRequestServiceIntegrationTest {
     InvalidRequestException exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> friendRequestService.sendRequest(currentUser, currentUser.getUsername()));
+            () -> friendshipService.sendRequest(currentUser, currentUser.getUsername()));
 
     assertEquals("Cannot send friend request to yourself", exception.getMessage());
   }
@@ -201,20 +322,19 @@ public class FriendRequestServiceIntegrationTest {
   public void sendRequest_toNonExistent_shouldFail() {
     NotFoundException exception =
         assertThrows(
-            NotFoundException.class,
-            () -> friendRequestService.sendRequest(currentUser, "ghost123"));
+            NotFoundException.class, () -> friendshipService.sendRequest(currentUser, "ghost123"));
 
     assertEquals("User with identifier 'ghost123' not found.", exception.getMessage());
   }
 
   @Test
   public void sendRequest_alreadyFriends_shouldFail() {
-    createMutualFollows(currentUser, alpha);
+    createFriendship(currentUser, alpha);
 
     InvalidRequestException exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> friendRequestService.sendRequest(currentUser, alpha.getUsername()));
+            () -> friendshipService.sendRequest(currentUser, alpha.getUsername()));
 
     assertEquals("You are already friends with this user", exception.getMessage());
   }
@@ -226,7 +346,7 @@ public class FriendRequestServiceIntegrationTest {
     ResourceAlreadyExistsException exception =
         assertThrows(
             ResourceAlreadyExistsException.class,
-            () -> friendRequestService.sendRequest(currentUser, alpha.getUsername()));
+            () -> friendshipService.sendRequest(currentUser, alpha.getUsername()));
 
     assertEquals(
         "Friend request with receiver '" + alpha.getUsername() + "' already exists.",
@@ -240,7 +360,7 @@ public class FriendRequestServiceIntegrationTest {
     InvalidRequestException exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> friendRequestService.sendRequest(currentUser, alpha.getUsername()));
+            () -> friendshipService.sendRequest(currentUser, alpha.getUsername()));
 
     assertEquals(
         "This user has already sent you a friend request. Please accept or decline it.",
@@ -250,19 +370,16 @@ public class FriendRequestServiceIntegrationTest {
   // acceptRequest()
 
   @Test
-  public void acceptRequest_createsMutualFollows() {
+  public void acceptRequest_createsFriendship() {
     createFriendRequest(gamma, currentUser);
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         currentUser, gamma.getUsername(), FriendRequestAction.ACCEPT);
 
-    Optional<FollowRelation> receiverToSender =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), gamma.getId()));
-    Optional<FollowRelation> senderToReceiver =
-        followRelationRepository.findById(new FollowRelationId(gamma.getId(), currentUser.getId()));
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), gamma.getId()));
 
-    assertTrue(receiverToSender.isPresent(), "Receiver to sender follow should exist");
-    assertTrue(senderToReceiver.isPresent(), "Sender to receiver follow should exist");
+    assertTrue(friendship.isPresent(), "Friendship should be created after acceptance");
 
     Optional<FriendRequest> deleted =
         friendRequestRepository.findById(new FriendRequestId(gamma.getId(), currentUser.getId()));
@@ -270,57 +387,62 @@ public class FriendRequestServiceIntegrationTest {
   }
 
   @Test
-  public void acceptRequest_whenSenderAlreadyFollows_createsReceiverToSender() {
+  public void acceptRequest_whenSenderAlreadyFollows_createsFriendshipAndDeletesFollow() {
     createFollow(alpha, currentUser);
 
     createFriendRequest(alpha, currentUser);
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         currentUser, alpha.getUsername(), FriendRequestAction.ACCEPT);
 
-    Optional<FollowRelation> receiverToSender =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> senderToReceiver =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
+    entityManager.flush();
+    entityManager.clear();
 
-    assertTrue(receiverToSender.isPresent(), "Receiver to sender follow should be created");
-    assertTrue(senderToReceiver.isPresent(), "Sender to receiver follow should still exist");
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
+
+    assertTrue(friendship.isPresent(), "Friendship should be created");
+
+    Optional<FollowRelation> follow =
+        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
+    assertFalse(follow.isPresent());
   }
 
   @Test
-  public void acceptRequest_whenReceiverAlreadyFollows_createsSenderToReceiver() {
+  public void acceptRequest_whenReceiverAlreadyFollows_createsFriendshipAndDeletesFollow() {
     createFollow(currentUser, alpha);
 
     createFriendRequest(alpha, currentUser);
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         currentUser, alpha.getUsername(), FriendRequestAction.ACCEPT);
 
-    Optional<FollowRelation> receiverToSender =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> senderToReceiver =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
+    entityManager.flush();
+    entityManager.clear();
 
-    assertTrue(receiverToSender.isPresent(), "Receiver to sender follow should still exist");
-    assertTrue(senderToReceiver.isPresent(), "Sender to receiver follow should be created");
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
+
+    assertTrue(friendship.isPresent(), "Friendship should be created");
+
+    Optional<FollowRelation> follow =
+        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
+    assertFalse(follow.isPresent());
   }
 
   // declineRequest()
 
   @Test
-  public void declineRequest_doesNotCreateFollows() {
+  public void declineRequest_doesNotCreateFriendship() {
     createFriendRequest(alpha, currentUser);
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         currentUser, alpha.getUsername(), FriendRequestAction.DECLINE);
 
-    Optional<FollowRelation> receiverToSender =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> senderToReceiver =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
 
-    assertFalse(receiverToSender.isPresent(), "No receiver to sender follow should exist");
-    assertFalse(senderToReceiver.isPresent(), "No sender to receiver follow should exist");
+    assertFalse(friendship.isPresent(), "No friendship should exist after decline");
 
     Optional<FriendRequest> deleted =
         friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
@@ -334,7 +456,7 @@ public class FriendRequestServiceIntegrationTest {
     createFollow(currentUser, alpha);
     createFriendRequest(currentUser, alpha);
 
-    friendRequestService.cancelSentRequest(currentUser, alpha.getUsername());
+    friendshipService.cancelSentRequest(currentUser, alpha.getUsername());
 
     Optional<FriendRequest> deleted =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -360,7 +482,7 @@ public class FriendRequestServiceIntegrationTest {
             .build();
     friendRequestRepository.save(expiredRequest);
 
-    List<FriendRequestResponse> incoming = friendRequestService.getIncomingRequests(currentUser);
+    List<FriendRequestResponse> incoming = friendshipService.getIncomingRequests(currentUser);
 
     assertEquals(1, incoming.size());
     assertEquals("alpha", incoming.get(0).username());
@@ -384,7 +506,7 @@ public class FriendRequestServiceIntegrationTest {
             .build();
     friendRequestRepository.save(expiredRequest);
 
-    List<FriendRequestResponse> sent = friendRequestService.getSentRequests(currentUser);
+    List<FriendRequestResponse> sent = friendshipService.getSentRequests(currentUser);
 
     assertEquals(1, sent.size());
     assertEquals("alpha", sent.get(0).username());
@@ -410,7 +532,7 @@ public class FriendRequestServiceIntegrationTest {
         assertThrows(
             InvalidRequestException.class,
             () ->
-                friendRequestService.handleIncomingRequestAction(
+                friendshipService.handleIncomingRequestAction(
                     currentUser, alpha.getUsername(), FriendRequestAction.ACCEPT));
 
     assertEquals("This friend request has expired", exception.getMessage());
@@ -436,7 +558,7 @@ public class FriendRequestServiceIntegrationTest {
         assertThrows(
             InvalidRequestException.class,
             () ->
-                friendRequestService.handleIncomingRequestAction(
+                friendshipService.handleIncomingRequestAction(
                     currentUser, alpha.getUsername(), FriendRequestAction.DECLINE));
 
     assertEquals("This friend request has expired", exception.getMessage());
@@ -461,7 +583,7 @@ public class FriendRequestServiceIntegrationTest {
     InvalidRequestException exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> friendRequestService.cancelSentRequest(currentUser, alpha.getUsername()));
+            () -> friendshipService.cancelSentRequest(currentUser, alpha.getUsername()));
 
     assertEquals("This friend request has expired", exception.getMessage());
 
@@ -486,7 +608,7 @@ public class FriendRequestServiceIntegrationTest {
             .build();
     friendRequestRepository.save(expiredRequest);
 
-    long count = friendRequestService.getPendingRequestCount(currentUser);
+    long count = friendshipService.getPendingRequestCount(currentUser);
 
     assertEquals(2, count);
 
@@ -497,7 +619,7 @@ public class FriendRequestServiceIntegrationTest {
 
   @Test
   public void getPendingRequestCount_noRequests_returnsZero() {
-    long count = friendRequestService.getPendingRequestCount(currentUser);
+    long count = friendshipService.getPendingRequestCount(currentUser);
     assertEquals(0, count);
   }
 
@@ -506,8 +628,7 @@ public class FriendRequestServiceIntegrationTest {
   public void sendRequest_nonExistentTarget_throwsNotFound() {
     NotFoundException exception =
         assertThrows(
-            NotFoundException.class,
-            () -> friendRequestService.sendRequest(currentUser, "ghost123"));
+            NotFoundException.class, () -> friendshipService.sendRequest(currentUser, "ghost123"));
 
     assertEquals("User with identifier 'ghost123' not found.", exception.getMessage());
   }
@@ -518,7 +639,7 @@ public class FriendRequestServiceIntegrationTest {
         assertThrows(
             NotFoundException.class,
             () ->
-                friendRequestService.handleIncomingRequestAction(
+                friendshipService.handleIncomingRequestAction(
                     currentUser, "ghost123", FriendRequestAction.ACCEPT));
 
     assertEquals("User with identifier 'ghost123' not found.", exception.getMessage());
@@ -529,7 +650,7 @@ public class FriendRequestServiceIntegrationTest {
     NotFoundException exception =
         assertThrows(
             NotFoundException.class,
-            () -> friendRequestService.cancelSentRequest(currentUser, "ghost123"));
+            () -> friendshipService.cancelSentRequest(currentUser, "ghost123"));
 
     assertEquals("User with identifier 'ghost123' not found.", exception.getMessage());
   }
@@ -537,7 +658,7 @@ public class FriendRequestServiceIntegrationTest {
   // real use cases
   @Test
   public void fullFlow_sendThenAccept_createsFriendship() {
-    friendRequestService.sendRequest(currentUser, alpha.getUsername());
+    friendshipService.sendRequest(currentUser, alpha.getUsername());
 
     Optional<FriendRequest> request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -547,16 +668,11 @@ public class FriendRequestServiceIntegrationTest {
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
     assertTrue(currentToReceiver.isPresent(), "Current user should follow receiver");
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         alpha, currentUser.getUsername(), FriendRequestAction.ACCEPT);
 
-    Optional<FollowRelation> receiverToCurrent =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-    currentToReceiver =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-
-    assertTrue(currentToReceiver.isPresent(), "Current should still follow receiver");
-    assertTrue(receiverToCurrent.isPresent(), "Receiver should now follow current");
+    assertTrue(
+        friendRelationRepository.existsByUsers(currentUser, alpha), "Friendship should be created");
 
     request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -565,22 +681,23 @@ public class FriendRequestServiceIntegrationTest {
 
   @Test
   public void fullFlow_sendThenDecline_notFriends() {
-    friendRequestService.sendRequest(currentUser, alpha.getUsername());
+    friendshipService.sendRequest(currentUser, alpha.getUsername());
 
     Optional<FriendRequest> request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
     assertTrue(request.isPresent(), "Request should exist");
 
-    friendRequestService.handleIncomingRequestAction(
+    friendshipService.handleIncomingRequestAction(
         alpha, currentUser.getUsername(), FriendRequestAction.DECLINE);
+
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
+
+    assertFalse(friendship.isPresent(), "No friendship should exist after decline");
 
     Optional<FollowRelation> currentToReceiver =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> receiverToCurrent =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-
     assertTrue(currentToReceiver.isPresent(), "Current should still follow receiver");
-    assertFalse(receiverToCurrent.isPresent(), "Receiver should not follow current");
 
     request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -589,13 +706,13 @@ public class FriendRequestServiceIntegrationTest {
 
   @Test
   public void sendThenCancel_requestRemoved() {
-    friendRequestService.sendRequest(currentUser, alpha.getUsername());
+    friendshipService.sendRequest(currentUser, alpha.getUsername());
 
     Optional<FriendRequest> request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
     assertTrue(request.isPresent(), "Request should exist");
 
-    friendRequestService.cancelSentRequest(currentUser, alpha.getUsername());
+    friendshipService.cancelSentRequest(currentUser, alpha.getUsername());
 
     request =
         friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
@@ -614,11 +731,6 @@ public class FriendRequestServiceIntegrationTest {
     followRelationRepository.save(relation);
   }
 
-  private void createMutualFollows(User user1, User user2) {
-    createFollow(user1, user2);
-    createFollow(user2, user1);
-  }
-
   private void createFriendRequest(User sender, User receiver) {
     FriendRequest request =
         FriendRequest.builder()
@@ -629,5 +741,27 @@ public class FriendRequestServiceIntegrationTest {
             .expiresAt(LocalDateTime.now().plusDays(30))
             .build();
     friendRequestRepository.save(request);
+  }
+
+  private void createFriendship(User user1, User user2) {
+    FriendRelation friendship =
+        FriendRelation.builder()
+            .id(new FriendRelationId(user1.getId(), user2.getId()))
+            .friend1(user1)
+            .friend2(user2)
+            .since(LocalDateTime.now())
+            .build();
+    friendRelationRepository.save(friendship);
+  }
+
+  // Helper to use assertDoesNotThrow which was added in JUnit 5
+  private static void assertDoesNotThrow(
+      org.junit.jupiter.api.function.Executable executable, String message) {
+    try {
+      executable.execute();
+    } catch (Throwable t) {
+      throw new AssertionError(
+          message + " - but threw: " + t.getClass().getName() + ": " + t.getMessage(), t);
+    }
   }
 }

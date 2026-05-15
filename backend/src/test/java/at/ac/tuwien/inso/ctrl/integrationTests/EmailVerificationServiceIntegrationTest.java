@@ -41,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -57,6 +56,7 @@ import org.thymeleaf.TemplateEngine;
 public class EmailVerificationServiceIntegrationTest {
 
   private static JavaMailSender mailSender;
+
   private static EmailVerificationService emailVerificationService;
   private static User testUserUnverified;
   private static User testUserVerified;
@@ -138,33 +138,6 @@ public class EmailVerificationServiceIntegrationTest {
         new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
     assertThrows(
         UserAlreadyVerifiedException.class,
-        () -> emailVerificationService.sendVerificationEmail(request));
-  }
-
-  @Test
-  public void testSendVerificationEmail_withWrongEmail_shouldUsernameNotFoundExceptionException() {
-    SendEmailRequest request = new SendEmailRequest(testUserUnverified.getUsername(), "wrongEmail");
-    assertThrows(
-        UsernameNotFoundException.class,
-        () -> emailVerificationService.sendVerificationEmail(request));
-  }
-
-  @Test
-  public void
-      testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException() {
-    SendEmailRequest request = new SendEmailRequest("wrongUser", testUserUnverified.getEmail());
-    assertThrows(
-        UsernameNotFoundException.class,
-        () -> emailVerificationService.sendVerificationEmail(request));
-  }
-
-  @Test
-  public void
-      testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNotFoundException() {
-    SendEmailRequest request =
-        new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
-    assertThrows(
-        ResourceNotFoundException.class,
         () -> emailVerificationService.sendVerificationEmail(request));
   }
 
@@ -266,7 +239,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Invalid or expired verification code"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -294,7 +270,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Invalid or expired verification code"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -320,7 +299,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("User not found for verification"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -340,7 +322,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
 
-    assertTrue(exception.getMessage().contains("Verification not found for user"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {

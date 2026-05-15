@@ -168,7 +168,7 @@ public class FeedMapper {
         comment.getCommentId(),
         comment.getUser().getId().toString(),
         comment.getUser().getUsername(),
-        comment.getUser().getProfilePicture(),
+        fileStorageService.resolveFileUrl(comment.getUser().getProfilePicture()),
         comment.getContent(),
         comment.getCreatedAt(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);

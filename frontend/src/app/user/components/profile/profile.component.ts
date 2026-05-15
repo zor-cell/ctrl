@@ -13,6 +13,8 @@ import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Password} from "primeng/password";
+import {Router} from '@angular/router';
+import {AuthService} from '../../../auth/auth.service';
 
 @Component({
   selector: 'app-profile',
@@ -32,8 +34,10 @@ import {Password} from "primeng/password";
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
+  private router = inject(Router);
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
+  private authService = inject(AuthService);
 
   protected isLoading = signal(true);
   protected currentUser = this.userService.user;
@@ -103,6 +107,8 @@ export class ProfileComponent implements OnInit {
     const formValues = this.profileForm.getRawValue();
     const dateObj = formValues.birthdate as Date;
 
+    const emailChanged = this.currentUser()?.email !== formValues.email;
+
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -113,7 +119,17 @@ export class ProfileComponent implements OnInit {
       email: formValues.email!,
       bio: formValues.bio?.trim() ?? '',
       birthdate: formattedDate
-    }).subscribe();
+    }).subscribe({
+      next: () => {
+        if (emailChanged) {
+          if (environment.auth.requireEmailVerification) {
+            this.authService.logout();
+            this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
+          }
+        }
+      }
+    }
+    );
   }
 
   protected updatePassword() {

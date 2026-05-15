@@ -7,4 +7,5 @@ export interface PostComment {
   content: string;
   parentCommentId: string | null;
   edited: boolean;
+  replies?: PostComment[];
 }

@@ -23,17 +23,6 @@
 
                 <div>
                     <p-floatlabel variant="on">
-                        <input pInputText type="email" id="name" formControlName="email" fluid/>
-                        <label for="name">Email</label>
-                    </p-floatlabel>
-
-                    @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) {
-                        <p-message severity="error" size="small" variant="simple">Email is required.</p-message>
-                    }
-                </div>
-
-                <div>
-                    <p-floatlabel variant="on">
                         <p-date-picker
                                 inputId="birthdate"
                                 formControlName="birthdate"
@@ -47,6 +36,17 @@
 
                     @if (profileForm.controls.birthdate.invalid && profileForm.controls.birthdate.touched) {
                         <p-message severity="error" size="small" variant="simple">Birthdate is required.</p-message>
+                    }
+                </div>
+
+                <div>
+                    <p-floatlabel variant="on">
+                        <input pInputText type="email" id="name" formControlName="email" fluid/>
+                        <label for="name">Email</label>
+                    </p-floatlabel>
+
+                    @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) {
+                        <p-message severity="error" size="small" variant="simple">Email is required.</p-message>
                     }
                 </div>
 
@@ -83,34 +83,27 @@
             </div>
 
             <div class="settings-stack">
-                <div>
-                    <p-floatlabel variant="on">
-                        <p-date-picker
-                                inputId="createdAt"
-                                [maxDate]="maxDate"
-                                [showIcon]="true"
-                                [ngModel]="createdAt()"
-                                disabled
-                                dateFormat="dd.mm.yy"
-                                fluid
-                        />
-                        <label for="createdAt">Account Created</label>
-                    </p-floatlabel>
-                </div>
+                <!-- created at field, is not really interesting
+                <div class="account-item">
+                    <div class="item-details">
+                        <span class="item-label">Member since</span>
+                        <span class="item-value">{{ createdAt() | date:'dd.MM.yyyy' }}</span>
+                    </div>
+                </div>-->
 
-                <div class="input-action-group">
-                    <p-floatlabel variant="on">
-                        <input pInputText id="username" [value]="user.username" disabled fluid  />
-                        <label for="username">Username</label>
-                    </p-floatlabel>
+                <div class="input-action-group account-item">
+                    <div class="item-details">
+                        <span class="item-label">Username</span>
+                        <span class="item-value">{{ user.username }}</span>
+                    </div>
                     <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()"></p-button>
                 </div>
 
-                <div class="input-action-group">
-                    <p-floatlabel variant="on">
-                        <input pInputText id="password" value="********" disabled fluid />
-                        <label for="password">Password</label>
-                    </p-floatlabel>
+                <div class="input-action-group account-item">
+                    <div class="item-details">
+                        <span class="item-label">Password</span>
+                        <span class="item-value">********</span>
+                    </div>
                     <p-button label="Change" severity="secondary" (onClick)="openPasswordDialog()"></p-button>
                 </div>
             </div>

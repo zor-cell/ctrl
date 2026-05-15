@@ -23,6 +23,7 @@ import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
@@ -53,6 +54,7 @@ public class PostServiceImpl implements PostService {
   private final PostVoteRepository postVoteRepository;
   private final SeenPostRepository seenPostRepository;
   private final VoteManager voteManager;
+  private final FollowRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
 
@@ -86,7 +88,12 @@ public class PostServiceImpl implements PostService {
     float[] embedding = embeddingService.embedTextWithImage(post.getCaption(), fileUrl);
     post.setEmbedding(embedding);
 
-    return postMapper.toResponse(postRepository.save(post));
+    Post savedPost = postRepository.save(post);
+    if (savedPost.isPublic()) {
+      fileStorageService.movePostMediaToPublicBucket(savedPost.getMediaRef());
+    }
+
+    return postMapper.toResponse(savedPost);
   }
 
   @Override
@@ -131,6 +138,25 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername) {
+    User profileOwner = fetchUser(profileUsername);
+    User viewer = fetchUser(viewerUsername);
+
+    boolean canSeePrivatePosts =
+        profileOwner.getId().equals(viewer.getId())
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+
+    List<Post> posts =
+        canSeePrivatePosts
+            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+                profileUsername);
+
+    return posts.stream().map(postMapper::toResponse).toList();
+  }
+
+  @Override
   @Transactional
   public void deletePost(String postId, String username) {
     Post post =
@@ -139,10 +165,24 @@ public class PostServiceImpl implements PostService {
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
     postRepository.delete(post);
+    deleteLocalPostMedia(post);
   }
 
   private boolean resolveIsPublic(CreatePostRequest request, boolean isVerified) {
     return isVerified && Boolean.TRUE.equals(request.isPublic());
+  }
+
+  private void deleteLocalPostMedia(Post post) {
+    String mediaRef = post.getMediaRef();
+    if (mediaRef == null || mediaRef.startsWith("http://") || mediaRef.startsWith("https://")) {
+      return;
+    }
+
+    if (post.isPublic()) {
+      fileStorageService.deletePublicPostMedia(mediaRef);
+    } else {
+      fileStorageService.deletePostMedia(mediaRef);
+    }
   }
 
   private Set<PostTopic> buildPostTopics(Post post, List<String> topicIds) {

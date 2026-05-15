@@ -2,15 +2,19 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import jakarta.persistence.EntityManager;
@@ -47,6 +51,8 @@ public class FollowServiceIntegrationTest {
 
   @Autowired private FollowRelationRepository followRelationRepository;
 
+  @Autowired private FriendRelationRepository friendRelationRepository;
+
   @PersistenceContext private EntityManager entityManager;
 
   protected User currentUser;
@@ -66,6 +72,7 @@ public class FollowServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/current-avatr.jpg")
             .build();
     currentUser = userRepository.save(currentUser);
 
@@ -78,6 +85,7 @@ public class FollowServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/alpha-avatar.jpg")
             .build();
     alpha = userRepository.save(alpha);
 
@@ -90,6 +98,7 @@ public class FollowServiceIntegrationTest {
             .isVerified(true)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture("users/profile-pictures/beta-avatar.jpg")
             .build();
     beta = userRepository.save(beta);
 
@@ -102,6 +111,7 @@ public class FollowServiceIntegrationTest {
             .isVerified(false)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture(null) // No profile picture
             .build();
     gamma = userRepository.save(gamma);
 
@@ -114,6 +124,7 @@ public class FollowServiceIntegrationTest {
             .isVerified(false)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
+            .profilePicture(null) // No profile picture
             .build();
     delta = userRepository.save(delta);
   }
@@ -124,65 +135,20 @@ public class FollowServiceIntegrationTest {
     userRepository.deleteAll();
   }
 
-  // getFriends()
-
-  @Test
-  public void getFriends_returnsMutualFollows() {
-    createMutualFollows(currentUser, alpha);
-    createMutualFollows(currentUser, beta);
-    createFollow(currentUser, gamma);
-    createFollow(delta, currentUser);
-
-    List<FriendResponse> friends = followService.getFriends(currentUser, null);
-
-    assertEquals(2, friends.size());
-    assertTrue(friends.stream().anyMatch(f -> f.username().equals("alpha")));
-    assertTrue(friends.stream().anyMatch(f -> f.username().equals("beta")));
-  }
-
-  @Test
-  public void getFriends_doesNotReturnOneWayFollows() {
-    createFollow(currentUser, alpha);
-    createFollow(beta, currentUser);
-
-    List<FriendResponse> friends = followService.getFriends(currentUser, null);
-
-    assertTrue(friends.isEmpty());
-  }
-
-  @Test
-  public void getFriends_withSearchFilters_correctlyReturnsFriendsWithSearchSubstring() {
-    createMutualFollows(currentUser, alpha);
-    createMutualFollows(currentUser, beta);
-    createMutualFollows(currentUser, delta);
-
-    List<FriendResponse> friends = followService.getFriends(currentUser, "ta");
-
-    assertEquals(2, friends.size());
-    assertTrue(friends.stream().anyMatch(f -> f.username().equals("beta")));
-    assertTrue(friends.stream().anyMatch(f -> f.username().equals("delta")));
-  }
-
-  @Test
-  public void getFriends_withoutFriends_returnsEmptyResult() {
-    List<FriendResponse> friends = followService.getFriends(currentUser, null);
-    assertTrue(friends.isEmpty());
-  }
-
   // getFollowed()
 
   @Test
-  public void getFollowed_returnsAllFollowedUsersAndFriends() {
+  public void getFollowed_onlyReturnsAllFollowedUsers() {
     createFollow(currentUser, alpha);
-    createFollow(currentUser, beta);
-    createMutualFollows(currentUser, gamma);
+    createFollow(beta, currentUser);
+    createFriendship(currentUser, gamma);
 
     List<FollowedResponse> followed = followService.getFollowed(currentUser, null);
 
-    assertEquals(3, followed.size());
+    assertEquals(1, followed.size());
     assertTrue(followed.stream().anyMatch(f -> f.username().equals("alpha")));
-    assertTrue(followed.stream().anyMatch(f -> f.username().equals("beta")));
-    assertTrue(followed.stream().anyMatch(f -> f.username().equals("gamma")));
+    assertFalse(followed.stream().anyMatch(f -> f.username().equals("beta")));
+    assertFalse(followed.stream().anyMatch(f -> f.username().equals("gamma")));
     assertFalse(followed.stream().anyMatch(f -> f.username().equals("delta")));
   }
 
@@ -199,57 +165,11 @@ public class FollowServiceIntegrationTest {
 
   @Test
   public void getFollowed_withoutFollowes_returnsNone() {
-    List<FriendResponse> friends = followService.getFriends(currentUser, null);
-    assertTrue(friends.isEmpty());
-  }
-
-  // areFriends()
-
-  @Test
-  public void areFriends_returnsTrueForMutualFollow() {
-    createMutualFollows(currentUser, alpha);
-
-    assertTrue(followService.areFriends(currentUser, alpha));
-    assertTrue(followService.areFriends(alpha, currentUser));
-  }
-
-  @Test
-  public void areFriends_returnsFalseForOneWayFollow() {
-    createFollow(currentUser, alpha);
-    createFollow(beta, currentUser);
-
-    assertFalse(followService.areFriends(currentUser, alpha));
-    assertFalse(followService.areFriends(alpha, currentUser));
-    assertFalse(followService.areFriends(currentUser, beta));
-    assertFalse(followService.areFriends(beta, currentUser));
-  }
-
-  @Test
-  public void areFriends_returnsFalseForNoRelation() {
-    assertFalse(followService.areFriends(currentUser, alpha));
-    assertFalse(followService.areFriends(alpha, currentUser));
+    List<FollowedResponse> followed = followService.getFollowed(currentUser, null);
+    assertTrue(followed.isEmpty());
   }
 
   // unfollow()
-
-  @Test
-  public void unfollow_removesBothFollowRelations() {
-    createMutualFollows(currentUser, alpha);
-
-    followService.unfollow(currentUser, alpha.getUsername());
-
-    entityManager.flush();
-    entityManager.clear();
-
-    Optional<FollowRelation> currentToAlpha =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> alphaToCurrent =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-
-    assertFalse(currentToAlpha.isPresent());
-    assertFalse(alphaToCurrent.isPresent());
-  }
-
   @Test
   public void unfollow_oneWayFollow_removesFollowRelation() {
     createFollow(currentUser, alpha);
@@ -262,6 +182,35 @@ public class FollowServiceIntegrationTest {
     Optional<FollowRelation> currentToAlpha =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
     assertFalse(currentToAlpha.isPresent());
+  }
+
+  @Test
+  public void unfollow_whenFollowed_doesNotRemoveFollowingRelation() {
+    createFollow(currentUser, alpha);
+    createFollow(alpha, currentUser);
+
+    followService.unfollow(currentUser, alpha.getUsername());
+
+    entityManager.flush();
+    entityManager.clear();
+
+    Optional<FollowRelation> currentToAlpha =
+        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
+    Optional<FollowRelation> alphaToCurrent =
+        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
+
+    assertFalse(currentToAlpha.isPresent());
+    assertTrue(alphaToCurrent.isPresent());
+  }
+
+  @Test
+  public void unfollow_whenFriends_throwsNotFoundExceptionAndPreservesFriendship() {
+    createFriendship(currentUser, alpha);
+
+    assertThrowsExactly(
+        NotFoundException.class, () -> followService.unfollow(currentUser, alpha.getUsername()));
+
+    assertTrue(friendRelationRepository.existsByUsers(alpha, currentUser));
   }
 
   // follow()
@@ -302,13 +251,14 @@ public class FollowServiceIntegrationTest {
   @Test
   public void getFollowedIds_returnsCorrectSet() {
     createFollow(currentUser, alpha);
-    createFollow(currentUser, beta);
+    createFollow(beta, currentUser);
+    createFriendship(currentUser, gamma);
 
     Set<UUID> followedIds = followService.getFollowedIds(currentUser);
 
-    assertEquals(2, followedIds.size());
+    assertEquals(1, followedIds.size());
     assertTrue(followedIds.contains(alpha.getId()));
-    assertTrue(followedIds.contains(beta.getId()));
+    assertFalse(followedIds.contains(beta.getId()));
     assertFalse(followedIds.contains(gamma.getId()));
     assertFalse(followedIds.contains(delta.getId()));
   }
@@ -317,24 +267,6 @@ public class FollowServiceIntegrationTest {
   public void getFollowedIds_emptyResult() {
     Set<UUID> followedIds = followService.getFollowedIds(currentUser);
     assertTrue(followedIds.isEmpty());
-  }
-
-  // getFriendIds()
-
-  @Test
-  public void getFriendIds_returnsCorrectSet() {
-    createMutualFollows(currentUser, alpha);
-    createMutualFollows(currentUser, gamma);
-
-    createFollow(currentUser, beta);
-
-    Set<UUID> friendIds = followService.getFriendIds(currentUser);
-
-    // Should only include mutual friends, not one-way follows
-    assertEquals(2, friendIds.size());
-    assertTrue(friendIds.contains(alpha.getId()));
-    assertTrue(friendIds.contains(gamma.getId()));
-    assertFalse(friendIds.contains(beta.getId()));
   }
 
   // isFollowing()
@@ -358,6 +290,14 @@ public class FollowServiceIntegrationTest {
     assertTrue(followService.isFollowing(alpha, currentUser));
   }
 
+  @Test
+  public void isFollowing_whenFriends_returnsFalse() {
+    createFriendship(currentUser, alpha);
+
+    assertFalse(followService.isFollowing(currentUser, alpha));
+    assertFalse(followService.isFollowing(alpha, currentUser));
+  }
+
   // Helper methods
   private void createFollow(User follower, User followed) {
     FollowRelation relation =
@@ -370,8 +310,14 @@ public class FollowServiceIntegrationTest {
     followRelationRepository.save(relation);
   }
 
-  private void createMutualFollows(User user1, User user2) {
-    createFollow(user1, user2);
-    createFollow(user2, user1);
+  private void createFriendship(User user1, User user2) {
+    FriendRelation relation =
+        FriendRelation.builder()
+            .id(new FriendRelationId(user1.getId(), user2.getId()))
+            .friend1(user1)
+            .friend2(user2)
+            .since(LocalDateTime.now())
+            .build();
+    friendRelationRepository.save(relation);
   }
 }

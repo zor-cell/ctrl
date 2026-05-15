@@ -67,27 +67,47 @@
     } @else {
       <div class="results-list">
         @for (user of searchResults(); track user.id) {
-          <div class="user-item">
-            <p-avatar
-              [image]="user.profilePicture || undefined"
-              [label]="user.name?.charAt(0) || user.username.charAt(0)"
-              shape="circle"
-              styleClass="user-avatar" />
+          <button
+            type="button"
+            class="user-item"
+            (click)="openUserProfile(user)"
+            >
+            <span class="user-avatar" aria-hidden="true">
+              @if (hasProfilePicture(user)) {
+                <img
+                  [src]="profilePictureUrl(user)"
+                  alt=""
+                  (error)="markProfilePictureFailed(user)" />
+              } @else {
+                {{ getInitial(user) }}
+              }
+            </span>
 
             <div class="user-info">
               <span class="name">{{ user.name || user.username }}</span>
               <span class="username">&#64;{{ user.username }}</span>
-              @if (user.isVerified) {
-                <span class="verified-badge">Verified</span>
-              }
-              @if (user.relationshipStatus === 'FRIEND') {
-                <span class="relationship-badge friend">Friend</span>
-              } @else if (user.relationshipStatus === 'FOLLOWED') {
-                <span class="relationship-badge followed">Followed</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_SENT') {
-                <span class="relationship-badge pending-sent">Request Sent</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_INCOMING') {
-                <span class="relationship-badge pending-incoming">Request Incoming</span>
+              @if (user.relationshipStatuses.length > 0 || user.isVerified) {
+                <div class="relationship-badges">
+                  @if (user.isVerified) {
+                    <span class="relationship-badge verified">Verified</span>
+                  }
+                  @for (statusItem of user.relationshipStatuses; track statusItem.status) {
+                    @switch (statusItem.status) {
+                      @case ('FRIEND') {
+                        <span class="relationship-badge friend">Friend</span>
+                      }
+                      @case ('FOLLOWED') {
+                        <span class="relationship-badge followed">Followed</span>
+                      }
+                      @case ('PENDING_REQUEST_SENT') {
+                        <span class="relationship-badge pending-sent">Request Sent</span>
+                      }
+                      @case ('PENDING_REQUEST_INCOMING') {
+                        <span class="relationship-badge pending-incoming">Request Incoming</span>
+                      }
+                    }
+                  }
+                </div>
               }
             </div>
 
@@ -97,7 +117,7 @@
                   icon="pi pi-plus"
                   label="Follow"
                   severity="secondary"
-                  (onClick)="followUser(user)"
+                  (onClick)="followUser(user); $event.stopPropagation()"
                   size="small" />
               }
               @if (hasIncomingRequest(user)) {
@@ -105,7 +125,7 @@
                   icon="pi pi-check"
                   label="Accept Request"
                   severity="success"
-                  (onClick)="acceptIncomingRequest(user)"
+                  (onClick)="acceptIncomingRequest(user); $event.stopPropagation()"
                   size="small" />
               }
               @if (hasPendingSentRequest(user)) {
@@ -120,11 +140,11 @@
                 <p-button
                   icon="pi pi-user-plus"
                   label="Add Friend"
-                  (onClick)="sendFriendRequest(user)"
+                  (onClick)="sendFriendRequest(user); $event.stopPropagation()"
                   size="small" />
               }
             </div>
-          </div>
+          </button>
         }
       </div>
     }

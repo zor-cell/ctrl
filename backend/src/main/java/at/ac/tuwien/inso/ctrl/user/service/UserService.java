@@ -1,6 +1,10 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
+import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
@@ -8,9 +12,11 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
+import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -21,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,15 +42,34 @@ public class UserService {
   private final RelationshipMapper socialMapper;
   private final UserRepository userRepository;
   private final FriendRequestRepository friendRequestRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
   private final FileStorageService fileStorageService;
   private final FollowService followService;
+  private final EmailVerificationService emailVerificationService;
+  private final EmailVerificationRepository emailVerificationRepository;
+  private final PasswordResetRepository passwordResetRepository;
+
+  @Value("${application.auth.require-email-verification:true}")
+  private boolean requireEmailVerification;
 
   public UserDetailsResponse getUser(UUID userId) {
     User user = getUserInternal(userId);
     return userMapper.toUserDetailsResponse(user);
+  }
+
+  public PublicUserProfileResponse getPublicProfile(String username, User currentUser) {
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    boolean canSeePrivatePosts =
+        currentUser != null
+            && (user.getId().equals(currentUser.getId())
+                || friendRelationRepository.existsByUsers(user, currentUser));
+    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
   }
 
   @Transactional
@@ -53,6 +79,11 @@ public class UserService {
     String newEmail = request.email().trim();
     if (!user.getEmail().equalsIgnoreCase(newEmail) && userRepository.existsByEmail(newEmail)) {
       throw new ResourceAlreadyExistsException("User", "email", newEmail);
+    }
+
+    boolean emailChanged = false;
+    if (!user.getEmail().equalsIgnoreCase(newEmail)) {
+      emailChanged = true;
     }
 
     String newName = request.name().trim();
@@ -70,8 +101,21 @@ public class UserService {
     user.setEmail(newEmail);
     user.setBio(request.bio() == null ? null : request.bio().trim());
     user.setBirthdate(request.birthdate());
+    if (emailChanged) {
+      if (requireEmailVerification) {
+        user.setEmailVerified(false);
+      }
+    }
 
     User updatedUser = userRepository.save(user);
+    if (emailChanged) {
+      if (requireEmailVerification) {
+        SendEmailRequest emailRequest =
+            new SendEmailRequest(updatedUser.getUsername(), updatedUser.getEmail());
+        emailVerificationService.sendVerificationEmail(emailRequest);
+      }
+    }
+
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 
@@ -118,7 +162,10 @@ public class UserService {
   public UserDetailsResponse verifyUser(User currentUser, VerifyIdentityRequest request) {
     Jwt jwt;
     try {
-      jwt = idAustriaOidcService.getTokenFromCode(request.code());
+      jwt =
+          request.redirectUri() == null || request.redirectUri().isBlank()
+              ? idAustriaOidcService.getTokenFromCode(request.code())
+              : idAustriaOidcService.getTokenFromCode(request.code(), request.redirectUri());
     } catch (Exception e) {
       throw new CommunicationException("Failed to verify identity with external provider");
     }
@@ -160,7 +207,7 @@ public class UserService {
     String searchTerm = query != null ? query.trim().toLowerCase() : "";
 
     Set<UUID> followedIds = followService.getFollowedIds(currentUser);
-    Set<UUID> friendIds = followService.getFriendIds(currentUser);
+    Set<UUID> friendIds = friendRelationRepository.findFriendIds(currentUser);
     Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
     Set<UUID> pendingRequestIncomingIds =
         friendRequestRepository.findSenderIdsByReceiver(currentUser);
@@ -174,15 +221,15 @@ public class UserService {
         .filter(user -> !verifiedOnly || user.isVerified())
         .map(
             user -> {
-              UserSearchResponse.RelationshipStatus status =
-                  socialMapper.determineRelationshipStatus(
+              List<RelationshipStatusItem> statuses =
+                  socialMapper.determineRelationshipStatuses(
                       user,
                       followedIds,
                       friendIds,
                       pendingRequestSentIds,
                       pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, status);
-              return socialMapper.toUserSearchResponse(user, status, displayName);
+              String displayName = socialMapper.displayName(user, statuses);
+              return socialMapper.toUserSearchResponse(user, statuses, displayName);
             })
         .toList();
   }
@@ -196,6 +243,12 @@ public class UserService {
   @Scheduled(cron = "0 0 2 * * *")
   @Transactional
   public void conductUserCleanup() {
+    List<User> users = userRepository.findEmailUnverifiedUsersOlderThanOneDay();
+    for (User user : users) {
+      emailVerificationRepository.deleteByUser_Id(user.getId());
+      passwordResetRepository.deleteUnusedTokensByUserId(user.getId());
+    }
+
     userRepository.deleteUnverifiedUsersOlderThanOneDay();
   }
 }
