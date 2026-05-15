@@ -24,12 +24,13 @@ export class NavigationComponent {
     const loggedIn = this.authService.isAuthenticated();
 
     const items: MenuItem[] = [
-      { icon: 'pi pi-home', routerLink: '/feed' },
-      { icon: 'pi pi-search', routerLink: '/search' }
+
     ];
 
     if (loggedIn) {
       items.push(
+        { icon: 'pi pi-home', routerLink: '/feed' },
+        { icon: 'pi pi-search', routerLink: '/search' },
         { icon: 'pi pi-plus', routerLink: '/post' },
         { icon: 'pi pi-comments', routerLink: '/chat' }
       );

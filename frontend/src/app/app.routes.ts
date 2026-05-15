@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPasswordComponent },
   {
     path: 'feed',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./feed/components/feed/feed.component').then(m => m.FeedComponent),
   },
