@@ -13,7 +13,6 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
-import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;

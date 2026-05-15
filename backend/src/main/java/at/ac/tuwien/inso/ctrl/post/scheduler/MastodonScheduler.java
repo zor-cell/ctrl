@@ -37,10 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @ConditionalOnProperty(
-        value = "spring.task.scheduling.enabled",
-        havingValue = "true",
-        matchIfMissing = true
-)
+    value = "spring.task.scheduling.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class MastodonScheduler {
 
   private static final String SOURCE_MASTODON = "mastodon";
