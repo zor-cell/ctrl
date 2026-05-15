@@ -78,11 +78,15 @@ test:backend:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: on_failure
-  <<: *temp
 
 test:frontend:
   stage: test
   image: registry.reset.inso-w.at/pub/docker/node:22-alpine
+  needs:
+    - job: lint:backend
+      optional: false
+    - job: lint:frontend
+      optional: true
   cache:
     key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
     paths:
@@ -94,11 +98,15 @@ test:frontend:
     reports:
       junit: ./frontend/test-results/*.xml
     when: on_failure
-  <<: *temp
   
 test:e2e:
   stage: test
   image: registry.reset.inso-w.at/pub/docker/cypress:latest
+  needs:
+    - job: lint:backend
+      optional: false
+    - job: lint:frontend
+      optional: true
   cache:
       key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
       paths:
@@ -129,7 +137,6 @@ test:e2e:
       reports:
         junit: ./frontend/e2e-test-results/*.xml
       when: always
-  <<: *temp
 
 .build_rules: &build_rules
   rules:
