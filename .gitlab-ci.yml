@@ -144,6 +144,7 @@ build:image:
   script:
     - mvn jib:build -f ./backend/
         -Djib.to.image=${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+        -Djib.to.tags=latest
         -Djib.to.auth.username=${CI_REGISTRY_USER}
         -Djib.to.auth.password=${CI_REGISTRY_PASSWORD}
   <<: *build_rules

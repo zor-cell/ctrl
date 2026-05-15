@@ -32,6 +32,13 @@ management:
         include: health
     health:
       show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
 
 garage:
   url: http://filestorage-service:3900

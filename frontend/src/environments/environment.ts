@@ -1,10 +1,10 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://ctrl.nilpferdshow.at/api',
+  apiUrl: 'https://www.ctrl-ase.dev/api',
   idAustria: {
-    clientId: 'https://ctrl.nilpferdshow.at',
-    redirectUri: 'https://ctrl.nilpferdshow.at/verification-callback',
-    authUrl: 'http://verification-service/realms/id-austria-mock/protocol/openid-connect/auth',
+    clientId: 'https://www.ctrl-ase.dev',
+    redirectUri: 'https://www.ctrl-ase.dev/verification-callback',
+    authUrl: 'https://www.ctrl-ase.dev/id-austria-mock/protocol/openid-connect/auth',
     scope: 'openid profile'
   },
   auth: {
