@@ -10,7 +10,6 @@ export interface Post {
   createdAt: string;
   caption: string;
   isPublic: boolean;
-  whyExplanation: string;
   likes: number;
   upvotes: number;
   downvotes: number;
