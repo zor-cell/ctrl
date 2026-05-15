@@ -339,7 +339,7 @@
       <span>{{ percent >= 0 ? '+' : '' }}{{ percent.toFixed(1) }}%</span>
     </div>
     <div class="bi-bar-container">
-      @if(score == 0) {
+      @if(score === 0) {
         <div class="bi-bar-center"></div>
       }
       @if (score < 0) {

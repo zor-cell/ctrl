@@ -19,7 +19,7 @@ export class AlgorithmService {
 
   public updateConfig(updateConfigRequest: AlgorithmConfig) {
     return this.httpClient.put<AlgorithmConfig>(this.baseUri + '/config', updateConfigRequest).pipe(
-      tap(config => {
+      tap(() => {
         this.notificationService.showSuccess('Updated algorithm configuration');
       })
     );
