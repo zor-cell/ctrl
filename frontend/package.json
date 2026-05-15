@@ -38,6 +38,8 @@
     "eslint": "^10.0.3",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
-    "typescript-eslint": "8.56.1"
+    "typescript-eslint": "8.56.1",
+    "cypress": "^14.5.0",
+    "start-server-and-test": "^2.1.0"
   }
 }
