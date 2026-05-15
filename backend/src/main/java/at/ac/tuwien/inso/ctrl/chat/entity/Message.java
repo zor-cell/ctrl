@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,13 +30,13 @@ import lombok.Setter;
 public class Message {
   @Id
   @Column(name = "message_id", nullable = false, unique = true)
-  private String messageId;
+  private UUID messageId;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 4000)
   private String content;
 
   @Column(name = "date")

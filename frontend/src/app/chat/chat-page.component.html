@@ -1,0 +1,224 @@
+<main class="chat-page">
+  <aside class="chat-sidebar" aria-label="Chats">
+    <div class="sidebar-header">
+      <h1>Chats</h1>
+    </div>
+
+    <div class="search-wrapper">
+      <p-iconField iconPosition="left" class="chat-search">
+        <p-inputIcon styleClass="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          placeholder="Search friends or chats"
+          [ngModel]="searchQuery()"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          (ngModelChange)="onSearchChange($event)" />
+      </p-iconField>
+
+      @if (friendDropdownOpen()) {
+        <div class="friend-dropdown" (mousedown)="keepFriendDropdownOpen($event)">
+          <div class="section-title">Friends</div>
+
+          @if (filteredFriends().length === 0) {
+            <p class="sidebar-empty">No friends found</p>
+          } @else {
+            @for (friend of filteredFriends(); track friend.id) {
+              <button type="button" class="friend-row" (click)="startOrOpenChat(friend)">
+                <span class="avatar" aria-hidden="true">
+                  @if (avatarUrl(friend.id)) {
+                    <img [src]="avatarUrl(friend.id)" alt="" />
+                  } @else {
+                    {{ initialFor(friend) }}
+                  }
+                </span>
+
+                <span class="row-copy">
+                  <span class="row-title">{{ friend.name || friend.username }}</span>
+                  <span class="row-subtitle">&#64;{{ friend.username }}</span>
+                </span>
+
+                <span class="row-action">
+                  @if (directChatFor(friend)) {
+                    <i class="pi pi-comments"></i>
+                    Go to chat
+                  } @else {
+                    <i class="pi pi-plus"></i>
+                    New chat
+                  }
+                </span>
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <section class="sidebar-section group-section">
+      <button type="button" class="group-toggle" (click)="toggleGroupForm()">
+        <i class="pi pi-users"></i>
+        New group
+      </button>
+
+      @if (groupFormOpen()) {
+        <form class="group-form" (ngSubmit)="createGroup()">
+          <label>
+            <span>Group name</span>
+            <input
+              type="text"
+              pInputText
+              placeholder="Name"
+              [ngModel]="groupName()"
+              (ngModelChange)="groupName.set($event)"
+              name="groupName" />
+          </label>
+
+          <div class="group-friends">
+            <div class="section-title">Members</div>
+            @for (friend of friends(); track friend.id) {
+              <label class="group-friend-row">
+                <input
+                  type="checkbox"
+                  [checked]="isGroupFriendSelected(friend.username)"
+                  (change)="toggleGroupFriend(friend.username)" />
+                <span class="avatar" aria-hidden="true">
+                  @if (avatarUrl(friend.id)) {
+                    <img [src]="avatarUrl(friend.id)" alt="" />
+                  } @else {
+                    {{ initialFor(friend) }}
+                  }
+                </span>
+                <span class="row-copy">
+                  <span class="row-title">{{ friend.name || friend.username }}</span>
+                  <span class="row-subtitle">&#64;{{ friend.username }}</span>
+                </span>
+              </label>
+            }
+          </div>
+
+          <div class="group-actions">
+            <button type="button" class="text-button" (click)="toggleGroupForm()">Cancel</button>
+            <button type="submit" class="primary-button" [disabled]="!canCreateGroup()">Create</button>
+          </div>
+        </form>
+      }
+    </section>
+
+    <section class="sidebar-section chat-section">
+      <div class="section-title">Existing chats</div>
+
+      @if (loadingChats()) {
+        <p class="sidebar-empty">Loading chats</p>
+      } @else if (filteredChats().length === 0) {
+        <p class="sidebar-empty">No chats yet</p>
+      } @else {
+        <div class="chat-list">
+          @for (chat of filteredChats(); track chat.chatId) {
+            <button
+              type="button"
+              class="chat-row"
+              [class.active]="isSelected(chat)"
+              (click)="selectChat(chat)">
+              <span class="avatar" aria-hidden="true">
+                {{ chat.name.charAt(0).toUpperCase() }}
+              </span>
+
+              <span class="row-copy">
+                <span class="row-title">{{ chat.name }}</span>
+                <span class="row-subtitle">
+                  @if (chat.lastMessage) {
+                    {{ chat.lastMessage.content }}
+                  } @else {
+                    {{ participantText(chat) }}
+                  }
+                </span>
+              </span>
+
+              @if (chat.lastMessage) {
+                <time class="chat-time">{{ chat.lastMessage.date | date: 'shortTime' }}</time>
+              }
+            </button>
+          }
+        </div>
+      }
+    </section>
+  </aside>
+
+  <section class="chat-detail">
+    @if (selectedChat(); as chat) {
+      <header class="chat-header">
+        <span class="avatar avatar-large" aria-hidden="true">
+          {{ chat.name.charAt(0).toUpperCase() }}
+        </span>
+
+        <div class="chat-header-copy">
+          <h2>{{ chat.name }}</h2>
+          @if (participantText(chat)) {
+            <p>{{ participantText(chat) }}</p>
+          }
+        </div>
+
+        @if (chat.groupChat && chat.owner) {
+          <button type="button" class="delete-group-button" (click)="deleteSelectedGroup()">
+            Delete group
+          </button>
+        }
+      </header>
+
+      <div class="message-list">
+        @if (loadingMessages()) {
+          <p class="message-empty">Loading messages</p>
+        } @else if (messages().length === 0) {
+          <p class="message-empty">No messages yet</p>
+        } @else {
+          @for (message of messages(); track message.messageId) {
+            <article class="message-row" [class.own]="isOwnMessage(message)">
+              @if (!isOwnMessage(message)) {
+                <span class="avatar message-avatar" aria-hidden="true">
+                  @if (avatarUrl(message.sender.id)) {
+                    <img [src]="avatarUrl(message.sender.id)" alt="" />
+                  } @else {
+                    {{ initialFor(message.sender) }}
+                  }
+                </span>
+              }
+
+              <div class="message-bubble">
+                <div class="message-meta">
+                  @if (!isOwnMessage(message)) {
+                    <span>{{ message.sender.name || message.sender.username }}</span>
+                  }
+                  <time>{{ message.date | date: 'shortTime' }}</time>
+                </div>
+                <p>{{ message.content }}</p>
+              </div>
+            </article>
+          }
+        }
+      </div>
+
+      <form class="message-composer" (ngSubmit)="sendMessage()">
+        <textarea
+          pTextarea
+          rows="1"
+          placeholder="Write a message..."
+          [ngModel]="messageText()"
+          (ngModelChange)="messageText.set($event)"
+          name="message"></textarea>
+
+        <p-button
+          type="submit"
+          icon="pi pi-send"
+          [rounded]="true"
+          [disabled]="!messageText().trim() || sendingMessage()"
+          aria-label="Send message" />
+      </form>
+    } @else {
+      <div class="no-chat">
+        <i class="pi pi-comments"></i>
+        <h2>Select a chat</h2>
+      </div>
+    }
+  </section>
+</main>

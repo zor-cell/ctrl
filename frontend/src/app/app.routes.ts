@@ -68,8 +68,8 @@ export const routes: Routes = [
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./chat/chat-placeholder.component').then(
-        m => m.ChatPlaceholderComponent,
+      import('./chat/chat-page.component').then(
+        m => m.ChatPageComponent,
       ),
   },
   { path: 'email_verification/:username/:email', component: EmailVerificationComponent },

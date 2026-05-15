@@ -49,8 +49,13 @@ export class LoginComponent {
     this.authService
       .login(loginRequest)
       .pipe(switchMap(() => this.userService.loadUser()))
-      .subscribe(() => {
-        this.router.navigate(['/profile']);
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/profile']);
+        },
+        error: () => {
+          this.loginForm.controls.password.reset();
+        },
       });
   }
 }

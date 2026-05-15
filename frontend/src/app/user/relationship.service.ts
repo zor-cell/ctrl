@@ -1,10 +1,11 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { map, tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
+import { catchError, forkJoin, map, merge, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
 import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
 
 @Injectable({
   providedIn: 'root',
@@ -52,34 +53,37 @@ export class RelationshipService implements OnDestroy {
   private handleActionEvent(event: FriendRequestActionEvent): void {
     switch (event.type) {
       case 'accepted':
+        if (event.username) {
+          this.removeIncomingRequest(event.username);
+          this.markSearchResultAsFriend(event.username);
+        }
         forkJoin([
-          this.loadIncomingFriendRequests(),
-          this.loadPendingRequestCount(),
-          this.loadFriends()
+          this.safeRefresh(this.loadPendingRequestCount()),
+          this.safeRefresh(this.loadFriends())
         ]).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'declined':
-        forkJoin([
-          this.loadIncomingFriendRequests(),
-          this.loadPendingRequestCount()
-        ]).pipe(takeUntil(this._destroy$)).subscribe();
+        if (event.username) {
+          this.removeIncomingRequest(event.username);
+        }
+        this.safeRefresh(this.loadPendingRequestCount()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'cancelled':
-        this.loadSentFriendRequests().pipe(takeUntil(this._destroy$)).subscribe();
+        this.safeRefresh(this.loadSentFriendRequests()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'sent':
-        this.loadSentFriendRequests().pipe(takeUntil(this._destroy$)).subscribe();
+        this.safeRefresh(this.loadSentFriendRequests()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'followed':
-        this.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
+        this.safeRefresh(this.loadFollowed()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'unfriend':
-        this.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
+        this.safeRefresh(this.loadFriends()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
       case 'unfollowed':
         forkJoin([
-          this.loadFollowed(),
-          this.loadFriends()
+          this.safeRefresh(this.loadFollowed()),
+          this.safeRefresh(this.loadFriends())
         ]).pipe(takeUntil(this._destroy$)).subscribe();
         break;
     }
@@ -89,9 +93,9 @@ export class RelationshipService implements OnDestroy {
     this.eventBus.setLoading(true);
 
     return merge(
-      this.loadIncomingFriendRequests(),
-      this.loadSentFriendRequests(),
-      this.loadPendingRequestCount()
+      this.safeRefresh(this.loadIncomingFriendRequests()),
+      this.safeRefresh(this.loadSentFriendRequests()),
+      this.safeRefresh(this.loadPendingRequestCount())
     ).pipe(
       tap({
         complete: () => {
@@ -102,6 +106,36 @@ export class RelationshipService implements OnDestroy {
             pendingCount: this._pendingRequestCount(),
           });
         },
+      })
+    );
+  }
+
+  private removeIncomingRequest(username: string): void {
+    const incoming = this._incomingRequests()
+      .filter(request => request.username.toLowerCase() !== username.toLowerCase());
+    const pendingCount = Math.max(this._pendingRequestCount() - 1, 0);
+    this._incomingRequests.set(incoming);
+    this._pendingRequestCount.set(pendingCount);
+    this.eventBus.updateState({ incoming, pendingCount });
+  }
+
+  markSearchResultAsFriend(username: string): void {
+    this._searchResults.update(results =>
+      results.map(result => {
+        if (result.username.toLowerCase() !== username.toLowerCase()) {
+          return result;
+        }
+
+        return {
+          ...result,
+          relationshipStatuses: [
+            ...result.relationshipStatuses.filter(item =>
+              item.status !== 'PENDING_REQUEST_INCOMING'
+              && item.status !== 'PENDING_REQUEST_SENT'
+            ),
+            { status: 'FRIEND' as const },
+          ],
+        };
       })
     );
   }
@@ -145,7 +179,9 @@ export class RelationshipService implements OnDestroy {
   }
 
   loadSentFriendRequests() {
-    return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/sent`).pipe(
+    return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/sent`, {
+      context: SILENT_ERROR_CONTEXT,
+    }).pipe(
       tap(requests => {
         this._sentRequests.set(requests);
         this.cacheProfilePictures(requests);
@@ -155,7 +191,9 @@ export class RelationshipService implements OnDestroy {
   }
 
   loadIncomingFriendRequests() {
-    return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/incoming`).pipe(
+    return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/incoming`, {
+      context: SILENT_ERROR_CONTEXT,
+    }).pipe(
       tap(requests => {
         this._incomingRequests.set(requests);
         this.cacheProfilePictures(requests);
@@ -165,11 +203,14 @@ export class RelationshipService implements OnDestroy {
   }
 
   loadPendingRequestCount() {
-    return this.http.get<number>(`${this.baseUri}/friend-requests/count`).pipe(
+    return this.http.get<number>(`${this.baseUri}/friend-requests/count`, {
+      context: SILENT_ERROR_CONTEXT,
+    }).pipe(
       tap(count => {
         this._pendingRequestCount.set(count);
         this.eventBus.updateState({ pendingCount: count });
-      })
+      }),
+      catchError(() => of(this._pendingRequestCount()))
     );
   }
 
@@ -193,7 +234,6 @@ export class RelationshipService implements OnDestroy {
             username,
             timestamp: new Date(),
           });
-          this.eventBus.requestRefresh();
         }
       })
     );
@@ -210,7 +250,6 @@ export class RelationshipService implements OnDestroy {
             username,
             timestamp: new Date(),
           });
-          this.eventBus.requestRefresh();
         }
       })
     );
@@ -271,5 +310,9 @@ export class RelationshipService implements OnDestroy {
 
   private cacheProfilePictures(users: { profilePicture: string | null }[]): void {
     users.forEach(user => this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high'));
+  }
+
+  private safeRefresh<T>(refresh$: Observable<T>) {
+    return refresh$.pipe(catchError(() => of(null as T | null)));
   }
 }
