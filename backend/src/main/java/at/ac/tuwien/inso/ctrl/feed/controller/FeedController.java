@@ -6,7 +6,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +37,7 @@ public class FeedController {
       @RequestParam(defaultValue = "20") int postsPerPage,
       @RequestParam(defaultValue = "true") boolean publicFeed,
       @AuthenticationPrincipal UserDetails user) {
-    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, publicFeed, user.getUsername()));
+    return ResponseEntity.ok(
+        feedService.getFeed(page, postsPerPage, publicFeed, user.getUsername()));
   }
 }

@@ -12,7 +12,7 @@ spring:
     password: ${POSTGRES_PASSWORD:${DB_PASSWORD:your_password}}
     driver-class-name: org.postgresql.Driver
     hikari:
-      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector; # <--- Runs BEFORE Hibernate
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector;
 
   sql:
     init:

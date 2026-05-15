@@ -145,7 +145,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            || friendRelationRepository.existsByFollowerAndFollowed(profileOwner, viewer);
 
     List<Post> posts =
         canSeePrivatePosts

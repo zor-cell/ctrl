@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -60,16 +59,16 @@ public class FeedServiceUnitTest {
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, true))
-            .thenReturn(List.of(recommendedPost));
+        .thenReturn(List.of(recommendedPost));
     when(postVoteRepository.findByIdUserIdAndIdPostIdIn(userId, List.of("post-1")))
-            .thenReturn(List.of(postVote));
+        .thenReturn(List.of(postVote));
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-1")))
-            .thenReturn(List.of(sourceVote));
+        .thenReturn(List.of(sourceVote));
     when(feedMapper.toFeedPostResponse(
             eq(recommendedPost),
             eq(Map.of("post-1", "UPVOTE")),
             eq(Map.of("source-1", "DOWNVOTE"))))
-            .thenReturn(expectedResponse);
+        .thenReturn(expectedResponse);
 
     List<FeedPostResponse> result = feedService.getFeed(0, 10, true, username);
 
@@ -85,11 +84,9 @@ public class FeedServiceUnitTest {
     String username = "ghost";
     when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
-    assertThrows(
-            UsernameNotFoundException.class,
-            () -> feedService.getFeed(0, 10, true, username)
-    );
-    verifyNoInteractions(recommendationService, postVoteRepository, sourceVoteRepository, feedMapper);
+    assertThrows(UsernameNotFoundException.class, () -> feedService.getFeed(0, 10, true, username));
+    verifyNoInteractions(
+        recommendationService, postVoteRepository, sourceVoteRepository, feedMapper);
   }
 
   @Test
@@ -117,37 +114,35 @@ public class FeedServiceUnitTest {
     String userId = user.getId().toString();
 
     Post post1 = buildPost("post-1", null);
-    RecommendedPost recPost1 = new RecommendedPost(); recPost1.setPost(post1);
+    RecommendedPost recPost1 = new RecommendedPost();
+    recPost1.setPost(post1);
 
     Post post2 = buildPost("post-2", "source-2");
-    RecommendedPost recPost2 = new RecommendedPost(); recPost2.setPost(post2);
+    RecommendedPost recPost2 = new RecommendedPost();
+    recPost2.setPost(post2);
 
     PostVote mockedPostVote = buildPostVote("post-1", "DOWNVOTE");
     SourceVote mockedSourceVote = buildSourceVote("source-2", "UPVOTE");
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, true))
-            .thenReturn(List.of(recPost1, recPost2));
+        .thenReturn(List.of(recPost1, recPost2));
 
     when(postVoteRepository.findByIdUserIdAndIdPostIdIn(userId, List.of("post-1", "post-2")))
-            .thenReturn(List.of(mockedPostVote));
+        .thenReturn(List.of(mockedPostVote));
 
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-2")))
-            .thenReturn(List.of(mockedSourceVote));
+        .thenReturn(List.of(mockedSourceVote));
 
     feedService.getFeed(0, 10, true, username);
 
-    verify(feedMapper).toFeedPostResponse(
-            eq(recPost1),
-            eq(Map.of("post-1", "DOWNVOTE")),
-            eq(Map.of("source-2", "UPVOTE"))
-    );
+    verify(feedMapper)
+        .toFeedPostResponse(
+            eq(recPost1), eq(Map.of("post-1", "DOWNVOTE")), eq(Map.of("source-2", "UPVOTE")));
 
-    verify(feedMapper).toFeedPostResponse(
-            eq(recPost2),
-            eq(Map.of("post-1", "DOWNVOTE")),
-            eq(Map.of("source-2", "UPVOTE"))
-    );
+    verify(feedMapper)
+        .toFeedPostResponse(
+            eq(recPost2), eq(Map.of("post-1", "DOWNVOTE")), eq(Map.of("source-2", "UPVOTE")));
   }
 
   @Test
@@ -157,7 +152,7 @@ public class FeedServiceUnitTest {
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, false)) // publicFeed = false
-            .thenReturn(List.of());
+        .thenReturn(List.of());
 
     feedService.getFeed(0, 10, false, username);
 
