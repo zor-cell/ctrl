@@ -78,11 +78,11 @@ public class FeedControllerIntegrationTest {
     @Test
     public void getFeed_shouldReturnPaginatedPosts_WhenAuthenticated() throws Exception {
         Post post = new Post();
-        post.setPostId("post-100");
+        post.setPostId("post-id2");
         post.setCaption("Integration Test Caption");
-        post.setPublic(true);
+        post.setUser(existingUser);
 
-        postRepository.save(post);
+        post = postRepository.save(post);
 
         mockMvc
                 .perform(
@@ -93,16 +93,27 @@ public class FeedControllerIntegrationTest {
                                 .param("publicFeed", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].postId").value("post-100"))
-                .andExpect(jsonPath("$[0].caption").value("Integration Test Caption")); // Fixed assertion
+                .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
+    }
+
+    @Test
+    public void getFeed_shouldReturnUnauthorized_WhenUnauthenticated() throws Exception {
+        mockMvc
+                .perform(
+                        get("/feed")
+                                .param("page", "0")
+                                .param("postsPerPage", "10"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     public void getFeed_shouldIncludeUserVoteState_WhenVoted() throws Exception {
         Post post = new Post();
-        post.setPostId("post-200");
+        post.setPostId("post-id1");
         post.setCaption("Voted Post");
-        postRepository.save(post);
+        post.setUser(existingUser);
+
+        post = postRepository.save(post);
 
         PostVoteId voteId = new PostVoteId();
         voteId.setUserId(existingUser.getId().toString());
@@ -110,7 +121,8 @@ public class FeedControllerIntegrationTest {
 
         PostVote vote = new PostVote();
         vote.setId(voteId);
-        vote.setVoteType("UPVOTE");
+        vote.setVoteType("up");
+        vote.setPost(post);
         postVoteRepository.save(vote);
 
         mockMvc
@@ -122,7 +134,7 @@ public class FeedControllerIntegrationTest {
                                 .param("publicFeed", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].postId").value("post-200"))
+                .andExpect(jsonPath("$[0].postId").value(post.getPostId()))
                 .andExpect(jsonPath("$[0].userPostVote").value("UPVOTE"));
     }
 

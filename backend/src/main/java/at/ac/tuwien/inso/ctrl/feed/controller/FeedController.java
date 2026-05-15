@@ -37,7 +37,7 @@ public class FeedController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int postsPerPage,
       @RequestParam(defaultValue = "true") boolean publicFeed,
-      @AuthenticationPrincipal User user) {
+      @AuthenticationPrincipal UserDetails user) {
     return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, publicFeed, user.getUsername()));
   }
 }
