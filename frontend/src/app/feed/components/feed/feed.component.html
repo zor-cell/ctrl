@@ -194,7 +194,11 @@
 
       <!-- PRIVATE: Likes only -->
       @if (!post.isPublic) {
-        <button class="action-btn">
+        <button class="action-btn heart"
+                [class.active]="post.userVote === 'up'"
+                (click)="votePost(post, 'up')"
+                [attr.aria-label]="'Upvote – ' + post.upvotes"
+                [attr.aria-pressed]="post.userVote === 'up'">
           <i class="pi pi-heart"></i>
         </button>
       }

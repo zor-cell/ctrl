@@ -223,6 +223,9 @@ $radius-sm:    10px;
 
   i { font-size: 0.9rem; }
 
+  &.heart:hover {border-color: $downvote; color: $downvote}
+  &.heart.active {color: $downvote; border-color: $downvote }
+
   &.upvote:hover  { color: $upvote;   border-color: $upvote; }
   &.downvote:hover { color: $downvote; border-color: $downvote; }
 
