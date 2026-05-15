@@ -12,16 +12,19 @@ public class IdAustriaConfig {
   @Value("${application.security.id-austria.issuer-uri}")
   private String issuerUri;
 
+  @Value("${application.security.id-austria.jwk-uri}")
+  private String jwkUri;
+
   @Bean
   public JwtDecoder idAustriaJwtDecoder() {
     // lazy discovery of oidc issuer uri
-    String jwkSetUri = issuerUri + "/protocol/openid-connect/certs";
+    String jwkSetUri = jwkUri + "/protocol/openid-connect/certs";
     NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 
-    // this is a workaround to ensure the correct issuer is used, otherwise when running in
+    // this is a workaround to ensure the correct issuer is used, otherwise when
+    // running in
     // production for docker it doesnt work
-    OAuth2TokenValidator<Jwt> issuerValidator =
-        new JwtIssuerValidator("http://localhost:8081/realms/id-austria-mock");
+    OAuth2TokenValidator<Jwt> issuerValidator = new JwtIssuerValidator(issuerUri);
     OAuth2TokenValidator<Jwt> withTimestamp = new JwtTimestampValidator();
 
     jwtDecoder.setJwtValidator(

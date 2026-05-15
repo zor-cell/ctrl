@@ -68,7 +68,7 @@ public class WebSecurityConfig {
             "http://localhost:4200",
             "http://localhost",
             "http://127.0.0.1",
-            "https://ctrl.nilpferdshow.at"));
+            "https://www.ctrl-ase.dev"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 

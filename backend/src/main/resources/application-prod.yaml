@@ -16,11 +16,12 @@ server.forward-headers-strategy: native
 application:
   security:
     id-austria:
-      issuer-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock"
-      client-id: "https://ctrl.nilpferdshow.at"
+      issuer-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock"
+      jwk-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock"
+      client-id: "https://www.ctrl-ase.dev"
       client-secret: ${ID_AUSTRIA_SECRET}
-      token-uri: "https://ctrl.nilpferdshow.at/realms/id-austria-mock/protocol/openid-connect/token"
-      redirect-uri: "https://ctrl.nilpferdshow.at/verification-callback"
+      token-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "https://www.ctrl-ase.dev/verification-callback"
   auth:
     require-email-verification: true
 
@@ -34,7 +35,7 @@ management:
 
 garage:
   url: http://filestorage-service:3900
-  public-url: https://ctrl-media.web.garage.nilpferdshow.at
+  public-url: https://ctrl-media.web.garage.ctrl-ase.dev
   bucket-name: ctrl-media
 
 infinity:
