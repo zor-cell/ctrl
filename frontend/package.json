@@ -6,7 +6,12 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "e2e": "ng e2e",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:ci": "start-server-and-test start http://localhost:4200 cypress:run"
+
   },
   "private": true,
   "packageManager": "npm@11.4.1",
