@@ -3,18 +3,20 @@ spring:
     name: ctrl
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:test}
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:test}
     username: ${POSTGRES_USER:your_user}
     password: ${POSTGRES_PASSWORD:your_password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector; # <--- Runs BEFORE Hibernate
 
   sql:
     init:
       mode: always
-      schema-locations: classpath:init-pgvector.sql
+      separator: ^
 
   jpa:
-    defer-datasource-initialization: false
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: create-drop
     properties:

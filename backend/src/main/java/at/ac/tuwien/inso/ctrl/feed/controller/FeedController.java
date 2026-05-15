@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,8 +29,7 @@ public class FeedController {
    *
    * @param page zero-based page index (default: 0)
    * @param postsPerPage number of posts per page (default: 20)
-   * @param userDetails the currently authenticated user, or {@code null} if the request is
-   *     unauthenticated
+   * @param user the currently authenticated user
    * @return a list of {@link FeedPostResponse} objects with HTTP 200 OK
    */
   @GetMapping
@@ -37,8 +37,7 @@ public class FeedController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int postsPerPage,
       @RequestParam(defaultValue = "true") boolean publicFeed,
-      @AuthenticationPrincipal UserDetails userDetails) {
-    String username = userDetails != null ? userDetails.getUsername() : null;
-    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, publicFeed, username));
+      @AuthenticationPrincipal User user) {
+    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, publicFeed, user.getUsername()));
   }
 }
