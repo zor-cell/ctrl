@@ -2,7 +2,9 @@ package at.ac.tuwien.inso.ctrl.post.entity;
 
 import at.ac.tuwien.inso.ctrl.common.domain.VoteEntry;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Builder
 @Getter
@@ -23,4 +25,8 @@ public class PostVote implements VoteEntry {
   /** {@code "up"} or {@code "down"} */
   @Column(name = "vote_type", nullable = false, length = 4)
   private String voteType;
+
+  @CreationTimestamp
+  @Column(name = "created_at")
+  private Instant createdAt;
 }

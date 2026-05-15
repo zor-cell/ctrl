@@ -3,7 +3,7 @@
 
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import {firstValueFrom, map} from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 import { MediaCacheKind, MediaCacheService } from '../../core/services/media-cache.service';
@@ -19,18 +19,18 @@ export class FeedService {
    *
    * GET /feed?page={page}&postsPerPage={postsPerPage}
    *
+   * @param isPublic - Fetches the public feed if true, otherwise the private feed
    * @param page - Zero-based page index (default: 0)
    * @param postsPerPage - Number of posts per page (default: 20)
    * @returns A promise resolving to an array of mapped {@link Post} objects
    */
 
-  async getFeed(page = 0, postsPerPage = 20): Promise<Post[]> {
-    const response = await firstValueFrom(
-      this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}`)
-    );
-    const posts = response.map(item => this.mapToPost(item));
-    await this.resolveFeedMedia(posts);
-    return posts;
+  getFeed(isPublic: boolean, page = 0, postsPerPage = 20) {
+    return this.httpClient
+      .get<any[]>(`${this.baseUri}?publicFeed=${isPublic}&page=${page}&postsPerPage=${postsPerPage}`)
+      .pipe(
+        map((response: any[]) => response.map(item => this.mapToPost(item)))
+      );
   }
 
   /**
@@ -50,12 +50,11 @@ export class FeedService {
       createdAt: item.createdAt,
       caption: item.caption ?? '',
       isPublic: item.isPublic,
-      whyExplanation: '',
       likes: 0,
       upvotes: item.upvotes ?? 0,
       downvotes: item.downvotes ?? 0,
       userVote: item.userVote ?? null,
-      labelIds: item.labelIds?.map((l: any) => [l.name, l.description]) ?? [],
+      labelIds: item.labelIds?.map((l: any) => [l.name, l.explanation]) ?? [],
       topicIds: item.topicIds ?? [],
       videoImageRef: item.mediaRef ? [item.mediaRef] : [],
       sourceIds: item.sourceIds ?? [],
@@ -71,6 +70,7 @@ export class FeedService {
           edited: c.edited ?? false,
           replies: c.replies ?? [],
         })) ?? [],
+      explanation: item.explanation
     };
   }
 

@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.entity;
 
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -11,7 +12,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.*;
+import org.hibernate.annotations.Array;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,6 +60,11 @@ public class User implements UserDetails {
   @Column(name = "role")
   @Builder.Default
   private Role role = Role.USER;
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "interaction_preference_embedding")
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
+  private float[] interactionPreferenceEmbedding;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ChatMember> chatMembers;
