@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnInit, signal} from '@angular/core';
 import {PasswordResetRequest} from '../../dto/PasswordResetRequest';
 import {ActivatedRoute, Router} from '@angular/router';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -28,6 +28,7 @@ export class PasswordResetComponent implements OnInit {
     password: '',
   };
 
+  protected readonly submitting = signal(false);
   resetEmailForm = this.fb.group(
     {
       password: ['', [Validators.required]],
@@ -62,15 +63,18 @@ export class PasswordResetComponent implements OnInit {
   }
 
   submit() {
+    this.submitting.set(true);
     if (this.passwordResetRequest.token === '') {
       this.notificationService.showError(
         'Invalid password reset token. Please use the link from your email.',
       );
+      this.submitting.set(false)
       return;
     }
     if (this.resetEmailForm.invalid) {
       this.resetEmailForm.markAllAsDirty();
       this.resetEmailForm.markAllAsTouched();
+      this.submitting.set(false)
       return;
     }
 
@@ -81,6 +85,7 @@ export class PasswordResetComponent implements OnInit {
         this.router.navigate(['/login']);
         return;
       }
+      this.submitting.set(false);
     });
   }
 }

@@ -192,7 +192,12 @@
 
 .visibility-toggle {
   gap: 0.75rem;
+  color: #334155;
   font-weight: 600;
+}
+
+.visibility-toggle span {
+  min-width: 4.25rem;
 }
 
 .sources-section__header,

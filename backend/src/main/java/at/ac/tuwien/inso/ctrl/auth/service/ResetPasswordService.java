@@ -55,8 +55,7 @@ public class ResetPasswordService {
       Optional<User> user = userRepository.findByEmail(passwordResetEmailRequest.email());
       if (user.isEmpty()) {
         LOGGER.warn("User with email {} not found", passwordResetEmailRequest.email());
-        throw new ResourceNotFoundException(
-            "User with email " + passwordResetEmailRequest.email() + " not found");
+        return;
       }
 
       passwordResetRepository.deleteUnusedTokensByUserId(user.get().getId());
@@ -102,14 +101,14 @@ public class ResetPasswordService {
     PasswordReset passwordReset =
         passwordResetRepository
             .findByToken(passwordResetRequest.token())
-            .orElseThrow(() -> new InvalidTokenException("Token not found"));
+            .orElseThrow(() -> new InvalidTokenException("Invalid token or User"));
 
     if (passwordReset.isUsed()) {
-      throw new InvalidTokenException("Token has already been used");
+      throw new InvalidTokenException("Invalid token or User");
     }
 
     if (passwordReset.getExpiresAt().isBefore(LocalDateTime.now())) {
-      throw new InvalidTokenException("Token has expired");
+      throw new InvalidTokenException("Invalid token or User");
     }
 
     User user = passwordReset.getUser();

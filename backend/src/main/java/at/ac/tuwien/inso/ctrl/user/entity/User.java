@@ -56,7 +56,7 @@ public class User implements UserDetails {
   private boolean isSuspended = false;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
+  @Column(name = "role")
   @Builder.Default
   private Role role = Role.USER;
 
@@ -79,7 +79,19 @@ public class User implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + resolveRole().name()));
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void applyDefaults() {
+    if (role == null) {
+      role = Role.USER;
+    }
+  }
+
+  private Role resolveRole() {
+    return role == null ? Role.USER : role;
   }
 
   @Override

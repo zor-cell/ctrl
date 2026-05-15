@@ -44,6 +44,14 @@ public class EmailVerificationService {
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
 
+  /**
+   * Sends a verification email to the user with a verification code.
+   *
+   * @param sendEmailRequest the request containing username and email address
+   * @throws UsernameNotFoundException if the username or email is not found
+   * @throws UserAlreadyVerifiedException if the user is already verified
+   * @throws CommunicationException if the email fails to send
+   */
   @Async
   public void sendVerificationEmail(SendEmailRequest sendEmailRequest) {
     LOGGER.info("Sending verification email to: {}", sendEmailRequest.email());
@@ -107,12 +115,18 @@ public class EmailVerificationService {
     User user =
         userRepository
             .findByUsername(emailVerificationRequest.username())
-            .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
 
     EmailVerification verification =
         emailVerificationRepository
             .findEmailVerificationByUser_Id(user.getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Verification not found for user"));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
 
     if (verification.getCode().equals(emailVerificationRequest.code())
         && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
@@ -121,7 +135,8 @@ public class EmailVerificationService {
       userRepository.save(user);
       return new EmailVerificationResponse(true);
     } else {
-      throw new InvalidEmailVerificationCodeException("Invalid or expired verification code");
+      throw new InvalidEmailVerificationCodeException(
+          "Verification failed. User does not exist or Token is invalid");
     }
   }
 
