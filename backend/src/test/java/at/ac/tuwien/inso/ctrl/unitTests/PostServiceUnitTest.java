@@ -27,6 +27,7 @@ import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,8 @@ public class PostServiceUnitTest {
   @Mock private PostVoteRepository postVoteRepository;
 
   @Mock private VoteManager voteManager;
+
+  @Mock private FollowRelationRepository followRelationRepository;
 
   @Mock private FriendRelationRepository friendRelationRepository;
 

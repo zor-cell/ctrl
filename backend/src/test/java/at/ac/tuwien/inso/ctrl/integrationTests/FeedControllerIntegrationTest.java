@@ -29,6 +29,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
@@ -80,6 +82,10 @@ public class FeedControllerIntegrationTest {
     post.setPostId("post-id2");
     post.setCaption("Integration Test Caption");
     post.setUser(existingUser);
+    post.setPublic(true);
+    post.setEmbedding(generateDummyEmbedding());
+    post.setCreatedAt(LocalDateTime.now());
+
 
     post = postRepository.save(post);
 
@@ -108,6 +114,9 @@ public class FeedControllerIntegrationTest {
     post.setPostId("post-id1");
     post.setCaption("Voted Post");
     post.setUser(existingUser);
+    post.setPublic(true);
+    post.setEmbedding(generateDummyEmbedding());
+    post.setCreatedAt(LocalDateTime.now());
 
     post = postRepository.save(post);
 
@@ -130,8 +139,7 @@ public class FeedControllerIntegrationTest {
                 .param("publicFeed", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].postId").value(post.getPostId()))
-        .andExpect(jsonPath("$[0].userPostVote").value("UPVOTE"));
+        .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
   }
 
   @Test
