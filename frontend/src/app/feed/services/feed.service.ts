@@ -3,7 +3,7 @@
 
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import {firstValueFrom, map} from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 
@@ -17,16 +17,18 @@ export class FeedService {
    *
    * GET /feed?page={page}&postsPerPage={postsPerPage}
    *
+   * @param isPublic - Fetches the public feed if true, otherwise the private feed
    * @param page - Zero-based page index (default: 0)
    * @param postsPerPage - Number of posts per page (default: 20)
    * @returns A promise resolving to an array of mapped {@link Post} objects
    */
 
-  async getFeed(page = 0, postsPerPage = 20, isPublic = true): Promise<Post[]> {
-    const response = await firstValueFrom(
-      this.httpClient.get<any[]>(`${this.baseUri}?page=${page}&postsPerPage=${postsPerPage}&publicFeed=${isPublic}`)
-    );
-    return response.map(item => this.mapToPost(item));
+  getFeed(isPublic: boolean, page = 0, postsPerPage = 20) {
+    return this.httpClient
+      .get<any[]>(`${this.baseUri}?publicFeed=${isPublic}&page=${page}&postsPerPage=${postsPerPage}`)
+      .pipe(
+        map((response: any[]) => response.map(item => this.mapToPost(item)))
+      );
   }
 
   /**

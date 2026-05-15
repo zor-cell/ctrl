@@ -38,10 +38,7 @@ import {RouterLink} from "@angular/router";
     CommentsComponent,
     AlgorithmConfigComponent,
     PostViewDirective,
-    ProgressBar,
-    Badge,
     ReactiveFormsModule,
-    Slider,
     RouterLink,
   ],
   templateUrl: './feed.component.html',
@@ -68,8 +65,8 @@ export class FeedComponent implements OnInit {
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
 
-  protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
-  protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
+  protected publicPosts = signal<Post[]>([]);
+  protected privatePosts = signal<Post[]>([]);
 
   ngOnInit(): void {
     this.userService.loadUser();
@@ -188,9 +185,13 @@ export class FeedComponent implements OnInit {
   }
 
   /** Helpers **/
-  protected async loadFeed(): Promise<void> {
-    const posts = await this.feedService.getFeed();
-    this.allPosts.set(posts);
+  protected loadFeed() {
+    this.feedService.getFeed(true).subscribe(posts => {
+      this.publicPosts.set(posts);
+    })
+    this.feedService.getFeed(false).subscribe(posts => {
+      this.privatePosts.set(posts);
+    });
   }
 
   private calcOptimisticVote(
@@ -216,13 +217,27 @@ export class FeedComponent implements OnInit {
   }
 
   private patchPost(postId: string, patch: Partial<Post>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
     );
   }
 
   private patchSource(postId: string, patch: Partial<PostSource>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => {
+        if (p.postId !== postId || !p.sourceIds?.length) return p;
+        const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
+          i === 0 ? { ...s, ...patch } : s
+        );
+        return { ...p, sourceIds: updatedSources };
+      })
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => {
         if (p.postId !== postId || !p.sourceIds?.length) return p;
         const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
