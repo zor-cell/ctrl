@@ -21,7 +21,7 @@ export class PostViewDirective implements OnInit, OnDestroy {
   private enteredAt: number | null = null;
 
   private readonly VISIBILITY_THRESHOLD = 0.5;
-  private readonly MIN_VIEW_MS = 2000;
+  private readonly MIN_VIEW_MS = 1000;
 
   /** Starts the IntersectionObserver on the host element. */
   ngOnInit(): void {
