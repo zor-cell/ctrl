@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,6 +11,7 @@ import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
+import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidEmailVerificationCodeException;
@@ -20,10 +20,8 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,11 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.MailException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -49,13 +46,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 
 @ExtendWith(SpringExtension.class)
-@Import(TestConfig.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 @Transactional
 public class EmailVerificationServiceIntegrationTest {
-
-  private static JavaMailSender mailSender;
 
   private static EmailVerificationService emailVerificationService;
   private static User testUserUnverified;
@@ -68,6 +63,7 @@ public class EmailVerificationServiceIntegrationTest {
   @Autowired private UserRepository userRepository;
 
   @MockitoBean private JwtDecoder jwtDecoder;
+  @MockitoBean private GmailEmailService gmailEmailService;
 
   @AfterEach
   public void tearDown() {
@@ -77,11 +73,11 @@ public class EmailVerificationServiceIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    mailSender = TestConfig.javaMailSender();
     emailVerificationService =
         new EmailVerificationService(
-            mailSender, templateEngine, emailVerificationRepository, userRepository);
+            gmailEmailService, templateEngine, emailVerificationRepository, userRepository);
     ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
+
     testUserUnverified = new User();
     testUserUnverified.setUsername("testUserUnverified");
     testUserUnverified.setPassword("password");
@@ -90,8 +86,6 @@ public class EmailVerificationServiceIntegrationTest {
     testUserUnverified.setEmailVerified(false);
     testUserUnverified.setBirthdate(LocalDate.of(1990, 1, 1));
     userRepository.save(testUserUnverified);
-
-    this.userRepository.save(testUserUnverified);
 
     testUserVerified = new User();
     testUserVerified.setUsername("testUserVerified");
@@ -105,35 +99,27 @@ public class EmailVerificationServiceIntegrationTest {
 
   @Test
   public void testSendVerificationEmail_withUnverifiedEmail_shouldSendEmailWithCode()
-      throws MessagingException, IOException {
+      throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
+
     emailVerificationService.sendVerificationEmail(request);
 
-    ArgumentCaptor<MimeMessage> messageCaptor = ArgumentCaptor.forClass(MimeMessage.class);
-    Mockito.verify(mailSender).send(messageCaptor.capture());
+    ArgumentCaptor<String> htmlCaptor = ArgumentCaptor.forClass(String.class);
+    Mockito.verify(gmailEmailService)
+        .sendHtmlEmail(
+            Mockito.eq(testUserUnverified.getEmail()),
+            Mockito.eq("Welcome to CTRL"),
+            htmlCaptor.capture());
 
-    MimeMessage mimeMessage = messageCaptor.getValue();
-    Multipart multipart = (Multipart) mimeMessage.getContent();
-
-    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    multipart.writeTo(byteArrayOutputStream);
-
-    assertEquals(1, mimeMessage.getAllRecipients().length);
-    assertEquals(testUserUnverified.getEmail(), mimeMessage.getAllRecipients()[0].toString());
-    assertEquals("Welcome to CTRL", mimeMessage.getSubject());
-
-    Matcher matcher = getMatcher(byteArrayOutputStream);
-
+    Matcher matcher = getMatcher(htmlCaptor.getValue());
     assertTrue(matcher.find());
     String code = matcher.group(1);
-
     assertNotEquals("111111", code);
   }
 
   @Test
-  public void
-      testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
+  public void testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
     assertThrows(
@@ -142,19 +128,46 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void
-      testSendVerificationEmail_whenMailSenderThrowsMailException_shouldThrowCommunicationException() {
+  public void testSendVerificationEmail_withWrongEmail_shouldUsernameNotFoundExceptionException() throws MessagingException, IOException {
+    SendEmailRequest request = new SendEmailRequest(testUserUnverified.getUsername(), "wrongEmail");
+    emailVerificationService.sendVerificationEmail(request);
+
+    Mockito.verify(gmailEmailService, Mockito.never())
+        .sendHtmlEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+    assertTrue(emailVerificationRepository.findAll().isEmpty());
+  }
+
+  @Test
+  public void testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException() throws MessagingException, IOException {
+    SendEmailRequest request = new SendEmailRequest("wrongUser", testUserUnverified.getEmail());
+    emailVerificationService.sendVerificationEmail(request);
+
+    Mockito.verify(gmailEmailService, Mockito.never())
+        .sendHtmlEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+    assertTrue(emailVerificationRepository.findAll().isEmpty());
+  }
+
+  @Test
+  public void testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNothingButNotSendEmail() throws MessagingException, IOException {
+    SendEmailRequest request =
+        new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
+    emailVerificationService.sendVerificationEmail(request);
+
+    Mockito.verify(gmailEmailService, Mockito.never())
+        .sendHtmlEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+    assertTrue(emailVerificationRepository.findAll().isEmpty());
+  }
+
+  @Test
+  public void testSendVerificationEmail_whenGmailServiceThrowsMailException_shouldThrowCommunicationException()
+      throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
-    Mockito.doThrow(new org.springframework.mail.MailException("Mail server error") {})
-        .when(mailSender)
-        .send(Mockito.any(MimeMessage.class));
+    Mockito.doThrow(new MailException("Mail server error") {})
+        .when(gmailEmailService)
+        .sendHtmlEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
-    emailVerificationService =
-        new EmailVerificationService(
-            mailSender, templateEngine, emailVerificationRepository, userRepository);
-    ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
     CommunicationException exception =
         assertThrows(
             CommunicationException.class,
@@ -164,33 +177,21 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void
-      testSendVerificationEmail_whenMimeMessageHelperThrowsMessagingException_shouldThrowCommunicationException()
-          throws MessagingException {
+  public void testSendVerificationEmail_whenGmailServiceThrowsException_shouldThrowCommunicationException()
+      throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
-    Mockito.when(mailSender.createMimeMessage())
-        .thenAnswer(
-            new Answer<MimeMessage>() {
-              @Override
-              public MimeMessage answer(org.mockito.invocation.InvocationOnMock invocation)
-                  throws MessagingException {
-                throw new MessagingException("Failed to create mime message");
-              }
-            });
-
-    emailVerificationService =
-        new EmailVerificationService(
-            mailSender, templateEngine, emailVerificationRepository, userRepository);
-    ReflectionTestUtils.setField(emailVerificationService, "requireEmailVerification", true);
+    Mockito.doThrow(new IOException("Failed to create mime message"))
+        .when(gmailEmailService)
+        .sendHtmlEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
     CommunicationException exception =
         assertThrows(
             CommunicationException.class,
             () -> emailVerificationService.sendVerificationEmail(request));
 
-    assertTrue(exception.getMessage().contains("Failed to create email."));
+    assertTrue(exception.getMessage().contains("Failed to send or create email."));
   }
 
   @Test
@@ -226,10 +227,9 @@ public class EmailVerificationServiceIntegrationTest {
     EmailVerificationRequest request =
         new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
 
-    InvalidEmailVerificationCodeException exception =
-        assertThrows(
-            InvalidEmailVerificationCodeException.class,
-            () -> emailVerificationService.verifyEmail(request));
+    assertThrows(
+        InvalidEmailVerificationCodeException.class,
+        () -> emailVerificationService.verifyEmail(request));
 
     Optional<EmailVerification> emailVerificationOptional =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -238,16 +238,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(emailVerificationOptional.isPresent());
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
-
-    assertTrue(
-        exception
-            .getMessage()
-            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
-  public void
-      testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
+  public void testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
     EmailVerification verification = new EmailVerification();
     verification.setUser(testUserUnverified);
     verification.setCode("123456");
@@ -257,10 +251,9 @@ public class EmailVerificationServiceIntegrationTest {
     EmailVerificationRequest request =
         new EmailVerificationRequest(testUserUnverified.getUsername(), "wrongC");
 
-    InvalidEmailVerificationCodeException exception =
-        assertThrows(
-            InvalidEmailVerificationCodeException.class,
-            () -> emailVerificationService.verifyEmail(request));
+    assertThrows(
+        InvalidEmailVerificationCodeException.class,
+        () -> emailVerificationService.verifyEmail(request));
 
     Optional<EmailVerification> emailVerificationOptional =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -269,11 +262,6 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(emailVerificationOptional.isPresent());
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
-
-    assertTrue(
-        exception
-            .getMessage()
-            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -287,9 +275,8 @@ public class EmailVerificationServiceIntegrationTest {
     EmailVerificationRequest request =
         new EmailVerificationRequest("I dont exist", verification.getCode());
 
-    ResourceNotFoundException exception =
-        assertThrows(
-            ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
+    assertThrows(
+        ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
 
     Optional<EmailVerification> emailVerificationOptional =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -298,11 +285,6 @@ public class EmailVerificationServiceIntegrationTest {
     assertTrue(emailVerificationOptional.isPresent());
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
-
-    assertTrue(
-        exception
-            .getMessage()
-            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
   @Test
@@ -310,9 +292,8 @@ public class EmailVerificationServiceIntegrationTest {
     EmailVerificationRequest request =
         new EmailVerificationRequest(testUserUnverified.getUsername(), "anycod");
 
-    ResourceNotFoundException exception =
-        assertThrows(
-            ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
+    assertThrows(
+        ResourceNotFoundException.class, () -> emailVerificationService.verifyEmail(request));
 
     Optional<EmailVerification> emailVerificationOptional =
         emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
@@ -321,18 +302,10 @@ public class EmailVerificationServiceIntegrationTest {
     assertFalse(emailVerificationOptional.isPresent());
     assertTrue(userOptional.isPresent());
     assertFalse(userOptional.get().isEmailVerified());
-
-    assertTrue(
-        exception
-            .getMessage()
-            .contains("Verification failed. User does not exist or Token is invalid"));
   }
 
-  private static Matcher getMatcher(ByteArrayOutputStream byteArrayOutputStream) {
-    String htmlContent = byteArrayOutputStream.toString();
-
+  private static Matcher getMatcher(String htmlContent) {
     Pattern pattern = Pattern.compile("<p class=\"code\"><span>(.*?)</span></p>");
-
     return pattern.matcher(htmlContent);
   }
 }

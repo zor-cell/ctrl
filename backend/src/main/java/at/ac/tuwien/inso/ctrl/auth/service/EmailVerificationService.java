@@ -12,6 +12,8 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ import org.thymeleaf.context.Context;
 @RequiredArgsConstructor
 public class EmailVerificationService {
 
-  private final GmailService gmailService;
+  private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
   private final EmailVerificationRepository emailVerificationRepository;
   private final UserRepository userRepository;
@@ -85,7 +86,7 @@ public class EmailVerificationService {
       String htmlContent = templateEngine.process("verificationTemplate", context);
 
 
-      gmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
+      gmailEmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
       throw new CommunicationException("Failed to send email.");
@@ -93,7 +94,7 @@ public class EmailVerificationService {
       throw new CommunicationException("Failed to create email.");
     } catch (UsernameNotFoundException ignored) {
 
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new CommunicationException("Failed to send or create email.");
 
     }

@@ -11,18 +11,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Properties;
 
 @Service
 @RequiredArgsConstructor
-public class GmailService {
+public class GmailEmailService {
 
   private final Gmail gmail;
-  @Value("${spring.mail.username}")
+  @Value("${spring.mail.username:test@gmail.com}")
   private String senderEmail;
 
-  public void sendHtmlEmail(String to, String subject, String htmlBody) throws Exception {
+  public void sendHtmlEmail(String to, String subject, String htmlBody) throws MessagingException, IOException {
     MimeMessage mimeMessage = createHtmlMimeMessage(to, subject, htmlBody);
     Message message = encodeMessage(mimeMessage);
     gmail.users().messages().send("me", message).execute();
@@ -39,7 +40,7 @@ public class GmailService {
     return email;
   }
 
-  private Message encodeMessage(MimeMessage mimeMessage) throws Exception {
+  private Message encodeMessage(MimeMessage mimeMessage) throws IOException, MessagingException {
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     mimeMessage.writeTo(buffer);
     byte[] rawBytes = buffer.toByteArray();
