@@ -84,8 +84,9 @@ public class PostServiceImpl implements PostService {
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
     // embed post information
-    String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
-    float[] embedding = embeddingService.embedTextWithImage(post.getCaption(), fileUrl);
+    //String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
+    //TODO: image needs to be embedded again as well!
+    float[] embedding = embeddingService.embedText(post.getCaption());
     post.setEmbedding(embedding);
 
     Post savedPost = postRepository.save(post);
