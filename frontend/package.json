@@ -41,6 +41,7 @@
     "typescript-eslint": "8.56.1",
     "cypress": "^14.5.0",
     "start-server-and-test": "^2.1.0",
-    "cypress-multi-reporters": "^2.0.5"
+    "cypress-multi-reporters": "^2.0.5",
+    "mocha-junit-reporter": "^2.2.1"
   }
 }
