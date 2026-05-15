@@ -15,22 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Periodically assigns 1–3 topics to posts that have no topic yet.
- * ┌──────────────────────────────────────────────────────────┐
- * │             TopicAssignmentScheduler                     │
- * │                                                          │
- * │  Every 30 minutes:                                       │
- * │                                                          │
- * │  1. Find posts without topics (batches of BATCH_SIZE)    │
- * │                 ↓                                        │
- * │  2. For each post, query pg vector for the 3 closest      │
- * │     topic embeddings via cosine distance (<=>)           │
- * │                 ↓                                        │
- * │  3. Persist PostTopic join entries                       │
- * │                 ↓                                        │
- * │  4. Repeat until no untagged posts remain                │
- * └──────────────────────────────────────────────────────────┘
- * Requires PostRepository to expose:
- *   Page<Post> findByPostTopicsEmpty(Pageable pageable)
+ * ┌──────────────────────────────────────────────────────────┐ │ TopicAssignmentScheduler │ │ │ │
+ * Every 30 minutes: │ │ │ │ 1. Find posts without topics (batches of BATCH_SIZE) │ │ ↓ │ │ 2. For
+ * each post, query pg vector for the 3 closest │ │ topic embeddings via cosine distance (<=>) │ │ ↓
+ * │ │ 3. Persist PostTopic join entries │ │ ↓ │ │ 4. Repeat until no untagged posts remain │
+ * └──────────────────────────────────────────────────────────┘ Requires PostRepository to expose:
+ * Page<Post> findByPostTopicsEmpty(Pageable pageable)
  */
 @Slf4j
 @Component
@@ -46,7 +36,7 @@ public class TopicAssignmentScheduler {
   private final PostRepository postRepository;
   private final TopicRepository topicRepository;
 
-  //@Scheduled(fixedRateString = "PT30M")
+  // @Scheduled(fixedRateString = "PT30M")
   @Scheduled(fixedDelay = 60000) // Alle 60 Sekunden statt alle 30 Min
   @Transactional
   public void assignTopics() {
@@ -63,7 +53,7 @@ public class TopicAssignmentScheduler {
     List<Post> posts = postRepository.findPostsWithoutTopics(BATCH_SIZE, 0);
 
     int assigned = 0;
-    int skipped  = 0;
+    int skipped = 0;
 
     for (Post post : posts) {
       if (post.getEmbedding() == null) {
@@ -74,18 +64,23 @@ public class TopicAssignmentScheduler {
       if (assignTopicsToPost(post.getPostId())) assigned++;
     }
 
-    log.info("TopicAssignmentScheduler finished — assigned topics to {}/{} posts ({} skipped, no embedding)",
-        assigned, posts.size(), skipped);
+    log.info(
+        "TopicAssignmentScheduler finished — assigned topics to {}/{} posts ({} skipped, no embedding)",
+        assigned,
+        posts.size(),
+        skipped);
   }
 
   public boolean assignTopicsToPost(String postId) {
     try {
       // Reload post -> It is now "attached" to the current session
-      Post post = postRepository.findById(postId)
+      Post post =
+          postRepository
+              .findById(postId)
               .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
-      List<Topic> topics = topicRepository.findMatchingTopicsForEmbedding(
-              post.getEmbedding(), TOPICS_PER_POST);
+      List<Topic> topics =
+          topicRepository.findMatchingTopicsForEmbedding(post.getEmbedding(), TOPICS_PER_POST);
 
       if (topics.isEmpty()) {
         log.warn("No matching topics found for post {}", post.getPostId());
@@ -94,17 +89,13 @@ public class TopicAssignmentScheduler {
 
       for (Topic topic : topics) {
         PostTopicId id = new PostTopicId(post.getPostId(), topic.getTopicId());
-        PostTopic postTopic = PostTopic.builder()
-                .id(id)
-                .post(post)
-                .topic(topic)
-                .build();
+        PostTopic postTopic = PostTopic.builder().id(id).post(post).topic(topic).build();
         post.getPostTopics().add(postTopic);
       }
 
       postRepository.save(post);
-      log.debug("Post {} → topics: {}", post.getPostId(),
-              topics.stream().map(Topic::getName).toList());
+      log.debug(
+          "Post {} → topics: {}", post.getPostId(), topics.stream().map(Topic::getName).toList());
 
       return true;
     } catch (Exception e) {

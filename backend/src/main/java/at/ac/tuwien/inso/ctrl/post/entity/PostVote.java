@@ -2,11 +2,9 @@ package at.ac.tuwien.inso.ctrl.post.entity;
 
 import at.ac.tuwien.inso.ctrl.common.domain.VoteEntry;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-
-import java.time.Instant;
 
 @Builder
 @Getter

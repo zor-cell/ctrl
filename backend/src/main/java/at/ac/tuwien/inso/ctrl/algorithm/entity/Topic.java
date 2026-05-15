@@ -2,12 +2,7 @@ package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

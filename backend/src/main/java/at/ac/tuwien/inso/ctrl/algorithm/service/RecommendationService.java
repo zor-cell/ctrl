@@ -21,7 +21,8 @@ public class RecommendationService {
   private final PostRepository postRepository;
 
   @Transactional
-  public List<RecommendedPost> getRecommendedPosts(User user, int page, int size, boolean publicFeed) {
+  public List<RecommendedPost> getRecommendedPosts(
+      User user, int page, int size, boolean publicFeed) {
     var config = algorithmService.getOrCreateConfig(user);
 
     float[] interactionPreference = user.getInteractionPreferenceEmbedding();
@@ -29,16 +30,16 @@ public class RecommendationService {
 
     List<String> topics = config.getTopics().stream().map(Topic::getTopicId).toList();
 
-    //fetch candidates according to which feed is requested
+    // fetch candidates according to which feed is requested
     List<String> candidatePosts;
-    if(publicFeed) {
+    if (publicFeed) {
       candidatePosts =
-              postRepository.getPublicPostCandidatePool(
-                      user.getId(), interactionPreference, topicPreference, 50);
+          postRepository.getPublicPostCandidatePool(
+              user.getId(), interactionPreference, topicPreference, 50);
     } else {
       candidatePosts =
-              postRepository.getPrivatePostCandidatePool(
-                      user.getId(), interactionPreference, topicPreference, 50);
+          postRepository.getPrivatePostCandidatePool(
+              user.getId(), interactionPreference, topicPreference, 50);
     }
 
     List<PostScoreProjection> scoredProjections =

@@ -131,7 +131,7 @@ class FeedUnitTest {
     when(feedMapper.toFeedPostResponse(any(Post.class), any(), any()))
         .thenReturn(mock(FeedPostResponse.class));
 
-    List<FeedPostResponse> result = feedService.getFeed(0, 10,true,  username);
+    List<FeedPostResponse> result = feedService.getFeed(0, 10, true, username);
 
     assertEquals(1, result.size());
     // verify that method was called exactly once with exactly these arguments
@@ -162,7 +162,7 @@ class FeedUnitTest {
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(eq(userId), anyList()))
         .thenReturn(List.of());
 
-    feedService.getFeed(0, 10,true,  username);
+    feedService.getFeed(0, 10, true, username);
 
     // The mapper must be called with the correct vote map
     verify(feedMapper).toFeedPostResponse(post, Map.of("post-42", "UPVOTE"), Map.of());

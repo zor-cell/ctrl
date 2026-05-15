@@ -1,9 +1,8 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
-import lombok.*;
-
 import java.io.Serializable;
 import java.util.UUID;
+import lombok.*;
 
 @Getter
 @Setter
@@ -11,6 +10,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class SeenPostId implements Serializable {
-    private UUID userId;
-    private String postId;
+  private UUID userId;
+  private String postId;
 }

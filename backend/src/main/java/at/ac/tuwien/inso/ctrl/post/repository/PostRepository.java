@@ -1,11 +1,10 @@
 package at.ac.tuwien.inso.ctrl.post.repository;
 
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -113,7 +112,9 @@ public interface PostRepository extends JpaRepository<Post, String> {
    * A query that populates a candidate pool with indexed queries so ordering is very efficient.
    * Retrieves posts that are likely good in different metrics and returns their ids
    */
-  @Query(value = """
+  @Query(
+      value =
+          """
     ( --interaction candidates
       SELECT p.post_id FROM posts p
        WHERE p.is_public = true AND p.embedding IS NOT NULL
@@ -137,13 +138,13 @@ public interface PostRepository extends JpaRepository<Post, String> {
          WHERE p.is_public = true
          AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
          ORDER BY p.upvotes DESC LIMIT :poolSize)
-    """, nativeQuery = true)
+    """,
+      nativeQuery = true)
   List<String> getPublicPostCandidatePool(
-          @Param("userId") UUID userId,
-          @Param("interactionVector") float[] interactionVector,
-          @Param("topicVector") float[] topicVector,
-          @Param("poolSize") int poolSize
-  );
+      @Param("userId") UUID userId,
+      @Param("interactionVector") float[] interactionVector,
+      @Param("topicVector") float[] topicVector,
+      @Param("poolSize") int poolSize);
 
   @Query(
       value =
@@ -183,8 +184,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
     WHERE p.postId IN :postIds
     """)
   List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
+
   @Query(
-          value = """
+      value =
+          """
         SELECT p.* FROM posts p
         WHERE NOT EXISTS (
             SELECT 1 FROM post_topics pt WHERE pt.post_id = p.post_id
@@ -193,18 +196,18 @@ public interface PostRepository extends JpaRepository<Post, String> {
         LIMIT :limit
         OFFSET :offset
         """,
-          nativeQuery = true)
+      nativeQuery = true)
   List<Post> findPostsWithoutTopics(@Param("limit") int limit, @Param("offset") int offset);
 
   @Query(
-          value = """
+      value =
+          """
         SELECT COUNT(*) FROM posts p
         WHERE NOT EXISTS (
             SELECT 1 FROM post_topics pt WHERE pt.post_id = p.post_id
         )
         AND p.embedding IS NOT NULL
         """,
-          nativeQuery = true)
+      nativeQuery = true)
   long countPostsWithoutTopics();
-
 }

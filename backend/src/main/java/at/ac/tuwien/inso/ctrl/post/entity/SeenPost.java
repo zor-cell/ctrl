@@ -14,7 +14,9 @@ import org.hibernate.annotations.CreationTimestamp;
 @Entity
 @Table(
     name = "seen_posts",
-    indexes = {@Index(name = "idx_seen_user_post", columnList = "user_id, post_id")}) //index for quick NOT EXISTS lookups
+    indexes = {
+      @Index(name = "idx_seen_user_post", columnList = "user_id, post_id")
+    }) // index for quick NOT EXISTS lookups
 @IdClass(SeenPostId.class)
 public class SeenPost {
   @Id

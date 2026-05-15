@@ -2,8 +2,8 @@ package at.ac.tuwien.inso.ctrl.algorithm.config;
 
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import java.util.List;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -19,7 +19,8 @@ public class TopicSeeder {
   @Bean
   CommandLineRunner seedTopics(TopicRepository topicRepository) {
     return args -> {
-      var defaultTopics = List.of(
+      var defaultTopics =
+          List.of(
               // --- Content Types ---
               new DefaultTopic("News", "📰"),
               new DefaultTopic("Analysis", "📊"),
@@ -315,12 +316,10 @@ public class TopicSeeder {
               new DefaultTopic("Spanish", "🇪🇸"),
               new DefaultTopic("Portuguese", "🇵🇹"),
               new DefaultTopic("Russian", "🇷🇺"),
-              new DefaultTopic("Arabic", "🇸🇦")
-              );
+              new DefaultTopic("Arabic", "🇸🇦"));
 
-      List<DefaultTopic> topicsToSeed = defaultTopics.stream()
-              .filter(dt -> !topicRepository.existsByName(dt.name()))
-              .toList();
+      List<DefaultTopic> topicsToSeed =
+          defaultTopics.stream().filter(dt -> !topicRepository.existsByName(dt.name())).toList();
 
       if (topicsToSeed.isEmpty()) {
         log.info("Topic seeding finished. No new topics to seed.");
@@ -332,7 +331,7 @@ public class TopicSeeder {
       try {
         List<String> topicNames = topicsToSeed.stream().map(DefaultTopic::name).toList();
 
-        //call batch embedding
+        // call batch embedding
         List<float[]> embeddings = embeddingService.embedText(topicNames);
 
         List<Topic> topicsToSave = new java.util.ArrayList<>();
@@ -340,11 +339,8 @@ public class TopicSeeder {
           DefaultTopic dt = topicsToSeed.get(i);
           float[] vector = embeddings.get(i);
 
-          topicsToSave.add(Topic.builder()
-                  .name(dt.name())
-                  .emoji(dt.emoji())
-                  .embedding(vector)
-                  .build());
+          topicsToSave.add(
+              Topic.builder().name(dt.name()).emoji(dt.emoji()).embedding(vector).build());
         }
 
         topicRepository.saveAll(topicsToSave);
@@ -353,7 +349,6 @@ public class TopicSeeder {
         log.error("Could not seed topics in batch: {}", e.getMessage(), e);
       }
     };
-
   }
 
   private record DefaultTopic(String name, String emoji) {}

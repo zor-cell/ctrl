@@ -9,6 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RecommendedPost {
-    Post post;
-    PostExplanation explanation;
+  Post post;
+  PostExplanation explanation;
 }

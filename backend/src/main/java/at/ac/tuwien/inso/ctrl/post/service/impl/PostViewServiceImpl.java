@@ -16,19 +16,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PostViewServiceImpl implements PostViewService {
 
-    private final SeenPostRepository seenPostRepository;
-    private final UserRepository userRepository;
+  private final SeenPostRepository seenPostRepository;
+  private final UserRepository userRepository;
 
-    @Override
-    @Transactional
-    public void recordViews(PostViewBatchRequest request, String username) {
-        User user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+  @Override
+  @Transactional
+  public void recordViews(PostViewBatchRequest request, String username) {
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        request.views().forEach(v ->
-                seenPostRepository.upsertView(user.getId(), v.postId(), v.durationMs())
-        );
-    }
+    request
+        .views()
+        .forEach(v -> seenPostRepository.upsertView(user.getId(), v.postId(), v.durationMs()));
+  }
 }

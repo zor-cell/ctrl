@@ -9,7 +9,6 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.embedding.VectorUtils;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
-
 import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

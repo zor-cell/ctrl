@@ -3,7 +3,6 @@ package at.ac.tuwien.inso.ctrl.algorithm.entity;
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -24,13 +23,11 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "algorithm_config")
 public class AlgorithmConfig {
-  @Id
-  private UUID userId;
+  @Id private UUID userId;
 
   @OneToOne(fetch = FetchType.LAZY)
   @MapsId
-  @JoinColumn(
-      name = "user_id")
+  @JoinColumn(name = "user_id")
   private User user;
 
   @Column(name = "weight_interaction")
@@ -53,10 +50,9 @@ public class AlgorithmConfig {
 
   @ManyToMany
   @JoinTable(
-          name = "algorithm_config_topics",
-          joinColumns = @JoinColumn(name = "algorithm_config_id"),
-          inverseJoinColumns = @JoinColumn(name = "topic_id")
-  )
+      name = "algorithm_config_topics",
+      joinColumns = @JoinColumn(name = "algorithm_config_id"),
+      inverseJoinColumns = @JoinColumn(name = "topic_id"))
   @Builder.Default
   private Set<Topic> topics = new LinkedHashSet<>();
 

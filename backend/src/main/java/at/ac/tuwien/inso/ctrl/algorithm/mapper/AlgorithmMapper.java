@@ -8,9 +8,9 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface AlgorithmMapper {
-    AlgorithmConfigDto toConfig(AlgorithmConfig algorithmConfig);
+  AlgorithmConfigDto toConfig(AlgorithmConfig algorithmConfig);
 
-    default String toTopicId(Topic topic) {
-        return topic != null ? topic.getTopicId() : null;
-    }
+  default String toTopicId(Topic topic) {
+    return topic != null ? topic.getTopicId() : null;
+  }
 }

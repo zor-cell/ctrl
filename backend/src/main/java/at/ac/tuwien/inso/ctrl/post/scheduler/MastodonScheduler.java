@@ -26,25 +26,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Every 15 minutes:
- * ┌─────────────────────────────────────────────┐
- * │  For each account in ACCOUNTS:              │
- * │                                             │
- * │  1. Resolve account ID via Mastodon API     │
- * │               ↓                             │
- * │  2. Fetch latest posts (max FETCH_LIMIT)    │
- * │               ↓                             │
- * │  3. Filter duplicates & boosts             │
- * │               ↓                             │
- * │  4. Build caption:                          │
- * │     • named accounts → source-specific      │
- * │       formatting (Tagesschau / BBC)         │
- * │     • all others    → strip links only      │
- * │               ↓                             │
- * │  5. Assign label "Mastodon" and save        │
- * │     (Topics are handled by                  │
- * │      TopicAssignmentScheduler separately)   │
- * └─────────────────────────────────────────────┘
+ * Every 15 minutes: ┌─────────────────────────────────────────────┐ │ For each account in ACCOUNTS:
+ * │ │ │ │ 1. Resolve account ID via Mastodon API │ │ ↓ │ │ 2. Fetch latest posts (max FETCH_LIMIT)
+ * │ │ ↓ │ │ 3. Filter duplicates & boosts │ │ ↓ │ │ 4. Build caption: │ │ • named accounts →
+ * source-specific │ │ formatting (Tagesschau / BBC) │ │ • all others → strip links only │ │ ↓ │ │
+ * 5. Assign label "Mastodon" and save │ │ (Topics are handled by │ │ TopicAssignmentScheduler
+ * separately) │ └─────────────────────────────────────────────┘
  */
 @Slf4j
 @Component
@@ -58,21 +45,24 @@ public class MastodonScheduler {
    * Central list of Mastodon accounts to fetch from.
    *
    * <p>Fields:
+   *
    * <ul>
-   *   <li>{@code instance}   – Mastodon instance hostname (e.g. "mastodon.social")</li>
-   *   <li>{@code acct}       – account handle on that instance</li>
-   *   <li>{@code sourceName} – non-null activates source-specific caption formatting;
-   *                            null → generic link-strip only</li>
+   *   <li>{@code instance} – Mastodon instance hostname (e.g. "mastodon.social")
+   *   <li>{@code acct} – account handle on that instance
+   *   <li>{@code sourceName} – non-null activates source-specific caption formatting; null →
+   *       generic link-strip only
    * </ul>
    *
    * To add a plain account just provide null as sourceName:
+   *
    * <pre>
    *   new AccountConfig("mastodon.social", "someuser", null)
    * </pre>
    */
-  private static final List<AccountConfig> ACCOUNTS = List.of(
-          new AccountConfig("ard.social",        "tagesschau",              "Tagesschau"),
-          new AccountConfig("mastodon.social",   "BBCNews@flipboard.com",   "BBC News"),
+  private static final List<AccountConfig> ACCOUNTS =
+      List.of(
+          new AccountConfig("ard.social", "tagesschau", "Tagesschau"),
+          new AccountConfig("mastodon.social", "BBCNews@flipboard.com", "BBC News"),
           // ── add more accounts below ──────────────────────────────────────────
           new AccountConfig("mastodon.social", "Techcrunch@flipboard.com", null),
           new AccountConfig("mastodon.social", "instyle@flipboard.com", null),
@@ -95,7 +85,6 @@ public class MastodonScheduler {
           new AccountConfig("newsie.social", "ProPublica", null),
           new AccountConfig("antisocial.ly", "primalmotion", null),
           new AccountConfig("mastodon.social", "derpostillon", null),
-
           new AccountConfig("universeodon.com", "godpod", null),
           new AccountConfig("ec.social-network.europa.eu", "EUCommission", null),
           new AccountConfig("simkey.net", "_kokt", null),
@@ -173,7 +162,6 @@ public class MastodonScheduler {
           new AccountConfig("social.bund.de", "bfdi", null),
           new AccountConfig("mastodon.social", "bagder", null),
           new AccountConfig("mastodon.ar.al", "aral", null),
-
           new AccountConfig("mastodon.social", "Teri_Kanefield", null),
           new AccountConfig("mastodon.social", "sarahbosetti", null),
           new AccountConfig("social.kernel.org", "torvalds", null),
@@ -222,7 +210,6 @@ public class MastodonScheduler {
           new AccountConfig("mastodon.social", "danielpunkass", null),
           new AccountConfig("mastodon.social", "YourAnonCentral", null),
           new AccountConfig("mastodon.social", "daringfireball", null),
-
           new AccountConfig("mastodon.social", "markgurman", null),
           new AccountConfig("mastodon.social", "tabletop", null),
           new AccountConfig("mastodon.social", "cabel", null),
@@ -273,7 +260,6 @@ public class MastodonScheduler {
           new AccountConfig("mastodon.social", "dangillmor", null),
           new AccountConfig("mastodon.social", "RudePundit", null),
           new AccountConfig("mastodon.social", "atpfm", null),
-
           new AccountConfig("mastodon.online", "NatureMC", null),
           new AccountConfig("mas.to", "natureworks", null),
           new AccountConfig("ecoevo.social", "BathNature", null),
@@ -292,8 +278,7 @@ public class MastodonScheduler {
           new AccountConfig("mastodon.social", "sundogplanets", null),
           new AccountConfig("mastodon.social", "hotdogsladies", null),
           new AccountConfig("aus.social", "firstdogonthemoon", null),
-          new AccountConfig("botsin.space", "dogsofmastodon", null)
-  );
+          new AccountConfig("botsin.space", "dogsofmastodon", null));
 
   /** Carries the per-account fetch configuration. */
   private record AccountConfig(String instance, String acct, String sourceName) {}
@@ -309,11 +294,11 @@ public class MastodonScheduler {
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
   public MastodonScheduler(
-          PostRepository postRepository,
-          ExternalAuthorRepository externalAuthorRepository,
-          LabelRepository labelRepository,
-          SourceRepository sourceRepository,
-          EmbeddingService embeddingService) {
+      PostRepository postRepository,
+      ExternalAuthorRepository externalAuthorRepository,
+      LabelRepository labelRepository,
+      SourceRepository sourceRepository,
+      EmbeddingService embeddingService) {
     this.postRepository = postRepository;
     this.externalAuthorRepository = externalAuthorRepository;
     this.labelRepository = labelRepository;
@@ -340,10 +325,10 @@ public class MastodonScheduler {
   @Transactional
   public Label findOrCreateMastodonLabel() {
     return findOrCreateLabel(
-            "mastodon",
-            "Mastodon",
-            "🐘",
-            "Mastodon is a decentralized social media platform where this post was originally published.");
+        "mastodon",
+        "Mastodon",
+        "🐘",
+        "Mastodon is a decentralized social media platform where this post was originally published.");
   }
 
   // ── per-account fetch ─────────────────────────────────────────────────────
@@ -364,19 +349,24 @@ public class MastodonScheduler {
         if (saveStatus(status, mastodonLabel, account.sourceName())) saved++;
       }
 
-      log.info("Saved {}/{} new posts from {}@{}",
-              saved, statuses.size(), account.acct(), account.instance());
+      log.info(
+          "Saved {}/{} new posts from {}@{}",
+          saved,
+          statuses.size(),
+          account.acct(),
+          account.instance());
 
     } catch (Exception e) {
-      log.error("Failed to fetch from {}@{}: {}", account.acct(), account.instance(), e.getMessage());
+      log.error(
+          "Failed to fetch from {}@{}: {}", account.acct(), account.instance(), e.getMessage());
     }
   }
 
   // ── post persistence ──────────────────────────────────────────────────────
 
   /**
-   * @param sourceName non-null → use source-specific caption formatting;
-   *                   null     → strip links only (generic accounts)
+   * @param sourceName non-null → use source-specific caption formatting; null → strip links only
+   *     (generic accounts)
    */
   private boolean saveStatus(JsonNode status, Label mastodonLabel, String sourceName) {
     if (!status.path("reblog").isNull()) return false;
@@ -400,7 +390,8 @@ public class MastodonScheduler {
 
     float[] embedding = embeddingService.embedTextWithImage(captionResult.caption(), mediaRef);
 
-    Post post = Post.builder()
+    Post post =
+        Post.builder()
             .postId(UUID.randomUUID().toString())
             .externalPostId(externalPostId)
             .externalAuthor(author)
@@ -448,9 +439,9 @@ public class MastodonScheduler {
   }
 
   /**
-   * Source-specific caption logic for named accounts (Tagesschau, BBC News).
-   * Strips HTML, extracts URLs into sources, applies per-source noise filters,
-   * and structures the caption (title + body for Tagesschau; joined lines for BBC).
+   * Source-specific caption logic for named accounts (Tagesschau, BBC News). Strips HTML, extracts
+   * URLs into sources, applies per-source noise filters, and structures the caption (title + body
+   * for Tagesschau; joined lines for BBC).
    */
   private CaptionResult buildFormattedCaption(JsonNode status, String sourceName) {
     String raw = stripHtml(status.path("content").asText(""));
@@ -480,7 +471,8 @@ public class MastodonScheduler {
     String caption;
     if ("Tagesschau".equals(sourceName)) {
       String title = lines.isEmpty() ? "" : lines.get(0);
-      String body = lines.size() > 1
+      String body =
+          lines.size() > 1
               ? lines.subList(1, lines.size()).stream().collect(Collectors.joining("\n"))
               : "";
       if (title.isBlank()) {
@@ -499,10 +491,9 @@ public class MastodonScheduler {
   }
 
   /**
-   * Generic caption builder for plain Mastodon accounts.
-   * URLs are extracted into sources and removed inline from the text —
-   * the surrounding caption text on the same line is preserved.
-   * No structural reformatting is applied.
+   * Generic caption builder for plain Mastodon accounts. URLs are extracted into sources and
+   * removed inline from the text — the surrounding caption text on the same line is preserved. No
+   * structural reformatting is applied.
    */
   private CaptionResult buildGenericCaption(JsonNode status) {
     String raw = stripHtml(status.path("content").asText(""));
@@ -551,7 +542,8 @@ public class MastodonScheduler {
   }
 
   private Source buildSource(List<String> urls) {
-    Source source = Source.builder()
+    Source source =
+        Source.builder()
             .sourceId(UUID.randomUUID().toString())
             .upvotes(0)
             .downvotes(0)
@@ -560,7 +552,8 @@ public class MastodonScheduler {
             .build();
 
     for (String url : urls) {
-      SingleSource singleSource = SingleSource.builder()
+      SingleSource singleSource =
+          SingleSource.builder()
               .singleSourceId(UUID.randomUUID().toString())
               .url(url)
               .source(source)
@@ -574,15 +567,17 @@ public class MastodonScheduler {
   private ExternalAuthor resolveOrCreateAuthor(JsonNode account) {
     String authorId = account.path("id").asText();
     return externalAuthorRepository
-            .findByExternalAuthorId(authorId)
-            .orElseGet(() -> externalAuthorRepository.save(
+        .findByExternalAuthorId(authorId)
+        .orElseGet(
+            () ->
+                externalAuthorRepository.save(
                     ExternalAuthor.builder()
-                            .externalAuthorId(authorId)
-                            .source(SOURCE_MASTODON)
-                            .displayName(account.path("display_name").asText())
-                            .avatarUrl(account.path("avatar").asText(null))
-                            .profileUrl(account.path("url").asText(null))
-                            .build()));
+                        .externalAuthorId(authorId)
+                        .source(SOURCE_MASTODON)
+                        .displayName(account.path("display_name").asText())
+                        .avatarUrl(account.path("avatar").asText(null))
+                        .profileUrl(account.path("url").asText(null))
+                        .build()));
   }
 
   private String lookupAccountId(String instance, String acct) throws Exception {
@@ -592,7 +587,8 @@ public class MastodonScheduler {
   }
 
   private List<JsonNode> fetchStatuses(String instance, String accountId) throws Exception {
-    String url = "https://%s/api/v1/accounts/%s/statuses?limit=%d&exclude_replies=true"
+    String url =
+        "https://%s/api/v1/accounts/%s/statuses?limit=%d&exclude_replies=true"
             .formatted(instance, accountId, FETCH_LIMIT);
     JsonNode response = get(url);
     List<JsonNode> statuses = new ArrayList<>();
@@ -609,18 +605,18 @@ public class MastodonScheduler {
   }
 
   /**
-   * Strips HTML tags and common entities. Does not remove URLs from the text
-   * (URL extraction is handled separately in the caption builders).
+   * Strips HTML tags and common entities. Does not remove URLs from the text (URL extraction is
+   * handled separately in the caption builders).
    */
   private String stripHtml(String html) {
     return html.replaceAll("<[^>]+>", "")
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\"")
-            .replace("&#39;", "'")
-            .replace("&nbsp;", " ")
-            .trim();
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&nbsp;", " ")
+        .trim();
   }
 
   private String extractMediaRef(JsonNode status) {
@@ -649,13 +645,15 @@ public class MastodonScheduler {
 
   private Label findOrCreateLabel(String id, String name, String emoji, String explanation) {
     return labelRepository
-            .findById(id)
-            .orElseGet(() -> labelRepository.save(
+        .findById(id)
+        .orElseGet(
+            () ->
+                labelRepository.save(
                     Label.builder()
-                            .labelId(id)
-                            .name(name)
-                            .emoji(emoji)
-                            .explanation(explanation)
-                            .build()));
+                        .labelId(id)
+                        .name(name)
+                        .emoji(emoji)
+                        .explanation(explanation)
+                        .build()));
   }
 }

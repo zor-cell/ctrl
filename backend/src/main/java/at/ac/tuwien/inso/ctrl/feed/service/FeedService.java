@@ -1,8 +1,6 @@
 package at.ac.tuwien.inso.ctrl.feed.service;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.user.entity.User;
-
 import java.util.List;
 
 public interface FeedService {

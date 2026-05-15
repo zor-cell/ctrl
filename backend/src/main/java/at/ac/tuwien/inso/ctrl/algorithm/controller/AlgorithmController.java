@@ -12,18 +12,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/algorithm")
 @RequiredArgsConstructor
 public class AlgorithmController {
-    private final AlgorithmService algorithmService;
+  private final AlgorithmService algorithmService;
 
-    @GetMapping("/config")
-    public AlgorithmConfigDto getConfig(
-            @AuthenticationPrincipal User user) {
-        return algorithmService.getConfig(user);
-    }
+  @GetMapping("/config")
+  public AlgorithmConfigDto getConfig(@AuthenticationPrincipal User user) {
+    return algorithmService.getConfig(user);
+  }
 
-    @PutMapping("/config")
-    public AlgorithmConfigDto updateConfig(
-            @AuthenticationPrincipal User user,
-            @Valid @RequestBody AlgorithmConfigDto config) {
-        return algorithmService.updateConfig(user, config);
-    }
+  @PutMapping("/config")
+  public AlgorithmConfigDto updateConfig(
+      @AuthenticationPrincipal User user, @Valid @RequestBody AlgorithmConfigDto config) {
+    return algorithmService.updateConfig(user, config);
+  }
 }

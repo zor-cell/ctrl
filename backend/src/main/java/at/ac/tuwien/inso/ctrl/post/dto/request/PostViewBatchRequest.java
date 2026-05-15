@@ -4,5 +4,4 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
-public record PostViewBatchRequest(
-        @NotNull @Valid List<PostViewRequest> views) {}
+public record PostViewBatchRequest(@NotNull @Valid List<PostViewRequest> views) {}
