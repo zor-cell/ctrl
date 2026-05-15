@@ -1,9 +1,11 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, ElementRef } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
 import { Post } from '../../dto/Post';
 import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
+import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
 
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
@@ -14,6 +16,10 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
+import {ViewTrackingService} from '../../../post/services/view-tracking.service';
+import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
+import {ReactiveFormsModule} from "@angular/forms";
+import {RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-feed',
@@ -28,6 +34,10 @@ import { PostService, VoteType } from '../../../post/post.service';
     TagModule,
     TooltipModule,
     CommentsComponent,
+    AlgorithmConfigComponent,
+    PostViewDirective,
+    ReactiveFormsModule,
+    RouterLink,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -37,7 +47,7 @@ export class FeedComponent implements OnInit {
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
 
-  protected allPosts = signal<Post[]>([]);
+  readonly viewTracking = inject(ViewTrackingService);
 
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
@@ -45,17 +55,27 @@ export class FeedComponent implements OnInit {
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
 
+  protected algorithmConfigVisible = signal(false);
+  protected isRefreshing = signal(false);
+  protected isSpinning = signal(false);
+
+  private readonly elRef = inject(ElementRef);
+
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
 
-  protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
-  protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
+  protected publicPosts = signal<Post[]>([]);
+  protected privatePosts = signal<Post[]>([]);
 
   ngOnInit(): void {
     this.userService.loadUser();
-    this.loadFeed();  // ← Keine `await`!
+    this.loadFeed();
   }
+
+  //openAlgorithmConfig(): void {
+  //  this.algorithmConfigVisible.set(true);
+  //}
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
@@ -160,10 +180,30 @@ export class FeedComponent implements OnInit {
     return /\.(mp4|webm|ogg|mov)$/i.test(url);
   }
 
+  onPostViewed(event: ViewEvent): void {
+    this.viewTracking.track(event);
+  }
+
   /** Helpers **/
-  private async loadFeed(): Promise<void> {
-    const posts = await this.feedService.getFeed();
-    this.allPosts.set(posts);
+  protected loadFeed() {
+    this.isRefreshing.set(true);
+    this.isSpinning.set(true);
+    setTimeout(() => this.isSpinning.set(false), 600);
+
+    forkJoin([
+      this.feedService.getFeed(true),
+      this.feedService.getFeed(false),
+    ]).subscribe(([publicPosts, privatePosts]) => {
+      this.publicPosts.set(publicPosts);
+      this.privatePosts.set(privatePosts);
+      this.isRefreshing.set(false);
+      this.scrollFeedToTop();
+    });
+  }
+
+  private scrollFeedToTop(): void {
+    const lists = this.elRef.nativeElement.querySelectorAll('.posts-list') as NodeListOf<HTMLElement>;
+    lists.forEach(el => el.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   private calcOptimisticVote(
@@ -189,13 +229,27 @@ export class FeedComponent implements OnInit {
   }
 
   private patchPost(postId: string, patch: Partial<Post>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
     );
   }
 
   private patchSource(postId: string, patch: Partial<PostSource>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => {
+        if (p.postId !== postId || !p.sourceIds?.length) return p;
+        const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
+          i === 0 ? { ...s, ...patch } : s
+        );
+        return { ...p, sourceIds: updatedSources };
+      })
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => {
         if (p.postId !== postId || !p.sourceIds?.length) return p;
         const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
@@ -205,4 +259,6 @@ export class FeedComponent implements OnInit {
       })
     );
   }
+
+  protected readonly Math = Math;
 }

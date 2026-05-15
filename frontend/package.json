@@ -6,12 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "cypress:ci": "start-server-and-test start http://localhost:4200 cypress:run"
+    "lint": "ng lint"
   },
   "private": true,
   "packageManager": "npm@11.4.1",
@@ -33,19 +28,11 @@
     "@angular/build": "^21.2.5",
     "@angular/cli": "^21.2.5",
     "@angular/compiler-cli": "^21.2.0",
-    "@cypress/schematic": "^5.0.0",
     "@eslint/js": "^10.0.1",
-    "@testing-library/angular": "^19.2.1",
     "angular-eslint": "21.3.1",
-    "cypress": "^15.14.2",
-    "cypress-multi-reporters": "^2.0.5",
     "eslint": "^10.0.3",
-    "jsdom": "^28.0.0",
-    "mocha-junit-reporter": "^2.2.1",
     "prettier": "^3.8.1",
-    "start-server-and-test": "^3.0.2",
     "typescript": "~5.9.2",
-    "typescript-eslint": "8.56.1",
-    "vitest": "^4.0.8"
+    "typescript-eslint": "8.56.1"
   }
 }

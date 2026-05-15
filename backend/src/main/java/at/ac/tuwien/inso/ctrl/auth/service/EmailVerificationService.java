@@ -65,16 +65,16 @@ public class EmailVerificationService {
 
       Optional<User> user = userRepository.findByUsername(sendEmailRequest.username());
       if (user.isEmpty()) {
-        throw new UsernameNotFoundException("Username not found");
+        return;
       }
 
       Optional<User> userByEmail = userRepository.findByEmail(sendEmailRequest.email());
       if (userByEmail.isEmpty()) {
-        throw new UsernameNotFoundException("Email not found");
+        return;
       }
 
       if (!user.get().equals(userByEmail.get())) {
-        throw new ResourceNotFoundException("User not found for verification");
+        return;
       }
 
       if (user.get().isEmailVerified()) {
@@ -98,6 +98,7 @@ public class EmailVerificationService {
       throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {
       throw new CommunicationException("Failed to create email.");
+    } catch (UsernameNotFoundException ignored) {
     }
   }
 
@@ -117,12 +118,18 @@ public class EmailVerificationService {
     User user =
         userRepository
             .findByUsername(emailVerificationRequest.username())
-            .orElseThrow(() -> new ResourceNotFoundException("User not found for verification"));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
 
     EmailVerification verification =
         emailVerificationRepository
             .findEmailVerificationByUser_Id(user.getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Verification not found for user"));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
 
     if (verification.getCode().equals(emailVerificationRequest.code())
         && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
@@ -131,7 +138,8 @@ public class EmailVerificationService {
       userRepository.save(user);
       return new EmailVerificationResponse(true);
     } else {
-      throw new InvalidEmailVerificationCodeException("Invalid or expired verification code");
+      throw new InvalidEmailVerificationCodeException(
+          "Verification failed. User does not exist or Token is invalid");
     }
   }
 

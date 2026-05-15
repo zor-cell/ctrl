@@ -67,21 +67,21 @@
     } @else {
       <div class="results-list">
         @for (user of searchResults(); track user.id) {
-          <div class="user-item">
-            <button
-              type="button"
-              class="profile-avatar"
-              (click)="navigateToProfile(user.username)">
-              @if (user.profilePicture) {
+          <button
+            type="button"
+            class="user-item"
+            (click)="openUserProfile(user)"
+            >
+            <span class="user-avatar" aria-hidden="true">
+              @if (hasProfilePicture(user)) {
                 <img
-                  [src]="user.profilePicture"
+                  [src]="profilePictureUrl(user)"
                   alt=""
-                  class="profile-avatar__image"
-                />
+                  (error)="markProfilePictureFailed(user)" />
               } @else {
-                <span class="profile-avatar__initial">{{ user.name?.charAt(0) || user.username.charAt(0) }}</span>
+                {{ getInitial(user) }}
               }
-            </button>
+            </span>
 
             <div class="user-info">
               <span class="name">{{ user.name || user.username }}</span>
@@ -117,7 +117,7 @@
                   icon="pi pi-plus"
                   label="Follow"
                   severity="secondary"
-                  (onClick)="followUser(user)"
+                  (onClick)="followUser(user); $event.stopPropagation()"
                   size="small" />
               }
               @if (hasIncomingRequest(user)) {
@@ -125,7 +125,7 @@
                   icon="pi pi-check"
                   label="Accept Request"
                   severity="success"
-                  (onClick)="acceptIncomingRequest(user)"
+                  (onClick)="acceptIncomingRequest(user); $event.stopPropagation()"
                   size="small" />
               }
               @if (hasPendingSentRequest(user)) {
@@ -140,11 +140,11 @@
                 <p-button
                   icon="pi pi-user-plus"
                   label="Add Friend"
-                  (onClick)="sendFriendRequest(user)"
+                  (onClick)="sendFriendRequest(user); $event.stopPropagation()"
                   size="small" />
               }
             </div>
-          </div>
+          </button>
         }
       </div>
     }

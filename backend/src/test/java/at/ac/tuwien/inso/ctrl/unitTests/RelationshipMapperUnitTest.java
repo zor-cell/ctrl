@@ -5,9 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
+import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -21,22 +22,17 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-@Import(TestConfig.class)
-@ActiveProfiles("test")
-@SpringBootTest
 public class RelationshipMapperUnitTest {
 
-  @Autowired private RelationshipMapper relationshipMapper;
+  private RelationshipMapper relationshipMapper;
   private User alpha;
   private User beta;
 
   @BeforeEach
-  private void setupUsers() {
+  void setupUsers() {
+    relationshipMapper = new RelationshipMapper(new TestFileStorageService());
+
     alpha =
         User.builder()
             .id(UUID.randomUUID())
@@ -60,7 +56,7 @@ public class RelationshipMapperUnitTest {
             .isVerified(false)
             .emailVerified(true)
             .birthdate(LocalDate.of(2000, 1, 1))
-            .profilePicture(null) // No profile picture
+            .profilePicture(null)
             .build();
   }
 
@@ -111,25 +107,14 @@ public class RelationshipMapperUnitTest {
     assertEquals("Alpha User", displayName);
   }
 
-  // determineRelationshipStatuses
-
-  private boolean hasStatus(
-      List<RelationshipStatusItem> statuses, RelationshipStatusItem.RelationshipStatus status) {
-    return statuses.stream().anyMatch(item -> item.status() == status);
-  }
-
   @Test
   public void determineRelationshipStatuses_friend_returnsFriend() {
     Set<UUID> friendIds = new HashSet<>();
     friendIds.add(alpha.getId());
 
-    Set<UUID> followedIds = new HashSet<>();
-    Set<UUID> pendingSentIds = new HashSet<>();
-    Set<UUID> pendingIncomingIds = new HashSet<>();
-
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, Set.of(), friendIds, Set.of(), Set.of());
 
     assertEquals(1, statuses.size());
     assertTrue(hasStatus(statuses, RelationshipStatusItem.RelationshipStatus.FRIEND));
@@ -137,15 +122,12 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void determineRelationshipStatuses_followed_returnsFollowed() {
-    Set<UUID> friendIds = new HashSet<>();
     Set<UUID> followedIds = new HashSet<>();
     followedIds.add(alpha.getId());
-    Set<UUID> pendingSentIds = new HashSet<>();
-    Set<UUID> pendingIncomingIds = new HashSet<>();
 
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, Set.of(), Set.of(), Set.of());
 
     assertEquals(1, statuses.size());
     assertTrue(hasStatus(statuses, RelationshipStatusItem.RelationshipStatus.FOLLOWED));
@@ -153,15 +135,12 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void determineRelationshipStatuses_pendingSent_returnsPendingSent() {
-    Set<UUID> friendIds = new HashSet<>();
-    Set<UUID> followedIds = new HashSet<>();
     Set<UUID> pendingSentIds = new HashSet<>();
     pendingSentIds.add(alpha.getId());
-    Set<UUID> pendingIncomingIds = new HashSet<>();
 
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, Set.of(), Set.of(), pendingSentIds, Set.of());
 
     assertEquals(1, statuses.size());
     assertTrue(hasStatus(statuses, RelationshipStatusItem.RelationshipStatus.PENDING_REQUEST_SENT));
@@ -169,15 +148,12 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void determineRelationshipStatuses_pendingIncoming_returnsPendingIncoming() {
-    Set<UUID> friendIds = new HashSet<>();
-    Set<UUID> followedIds = new HashSet<>();
-    Set<UUID> pendingSentIds = new HashSet<>();
     Set<UUID> pendingIncomingIds = new HashSet<>();
     pendingIncomingIds.add(alpha.getId());
 
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, Set.of(), Set.of(), Set.of(), pendingIncomingIds);
 
     assertEquals(1, statuses.size());
     assertTrue(
@@ -186,14 +162,9 @@ public class RelationshipMapperUnitTest {
 
   @Test
   public void determineRelationshipStatuses_noRelation_returnsEmptyList() {
-    Set<UUID> friendIds = new HashSet<>();
-    Set<UUID> followedIds = new HashSet<>();
-    Set<UUID> pendingSentIds = new HashSet<>();
-    Set<UUID> pendingIncomingIds = new HashSet<>();
-
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, Set.of(), Set.of(), Set.of(), Set.of());
 
     assertTrue(statuses.isEmpty());
   }
@@ -204,19 +175,33 @@ public class RelationshipMapperUnitTest {
     friendIds.add(alpha.getId());
     Set<UUID> followedIds = new HashSet<>();
     followedIds.add(alpha.getId());
-    Set<UUID> pendingSentIds = new HashSet<>();
-    Set<UUID> pendingIncomingIds = new HashSet<>();
 
     List<RelationshipStatusItem> statuses =
         relationshipMapper.determineRelationshipStatuses(
-            alpha, followedIds, friendIds, pendingSentIds, pendingIncomingIds);
+            alpha, followedIds, friendIds, Set.of(), Set.of());
 
     assertEquals(2, statuses.size());
     assertTrue(hasStatus(statuses, RelationshipStatusItem.RelationshipStatus.FRIEND));
     assertTrue(hasStatus(statuses, RelationshipStatusItem.RelationshipStatus.FOLLOWED));
   }
 
-  // toIncomingFriendRequestResponse tests
+  @Test
+  public void toUserSearchResponse_withProfilePicture_resolvesProfilePictureUrl() {
+    List<RelationshipStatusItem> statuses =
+        List.of(new RelationshipStatusItem(RelationshipStatusItem.RelationshipStatus.FRIEND));
+
+    UserSearchResponse response =
+        relationshipMapper.toUserSearchResponse(alpha, statuses, "Alpha User");
+
+    assertEquals(alpha.getId(), response.id());
+    assertEquals("alpha", response.username());
+    assertEquals("Alpha User", response.name());
+    assertEquals(
+        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
+        response.profilePicture());
+    assertTrue(response.isVerified());
+    assertEquals(statuses, response.relationshipStatuses());
+  }
 
   @Test
   public void toIncomingFriendRequestResponse_mapsCorrectly() {
@@ -233,6 +218,9 @@ public class RelationshipMapperUnitTest {
     FriendRequestResponse response = relationshipMapper.toIncomingFriendRequestResponse(request);
 
     assertEquals("alpha", response.username());
+    assertEquals(
+        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
+        response.profilePicture());
     assertTrue(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
   }
@@ -252,7 +240,29 @@ public class RelationshipMapperUnitTest {
     FriendRequestResponse response = relationshipMapper.toSentFriendRequestResponse(request);
 
     assertEquals("beta", response.username());
+    assertNull(response.profilePicture());
     assertFalse(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
+  }
+
+  private boolean hasStatus(
+      List<RelationshipStatusItem> statuses, RelationshipStatusItem.RelationshipStatus status) {
+    return statuses.stream().anyMatch(item -> item.status() == status);
+  }
+
+  private static class TestFileStorageService extends FileStorageService {
+
+    TestFileStorageService() {
+      super(null, null, null);
+    }
+
+    @Override
+    public String resolveFileUrl(String relativeFilename) {
+      if (relativeFilename == null) {
+        return null;
+      }
+      return "http://localhost:8080/api/files/media-url?ref="
+          + relativeFilename.replace("/", "%2F");
+    }
   }
 }

@@ -1,12 +1,13 @@
 import {Component, computed, inject} from '@angular/core';
-import {Router, RouterModule} from '@angular/router';
+import {RouterModule, Router } from '@angular/router';
 import {AuthService} from "../auth/auth.service";
-import {ThemeService} from '../core/services/theme.service';
+import { ThemeService } from '../core/services/theme.service';
 import {ButtonModule} from 'primeng/button';
 import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {Menu} from "primeng/menu";
+import {UserService} from "../user/user.service";
 
 @Component({
   selector: 'app-navigation',
@@ -18,20 +19,22 @@ import {Menu} from "primeng/menu";
 export class NavigationComponent {
   private router = inject(Router);
   protected authService = inject(AuthService);
+  private userService = inject(UserService);
   protected themeService = inject(ThemeService);
 
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
 
     const items: MenuItem[] = [
-      {label: 'Feed', icon: 'pi pi-home', routerLink: '/feed'},
-      {label: 'Search', icon: 'pi pi-search', routerLink: '/search'}
+
     ];
 
     if (loggedIn) {
       items.push(
-        {label: 'Post', icon: 'pi pi-plus', routerLink: '/post'},
-        {label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat'}
+        { icon: 'pi pi-home', routerLink: '/feed' },
+        { icon: 'pi pi-search', routerLink: '/search' },
+        { icon: 'pi pi-plus', routerLink: '/post' },
+        { icon: 'pi pi-comments', routerLink: '/chat' }
       );
     }
     return items;
@@ -61,6 +64,7 @@ export class NavigationComponent {
         icon: 'pi pi-sign-out',
         command: () => {
           this.authService.logout();
+          this.userService.clearUser();
           this.router.navigate(['/login']);
         }
       }

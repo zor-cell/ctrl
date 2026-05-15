@@ -12,7 +12,6 @@ import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.ResetPasswordService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
-import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -139,7 +138,10 @@ public class ResetPasswordServiceIntegrationTest {
             CommunicationException.class,
             () -> resetPasswordService.sendPasswordResetEmail(request));
 
-    assertTrue(exception.getMessage().contains("Failed to send email"));
+    assertTrue(
+        exception
+            .getMessage()
+            .contains("Failed to send email. You can register again in 2 minutes."));
   }
 
   @Test
@@ -174,9 +176,7 @@ public class ResetPasswordServiceIntegrationTest {
       throws MessagingException, IOException {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest("wrongEmail@gmail.com");
 
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> resetPasswordService.sendPasswordResetEmail(request));
+    resetPasswordService.sendPasswordResetEmail(request);
 
     Optional<PasswordReset> resetOptional =
         passwordResetRepository.findPasswordResetByUser(testUser);
@@ -189,9 +189,7 @@ public class ResetPasswordServiceIntegrationTest {
       throws MessagingException, IOException {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest("wrongEmail@gmail.com");
 
-    assertThrows(
-        ResourceNotFoundException.class,
-        () -> resetPasswordService.sendPasswordResetEmail(request));
+    resetPasswordService.sendPasswordResetEmail(request);
     Mockito.verify(mailSender, Mockito.never()).send(Mockito.any(MimeMessage.class));
   }
 }

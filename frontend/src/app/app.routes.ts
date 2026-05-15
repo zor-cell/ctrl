@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPasswordComponent },
   {
     path: 'feed',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./feed/components/feed/feed.component').then(m => m.FeedComponent),
   },
@@ -25,6 +26,12 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./post/post-page.component').then(m => m.PostPageComponent),
+  },
+  {
+    path: 'profile/:username',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./post/post-page.component').then(m => m.PostPageComponent),
@@ -45,6 +52,14 @@ export const routes: Routes = [
         m => m.SearchPageComponent,
       ),
   },
+  {
+    path: 'chat',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./chat/chat-placeholder.component').then(
+        m => m.ChatPlaceholderComponent,
+      ),
+  },
   { path: 'email_verification/:username/:email', component: EmailVerificationComponent },
   {
     path: 'followed',
@@ -59,6 +74,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./user/components/verification-callback/verification-callback.component').then(
         m => m.VerificationCallbackComponent,
+      ),
+  },
+  {
+    path: 'algorithm',
+    loadComponent: () =>
+      import('./algorithm/components/config/config.component').then(
+        m => m.AlgorithmConfigComponent,
       ),
   },
   {

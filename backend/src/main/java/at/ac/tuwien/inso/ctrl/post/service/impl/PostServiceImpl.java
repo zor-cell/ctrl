@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
@@ -17,11 +18,14 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -48,7 +52,11 @@ public class PostServiceImpl implements PostService {
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
+  private final SeenPostRepository seenPostRepository;
   private final VoteManager voteManager;
+  private final FollowRelationRepository friendRelationRepository;
+  private final FileStorageService fileStorageService;
+  private final UserPreferenceService userPreferenceService;
 
   @Override
   @Transactional
@@ -75,11 +83,18 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    // embed post information (only text for now, image when file storage service is up)
+    // embed post information
+    // String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
+    // TODO: image needs to be embedded again as well!
     float[] embedding = embeddingService.embedText(post.getCaption());
     post.setEmbedding(embedding);
 
-    return postMapper.toResponse(postRepository.save(post));
+    Post savedPost = postRepository.save(post);
+    if (savedPost.isPublic()) {
+      fileStorageService.movePostMediaToPublicBucket(savedPost.getMediaRef());
+    }
+
+    return postMapper.toResponse(savedPost);
   }
 
   @Override
@@ -92,19 +107,27 @@ public class PostServiceImpl implements PostService {
     PostVoteId voteId = new PostVoteId(postId, user.getId().toString());
     Optional<PostVote> existingVote = postVoteRepository.findById(voteId);
 
-    return voteManager.processVote(
-        post,
-        existingVote,
-        newVoteType,
-        /* createVote */ () ->
-            postVoteRepository.save(
-                PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
-        /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
-        /* updateVote */ () -> {
-          existingVote.get().setVoteType(newVoteType);
-          postVoteRepository.save(existingVote.get());
-        },
-        /* saveEntity */ () -> postRepository.save(post));
+    VoteResponse response =
+        voteManager.processVote(
+            post,
+            existingVote,
+            newVoteType,
+            /* createVote */ () ->
+                postVoteRepository.save(
+                    PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
+            /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
+            /* updateVote */ () -> {
+              existingVote.get().setVoteType(newVoteType);
+              postVoteRepository.save(existingVote.get());
+            },
+            /* saveEntity */ () -> postRepository.save(post));
+
+    // mark post as seen if not already recorded
+    seenPostRepository.upsertView(user.getId(), postId, 0L);
+
+    // update user preference asynchronously
+    userPreferenceService.updateInteractionVectorAsync(user.getId());
+    return response;
   }
 
   /** Helpers * */
@@ -116,6 +139,25 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername) {
+    User profileOwner = fetchUser(profileUsername);
+    User viewer = fetchUser(viewerUsername);
+
+    boolean canSeePrivatePosts =
+        profileOwner.getId().equals(viewer.getId())
+            || friendRelationRepository.existsByFollowerAndFollowed(profileOwner, viewer);
+
+    List<Post> posts =
+        canSeePrivatePosts
+            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+                profileUsername);
+
+    return posts.stream().map(postMapper::toResponse).toList();
+  }
+
+  @Override
   @Transactional
   public void deletePost(String postId, String username) {
     Post post =
@@ -124,10 +166,24 @@ public class PostServiceImpl implements PostService {
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
     postRepository.delete(post);
+    deleteLocalPostMedia(post);
   }
 
   private boolean resolveIsPublic(CreatePostRequest request, boolean isVerified) {
     return isVerified && Boolean.TRUE.equals(request.isPublic());
+  }
+
+  private void deleteLocalPostMedia(Post post) {
+    String mediaRef = post.getMediaRef();
+    if (mediaRef == null || mediaRef.startsWith("http://") || mediaRef.startsWith("https://")) {
+      return;
+    }
+
+    if (post.isPublic()) {
+      fileStorageService.deletePublicPostMedia(mediaRef);
+    } else {
+      fileStorageService.deletePostMedia(mediaRef);
+    }
   }
 
   private Set<PostTopic> buildPostTopics(Post post, List<String> topicIds) {

@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.entity;
 
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -11,7 +12,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.*;
+import org.hibernate.annotations.Array;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -53,9 +57,14 @@ public class User implements UserDetails {
   private boolean emailVerified = false;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
+  @Column(name = "role")
   @Builder.Default
   private Role role = Role.USER;
+
+  @JdbcTypeCode(SqlTypes.VECTOR)
+  @Column(name = "interaction_preference_embedding")
+  @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
+  private float[] interactionPreferenceEmbedding;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ChatMember> chatMembers;
@@ -76,7 +85,19 @@ public class User implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    return List.of(new SimpleGrantedAuthority("ROLE_" + resolveRole().name()));
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void applyDefaults() {
+    if (role == null) {
+      role = Role.USER;
+    }
+  }
+
+  private Role resolveRole() {
+    return role == null ? Role.USER : role;
   }
 
   @Override

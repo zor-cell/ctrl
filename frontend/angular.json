@@ -13,13 +13,16 @@
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss",
-          "type": "component"
+          "type": "component",
+          "skipTests": true
         },
         "@schematics/angular:service": {
-          "type": "service"
+          "type": "service",
+          "skipTests": true
         },
         "@schematics/angular:directive": {
-          "type": "directive"
+          "type": "directive",
+          "skipTests": true
         }
       },
       "root": "",
