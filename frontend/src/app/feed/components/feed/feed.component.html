@@ -309,10 +309,10 @@
       <div class="score-label">
             <span>Total Relevancy
                 <i class="pi pi-info-circle hint-icon"
-                   pTooltip="This total is calculated by summing the weighted impact of your feed configuration. The maximum attainable ranking for a post is 6."
+                   pTooltip="This total is calculated by summing the weighted impact of your feed configuration. All posts are ranked according to this value."
                    tooltipPosition="right"></i>
             </span>
-        <span><strong>{{post.explanation.totalScore.toFixed(2)}} out of 6</strong></span>
+        <span><strong>{{((post.explanation.totalScore / 6.0) * 100).toFixed(2)}} / 100</strong></span>
       </div>
     </div>
   }
