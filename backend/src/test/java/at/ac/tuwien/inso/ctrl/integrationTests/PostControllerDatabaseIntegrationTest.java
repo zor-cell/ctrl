@@ -34,8 +34,6 @@ import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,7 +84,6 @@ public class PostControllerDatabaseIntegrationTest {
   @MockitoBean private MastodonScheduler mastodonScheduler;
 
   @MockitoBean private FileStorageService fileStorageService;
-
 
   private User verifiedUser;
   private User otherUser;
@@ -143,7 +140,8 @@ public class PostControllerDatabaseIntegrationTest {
                       "topicIds": ["%s"],
                       "source": null
                     }
-                    """.formatted(generatedTopicId)))
+                    """
+                        .formatted(generatedTopicId)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.username").value("marlene"))
         .andExpect(jsonPath("$.caption").value("A valid caption"))
