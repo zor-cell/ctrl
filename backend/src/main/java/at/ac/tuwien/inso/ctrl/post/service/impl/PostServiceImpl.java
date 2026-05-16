@@ -23,7 +23,7 @@ import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
@@ -55,7 +55,7 @@ public class PostServiceImpl implements PostService {
   private final PostVoteRepository postVoteRepository;
   private final SeenPostRepository seenPostRepository;
   private final VoteManager voteManager;
-  private final FollowRelationRepository friendRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
 
@@ -177,7 +177,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByFollowerAndFollowed(profileOwner, viewer);
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
         canSeePrivatePosts
