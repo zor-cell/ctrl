@@ -22,7 +22,6 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +39,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -256,14 +254,18 @@ public class AuthControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
 
-    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-      Optional<EmailVerification> verification =
-              emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              Optional<EmailVerification> verification =
+                  emailVerificationRepository.findEmailVerificationByUser_Id(
+                      testUserUnverified.getId());
 
-      assertTrue(verification.isPresent());
-      assertNotNull(verification.get().getCode());
-      assertNotNull(verification.get().getExpiryTime());
-    });
+              assertTrue(verification.isPresent());
+              assertNotNull(verification.get().getCode());
+              assertNotNull(verification.get().getExpiryTime());
+            });
   }
 
   @Test
@@ -277,14 +279,17 @@ public class AuthControllerIntegrationTest {
             post(sendEmailEndpoint)
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated()); //checks created because of async call
+        .andExpect(status().isCreated()); // checks created because of async call
 
-
-    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-      Optional<EmailVerification> verification =
-              emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
-      assertFalse(verification.isPresent());
-    });
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              Optional<EmailVerification> verification =
+                  emailVerificationRepository.findEmailVerificationByUser_Id(
+                      testUserUnverified.getId());
+              assertFalse(verification.isPresent());
+            });
   }
 
   @Test
