@@ -27,6 +27,7 @@ import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
@@ -59,6 +60,8 @@ public class PostServiceUnitTest {
   @Mock private PostVoteRepository postVoteRepository;
 
   @Mock private VoteManager voteManager;
+
+  @Mock private FollowRelationRepository followRelationRepository;
 
   @Mock private FriendRelationRepository friendRelationRepository;
 
@@ -254,7 +257,7 @@ public class PostServiceUnitTest {
 
     assertEquals("Topics not found: missing", exception.getMessage());
     verify(postRepository, never()).save(any());
-    verify(embeddingService, never()).embedText(any());
+    verify(embeddingService, never()).embedText(any(String.class));
   }
 
   @Test

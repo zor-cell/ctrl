@@ -18,7 +18,7 @@ public class TopicServiceImpl implements TopicService {
   @Override
   public List<TopicResponse> getAvailableTopics() {
     return topicRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
-        .map(topicMapper::toResponse)
+        .map(topicMapper::toTopicResponse)
         .toList();
   }
 }

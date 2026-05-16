@@ -1,5 +1,6 @@
 import { PostComment } from './Comment';
 import { PostSource } from './PostSource';
+import {PostExplanation} from "./PostExplanation";
 
 export interface Post {
   postId: string;
@@ -9,7 +10,6 @@ export interface Post {
   createdAt: string;
   caption: string;
   isPublic: boolean;
-  whyExplanation: string;
   likes: number;
   upvotes: number;
   downvotes: number;
@@ -19,4 +19,5 @@ export interface Post {
   videoImageRef: string[];
   sourceIds: PostSource[];
   comments: PostComment[];
+  explanation: PostExplanation;
 }
