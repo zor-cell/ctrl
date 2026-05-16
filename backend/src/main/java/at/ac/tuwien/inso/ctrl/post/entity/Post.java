@@ -53,6 +53,9 @@ public class Post implements Votable {
   @Column(name = "is_ai_generated")
   private Boolean isAiGenerated = false;
 
+  @Column(name = "is_removed")
+  private Boolean isRemoved = false;
+
   private Integer upvotes;
 
   private Integer downvotes;

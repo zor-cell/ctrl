@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
+import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -224,4 +225,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
         """,
       nativeQuery = true)
   long countPostsWithoutTopics();
+
+  Optional<Post> findBySource(Source source);
+
+  Optional<Post> getPostByPostId(String contentId);
 }

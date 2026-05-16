@@ -1,0 +1,65 @@
+<div class="feed-wrapper">
+
+  <div class="verifications-container">
+    <h2>Business Account Verification</h2>
+
+    @if (loading()) {
+      <p>Loading...</p>
+    } @else if (pendingVerifications().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <p>No pending business account verifications.</p>
+      </div>
+    } @else {
+      <div class="verifications-list">
+        @for (verification of pendingVerifications(); track verification.id) {
+          <div class="verification-card">
+            <div class="user-info-section">
+              <div class="user-header">
+                <button
+                  type="button"
+                  class="profile-avatar"
+                  (click)="navigateToProfile(verification.user.username)">
+                  @if (verification.user.profilePicture) {
+                    <img
+                      [src]="verification.user.profilePicture"
+                      alt=""
+                      class="profile-avatar__image"
+                    />
+                  } @else {
+                    <span class="profile-avatar__initial">{{ verification.user.name.charAt(0) || verification.user.username.charAt(0) }}</span>
+                  }
+                </button>
+                <div class="user-details">
+                  <h3>{{ verification.user.name || verification.user.username }}</h3>
+                  <p class="username">@{{ verification.user.username }}</p>
+                  <p class="email">{{ verification.user.email }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-buttons">
+              <p-button
+                icon="pi pi-check"
+                label="Approve"
+                severity="success"
+                (onClick)="approveAccount(verification)"
+                [disabled]="loading()"
+                [loading]="loading()"
+                size="small" />
+              <p-button
+                icon="pi pi-times"
+                label="Deny"
+                severity="danger"
+                (onClick)="denyAccount(verification)"
+                [disabled]="loading()"
+                [loading]="loading()"
+                size="small" />
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>

@@ -14,6 +14,7 @@ import {AuthService} from "../auth/auth.service";
 import { UserSearchResult } from './dto/Relationship';
 import { PublicUserProfile } from './dto/PublicUserProfile';
 import { MediaCacheService } from '../core/services/media-cache.service';
+import {VerificationStatusResponse} from './dto/BusinessVerification';
 
 @Injectable({
   providedIn: 'root',
@@ -136,5 +137,17 @@ export class UserService {
         this.notificationService.showSuccess('Verified Identity');
       })
     );
+  }
+  public requestBusinessVerification() {
+    return this.httpClient.post<void>(this.baseUri + '/me/verify/business', {}).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Business verification request submitted');
+      })
+    );
+  }
+
+  public getVerificationStatus() {
+    return this.httpClient.get<VerificationStatusResponse>(this.baseUri + '/me/verify', {}).pipe();
+
   }
 }
