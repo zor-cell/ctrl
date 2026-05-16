@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,7 +34,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 @Service
-@RequiredArgsConstructor
 public class FileStorageService {
   private static final Set<String> ALLOWED_MEDIA_TYPES =
       Set.of(
@@ -55,6 +54,7 @@ public class FileStorageService {
 
   private final S3Client s3Client;
   private final S3Presigner s3Presigner;
+  private final S3Presigner internalS3Presigner;
   private final VideoTranscodingService videoTranscodingService;
 
   @Value("${garage.bucket-name}")
@@ -71,6 +71,17 @@ public class FileStorageService {
 
   @Value("${garage.presigned-url-duration:PT2M}")
   private Duration presignedUrlDuration;
+
+  public FileStorageService(
+      S3Client s3Client,
+      @Qualifier("s3Presigner") S3Presigner s3Presigner,
+      @Qualifier("internalS3Presigner") S3Presigner internalS3Presigner,
+      VideoTranscodingService videoTranscodingService) {
+    this.s3Client = s3Client;
+    this.s3Presigner = s3Presigner;
+    this.internalS3Presigner = internalS3Presigner;
+    this.videoTranscodingService = videoTranscodingService;
+  }
 
   /**
    * Uploads a given file to the S3 file storage and returns a relative filename (or unique object
@@ -200,6 +211,15 @@ public class FileStorageService {
   }
 
   private PresignedFileUrl createPresignedUrl(String mediaRef, String bucketName) {
+    return createPresignedUrl(mediaRef, bucketName, s3Presigner);
+  }
+
+  public String resolveInternalPostMediaUrl(String mediaRef) {
+    return createPresignedUrl(mediaRef, privateBucketName, internalS3Presigner).mediaUrl();
+  }
+
+  private PresignedFileUrl createPresignedUrl(
+      String mediaRef, String bucketName, S3Presigner presigner) {
     if (mediaRef == null || mediaRef.isBlank()) {
       throw new InvalidRequestException("Invalid media reference");
     }
@@ -208,7 +228,7 @@ public class FileStorageService {
     GetObjectRequest getObjectRequest =
         GetObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
     PresignedGetObjectRequest presignedRequest =
-        s3Presigner.presignGetObject(
+        presigner.presignGetObject(
             request ->
                 request.signatureDuration(presignedUrlDuration).getObjectRequest(getObjectRequest));
 

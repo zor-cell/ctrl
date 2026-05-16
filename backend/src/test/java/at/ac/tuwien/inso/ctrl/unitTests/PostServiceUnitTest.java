@@ -93,13 +93,16 @@ public class PostServiceUnitTest {
     Topic topicOne = Topic.builder().topicId("topic-1").name("Politics").build();
     Topic topicTwo = Topic.builder().topicId("topic-2").name("Science").build();
     float[] embedding = new float[] {0.1f, 0.2f};
+    String imageUrl = "http://garage:3900/ctrl-test-private/posts/media/image.png";
     PostResponse response = createResponse("This is my post", true, true, "posts/media/image.png");
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(sourceService.createSource(null)).thenReturn(source);
     when(topicRepository.findAllById(List.of("topic-1", "topic-2")))
         .thenReturn(List.of(topicOne, topicTwo));
-    when(embeddingService.embedText("This is my post")).thenReturn(embedding);
+    when(fileStorageService.resolveInternalPostMediaUrl("posts/media/image.png"))
+        .thenReturn(imageUrl);
+    when(embeddingService.embedTextWithImage("This is my post", imageUrl)).thenReturn(embedding);
     when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(postMapper.toResponse(any(Post.class))).thenReturn(response);
 
@@ -129,7 +132,8 @@ public class PostServiceUnitTest {
         savedPost.getPostTopics().stream()
             .anyMatch(postTopic -> postTopic.getTopic().getTopicId().equals("topic-2")));
     verify(sourceService).createSource(null);
-    verify(embeddingService).embedText("This is my post");
+    verify(fileStorageService).resolveInternalPostMediaUrl("posts/media/image.png");
+    verify(embeddingService).embedTextWithImage("This is my post", imageUrl);
     verify(fileStorageService).movePostMediaToPublicBucket("posts/media/image.png");
   }
 
