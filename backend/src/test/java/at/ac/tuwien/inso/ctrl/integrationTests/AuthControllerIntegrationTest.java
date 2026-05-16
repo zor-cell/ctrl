@@ -275,7 +275,7 @@ public class AuthControllerIntegrationTest {
         .andExpect(status().isConflict());
 
     Optional<EmailVerification> verification =
-        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+        emailVerificationRepository.findEmailVerificationByUser_Id(testUserVerified.getId());
     assertFalse(verification.isPresent());
   }
 
