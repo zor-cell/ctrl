@@ -75,6 +75,10 @@ public class EmailVerificationService {
         return;
       }
 
+      if (user.get() == null || userByEmail.get() == null) {
+        return;
+      }
+
       if (!user.get().getId().equals(userByEmail.get().getId())) {
         LOGGER.info("email wrong: {} {}", user.get().getId(), userByEmail.get().getId());
 

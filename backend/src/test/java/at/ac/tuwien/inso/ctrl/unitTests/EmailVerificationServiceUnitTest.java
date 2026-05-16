@@ -25,6 +25,8 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +60,7 @@ public class EmailVerificationServiceUnitTest {
 
     testUser =
         User.builder()
+            .id(UUID.randomUUID())
             .username("testUser")
             .password("hashedPassword")
             .email("test@domain.com")
