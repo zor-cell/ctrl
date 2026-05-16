@@ -1,0 +1,104 @@
+// ─── Slider Size Token ────────────────────────────────
+$slider-height: 8px;
+
+// ─── Slider Color Tokens ──────────────────────────────
+$color-interaction:   #6366f1; // indigo
+$color-recency:       #10b981; // emerald
+$color-exploration:   #f59e0b; // amber
+$color-source-quality:#3b82f6; // blue
+$color-trending:      #ef4444; // red
+$color-topic:         #8b5cf6; // violet
+
+// ─── Layout ───────────────────────────────────────────
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 58px);
+  padding: 1rem;
+}
+
+// ─── Slider Field ─────────────────────────────────────
+.slider-field {
+  margin-bottom: 1.25rem;
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  // Label + info icon side by side
+  .slider-label-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    label {
+      font-weight: 600;
+      color: var(--text-color);
+      margin: 0;
+    }
+  }
+}
+
+// ─── Info Icon ────────────────────────────────────────
+.hint-icon {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #9ca3af);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+// ─── Level Badge (Low / Medium / High etc.) ───────────
+.level-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--p-primary-color, #6366f1) 12%, transparent);
+  color: var(--p-primary-color, #6366f1);
+  min-width: 80px;
+  text-align: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+// ─── Per-Slider Colors ────────────────────────────────
+@mixin slider-color($color) {
+  ::ng-deep {
+    .p-slider {
+      height: $slider-height !important;
+      border-radius: calc($slider-height / 2) !important;
+    }
+    .p-slider-range {
+      background: $color !important;
+      border-radius: calc($slider-height / 2) !important;
+    }
+    .p-slider-handle {
+      width: calc($slider-height * 2) !important;
+      height: calc($slider-height * 2) !important;
+      margin-top: calc($slider-height * -1) !important;
+      border-color: $color !important;
+      &:hover, &:focus {
+        box-shadow: 0 0 0 4px color-mix(in srgb, #{$color} 20%, transparent) !important;
+      }
+    }
+  }
+
+  .level-badge {
+    background: color-mix(in srgb, #{$color} 12%, transparent);
+    color: $color;
+  }
+}
+
+.slider-interaction   { @include slider-color($color-interaction); }
+.slider-recency       { @include slider-color($color-recency); }
+.slider-exploration   { @include slider-color($color-exploration); }
+.slider-source-quality{ @include slider-color($color-source-quality); }
+.slider-trending      { @include slider-color($color-trending); }
+.slider-topic         { @include slider-color($color-topic); }

@@ -13,10 +13,35 @@ $radius-sm:    10px;
 
 // ─── Feed Wrapper ─────────────────────────────────────
 .feed-wrapper {
-  min-height: 100vh;
   max-width: 640px;
   margin: 0 auto;
-  padding: 0 0 80px;
+}
+
+// ─── Tabs Container (wraps p-tabs + floating button) ──
+.tabs-container {
+  position: relative;
+}
+
+// ─── Algorithm Config Button (right side of tab bar) ──
+.tablist-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 48px; // match PrimeNG tab bar height
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+  z-index: 1;
+}
+
+// ─── Refresh Button Spin ───────────────────────────────
+@keyframes spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+:host ::ng-deep .refresh-btn.spinning .p-button-icon {
+  animation: spin-once 0.6s linear 1;
 }
 
 // ─── Posts List ───────────────────────────────────────
@@ -46,7 +71,8 @@ $radius-sm:    10px;
   scroll-snap-stop: always;
   flex-shrink: 0;
 
-  height: calc(100vh - 120px); // gleiche Höhe wie .posts-list
+  height: auto;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
 
@@ -132,7 +158,7 @@ $radius-sm:    10px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 16px 6px;
+  margin: 16px 0 16px 12px;
   padding: 4px 10px;
   border-radius: 20px;
   border: 1px solid $border;
@@ -151,15 +177,7 @@ $radius-sm:    10px;
 .post-source-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px 14px;
-  .post-source-left {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
 }
-
 
 // ─── Labels ───────────────────────────────────────────
 .post-labels {
@@ -192,6 +210,7 @@ $radius-sm:    10px;
 }
 
 .action-btn {
+  margin: 0.25rem;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -203,6 +222,9 @@ $radius-sm:    10px;
   transition: all 0.2s;
 
   i { font-size: 0.9rem; }
+
+  &.heart:hover {border-color: $downvote; color: $downvote}
+  &.heart.active {color: $downvote; border-color: $downvote }
 
   &.upvote:hover  { color: $upvote;   border-color: $upvote; }
   &.downvote:hover { color: $downvote; border-color: $downvote; }
@@ -235,6 +257,7 @@ $radius-sm:    10px;
 :host ::ng-deep .why-dialog {
   border: 1px solid $border !important;
   border-radius: $radius !important;
+  //width: ;
 
   .p-dialog-header {
     border-bottom: 1px solid $border !important;
@@ -262,7 +285,110 @@ $radius-sm:    10px;
   }
 
   p {
+    white-space: pre-line;
     font-size: 0.93rem;
     margin: 0;
   }
+}
+
+// ─── Algorithm Config Dialog ──────────────────────────
+:host ::ng-deep .algorithm-config-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
+  }
+}
+
+
+
+
+.dialog-grid {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2rem;
+  margin: 2rem 2rem 1rem 2rem;
+}
+
+.score-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.score-row {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.5rem;
+}
+
+.score-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint-icon {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #9ca3af);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+.bi-bar-container {
+  height: 8px !important;
+  border-radius: 4px;
+}
+
+/* Styles for bidirectional bar */
+.bi-bar-container {
+  position: relative;
+  height: 12px;
+  background: var(--surface-variant, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.bi-bar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 12px;
+  background: black;
+  z-index: 2;
+  opacity: 0.3;
+}
+
+.bi-bar {
+  height: 100%;
+  transition: width 0.5s ease-out;
+}
+
+.bi-bar.neg {
+  position: absolute;
+  right: 50%;
+  border-radius: 4px 0 0 4px;
+  background-color: #F43F5E;
+}
+
+.bi-bar.pos {
+  position: absolute;
+  left: 50%;
+  border-radius: 0 4px 4px 0;
+  background-color: #6366F1;
 }

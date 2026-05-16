@@ -89,6 +89,7 @@ public class PostControllerDatabaseIntegrationTest {
   private User otherUser;
   private String verifiedUserToken;
   private String otherUserToken;
+  private String generatedTopicId;
 
   @BeforeEach
   void setUp() {
@@ -100,7 +101,8 @@ public class PostControllerDatabaseIntegrationTest {
 
     verifiedUser = saveUser("marlene", true);
     otherUser = saveUser("other", true);
-    topicRepository.save(Topic.builder().topicId("topic-1").name("Politics").emoji("P").build());
+    Topic savedTopic = topicRepository.save(Topic.builder().name("Politics").emoji("P").build());
+    generatedTopicId = savedTopic.getTopicId();
     verifiedUserToken = jwtService.generateToken(verifiedUser);
     otherUserToken = jwtService.generateToken(otherUser);
     when(fileStorageService.resolveFileUrl(anyString()))
@@ -135,10 +137,11 @@ public class PostControllerDatabaseIntegrationTest {
                       "mediaRef": "posts/media/file.png",
                       "isPublic": true,
                       "isAiGenerated": false,
-                      "topicIds": ["topic-1"],
+                      "topicIds": ["%s"],
                       "source": null
                     }
-                    """))
+                    """
+                        .formatted(generatedTopicId)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.username").value("marlene"))
         .andExpect(jsonPath("$.caption").value("A valid caption"))
@@ -147,7 +150,7 @@ public class PostControllerDatabaseIntegrationTest {
             jsonPath("$.mediaUrl")
                 .value("http://localhost:8080/api/files/media-url?ref=posts%2Fmedia%2Ffile.png"))
         .andExpect(jsonPath("$.isPublic").value(true))
-        .andExpect(jsonPath("$.topicIds[0]").value("topic-1"));
+        .andExpect(jsonPath("$.topicIds[0]").value(generatedTopicId));
 
     var savedPosts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene");
     assertEquals(1, savedPosts.size());

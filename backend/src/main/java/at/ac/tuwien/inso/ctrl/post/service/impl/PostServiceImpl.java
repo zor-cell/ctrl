@@ -18,12 +18,14 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -50,9 +52,11 @@ public class PostServiceImpl implements PostService {
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
+  private final SeenPostRepository seenPostRepository;
   private final VoteManager voteManager;
-  private final FriendRelationRepository friendRelationRepository;
+  private final FollowRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
+  private final UserPreferenceService userPreferenceService;
 
   @Override
   @Transactional
@@ -79,7 +83,9 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    // embed post information (only text for now, image when file storage service is up)
+    // embed post information
+    // String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
+    // TODO: image needs to be embedded again as well!
     float[] embedding = embeddingService.embedText(post.getCaption());
     post.setEmbedding(embedding);
 
@@ -101,19 +107,27 @@ public class PostServiceImpl implements PostService {
     PostVoteId voteId = new PostVoteId(postId, user.getId().toString());
     Optional<PostVote> existingVote = postVoteRepository.findById(voteId);
 
-    return voteManager.processVote(
-        post,
-        existingVote,
-        newVoteType,
-        /* createVote */ () ->
-            postVoteRepository.save(
-                PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
-        /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
-        /* updateVote */ () -> {
-          existingVote.get().setVoteType(newVoteType);
-          postVoteRepository.save(existingVote.get());
-        },
-        /* saveEntity */ () -> postRepository.save(post));
+    VoteResponse response =
+        voteManager.processVote(
+            post,
+            existingVote,
+            newVoteType,
+            /* createVote */ () ->
+                postVoteRepository.save(
+                    PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
+            /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
+            /* updateVote */ () -> {
+              existingVote.get().setVoteType(newVoteType);
+              postVoteRepository.save(existingVote.get());
+            },
+            /* saveEntity */ () -> postRepository.save(post));
+
+    // mark post as seen if not already recorded
+    seenPostRepository.upsertView(user.getId(), postId, 0L);
+
+    // update user preference asynchronously
+    userPreferenceService.updateInteractionVectorAsync(user.getId());
+    return response;
   }
 
   /** Helpers * */
@@ -132,7 +146,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            || friendRelationRepository.existsByFollowerAndFollowed(profileOwner, viewer);
 
     List<Post> posts =
         canSeePrivatePosts

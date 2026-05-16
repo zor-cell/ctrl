@@ -1,7 +1,7 @@
 import {Component, computed, inject} from '@angular/core';
-import {Router, RouterModule} from '@angular/router';
+import {RouterModule, Router } from '@angular/router';
 import {AuthService} from "../auth/auth.service";
-import {ThemeService} from '../core/services/theme.service';
+import { ThemeService } from '../core/services/theme.service';
 import {ButtonModule} from 'primeng/button';
 import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
@@ -26,16 +26,16 @@ export class NavigationComponent {
     const loggedIn = this.authService.isAuthenticated();
 
     const items: MenuItem[] = [
-      {label: 'Feed', icon: 'pi pi-home', routerLink: '/feed'},
-      {label: 'Search', icon: 'pi pi-search', routerLink: '/search'}
+
     ];
 
     if (loggedIn) {
       items.push(
-        {label: 'Post', icon: 'pi pi-plus', routerLink: '/post'},
-        {label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat'}
-
-    );
+        { icon: 'pi pi-home', routerLink: '/feed' },
+        { icon: 'pi pi-search', routerLink: '/search' },
+        { icon: 'pi pi-plus', routerLink: '/post' },
+        { icon: 'pi pi-comments', routerLink: '/chat' }
+      );
     }
 
     if (this.authService.isAdmin()) {

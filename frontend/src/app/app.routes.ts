@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPasswordComponent },
   {
     path: 'feed',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./feed/components/feed/feed.component').then(m => m.FeedComponent),
   },
@@ -79,6 +80,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./user/components/verification-callback/verification-callback.component').then(
         m => m.VerificationCallbackComponent,
+      ),
+  },
+  {
+    path: 'algorithm',
+    loadComponent: () =>
+      import('./algorithm/components/config/config.component').then(
+        m => m.AlgorithmConfigComponent,
       ),
   },
   {
