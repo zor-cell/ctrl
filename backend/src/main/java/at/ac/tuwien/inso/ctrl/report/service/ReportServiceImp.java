@@ -1,5 +1,7 @@
 package at.ac.tuwien.inso.ctrl.report.service;
 
+import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
@@ -28,12 +30,21 @@ import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.mail.MailException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +63,10 @@ public class ReportServiceImp implements ReportService {
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
   private final ExternalAuthorRepository externalAuthorRepository;
+  private final GmailEmailService gmailEmailService;
+  private final TemplateEngine templateEngine;
+  @Value("${application.auth.require-email-verification:true}")
+  private boolean requireEmailVerification;
 
   @Override
   public void makeReport(CreateReportRequest createReportRequest, User currentUser) {
@@ -122,6 +137,42 @@ public class ReportServiceImp implements ReportService {
         deleteReportedItem(report);
     }
 
+    sendEmailToReporter(report);
+
+  }
+
+  private void sendEmailToReporter(Report report) {
+    if (!requireEmailVerification) {
+      return;
+    }
+
+    if (report.getFromUser() == null) {
+      throw new UsernameNotFoundException("Reporting user not found for report: " + report.getReportId());
+    }
+    try {
+
+      Context context = new Context();
+      context.setVariable("status", report.getStatus().name());
+      context.setVariable("reportTime", formatReportTime(report.getCreatedAt()));
+
+      String htmlContent = templateEngine.process("reportUpdate", context);
+      gmailEmailService.sendHtmlEmail(report.getFromUser().getEmail(), "Your Report has been reviewed", htmlContent);
+    } catch (MailException e) {
+      throw new CommunicationException("Failed to send email.");
+    } catch (MessagingException me) {
+      throw new CommunicationException("Failed to create email.");
+    } catch (IOException e) {
+      throw new CommunicationException("Failed to send or create email.");
+
+    }
+  }
+
+  private String formatReportTime(LocalDateTime reportTime) {
+    if (reportTime == null) {
+      return "";
+    }
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    return reportTime.format(formatter);
   }
 
   @Override
