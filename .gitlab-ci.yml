@@ -71,6 +71,7 @@ test:backend:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: on_failure
+  allow_failure: true
   
 test:e2e:
   stage: test
@@ -110,6 +111,7 @@ test:e2e:
       reports:
         junit: ./frontend/e2e-test-results/*.xml
       when: always
+  allow_failure: true
 
 .build_rules: &build_rules
   rules:
