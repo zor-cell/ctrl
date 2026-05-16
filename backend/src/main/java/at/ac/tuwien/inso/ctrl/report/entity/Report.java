@@ -62,6 +62,7 @@ public class Report {
   private String contentId;
 
   @Column(name = "created_at")
+  @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
   @Enumerated(EnumType.STRING)

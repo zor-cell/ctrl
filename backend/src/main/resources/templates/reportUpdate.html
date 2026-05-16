@@ -163,9 +163,9 @@
             <h1>Your Report has been Reviewed!</h1>
             <p class="subtitle">Thank you for helping us, to make our platform a better place! Your reports are
             a vital part in improving our platform</p>
-            <p style="margin-top: 12px; color: #f0f0f5;">Reported at: <span th:text="${reportTime}">2026-05-16 01:10</span></p>
-            <span th:if="${status == 'VALIDATED'}" style="color: #f0f0f5;">We have reviewed the content and have taken an actions against it.</span>
-            <span th:if="${status == 'DECLINED'}" style="color: #f0f0f5;">We have reviewed the content and found it does not violate our terms of service.</span>
+            <p style="margin-top: 12px;margin-bottom: 8px; color: #f0f0f5;">Reported at: <span th:text="${reportTime}">2026-05-16 01:10</span></p>
+            <p th:if="${status == 'VALIDATED'}" style="color: #f0f0f5;">We have reviewed the content and have taken an actions against it.</p>
+            <p th:if="${status == 'DECLINED'}" style="color: #f0f0f5;">We have reviewed the content and found it does not violate our terms of service.</p>
         </div>
     </div>
 </div>

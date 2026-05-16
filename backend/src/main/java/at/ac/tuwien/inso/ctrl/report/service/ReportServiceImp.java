@@ -85,6 +85,7 @@ public class ReportServiceImp implements ReportService {
         .externalAuthorReported(externalAuthor)
         .contentType(createReportRequest.contentType())
         .status(ReportStatus.CREATED)
+        .createdAt(LocalDateTime.now())
         .build();
     reportRepository.save(newReport);
     
@@ -128,6 +129,9 @@ public class ReportServiceImp implements ReportService {
   @Override
   public void updateReportStatus(UpdateReportRequest request, String id) {
     Report report = reportRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+    if (report.getCreatedAt() == null) {
+      report.setCreatedAt(LocalDateTime.now());
+    }
     report.setStatus(request.status());
     reportRepository.save(report);
 
