@@ -4,27 +4,37 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class FileStorageService {
   private static final Set<String> ALLOWED_MEDIA_TYPES =
       Set.of(
@@ -39,18 +49,28 @@ public class FileStorageService {
   private static final Set<String> QUICKTIME_MEDIA_TYPES =
       Set.of("video/quicktime", "video/x-quicktime");
   private static final long MAX_FILE_SIZE_BYTES = 100L * 1024L * 1024L;
-  private static final Duration TRANSCODING_TIMEOUT = Duration.ofMinutes(5);
   private static final String MP4_MEDIA_TYPE = "video/mp4";
   private static final String POST_MEDIA_PREFIX = "posts/media/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
 
   private final S3Client s3Client;
+  private final S3Presigner s3Presigner;
+  private final VideoTranscodingService videoTranscodingService;
 
   @Value("${garage.bucket-name}")
   private String bucketName;
 
+  @Value("${garage.private-bucket-name:${garage.bucket-name}}")
+  private String privateBucketName;
+
+  @Value("${garage.public-bucket-name:${garage.bucket-name}}")
+  private String publicBucketName;
+
   @Value("${garage.public-url}")
   private String publicUrl;
+
+  @Value("${garage.presigned-url-duration:PT2M}")
+  private Duration presignedUrlDuration;
 
   /**
    * Uploads a given file to the S3 file storage and returns a relative filename (or unique object
@@ -66,7 +86,7 @@ public class FileStorageService {
       if (isQuickTimeVideo(file)) {
         return transcodeAndUploadQuickTimeVideo(file);
       }
-      return uploadFile(file, POST_MEDIA_PREFIX);
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to upload file", e);
     }
@@ -75,13 +95,144 @@ public class FileStorageService {
   public String uploadProfilePicture(MultipartFile file) {
     try {
       validateProfilePicture(file);
-      return uploadFile(file, PROFILE_PICTURE_PREFIX).mediaRef();
+      return uploadFile(file, PROFILE_PICTURE_PREFIX, publicBucketName).mediaRef();
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to upload profile picture", e);
     }
   }
 
+  public void deletePostMedia(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank() || !mediaRef.startsWith(POST_MEDIA_PREFIX)) {
+      throw new InvalidRequestException("Invalid post media reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(privateBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
+  public void deletePublicPostMedia(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank() || !mediaRef.startsWith(POST_MEDIA_PREFIX)) {
+      throw new InvalidRequestException("Invalid post media reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
+  public void movePostMediaToPublicBucket(String mediaRef) {
+    if (mediaRef == null
+        || mediaRef.isBlank()
+        || !mediaRef.startsWith(POST_MEDIA_PREFIX)
+        || mediaRef.startsWith("http://")
+        || mediaRef.startsWith("https://")
+        || privateBucketName.equals(publicBucketName)) {
+      return;
+    }
+
+    CopyObjectRequest copyObjectRequest =
+        CopyObjectRequest.builder()
+            .sourceBucket(privateBucketName)
+            .sourceKey(mediaRef)
+            .destinationBucket(publicBucketName)
+            .destinationKey(mediaRef)
+            .build();
+
+    s3Client.copyObject(copyObjectRequest);
+    deletePostMedia(mediaRef);
+  }
+
+  public List<String> listPostMediaRefsOlderThan(Duration minimumAge) {
+    return listPostMediaRefsOlderThan(minimumAge, privateBucketName);
+  }
+
+  public List<String> listPublicPostMediaRefsOlderThan(Duration minimumAge) {
+    return listPostMediaRefsOlderThan(minimumAge, publicBucketName);
+  }
+
+  private List<String> listPostMediaRefsOlderThan(Duration minimumAge, String bucketName) {
+    Instant cutoff = Instant.now().minus(minimumAge);
+    List<String> mediaRefs = new ArrayList<>();
+    String continuationToken = null;
+
+    do {
+      ListObjectsV2Request request =
+          ListObjectsV2Request.builder()
+              .bucket(bucketName)
+              .prefix(POST_MEDIA_PREFIX)
+              .continuationToken(continuationToken)
+              .build();
+      ListObjectsV2Response response = s3Client.listObjectsV2(request);
+
+      response.contents().stream()
+          .filter(object -> object.lastModified() != null)
+          .filter(object -> object.lastModified().isBefore(cutoff))
+          .map(object -> object.key())
+          .forEach(mediaRefs::add);
+
+      continuationToken = response.nextContinuationToken();
+    } while (continuationToken != null);
+
+    return mediaRefs;
+  }
+
+  public StoredFile readPublicFile(String mediaRef) {
+    return readFile(mediaRef, publicBucketName);
+  }
+
+  public StoredFile readPrivateFile(String mediaRef) {
+    return readFile(mediaRef, privateBucketName);
+  }
+
+  public StoredFile readFile(String mediaRef) {
+    return readPrivateFile(mediaRef);
+  }
+
+  public PresignedFileUrl createPublicPresignedUrl(String mediaRef) {
+    return createPresignedUrl(mediaRef, publicBucketName);
+  }
+
+  public PresignedFileUrl createPrivatePresignedUrl(String mediaRef) {
+    return createPresignedUrl(mediaRef, privateBucketName);
+  }
+
+  private PresignedFileUrl createPresignedUrl(String mediaRef, String bucketName) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      throw new InvalidRequestException("Invalid media reference");
+    }
+
+    Instant expiresAt = Instant.now().plus(presignedUrlDuration);
+    GetObjectRequest getObjectRequest =
+        GetObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+    PresignedGetObjectRequest presignedRequest =
+        s3Presigner.presignGetObject(
+            request ->
+                request.signatureDuration(presignedUrlDuration).getObjectRequest(getObjectRequest));
+
+    return new PresignedFileUrl(presignedRequest.url().toString(), expiresAt);
+  }
+
+  private StoredFile readFile(String mediaRef, String bucketName) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      throw new InvalidRequestException("Invalid media reference");
+    }
+
+    GetObjectRequest getObjectRequest =
+        GetObjectRequest.builder().bucket(bucketName).key(mediaRef).build();
+    ResponseInputStream<GetObjectResponse> objectStream = s3Client.getObject(getObjectRequest);
+    GetObjectResponse response = objectStream.response();
+    return new StoredFile(objectStream, response.contentType(), response.contentLength());
+  }
+
   private UploadedFile uploadFile(MultipartFile file, String prefix) throws IOException {
+    return uploadFile(file, prefix, bucketName);
+  }
+
+  private UploadedFile uploadFile(MultipartFile file, String prefix, String bucketName)
+      throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + resolveExtension(file);
     String contentType = file.getContentType();
 
@@ -102,6 +253,12 @@ public class FileStorageService {
 
   private UploadedFile uploadFile(
       Path filePath, String prefix, String contentType, String extension) throws IOException {
+    return uploadFile(filePath, prefix, contentType, extension, bucketName);
+  }
+
+  private UploadedFile uploadFile(
+      Path filePath, String prefix, String contentType, String extension, String bucketName)
+      throws IOException {
     String uniqueFileName = prefix + UUID.randomUUID() + extension;
 
     PutObjectRequest putObjectRequest =
@@ -125,7 +282,11 @@ public class FileStorageService {
       return null;
     }
 
-    return publicUrl + "/" + relativeFilename;
+    if (relativeFilename.startsWith("http://") || relativeFilename.startsWith("https://")) {
+      return relativeFilename;
+    }
+
+    return publicUrl + URLEncoder.encode(relativeFilename, StandardCharsets.UTF_8);
   }
 
   private void validatePostMedia(MultipartFile file) {
@@ -153,95 +314,11 @@ public class FileStorageService {
 
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
-      transcodeToMp4(inputFile, outputFile);
-      return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4");
+      videoTranscodingService.transcodeToMp4(inputFile, outputFile);
+      return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
-    }
-  }
-
-  private void transcodeToMp4(Path inputFile, Path outputFile) {
-    Path ffmpegLogFile = createFfmpegLogFile();
-    List<String> command =
-        List.of(
-            "ffmpeg",
-            "-y",
-            "-hide_banner",
-            "-i",
-            inputFile.toString(),
-            "-map",
-            "0:v:0",
-            "-map",
-            "0:a:0?",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "veryfast",
-            "-crf",
-            "23",
-            "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-            "-tag:v",
-            "avc1",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-            "-movflags",
-            "+faststart",
-            outputFile.toString());
-
-    ProcessBuilder processBuilder = new ProcessBuilder(command);
-    processBuilder.redirectErrorStream(true);
-    processBuilder.redirectOutput(ffmpegLogFile.toFile());
-
-    try {
-      Process process = processBuilder.start();
-      boolean completed =
-          process.waitFor(
-              TRANSCODING_TIMEOUT.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
-
-      if (!completed) {
-        process.destroyForcibly();
-        throw new InvalidRequestException("Video conversion timed out");
-      }
-
-      if (process.exitValue() != 0 || !Files.exists(outputFile) || Files.size(outputFile) == 0) {
-        log.warn("FFmpeg conversion failed: {}", readFfmpegLog(ffmpegLogFile));
-        throw new InvalidRequestException("Video could not be converted to MP4");
-      }
-    } catch (IOException e) {
-      throw new InvalidRequestException("Video conversion is currently unavailable");
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new InvalidRequestException("Video conversion was interrupted");
-    } finally {
-      try {
-        Files.deleteIfExists(ffmpegLogFile);
-      } catch (IOException e) {
-        log.debug("Could not delete FFmpeg log file {}", ffmpegLogFile, e);
-      }
-    }
-  }
-
-  private Path createFfmpegLogFile() {
-    try {
-      return Files.createTempFile("post-media-ffmpeg-", ".log");
-    } catch (IOException e) {
-      throw new InvalidRequestException("Video conversion is currently unavailable");
-    }
-  }
-
-  private String readFfmpegLog(Path ffmpegLogFile) {
-    try {
-      String output = Files.readString(ffmpegLogFile, StandardCharsets.UTF_8).trim();
-      if (output.length() > 4000) {
-        return output.substring(output.length() - 4000);
-      }
-      return output;
-    } catch (IOException e) {
-      return "FFmpeg output could not be read";
     }
   }
 
@@ -266,4 +343,8 @@ public class FileStorageService {
   }
 
   public record UploadedFile(String mediaRef, String contentType, long size) {}
+
+  public record StoredFile(InputStream inputStream, String contentType, long size) {}
+
+  public record PresignedFileUrl(String mediaUrl, Instant expiresAt) {}
 }

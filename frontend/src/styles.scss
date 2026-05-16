@@ -39,9 +39,9 @@ Styles for global containers
 .form-container {
   width: 100%;
   max-width: 450px;
-  margin: 2rem auto;
+  margin: 1rem auto;
 
-  padding: 2rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -76,4 +76,10 @@ Styles for global containers
 .app-dark .form-container {
   background-color: var(--p-surface-900);
   border-color: var(--p-surface-700);
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

@@ -3,12 +3,12 @@ package at.ac.tuwien.inso.ctrl.user.service;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -23,16 +23,9 @@ import org.springframework.stereotype.Service;
 public class FollowService {
 
   private final FollowRelationRepository followRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final UserRepository userRepository;
   private final RelationshipMapper socialMapper;
-
-  public List<FriendResponse> getFriends(User currentUser, String search) {
-    List<User> friends =
-        search == null || search.isBlank()
-            ? followRelationRepository.findFriends(currentUser)
-            : followRelationRepository.findFriendsBySearch(currentUser, search);
-    return friends.stream().map(socialMapper::toFriendResponse).toList();
-  }
 
   public List<FollowedResponse> getFollowed(User currentUser, String search) {
     List<User> followed =
@@ -44,7 +37,7 @@ public class FollowService {
 
   @Transactional
   public void follow(User currentUser, String targetUsername) {
-    if (currentUser.getUsername().equalsIgnoreCase(targetUsername)) {
+    if (currentUser.getUsername().equals(targetUsername)) {
       throw new InvalidRequestException("Cannot follow yourself");
     }
 
@@ -79,24 +72,24 @@ public class FollowService {
             .findByUsername(targetUsername)
             .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
-    // Delete both directions - this breaks friendship if existed
-    followRelationRepository.deleteBidirectional(currentUser, target);
+    if (followRelationRepository.deleteByFollowerAndFollowed(currentUser, target) == 0) {
+      throw new NotFoundException("Follow", targetUsername);
+    }
   }
 
   public Set<UUID> getFollowedIds(User currentUser) {
     return followRelationRepository.findFollowedIdsByFollower(currentUser);
   }
 
-  public Set<UUID> getFriendIds(User currentUser) {
-    return followRelationRepository.findFriendIds(currentUser);
-  }
-
   public boolean isFollowing(User follower, User followed) {
     return followRelationRepository.existsByFollowerAndFollowed(follower, followed);
   }
 
-  public boolean areFriends(User user1, User user2) {
-    return followRelationRepository.existsByFollowerAndFollowed(user1, user2)
-        && followRelationRepository.existsByFollowerAndFollowed(user2, user1);
+  public Set<UUID> getFriendIds(User currentUser) {
+    return friendRelationRepository.findFriendIds(currentUser);
+  }
+
+  public boolean areFriends(User firstUser, User secondUser) {
+    return friendRelationRepository.existsByUsers(firstUser, secondUser);
   }
 }

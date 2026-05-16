@@ -1,9 +1,10 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
+import { map, tap, switchMap, takeUntil, Subject, merge, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
 import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
+import { MediaCacheService } from '../core/services/media-cache.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +14,7 @@ export class RelationshipService implements OnDestroy {
   private readonly searchUri: string = environment.apiUrl + '/users';
   private http = inject(HttpClient);
   private eventBus = inject(FriendRequestEventBusService);
+  private mediaCacheService = inject(MediaCacheService);
 
   private _friends = signal<Friend[]>([]);
   private _followed = signal<Followed[]>([]);
@@ -71,6 +73,9 @@ export class RelationshipService implements OnDestroy {
       case 'followed':
         this.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
         break;
+      case 'unfriend':
+        this.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
+        break;
       case 'unfollowed':
         forkJoin([
           this.loadFollowed(),
@@ -107,7 +112,10 @@ export class RelationshipService implements OnDestroy {
       params = params.set('q', search);
     }
     return this.http.get<Friend[]>(`${this.baseUri}/friends`, { params }).pipe(
-      tap(friends => this._friends.set(friends))
+      tap(friends => {
+        this._friends.set(friends);
+        this.cacheProfilePictures(friends);
+      })
     );
   }
 
@@ -117,8 +125,15 @@ export class RelationshipService implements OnDestroy {
       params = params.set('q', search);
     }
     return this.http.get<Followed[]>(`${this.baseUri}/followed`, { params }).pipe(
-      tap(followed => this._followed.set(followed))
+      tap(followed => {
+        this._followed.set(followed);
+        this.cacheProfilePictures(followed);
+      })
     );
+  }
+
+  unfriend(username: string) {
+    return this.http.delete<void>(`${this.baseUri}/friends/${username}`);
   }
 
   follow(username: string) {
@@ -133,6 +148,7 @@ export class RelationshipService implements OnDestroy {
     return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/sent`).pipe(
       tap(requests => {
         this._sentRequests.set(requests);
+        this.cacheProfilePictures(requests);
         this.eventBus.updateState({ sent: requests });
       })
     );
@@ -142,6 +158,7 @@ export class RelationshipService implements OnDestroy {
     return this.http.get<FriendRequest[]>(`${this.baseUri}/friend-requests/incoming`).pipe(
       tap(requests => {
         this._incomingRequests.set(requests);
+        this.cacheProfilePictures(requests);
         this.eventBus.updateState({ incoming: requests });
       })
     );
@@ -230,7 +247,16 @@ export class RelationshipService implements OnDestroy {
       .set('verifiedOnly', verifiedOnly.toString());
 
     return this.http.get<UserSearchResult[]>(`${this.searchUri}/search`, { params }).pipe(
-      tap(results => this._searchResults.set(results))
+      map(results =>
+        results.map(result => ({
+          ...result,
+          relationshipStatuses: result.relationshipStatuses ?? [],
+        }))
+      ),
+      tap(results => {
+        this._searchResults.set(results);
+        this.cacheProfilePictures(results);
+      })
     );
   }
 
@@ -241,5 +267,9 @@ export class RelationshipService implements OnDestroy {
   ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
+  }
+
+  private cacheProfilePictures(users: { profilePicture: string | null }[]): void {
+    users.forEach(user => this.mediaCacheService.cacheUrl(user.profilePicture, 'image', 'high'));
   }
 }

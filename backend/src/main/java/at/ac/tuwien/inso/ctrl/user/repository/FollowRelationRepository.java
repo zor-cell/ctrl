@@ -18,31 +18,12 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
   @Query("SELECT fr.followed FROM FollowRelation fr WHERE fr.follower = :follower")
   List<User> findFollowedByFollower(@Param("follower") User follower);
 
-  @Query(
-      """
-      SELECT u FROM User u
-      JOIN FollowRelation fr1 ON fr1.followed = u AND fr1.follower = :user
-      JOIN FollowRelation fr2 ON fr2.follower = u AND fr2.followed = :user
-      """)
-  List<User> findFriends(@Param("user") User user);
-
-  // potential performance bottleneck: search via LIKE
-  @Query(
-      """
-      SELECT u FROM User u
-      JOIN FollowRelation fr1 ON fr1.followed = u AND fr1.follower = :user
-      JOIN FollowRelation fr2 ON fr2.follower = u AND fr2.followed = :user
-      WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
-         OR LOWER(u.name)     LIKE LOWER(CONCAT('%', :search, '%'))
-      """)
-  List<User> findFriendsBySearch(@Param("user") User user, @Param("search") String search);
-
   // potential performance bottleneck: search via LIKE
   @Query(
       """
       SELECT fr.followed FROM FollowRelation fr
       WHERE fr.follower = :follower
-      AND LOWER(fr.followed.username) LIKE LOWER(CONCAT('%', :search, '%'))
+      AND fr.followed.username LIKE CONCAT('%', :search, '%')
       """)
   List<User> findFollowedBySearch(@Param("follower") User follower, @Param("search") String search);
 
@@ -50,7 +31,7 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
 
   @Modifying
   @Query("DELETE FROM FollowRelation fr WHERE fr.follower = :follower AND fr.followed = :followed")
-  void deleteByFollowerAndFollowed(
+  int deleteByFollowerAndFollowed(
       @Param("follower") User follower, @Param("followed") User followed);
 
   @Modifying
@@ -64,12 +45,4 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
 
   @Query("SELECT fr.followed.id FROM FollowRelation fr WHERE fr.follower = :user")
   Set<UUID> findFollowedIdsByFollower(@Param("user") User user);
-
-  @Query(
-      """
-      SELECT u.id FROM User u
-      JOIN FollowRelation fr1 ON fr1.followed = u AND fr1.follower = :user
-      JOIN FollowRelation fr2 ON fr2.follower = u AND fr2.followed = :user
-      """)
-  Set<UUID> findFriendIds(@Param("user") User user);
 }

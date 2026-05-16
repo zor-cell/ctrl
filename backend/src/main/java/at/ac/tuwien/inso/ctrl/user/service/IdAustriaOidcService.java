@@ -30,12 +30,12 @@ public class IdAustriaOidcService {
 
   private final JwtDecoder idAustriaJwtDecoder;
 
-  private IdAustriaTokenResponse exchangeCodeForToken(String code) {
+  private IdAustriaTokenResponse exchangeCodeForToken(String code, String codeRedirectUri) {
     MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
     formData.add("code", code);
     formData.add("grant_type", "authorization_code");
     formData.add("client_secret", clientSecret);
-    formData.add("redirect_uri", redirectUri);
+    formData.add("redirect_uri", codeRedirectUri);
     formData.add("client_id", clientId);
 
     return restClient
@@ -53,7 +53,11 @@ public class IdAustriaOidcService {
    * Austria OIDC Spezifikation</a>
    */
   public Jwt getTokenFromCode(String code) {
-    IdAustriaTokenResponse tokenResponse = exchangeCodeForToken(code);
+    return getTokenFromCode(code, redirectUri);
+  }
+
+  public Jwt getTokenFromCode(String code, String codeRedirectUri) {
+    IdAustriaTokenResponse tokenResponse = exchangeCodeForToken(code, codeRedirectUri);
 
     return idAustriaJwtDecoder.decode(tokenResponse.idToken());
   }

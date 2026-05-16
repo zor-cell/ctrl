@@ -19,10 +19,13 @@ import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,6 +59,8 @@ public class RelationshipControllerIntegrationTest {
   @Autowired private WebApplicationContext webApplicationContext;
 
   @Autowired private FollowRelationRepository followRelationRepository;
+
+  @Autowired private FriendRelationRepository friendRelationRepository;
 
   @Autowired private FriendRequestRepository friendRequestRepository;
 
@@ -141,6 +146,7 @@ public class RelationshipControllerIntegrationTest {
   @AfterEach
   public void tearDownTestData() {
     friendRequestRepository.deleteAll();
+    friendRelationRepository.deleteAll();
     followRelationRepository.deleteAll();
     userRepository.deleteAll();
   }
@@ -149,8 +155,8 @@ public class RelationshipControllerIntegrationTest {
 
   @Test
   public void getFriends_withoutSearch_shouldReturnAllFriends() throws Exception {
-    createMutualFollows(currentUser, alpha);
-    createMutualFollows(currentUser, gamma);
+    createFriendship(currentUser, alpha);
+    createFriendship(currentUser, gamma);
 
     MvcResult result =
         mockMvc
@@ -171,9 +177,9 @@ public class RelationshipControllerIntegrationTest {
   @Test
   public void getFriends_withSearch_shouldReturnFriendsContainingSearchSubstring()
       throws Exception {
-    createMutualFollows(currentUser, alpha);
-    createMutualFollows(currentUser, beta);
-    createMutualFollows(currentUser, gamma);
+    createFriendship(currentUser, alpha);
+    createFriendship(currentUser, beta);
+    createFriendship(currentUser, gamma);
 
     MvcResult result =
         mockMvc
@@ -327,28 +333,6 @@ public class RelationshipControllerIntegrationTest {
     Optional<FollowRelation> deleted =
         followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
     assertFalse(deleted.isPresent());
-  }
-
-  @Test
-  public void unfollow_breaksFriendshipBothWays() throws Exception {
-    createMutualFollows(currentUser, alpha);
-
-    mockMvc
-        .perform(
-            delete("/api/users/me/followed/{username}", alpha.getUsername())
-                .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    entityManager.flush();
-    entityManager.clear();
-
-    Optional<FollowRelation> currentToFriend =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> friendToCurrent =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-
-    assertFalse(currentToFriend.isPresent());
-    assertFalse(friendToCurrent.isPresent());
   }
 
   @Test
@@ -521,7 +505,7 @@ public class RelationshipControllerIntegrationTest {
 
   @Test
   public void sendFriendRequest_alreadyFriends_shouldFail() throws Exception {
-    createMutualFollows(currentUser, alpha);
+    createFriendship(currentUser, alpha);
 
     String requestBody = "{\"toUsername\": \"" + alpha.getUsername() + "\"}";
 
@@ -590,13 +574,10 @@ public class RelationshipControllerIntegrationTest {
                 .with(user(currentUser)))
         .andExpect(status().isNoContent());
 
-    Optional<FollowRelation> receiverToSender =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    Optional<FollowRelation> senderToReceiver =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-
-    assertTrue(receiverToSender.isPresent());
-    assertTrue(senderToReceiver.isPresent());
+    // Verify friendship was created in friend_relation table
+    Optional<FriendRelation> friendship =
+        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
+    assertTrue(friendship.isPresent());
 
     Optional<FriendRequest> deleted =
         friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
@@ -835,5 +816,18 @@ public class RelationshipControllerIntegrationTest {
             .expiresAt(LocalDateTime.now().plusDays(30))
             .build();
     friendRequestRepository.save(request);
+  }
+
+  private void createFriendship(
+      at.ac.tuwien.inso.ctrl.user.entity.User user1,
+      at.ac.tuwien.inso.ctrl.user.entity.User user2) {
+    FriendRelation friendship =
+        FriendRelation.builder()
+            .id(new FriendRelationId(user1.getId(), user2.getId()))
+            .friend1(user1)
+            .friend2(user2)
+            .since(LocalDateTime.now())
+            .build();
+    friendRelationRepository.save(friendship);
   }
 }

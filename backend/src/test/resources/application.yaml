@@ -11,14 +11,16 @@ spring:
     username: ${POSTGRES_USER:${DB_USERNAME:your_user}}
     password: ${POSTGRES_PASSWORD:${DB_PASSWORD:your_password}}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector;
 
   sql:
     init:
       mode: always
-      schema-locations: classpath:init-pgvector.sql
+      separator: ^
 
   jpa:
-    defer-datasource-initialization: false
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: create-drop
     properties:

@@ -7,6 +7,7 @@ import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {Menu} from "primeng/menu";
+import {UserService} from "../user/user.service";
 
 @Component({
   selector: 'app-navigation',
@@ -18,37 +19,57 @@ import {Menu} from "primeng/menu";
 export class NavigationComponent {
   private router = inject(Router);
   protected authService = inject(AuthService);
+  private userService = inject(UserService);
   protected themeService = inject(ThemeService);
 
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
 
     const items: MenuItem[] = [
-      { label: 'Feed', icon: 'pi pi-home', routerLink: '/feed' },
-      { label: 'Search', icon: 'pi pi-search', routerLink: '/search' }
+
     ];
 
     if (loggedIn) {
       items.push(
-        { label: 'Post', icon: 'pi pi-plus', routerLink: '/post' },
-        { label: 'Chat', icon: 'pi pi-comments', routerLink: '/chat' }
+        { icon: 'pi pi-home', routerLink: '/feed' },
+        { icon: 'pi pi-search', routerLink: '/search' },
+        { icon: 'pi pi-plus', routerLink: '/post' },
+        { icon: 'pi pi-comments', routerLink: '/chat' }
       );
     }
     return items;
   });
 
-  protected profileItems = computed<MenuItem[]>(() => [
-    { label: 'Profile', icon: 'pi pi-user', routerLink: '/profile' },
-    { label: 'Community', icon: 'pi pi-users', routerLink: '/followed' },
-    { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' },
-    { separator: true },
-    {
-      label: 'Logout',
-      icon: 'pi pi-sign-out',
-      command: () => {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-      }
+  protected profileItems = computed<MenuItem[]>(() => {
+    const items: MenuItem[] = [
+      {label: 'Profile', icon: 'pi pi-user', routerLink: '/profile'},
+      {label: 'Community', icon: 'pi pi-users', routerLink: '/followed'},
+      {label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings'},
+    ];
+
+    if (this.authService.isAdmin()) {
+      items.push(
+        {separator: true},
+        {
+          label: 'Admin Panel',
+          icon: 'pi pi-shield',
+          routerLink: '/admin'
+        });
     }
-  ]);
+
+    items.push(
+      {separator: true},
+      {
+        label: 'Logout',
+        icon: 'pi pi-sign-out',
+        command: () => {
+          this.authService.logout();
+          this.userService.clearUser();
+          this.router.navigate(['/login']);
+        }
+      }
+    );
+
+    return items;
+  });
 }

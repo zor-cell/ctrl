@@ -6,4 +6,6 @@ export interface PostComment {
   createdAt: string;
   content: string;
   parentCommentId: string | null;
+  edited: boolean;
+  replies?: PostComment[];
 }

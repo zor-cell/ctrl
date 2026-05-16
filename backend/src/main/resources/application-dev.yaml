@@ -9,10 +9,14 @@ spring:
 
 garage:
   url: http://localhost:3900
-  public-url: http://${GARAGE_BUCKET_NAME:ctrl-dev-media}.web.garage.localhost:3902
+  presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
-  bucket-name: ${GARAGE_BUCKET_NAME:ctrl-dev-media}
+  bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
 
 application:
   security:
@@ -26,8 +30,17 @@ application:
 infinity:
   url: http://localhost:7997
 
+files:
+  cleanup:
+    orphan-post-media:
+      initial-delay: PT10M
+      fixed-delay: PT30M
+      min-age: PT30M
+
 logging:
   level:
+    org.springframework.security: DEBUG
+    at.ac.tuwien.inso.ctrl.config.security: DEBUG
     org.springframework.mail: DEBUG
     org.eclipse.angus.mail: DEBUG
     jakarta.mail: DEBUG

@@ -1,9 +1,11 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, ElementRef } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
 import { Post } from '../../dto/Post';
 import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
+import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
 
 import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
@@ -14,7 +16,10 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
-import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
+import {ViewTrackingService} from '../../../post/services/view-tracking.service';
+import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
+import {ReactiveFormsModule} from "@angular/forms";
+import {RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-feed',
@@ -29,6 +34,10 @@ import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
     TagModule,
     TooltipModule,
     CommentsComponent,
+    AlgorithmConfigComponent,
+    PostViewDirective,
+    ReactiveFormsModule,
+    RouterLink,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -38,29 +47,35 @@ export class FeedComponent implements OnInit {
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
 
-  protected allPosts = signal<Post[]>([]);
+  readonly viewTracking = inject(ViewTrackingService);
 
-  // Why dialog
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
 
-  // Comments dialog
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
+
+  protected algorithmConfigVisible = signal(false);
+  protected isRefreshing = signal(false);
+  protected isSpinning = signal(false);
+
+  private readonly elRef = inject(ElementRef);
 
   // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
   private readonly sourceVotingInProgress = new Set<string>();
 
-  protected publicPosts = computed(() => this.allPosts().filter(p => p.isPublic));
-  protected privatePosts = computed(() => this.allPosts().filter(p => !p.isPublic));
+  protected publicPosts = signal<Post[]>([]);
+  protected privatePosts = signal<Post[]>([]);
 
-  async ngOnInit() {
+  ngOnInit(): void {
     this.userService.loadUser();
-    const posts = await this.feedService.getFeed();
-    console.log(posts);
-    this.allPosts.set(posts);
+    this.loadFeed();
   }
+
+  //openAlgorithmConfig(): void {
+  //  this.algorithmConfigVisible.set(true);
+  //}
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
@@ -82,7 +97,7 @@ export class FeedComponent implements OnInit {
         userVote: result.userVote,
       });
     } catch (err) {
-      console.error('Post-Vote fehlgeschlagen, wird zurückgesetzt:', err);
+      console.error('Post-vote failed; will be reset:', err);
       this.patchPost(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
@@ -126,7 +141,70 @@ export class FeedComponent implements OnInit {
     }
   }
 
+  getDomain(url: string): string {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  }
+
+  timeAgo(createdAt: string): string {
+    const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
+    const diffMs = Date.now() - new Date(normalized).getTime();
+    const minutes = Math.floor(diffMs / 60_000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  openWhyDialog(post: Post): void {
+    this.selectedPost.set(post);
+    this.whyDialogVisible.set(true);
+  }
+
+  closeWhyDialog(): void {
+    this.whyDialogVisible.set(false);
+    this.selectedPost.set(null);
+  }
+
+  openCommentsDialog(post: Post): void {
+    this.selectedPostForComments.set(post);
+    this.commentsDialogVisible.set(true);
+  }
+
+  isVideo(url: string): boolean {
+    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+
+  onPostViewed(event: ViewEvent): void {
+    this.viewTracking.track(event);
+  }
+
   /** Helpers **/
+  protected loadFeed() {
+    this.isRefreshing.set(true);
+    this.isSpinning.set(true);
+    setTimeout(() => this.isSpinning.set(false), 600);
+
+    forkJoin([
+      this.feedService.getFeed(true),
+      this.feedService.getFeed(false),
+    ]).subscribe(([publicPosts, privatePosts]) => {
+      this.publicPosts.set(publicPosts);
+      this.privatePosts.set(privatePosts);
+      this.isRefreshing.set(false);
+      this.scrollFeedToTop();
+    });
+  }
+
+  private scrollFeedToTop(): void {
+    const lists = this.elRef.nativeElement.querySelectorAll('.posts-list') as NodeListOf<HTMLElement>;
+    lists.forEach(el => el.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
 
   private calcOptimisticVote(
     upvotes: number,
@@ -151,13 +229,27 @@ export class FeedComponent implements OnInit {
   }
 
   private patchPost(postId: string, patch: Partial<Post>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
     );
   }
 
   private patchSource(postId: string, patch: Partial<PostSource>): void {
-    this.allPosts.update(posts =>
+    this.publicPosts.update(posts =>
+      posts.map(p => {
+        if (p.postId !== postId || !p.sourceIds?.length) return p;
+        const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
+          i === 0 ? { ...s, ...patch } : s
+        );
+        return { ...p, sourceIds: updatedSources };
+      })
+    );
+
+    this.privatePosts.update(posts =>
       posts.map(p => {
         if (p.postId !== postId || !p.sourceIds?.length) return p;
         const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
@@ -168,34 +260,5 @@ export class FeedComponent implements OnInit {
     );
   }
 
-  getDomain(url: string): string {
-    try {
-      return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
-  }
-
-  timeAgo(createdAt: string): string {
-    return formatTimeAgo(createdAt);
-  }
-
-  openWhyDialog(post: Post): void {
-    this.selectedPost.set(post);
-    this.whyDialogVisible.set(true);
-  }
-
-  closeWhyDialog(): void {
-    this.whyDialogVisible.set(false);
-    this.selectedPost.set(null);
-  }
-
-  openCommentsDialog(post: Post): void {
-    this.selectedPostForComments.set(post);
-    this.commentsDialogVisible.set(true);
-  }
-
-  isVideo(url: string): boolean {
-    return /\.(mp4|webm|ogg|mov)$/i.test(url);
-  }
+  protected readonly Math = Math;
 }

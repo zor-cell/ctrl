@@ -41,6 +41,11 @@ lint:frontend:
 test:backend:
   stage: test
   image: registry.reset.inso-w.at/pub/docker/debian-mvn
+  needs:
+    - job: lint:backend
+      optional: false
+    - job: lint:frontend
+      optional: true
   cache:
     key: ${CI_JOB_NAME}-m2-${CI_COMMIT_REF_SLUG}
     paths:
@@ -66,21 +71,45 @@ test:backend:
     reports:
       junit: ./backend/target/surefire-reports/TEST-*.xml
     when: on_failure
-
-test:frontend:
+  
+test:e2e:
   stage: test
-  image: registry.reset.inso-w.at/pub/docker/node:22-alpine
+  image: registry.reset.inso-w.at/pub/docker/cypress:latest
+  needs:
+    - job: lint:backend
+      optional: false
+    - job: lint:frontend
+      optional: true
   cache:
-    key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
-    paths:
+      key: ${CI_JOB_NAME}-npm-${CI_COMMIT_REF_SLUG}
+      paths:
       - .npm
+      - node_modules
+  services:
+    - name: $CI_REGISTRY_IMAGE/test-db:pg18-ci
+      alias: db
+      variables:
+        HEALTHCHECK_TCP_PORT: "5432"
+        POSTGRES_DB: testdb
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
+  variables:
+    CI_DEBUG_SERVICES: "true"
+    POSTGRES_DB: testdb
+    POSTGRES_USER: test
+    POSTGRES_PASSWORD: test
+    SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
   script:
-    - cd frontend && npm ci && npm run test
+      - cd frontend && npm ci && npm run cypress:ci
   artifacts:
-    expire_in: 1h
-    reports:
-      junit: ./frontend/test-results/*.xml
-    when: on_failure
+      expire_in: 7h
+      paths:
+        - frontend/e2e-test-results/
+        - frontend/cypress/screenshots/
+        - frontend/cypress/videos/
+      reports:
+        junit: ./frontend/e2e-test-results/*.xml
+      when: always
 
 .build_rules: &build_rules
   rules:

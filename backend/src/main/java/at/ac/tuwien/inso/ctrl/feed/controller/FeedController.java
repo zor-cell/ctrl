@@ -28,16 +28,16 @@ public class FeedController {
    *
    * @param page zero-based page index (default: 0)
    * @param postsPerPage number of posts per page (default: 20)
-   * @param userDetails the currently authenticated user, or {@code null} if the request is
-   *     unauthenticated
+   * @param user the currently authenticated user
    * @return a list of {@link FeedPostResponse} objects with HTTP 200 OK
    */
   @GetMapping
   public ResponseEntity<List<FeedPostResponse>> getFeed(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int postsPerPage,
-      @AuthenticationPrincipal UserDetails userDetails) {
-    String username = userDetails != null ? userDetails.getUsername() : null;
-    return ResponseEntity.ok(feedService.getFeed(page, postsPerPage, username));
+      @RequestParam(defaultValue = "true") boolean publicFeed,
+      @AuthenticationPrincipal UserDetails user) {
+    return ResponseEntity.ok(
+        feedService.getFeed(page, postsPerPage, publicFeed, user.getUsername()));
   }
 }

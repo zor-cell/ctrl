@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Button} from 'primeng/button';
 import {FloatLabel} from 'primeng/floatlabel';
@@ -30,6 +30,9 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   private route = inject(ActivatedRoute);
   private notificationService = inject(NotificationService);
   private resendCooldownIntervalId: ReturnType<typeof setInterval> | null = null;
+
+
+  protected readonly submitting = signal(false);
 
   verificationForm = this.fb.group({
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
@@ -64,14 +67,17 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
   }
 
   resendEmail() {
+    this.submitting.set(true);
     this.startResendCooldown();
 
     if (!this.emailData) {
       this.notificationService.showWarning('Missing registration data. Please register again.');
+      this.submitting.set(false);
       return;
     }
 
     this.authService.resendVerificationEmail(this.emailData).subscribe();
+    this.submitting.set(false);
   }
 
   ngOnDestroy() {
