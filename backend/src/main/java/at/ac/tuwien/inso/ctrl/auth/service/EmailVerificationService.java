@@ -63,15 +63,21 @@ public class EmailVerificationService {
 
       Optional<User> user = userRepository.findByUsername(sendEmailRequest.username());
       if (user.isEmpty()) {
+        LOGGER.info("username not found: {}", sendEmailRequest.email());
+
         return;
       }
 
       Optional<User> userByEmail = userRepository.findByEmail(sendEmailRequest.email());
       if (userByEmail.isEmpty()) {
+        LOGGER.info("Email not found: {}", sendEmailRequest.email());
+
         return;
       }
 
-      if (!user.get().equals(userByEmail.get())) {
+      if (!user.get().getId().equals(userByEmail.get().getId())) {
+        LOGGER.info("email wrong: {} {}", user.get().getId(), userByEmail.get().getId());
+
         return;
       }
 
