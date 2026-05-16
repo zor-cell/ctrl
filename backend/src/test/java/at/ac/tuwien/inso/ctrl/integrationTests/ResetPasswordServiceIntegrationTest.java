@@ -15,7 +15,6 @@ import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -66,7 +65,11 @@ public class ResetPasswordServiceIntegrationTest {
   public void setUp() {
     resetPasswordService =
         new ResetPasswordService(
-            passwordEncoder, gmailEmailService, templateEngine, userRepository, passwordResetRepository);
+            passwordEncoder,
+            gmailEmailService,
+            templateEngine,
+            userRepository,
+            passwordResetRepository);
 
     testUser = new User();
     testUser.setUsername("testUser");
@@ -108,8 +111,9 @@ public class ResetPasswordServiceIntegrationTest {
   }
 
   @Test
-  public void testSendPasswordReset_whenGmailServiceThrowsMailException_shouldThrowCommunicationException()
-      throws Exception {
+  public void
+      testSendPasswordReset_whenGmailServiceThrowsMailException_shouldThrowCommunicationException()
+          throws Exception {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest(testUser.getEmail());
 
     Mockito.doThrow(new MailException("Mail server error") {})
@@ -128,8 +132,9 @@ public class ResetPasswordServiceIntegrationTest {
   }
 
   @Test
-  public void testSendPasswordReset_whenGmailServiceThrowsException_shouldThrowCommunicationException()
-      throws Exception {
+  public void
+      testSendPasswordReset_whenGmailServiceThrowsException_shouldThrowCommunicationException()
+          throws Exception {
     PasswordResetEmailRequest request = new PasswordResetEmailRequest(testUser.getEmail());
 
     Mockito.doThrow(new IOException("Failed to create mime message"))

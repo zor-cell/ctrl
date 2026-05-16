@@ -21,7 +21,6 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -119,7 +118,8 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
+  public void
+      testSendVerificationEmail_withVerifiedEmail_shouldThrowUserAlreadyVerifiedException() {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
     assertThrows(
@@ -128,7 +128,8 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_withWrongEmail_shouldUsernameNotFoundExceptionException() throws MessagingException, IOException {
+  public void testSendVerificationEmail_withWrongEmail_shouldUsernameNotFoundExceptionException()
+      throws MessagingException, IOException {
     SendEmailRequest request = new SendEmailRequest(testUserUnverified.getUsername(), "wrongEmail");
     emailVerificationService.sendVerificationEmail(request);
 
@@ -138,7 +139,8 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException() throws MessagingException, IOException {
+  public void testSendVerificationEmail_withWrongUsername_shouldUsernameNotFoundExceptionException()
+      throws MessagingException, IOException {
     SendEmailRequest request = new SendEmailRequest("wrongUser", testUserUnverified.getEmail());
     emailVerificationService.sendVerificationEmail(request);
 
@@ -148,7 +150,9 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNothingButNotSendEmail() throws MessagingException, IOException {
+  public void
+      testSendVerificationEmail_withUserEmailMissmatch_shouldThrowResourceNothingButNotSendEmail()
+          throws MessagingException, IOException {
     SendEmailRequest request =
         new SendEmailRequest(testUserVerified.getUsername(), testUserUnverified.getEmail());
     emailVerificationService.sendVerificationEmail(request);
@@ -159,8 +163,9 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_whenGmailServiceThrowsMailException_shouldThrowCommunicationException()
-      throws Exception {
+  public void
+      testSendVerificationEmail_whenGmailServiceThrowsMailException_shouldThrowCommunicationException()
+          throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
@@ -177,8 +182,9 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testSendVerificationEmail_whenGmailServiceThrowsException_shouldThrowCommunicationException()
-      throws Exception {
+  public void
+      testSendVerificationEmail_whenGmailServiceThrowsException_shouldThrowCommunicationException()
+          throws Exception {
     SendEmailRequest request =
         new SendEmailRequest(testUserUnverified.getUsername(), testUserUnverified.getEmail());
 
@@ -241,7 +247,8 @@ public class EmailVerificationServiceIntegrationTest {
   }
 
   @Test
-  public void testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
+  public void
+      testVerifyEmail_whenCodeExpiredCode_shouldThrowInvalidEmailVerificationCodeException() {
     EmailVerification verification = new EmailVerification();
     verification.setUser(testUserUnverified);
     verification.setCode("123456");

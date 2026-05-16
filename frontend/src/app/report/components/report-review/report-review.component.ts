@@ -149,7 +149,7 @@ export class ReportReviewComponent implements OnInit {
 
   markActionTaken(reportId: string, action: ReportAction) {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to take an action against this post?',
+      message: 'Are you sure you want to take an action?',
       header: 'Confirm Action',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {

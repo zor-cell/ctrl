@@ -6,24 +6,25 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Properties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class GmailEmailService {
 
   private final Gmail gmail;
+
   @Value("${spring.mail.username:ctrl.support.ase@gmail.com}")
   private String senderEmail;
 
-  public void sendHtmlEmail(String to, String subject, String htmlBody) throws MessagingException, IOException {
+  public void sendHtmlEmail(String to, String subject, String htmlBody)
+      throws MessagingException, IOException {
     MimeMessage mimeMessage = createHtmlMimeMessage(to, subject, htmlBody);
     Message message = encodeMessage(mimeMessage);
     gmail.users().messages().send("me", message).execute();

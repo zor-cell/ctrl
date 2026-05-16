@@ -12,7 +12,6 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -64,15 +63,25 @@ public class EmailVerificationService {
 
       Optional<User> user = userRepository.findByUsername(sendEmailRequest.username());
       if (user.isEmpty()) {
+        LOGGER.info("username not found: {}", sendEmailRequest.email());
+
         return;
       }
 
       Optional<User> userByEmail = userRepository.findByEmail(sendEmailRequest.email());
       if (userByEmail.isEmpty()) {
+        LOGGER.info("Email not found: {}", sendEmailRequest.email());
+
         return;
       }
 
-      if (!user.get().equals(userByEmail.get())) {
+      if (user.get() == null || userByEmail.get() == null) {
+        return;
+      }
+
+      if (!user.get().getId().equals(userByEmail.get().getId())) {
+        LOGGER.info("email wrong: {} {}", user.get().getId(), userByEmail.get().getId());
+
         return;
       }
 
@@ -85,7 +94,6 @@ public class EmailVerificationService {
 
       String htmlContent = templateEngine.process("verificationTemplate", context);
 
-
       gmailEmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
@@ -96,7 +104,6 @@ public class EmailVerificationService {
 
     } catch (IOException e) {
       throw new CommunicationException("Failed to send or create email.");
-
     }
   }
 
