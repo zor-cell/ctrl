@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
+import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,7 +37,7 @@ public class BusinessVerificationService {
   private final BusinessVerificationRepository businessVerificationRepository;
   private final UserMapper userMapper;
   private final UserRepository userRepository;
-  private final JavaMailSender mailSender;
+  private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
 
   @Value("${application.auth.require-email-verification:true}")
@@ -93,22 +95,20 @@ public class BusinessVerificationService {
     }
     try{
       Context context = createContext(verification.getStatus());
-      MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
       String htmlContent = templateEngine.process("businessAccountReview", context);
 
-      helper.setTo(user.getEmail());
-      helper.setSubject("Business Verification Update");
-      helper.setText(htmlContent, true);
+      gmailEmailService.sendHtmlEmail(user.getEmail(), "Business Verification Update", htmlContent);
 
-      mailSender.send(message);
     } catch (
     MailException e) {
       throw new CommunicationException("Failed to send email.");
     } catch (
     MessagingException me) {
       throw new CommunicationException("Failed to create email.");
+    } catch (IOException e) {
+      throw new CommunicationException("Failed to send or create email.");
+
     }
   }
 
