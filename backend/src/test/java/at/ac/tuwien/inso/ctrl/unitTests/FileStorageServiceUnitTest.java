@@ -40,13 +40,16 @@ public class FileStorageServiceUnitTest {
 
   @Mock private S3Presigner s3Presigner;
 
+  @Mock private S3Presigner internalS3Presigner;
+
   @Mock private VideoTranscodingService videoTranscodingService;
 
   private FileStorageService fileStorageService;
 
   @BeforeEach
   void setUp() {
-    fileStorageService = new FileStorageService(s3Client, s3Presigner, videoTranscodingService);
+    fileStorageService =
+        new FileStorageService(s3Client, s3Presigner, internalS3Presigner, videoTranscodingService);
     ReflectionTestUtils.setField(fileStorageService, "bucketName", "ctrl-test-media");
     ReflectionTestUtils.setField(fileStorageService, "privateBucketName", "ctrl-test-private");
     ReflectionTestUtils.setField(fileStorageService, "publicBucketName", "ctrl-test-public");
