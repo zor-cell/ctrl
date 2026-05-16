@@ -17,7 +17,6 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
-import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
 import {ContentTypeEnum} from '../../../report/dto/report';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
