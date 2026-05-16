@@ -239,7 +239,7 @@
     			<version>3.5.1</version>
     			<configuration>
 						<from>
-							<image>registry.reset.inso-w.at/pub/docker/eclipse-temurin:25</image>
+							<image>registry.reset.inso-w.at/2026ss-ase-pr-group/26ss-ase-pr-inso-04/backend-base:latest</image>
 						</from>
 						<allowInsecureRegistries>true</allowInsecureRegistries>
         		<extraDirectories>
