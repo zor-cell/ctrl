@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -21,6 +22,8 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -43,7 +46,6 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @Import(TestConfig.class)
-@Transactional
 @AutoConfigureMockMvc
 public class AuthControllerIntegrationTest {
 
@@ -254,11 +256,14 @@ public class AuthControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
 
-    Optional<EmailVerification> verification =
-        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
-    assertTrue(verification.isPresent());
-    assertNotNull(verification.get().getCode());
-    assertNotNull(verification.get().getExpiryTime());
+    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+      Optional<EmailVerification> verification =
+              emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+
+      assertTrue(verification.isPresent());
+      assertNotNull(verification.get().getCode());
+      assertNotNull(verification.get().getExpiryTime());
+    });
   }
 
   @Test
@@ -272,11 +277,14 @@ public class AuthControllerIntegrationTest {
             post(sendEmailEndpoint)
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isConflict());
+        .andExpect(status().isCreated()); //checks created because of async call
 
-    Optional<EmailVerification> verification =
-        emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
-    assertFalse(verification.isPresent());
+
+    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+      Optional<EmailVerification> verification =
+              emailVerificationRepository.findEmailVerificationByUser_Id(testUserUnverified.getId());
+      assertFalse(verification.isPresent());
+    });
   }
 
   @Test
