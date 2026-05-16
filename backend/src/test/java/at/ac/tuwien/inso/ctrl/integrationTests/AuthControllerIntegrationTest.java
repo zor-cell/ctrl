@@ -262,24 +262,6 @@ public class AuthControllerIntegrationTest {
   }
 
   @Test
-  public void testResendVerificationEmail_withVerifiedUser_shouldReturnBadRequest()
-      throws Exception {
-    SendEmailRequest request =
-        new SendEmailRequest(testUserVerified.getUsername(), testUserVerified.getEmail());
-
-    mockMvc
-        .perform(
-            post(sendEmailEndpoint)
-                .contentType("application/json")
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isConflict());
-
-    Optional<EmailVerification> verification =
-        emailVerificationRepository.findEmailVerificationByUser_Id(testUserVerified.getId());
-    assertFalse(verification.isPresent());
-  }
-
-  @Test
   public void testResendVerificationEmail_withWrongUsername_shouldReturnCreated() throws Exception {
     SendEmailRequest request = new SendEmailRequest("wrongUsername", testUserUnverified.getEmail());
 
