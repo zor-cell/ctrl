@@ -42,9 +42,9 @@ management:
 
 garage:
   url: http://filestorage-service:3900
-  presign-url: ${GARAGE_PRESIGN_URL:https://ctrl-media.web.garage.ctrl-ase.dev}
+  presign-url: ${GARAGE_PRESIGN_URL:https://www.ctrl-ase.dev}
   presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
-  public-url: https://ctrl-media.web.garage.ctrl-ase.dev
+  public-url: https://www.ctrl-ase.dev/api/files/media-url?ref=
   private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
   public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
 
