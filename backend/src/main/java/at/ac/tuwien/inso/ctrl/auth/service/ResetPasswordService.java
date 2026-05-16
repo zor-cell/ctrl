@@ -10,7 +10,6 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
@@ -64,7 +63,8 @@ public class ResetPasswordService {
       Context context = createContext(token);
       String htmlContent = templateEngine.process("passwordResetTemplate", context);
 
-      gmailEmailService.sendHtmlEmail(passwordResetEmailRequest.email(), "Reset CTRL Password!", htmlContent);
+      gmailEmailService.sendHtmlEmail(
+          passwordResetEmailRequest.email(), "Reset CTRL Password!", htmlContent);
 
       LocalDateTime expiration = LocalDateTime.now().plusMinutes(30);
       PasswordReset passwordReset = new PasswordReset();

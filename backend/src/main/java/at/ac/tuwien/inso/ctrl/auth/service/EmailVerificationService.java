@@ -12,7 +12,6 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +84,6 @@ public class EmailVerificationService {
 
       String htmlContent = templateEngine.process("verificationTemplate", context);
 
-
       gmailEmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
@@ -96,7 +94,6 @@ public class EmailVerificationService {
 
     } catch (IOException e) {
       throw new CommunicationException("Failed to send or create email.");
-
     }
   }
 

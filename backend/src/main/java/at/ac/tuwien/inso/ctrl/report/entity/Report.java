@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.report.entity;
 
-
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
@@ -15,8 +14,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,7 +55,7 @@ public class Report {
   @Column(name = "content_type", nullable = false)
   private ContentTypeEnum contentType;
 
-  @Column(name="content_id", nullable = false)
+  @Column(name = "content_id", nullable = false)
   private String contentId;
 
   @Column(name = "created_at")

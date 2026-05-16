@@ -91,7 +91,8 @@ public class EmailVerificationServiceUnitTest {
   }
 
   @Test
-  void sendVerificationEmail_ShouldThrowNothingButNotSendEmail_WhenUsernameNotFound() throws Exception {
+  void sendVerificationEmail_ShouldThrowNothingButNotSendEmail_WhenUsernameNotFound()
+      throws Exception {
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
 
     emailVerificationService.sendVerificationEmail(validSendEmailRequest);

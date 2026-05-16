@@ -11,15 +11,13 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.ClassPathResource;
-
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
 @Configuration
 @ConditionalOnMissingBean(Gmail.class)
@@ -28,25 +26,24 @@ public class GmailConfig {
   private static String TOKENS_DIR = "tokens";
 
   @Bean
-  public Gmail gmailService() throws Exception{
+  public Gmail gmailService() throws Exception {
     NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
     GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 
-    GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
-        jsonFactory,
-        new InputStreamReader(new ClassPathResource("credentials.json").getInputStream())
-    );
+    GoogleClientSecrets clientSecrets =
+        GoogleClientSecrets.load(
+            jsonFactory,
+            new InputStreamReader(new ClassPathResource("credentials.json").getInputStream()));
 
-    GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-        httpTransport, jsonFactory, clientSecrets, SCOPES)
-        .setDataStoreFactory(new FileDataStoreFactory(new File(TOKENS_DIR)))
-        .setAccessType("offline").build();
+    GoogleAuthorizationCodeFlow flow =
+        new GoogleAuthorizationCodeFlow.Builder(httpTransport, jsonFactory, clientSecrets, SCOPES)
+            .setDataStoreFactory(new FileDataStoreFactory(new File(TOKENS_DIR)))
+            .setAccessType("offline")
+            .build();
 
-    LocalServerReceiver receiver = new LocalServerReceiver.Builder()
-        .setPort(8888).build();
+    LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
 
-    Credential credential = new AuthorizationCodeInstalledApp(flow, receiver)
-        .authorize("user");
+    Credential credential = new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
 
     return new Gmail.Builder(httpTransport, jsonFactory, credential)
         .setApplicationName("CTRL")

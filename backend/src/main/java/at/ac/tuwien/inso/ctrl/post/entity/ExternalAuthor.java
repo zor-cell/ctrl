@@ -28,6 +28,6 @@ public class ExternalAuthor {
   @Column(name = "profile_url")
   private String profileUrl;
 
-  @Column(name="is_suspended", nullable = false)
+  @Column(name = "is_suspended", nullable = false)
   private boolean isSuspended = false;
 }
