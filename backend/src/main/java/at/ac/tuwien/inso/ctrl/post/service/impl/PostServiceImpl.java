@@ -30,6 +30,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -83,10 +84,7 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    // embed post information
-    // String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
-    // TODO: image needs to be embedded again as well!
-    float[] embedding = embeddingService.embedText(post.getCaption());
+    float[] embedding = createEmbedding(post);
     post.setEmbedding(embedding);
 
     Post savedPost = postRepository.save(post);
@@ -131,6 +129,39 @@ public class PostServiceImpl implements PostService {
   }
 
   /** Helpers * */
+  private float[] createEmbedding(Post post) {
+    String mediaRef = post.getMediaRef();
+    if (isEmbeddableImageReference(mediaRef)) {
+      String imageUrl = fileStorageService.resolveInternalPostMediaUrl(mediaRef);
+      return embeddingService.embedTextWithImage(post.getCaption(), imageUrl);
+    }
+
+    return embeddingService.embedText(post.getCaption());
+  }
+
+  private boolean isEmbeddableImageReference(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return false;
+    }
+
+    String normalizedRef = mediaRef.toLowerCase(Locale.ROOT);
+    int queryStart = normalizedRef.indexOf('?');
+    if (queryStart >= 0) {
+      normalizedRef = normalizedRef.substring(0, queryStart);
+    }
+
+    int fragmentStart = normalizedRef.indexOf('#');
+    if (fragmentStart >= 0) {
+      normalizedRef = normalizedRef.substring(0, fragmentStart);
+    }
+
+    return normalizedRef.endsWith(".jpg")
+        || normalizedRef.endsWith(".jpeg")
+        || normalizedRef.endsWith(".png")
+        || normalizedRef.endsWith(".webp")
+        || normalizedRef.endsWith(".gif");
+  }
+
   @Transactional(readOnly = true)
   public List<PostResponse> getPostsForUser(String username) {
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
