@@ -40,8 +40,8 @@ export class NavigationComponent {
 
     if (this.authService.isAdmin()) {
       items.push(
-        { label: 'Report', icon: 'pi pi-flag', routerLink: '/report'},
-      { label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'}
+        { icon: 'pi pi-flag', routerLink: '/report'},
+      { icon: 'pi pi-shield', routerLink: '/business-verification'}
       );
     }
     return items;
