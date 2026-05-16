@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
-import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { timeAgo } from '../../../core/utils/date-time.utils';
 import { Avatar } from 'primeng/avatar';
 import { Tag } from 'primeng/tag';
@@ -26,7 +26,6 @@ import { Dialog } from 'primeng/dialog';
     Tabs,
     TabPanels,
     TabPanel,
-    NgClass,
     Avatar,
     Tag,
     Tooltip,
@@ -127,6 +126,14 @@ export class ReportReviewComponent implements OnInit {
     const found = reasons.find((r) => r.value === reason);
 
     return found ? found.label : reason;
+  }
+
+  formatContentType(value?: string | null): string {
+    if (!value) {
+      return '';
+    }
+    const lower = value.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
   }
 
   async viewReportSummary(reportId: string) {

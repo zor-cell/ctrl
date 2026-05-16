@@ -20,7 +20,7 @@ import java.util.Properties;
 public class GmailEmailService {
 
   private final Gmail gmail;
-  @Value("${spring.mail.username:test@gmail.com}")
+  @Value("${spring.mail.username:ctrl.support.ase@gmail.com}")
   private String senderEmail;
 
   public void sendHtmlEmail(String to, String subject, String htmlBody) throws MessagingException, IOException {

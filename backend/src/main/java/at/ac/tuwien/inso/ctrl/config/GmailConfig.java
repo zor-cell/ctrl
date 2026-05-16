@@ -40,7 +40,6 @@ public class GmailConfig {
     GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
         httpTransport, jsonFactory, clientSecrets, SCOPES)
         .setDataStoreFactory(new FileDataStoreFactory(new File(TOKENS_DIR)))
-        .setDataStoreFactory(new FileDataStoreFactory(new File(TOKENS_DIR)))
         .setAccessType("offline").build();
 
     LocalServerReceiver receiver = new LocalServerReceiver.Builder()
