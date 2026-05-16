@@ -88,7 +88,7 @@
           (onClick)="openMediaPicker()"
         />
         <p-button
-          label="Weiter"
+          [label]="continueButtonLabel()"
           icon="pi pi-arrow-right"
           iconPos="right"
           (onClick)="continueToDetails()"
@@ -160,9 +160,9 @@
               <p>Choose whether this post should be public or private.</p>
             </div>
             <div class="visibility-toggle">
-              <span>Private</span>
+              <i [class]="isPublicPost() ? 'pi pi-globe' : 'pi pi-lock'"></i>
+              <span>{{ isPublicPost() ? 'Public' : 'Private' }}</span>
               <p-toggleswitch formControlName="isPublic" inputId="isPublic" />
-              <span>Public</span>
             </div>
           </div>
         } @else {
@@ -359,7 +359,7 @@
         <p-button
           [label]="submitButtonLabel()"
           icon="pi pi-check"
-          [loading]="submitting() && selectedMediaMayTakeLonger()"
+          [loading]="submitting()"
           [disabled]="submitting()"
           (onClick)="submitPost()"
         />

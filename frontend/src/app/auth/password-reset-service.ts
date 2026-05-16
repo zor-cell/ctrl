@@ -31,9 +31,9 @@ export class PasswordResetService {
     return this.httpClient.post<boolean>(this.baseUri + '/forgot-password', forgotPasswordRequest).pipe(
       tap(res => {
         if(res) {
-          this.notificationService.showSuccess('Password reset sent successfully. Check your emails.');
+          this.notificationService.showSuccess('Password reset sent successfully if correct email was provided. Check your emails.');
         } else {
-          this.notificationService.showError('Password request reset failed. Email could be invalid.');
+          this.notificationService.showError('Password request reset failed. Please try again later.');
         }
       }),
     )

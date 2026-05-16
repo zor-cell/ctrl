@@ -10,7 +10,8 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -19,8 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +30,7 @@ import org.thymeleaf.context.Context;
 @RequiredArgsConstructor
 public class ResetPasswordService {
   private final PasswordEncoder passwordEncoder;
-  private final JavaMailSender mailSender;
+  private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
   private final UserRepository userRepository;
   private final PasswordResetRepository passwordResetRepository;
@@ -55,8 +54,7 @@ public class ResetPasswordService {
       Optional<User> user = userRepository.findByEmail(passwordResetEmailRequest.email());
       if (user.isEmpty()) {
         LOGGER.warn("User with email {} not found", passwordResetEmailRequest.email());
-        throw new ResourceNotFoundException(
-            "User with email " + passwordResetEmailRequest.email() + " not found");
+        return;
       }
 
       passwordResetRepository.deleteUnusedTokensByUserId(user.get().getId());
@@ -64,16 +62,9 @@ public class ResetPasswordService {
       String token = UUID.randomUUID().toString();
 
       Context context = createContext(token);
-      MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
       String htmlContent = templateEngine.process("passwordResetTemplate", context);
 
-      helper.setTo(passwordResetEmailRequest.email());
-      helper.setSubject("Reset CTRL Password!");
-      helper.setText(htmlContent, true);
-
-      mailSender.send(message);
+      gmailEmailService.sendHtmlEmail(passwordResetEmailRequest.email(), "Reset CTRL Password!", htmlContent);
 
       LocalDateTime expiration = LocalDateTime.now().plusMinutes(30);
       PasswordReset passwordReset = new PasswordReset();
@@ -88,6 +79,9 @@ public class ResetPasswordService {
     } catch (MessagingException me) {
       throw new CommunicationException(
           "Failed to create email. You can register again in 2 minutes.");
+    } catch (IOException e) {
+      LOGGER.error("Failed to send or create password reset email", e);
+      throw new CommunicationException("Failed to send or create email.");
     }
   }
 
@@ -106,14 +100,14 @@ public class ResetPasswordService {
     PasswordReset passwordReset =
         passwordResetRepository
             .findByToken(passwordResetRequest.token())
-            .orElseThrow(() -> new InvalidTokenException("Token not found"));
+            .orElseThrow(() -> new InvalidTokenException("Invalid token or User"));
 
     if (passwordReset.isUsed()) {
-      throw new InvalidTokenException("Token has already been used");
+      throw new InvalidTokenException("Invalid token or User");
     }
 
     if (passwordReset.getExpiresAt().isBefore(LocalDateTime.now())) {
-      throw new InvalidTokenException("Token has expired");
+      throw new InvalidTokenException("Invalid token or User");
     }
 
     User user = passwordReset.getUser();

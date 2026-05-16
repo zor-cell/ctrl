@@ -42,6 +42,12 @@ export const routes: Routes = [
       import('./post/post-page.component').then(m => m.PostPageComponent),
   },
   {
+    path: 'profile/:username',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./post/post-page.component').then(m => m.PostPageComponent),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -55,6 +61,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./user/components/search-page/search-page.component').then(
         m => m.SearchPageComponent,
+      ),
+  },
+  {
+    path: 'chat',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./chat/chat-placeholder.component').then(
+        m => m.ChatPlaceholderComponent,
       ),
   },
   { path: 'email_verification/:username/:email', component: EmailVerificationComponent },

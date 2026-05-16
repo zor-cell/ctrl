@@ -172,7 +172,7 @@
 
 .post-detail__comments {
   display: grid;
-  gap: 0.85rem;
+  gap: 1rem;
   min-height: 12rem;
   border-top: 1px solid #e5e7eb;
 }
@@ -183,47 +183,224 @@
   font-size: 1.35rem;
 }
 
-.post-detail__comments .post-detail__empty-state {
-  align-self: center;
-}
-
-.post-detail__comment {
-  display: grid;
-  gap: 0.25rem;
-  align-content: start;
-}
-
-.post-detail__comment p {
-  margin: 0;
-  color: #334155;
-}
-
-.post-detail__empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 0.45rem;
-  color: #a3a3a3;
-}
-
-.post-detail__empty-state i {
-  font-size: 2rem;
-}
-
 .post-detail__comment-box {
+  display: grid;
+  gap: 0.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.post-detail__comment-box input {
+.comments-loading,
+.comments-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 2.5rem 1rem;
+  color: #888;
+}
+
+.comments-loading i,
+.comments-empty i {
+  font-size: 2rem;
+  opacity: 0.45;
+}
+
+.comments-loading p,
+.comments-empty p {
+  margin: 0;
+  color: #888;
+}
+
+.comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.comment--reply {
+  margin-top: 0.75rem;
+  padding-left: 0.45rem;
+}
+
+.comment-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.comment-avatar--reply {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.75rem;
+}
+
+.comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.comment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.comment-username {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.comment-time,
+.comment-edited {
+  color: #888;
+  font-size: 0.78rem;
+}
+
+.comment-edited {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.comment-content {
+  margin: 0;
+  color: #334155;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.reply-btn,
+.comment-action-btn,
+.cancel-reply-btn {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+}
+
+.reply-btn {
+  gap: 0.25rem;
+  padding: 0.125rem 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.comment-action-btn,
+.cancel-reply-btn {
+  justify-content: center;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.reply-btn:hover,
+.comment-action-btn:hover,
+.cancel-reply-btn:hover {
+  color: #334155;
+}
+
+.delete-btn:hover {
+  color: #e05858;
+}
+
+.edit-form {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.edit-form textarea {
+  min-height: 4rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  color: #334155;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.edit-actions button {
+  min-height: 2.1rem;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edit-actions button:first-child {
+  background: #050509;
+  color: #fff;
+}
+
+.edit-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.replying-to-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.comment-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.comment-input-row input,
+.comment-input {
   flex: 1;
   min-width: 0;
   padding: 0.7rem 0.9rem;
-  border: 1px solid #111827;
+  border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
   color: #334155;
   font: inherit;
 }
 
-.post-detail__comment-box button {
+.comment-input-row button {
   display: grid;
   place-items: center;
   width: 2.5rem;
@@ -234,7 +411,7 @@
   cursor: pointer;
 }
 
-.post-detail__comment-box button:disabled {
+.comment-input-row button:disabled {
   opacity: 0.35;
   cursor: default;
 }

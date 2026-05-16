@@ -66,11 +66,6 @@
         <i class="pi pi-exclamation-triangle"></i>
         <span>Reported</span>
       </div>
-      <div class="report-meta">
-        <span class="report-status" [ngClass]="'status-' + report.status.toLowerCase()">
-          {{ report.status }}
-        </span>
-      </div>
     </div>
     <span class="report-date">{{ timeAgo(report.reportedAt) }}</span>
   </div>
@@ -204,6 +199,13 @@
         (onClick)="openActionDialog(report)"
         icon="pi pi-ellipsis-v"
       />
+        <p-button
+          label="Dismiss"
+          severity="success"
+          size="small"
+          (onClick)="dismissReport(report.reportId)"
+          icon="pi pi-check"
+        />
     </div>
   </div>
 
@@ -310,6 +312,14 @@
         (onClick)="openActionDialog(report)"
         icon="pi pi-ellipsis-v"
       />
+
+      <p-button
+        label="Dismiss"
+        severity="success"
+        size="small"
+        (onClick)="dismissReport(report.reportId)"
+        icon="pi pi-check"
+      />
     </div>
   </div>
 
@@ -337,7 +347,7 @@
       <ng-template pTemplate="body" let-data>
         <tr>
           <td>
-            <p-tag [value]="data.contentType" [style]="{ 'font-size': '0.875rem' }" />
+            <p-tag [value]="formatContentType(data.contentType)" [style]="{ 'font-size': '0.875rem' }" />
           </td>
           <td>{{ getReason(data.reason) }}</td>
           <td>{{ data.description }}</td>
@@ -360,17 +370,10 @@
   [style]="{ width: '32rem' }"
   [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
 >
+  <div class="action-dialog-content">
   @if (selectedReport()) {
-    <div class="action-dialog-body">
       <p-button
-        label="Dismiss"
-        severity="success"
-        size="small"
-        (onClick)="dismissReport(selectedReport()!.reportId); actionDialogVisible.set(false)"
-        icon="pi pi-check"
-      />
-      <p-button
-        [label]="'Take Down ' + selectedReport()!.contentType"
+        [label]="'Take Down ' + formatContentType(selectedReport()!.contentType)"
         severity="warn"
         size="small"
         (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM); actionDialogVisible.set(false)"
@@ -383,8 +386,9 @@
         (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ACCOUNT); actionDialogVisible.set(false)"
         icon="pi pi-user-minus"
       />
-    </div>
+
   }
+  </div>
 </p-dialog>
 
 

@@ -4,13 +4,18 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnChanges,
   Output,
+  SimpleChanges,
+  inject,
   signal,
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 
 import { timeAgo as formatTimeAgo } from '../core/utils/date-time.utils';
+import { CommentService } from '../feed/services/comment.service';
+import { UserService } from '../user/user.service';
 import { CommentResponse, PostResponse, SingleSourceResponse } from './dto/PostResponse';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
@@ -22,18 +27,38 @@ import { PreviewKind, TopicOption } from './post-page.models';
   styleUrl: './post-detail-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PostDetailDialogComponent {
+export class PostDetailDialogComponent implements OnChanges {
+  private readonly commentService = inject(CommentService);
+  private readonly userService = inject(UserService);
+
   @Input() post: PostResponse | null = null;
   @Input() topicOptions: TopicOption[] = [];
   @Input() currentProfilePicture: string | null = null;
   @Input() avatarInitial = '?';
+  @Input() canDelete = true;
 
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();
 
   protected readonly commentDraft = signal('');
   protected readonly localComments = signal<CommentResponse[]>([]);
+  protected readonly loadingComments = signal(false);
+  protected readonly submittingComment = signal(false);
+  protected readonly replyingTo = signal<CommentResponse | null>(null);
+  protected readonly editingCommentId = signal<string | null>(null);
+  protected readonly editDraft = signal('');
   protected readonly sourcesExpanded = signal(false);
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const postChange = changes['post'];
+    const previousPostId = postChange?.previousValue?.postId;
+    const currentPostId = postChange?.currentValue?.postId;
+
+    if (currentPostId && currentPostId !== previousPostId) {
+      this.localComments.set([]);
+      this.loadComments(currentPostId);
+    }
+  }
 
   protected onVisibleChange(visible: boolean) {
     if (!visible) {
@@ -44,6 +69,8 @@ export class PostDetailDialogComponent {
   protected closeDialog() {
     this.commentDraft.set('');
     this.localComments.set([]);
+    this.replyingTo.set(null);
+    this.cancelEdit();
     this.sourcesExpanded.set(false);
     this.dismissed.emit();
   }
@@ -63,27 +90,28 @@ export class PostDetailDialogComponent {
     return this.commentDraft().trim().length > 0;
   }
 
-  protected submitComment() {
+  protected async submitComment() {
     const content = this.commentDraft().trim();
-    if (!this.post || content.length === 0) {
+    if (!this.post || content.length === 0 || this.submittingComment()) {
       return;
     }
 
-    this.localComments.update(comments => [
-      ...comments,
-      {
-        commentId: `local-${Date.now()}`,
-        username: this.post?.username ?? '',
-        content,
-        createdAt: new Date().toISOString(),
-        parentCommentId: null,
-      },
-    ]);
-    this.commentDraft.set('');
+    const parentCommentId = this.replyingTo()?.commentId ?? null;
+    this.submittingComment.set(true);
+    try {
+      const created = await this.commentService.addComment(this.post.postId, content, parentCommentId);
+      this.localComments.update(comments => [...comments, created]);
+      this.commentDraft.set('');
+      this.replyingTo.set(null);
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+    } finally {
+      this.submittingComment.set(false);
+    }
   }
 
   protected commentCount(): number {
-    return (this.post?.comments.length ?? 0) + this.localComments().length;
+    return this.localComments().length;
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
@@ -135,9 +163,89 @@ export class PostDetailDialogComponent {
     return formatTimeAgo(value);
   }
 
-  protected topLevelComments(post: PostResponse): CommentResponse[] {
-    return [...post.comments, ...this.localComments()].filter(
+  protected topLevelComments(): CommentResponse[] {
+    return this.localComments().filter(
       comment => comment.parentCommentId === null,
     );
+  }
+
+  protected repliesFor(commentId: string): CommentResponse[] {
+    return this.localComments().filter(comment => comment.parentCommentId === commentId);
+  }
+
+  protected commentAvatarInitial(comment: CommentResponse): string {
+    return comment.username.trim().charAt(0).toUpperCase() || '?';
+  }
+
+  protected isOwnComment(comment: CommentResponse): boolean {
+    return comment.username === this.userService.user()?.username;
+  }
+
+  protected setReplyingTo(comment: CommentResponse): void {
+    this.replyingTo.set(comment);
+    this.commentDraft.set('');
+  }
+
+  protected cancelReply(): void {
+    this.replyingTo.set(null);
+    this.commentDraft.set('');
+  }
+
+  protected startEdit(comment: CommentResponse): void {
+    this.editingCommentId.set(comment.commentId);
+    this.editDraft.set(comment.content);
+  }
+
+  protected updateEditDraft(event: Event): void {
+    const input = event.target as HTMLTextAreaElement;
+    this.editDraft.set(input.value);
+  }
+
+  protected cancelEdit(): void {
+    this.editingCommentId.set(null);
+    this.editDraft.set('');
+  }
+
+  protected async saveEdit(commentId: string): Promise<void> {
+    const content = this.editDraft().trim();
+    if (!content) {
+      return;
+    }
+
+    try {
+      const updated = await this.commentService.updateComment(commentId, content);
+      this.localComments.update(comments =>
+        comments.map(comment => comment.commentId === commentId ? updated : comment),
+      );
+      this.cancelEdit();
+    } catch (error) {
+      console.error('Failed to update comment:', error);
+    }
+  }
+
+  protected async deleteComment(commentId: string): Promise<void> {
+    try {
+      await this.commentService.deleteComment(commentId);
+      this.localComments.update(comments =>
+        comments.filter(
+          comment => comment.commentId !== commentId && comment.parentCommentId !== commentId,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+    }
+  }
+
+  private async loadComments(postId: string): Promise<void> {
+    this.loadingComments.set(true);
+    try {
+      const comments = await this.commentService.getComments(postId);
+      this.localComments.set(comments);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+      this.localComments.set([]);
+    } finally {
+      this.loadingComments.set(false);
+    }
   }
 }
