@@ -73,7 +73,7 @@ public class EmailVerificationService {
         return;
       }
 
-      if (!user.get().getId().equals(userByEmail.get().getId())) {
+      if (!user.get().equals(userByEmail.get())) {
         return;
       }
 
