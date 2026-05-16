@@ -8,6 +8,7 @@ import { CommentsComponent } from '../comments/comments.component';
 import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
 
 import { TabsModule } from 'primeng/tabs';
+import { ReportComponent } from '../../../report/components/report/report.component';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -16,6 +17,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
+import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
+import {ContentTypeEnum} from '../../../report/dto/report';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
 import {ReactiveFormsModule} from "@angular/forms";
@@ -38,6 +41,7 @@ import {RouterLink} from "@angular/router";
     PostViewDirective,
     ReactiveFormsModule,
     RouterLink,
+    ReportComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -54,6 +58,16 @@ export class FeedComponent implements OnInit {
 
   protected commentsDialogVisible = signal(false);
   protected selectedPostForComments = signal<Post | null>(null);
+
+  // Report dialog
+  protected reportDialogVisible = signal(false);
+  protected selectedPostForReport = signal<Post | null>(null);
+
+  //Report source
+  protected reportSourceDialogVisible = signal(false);
+  protected selectedSourceForReport = signal<PostSource | null>(null);
+  protected selectedPostForSourceReport = signal<Post | null>(null);
+
 
   protected algorithmConfigVisible = signal(false);
   protected isRefreshing = signal(false);
@@ -261,4 +275,16 @@ export class FeedComponent implements OnInit {
   }
 
   protected readonly Math = Math;
+  reportPost(post: Post) {
+    this.selectedPostForReport.set(post);
+    this.reportDialogVisible.set(true);
+  }
+
+  protected readonly ContentTypeEnum = ContentTypeEnum;
+
+  reportSource(postSource: PostSource, post: Post) {
+    this.selectedSourceForReport.set(postSource);
+    this.reportSourceDialogVisible.set(true);
+    this.selectedPostForSourceReport.set(post);
+  }
 }
