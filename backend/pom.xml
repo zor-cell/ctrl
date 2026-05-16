@@ -240,6 +240,10 @@
     			<configuration>
 						<from>
 							<image>registry.reset.inso-w.at/2026ss-ase-pr-group/26ss-ase-pr-inso-04/backend-base:latest</image>
+  						<auth>
+    						<username>${env.CI_REGISTRY_USER}</username>
+    						<password>${env.CI_REGISTRY_PASSWORD}</password>
+  						</auth>
 						</from>
 						<allowInsecureRegistries>true</allowInsecureRegistries>
         		<extraDirectories>
