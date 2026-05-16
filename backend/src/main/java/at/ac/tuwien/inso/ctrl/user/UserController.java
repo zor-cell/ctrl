@@ -10,7 +10,6 @@ import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerificationStatusResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.validation.Valid;
@@ -20,8 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -95,8 +94,7 @@ public class UserController {
   }
 
   @PostMapping("/me/verify/business")
-  public void submitBusinessVerification(
-      @AuthenticationPrincipal User currentUser) {
+  public void submitBusinessVerification(@AuthenticationPrincipal User currentUser) {
     businessVerificationService.submitBusinessVerification(currentUser);
   }
 
@@ -105,5 +103,4 @@ public class UserController {
       @AuthenticationPrincipal User currentUser) {
     return businessVerificationService.getVerificationStatus(currentUser);
   }
-
 }

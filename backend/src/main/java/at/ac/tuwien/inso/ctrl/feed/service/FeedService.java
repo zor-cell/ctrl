@@ -3,9 +3,6 @@ package at.ac.tuwien.inso.ctrl.feed.service;
 import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.report.entity.Report;
-
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;

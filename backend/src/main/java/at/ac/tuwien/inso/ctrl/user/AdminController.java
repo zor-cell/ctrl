@@ -2,10 +2,7 @@ package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
-import at.ac.tuwien.inso.ctrl.user.service.UserService;
-
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +22,9 @@ public class AdminController {
   }
 
   @PutMapping("/verifications/{requestId}/decision")
-  public void reviewRequest(@PathVariable UUID requestId, @RequestBody BusinessVerificationDecisionRequest verificationRequest) {
+  public void reviewRequest(
+      @PathVariable UUID requestId,
+      @RequestBody BusinessVerificationDecisionRequest verificationRequest) {
     businessVerificationService.updateVerification(requestId, verificationRequest);
   }
 }
