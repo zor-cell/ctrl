@@ -41,9 +41,9 @@
   gap: 0.6rem;
   width: 100%;
   min-height: 20rem;
-  border: 2px dashed rgba(148, 163, 184, 0.7);
+  border: 2px dashed var(--p-text-muted-color);
   border-radius: 1.25rem;
-  background: #f9fafb;
+  background: var(--p-content-background);
   cursor: pointer;
 }
 
@@ -54,6 +54,7 @@
 .media-dropzone__title {
   font-size: 1.15rem;
   font-weight: 700;
+  color: var(--p-text-muted-color);
 }
 
 .media-dropzone__text {
@@ -210,9 +211,8 @@
   display: grid;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid rgba(203, 213, 225, 0.8);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 1rem;
-  background: rgba(248, 250, 252, 0.9);
 }
 
 .source-card--error {
