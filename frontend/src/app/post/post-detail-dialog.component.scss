@@ -1,14 +1,16 @@
+$border: var(--border);
+
 :host ::ng-deep .post-detail-dialog .p-dialog-content {
   padding: 0;
   overflow: hidden;
   border-radius: 1.5rem;
+  border: 1px solid $border;
 }
 
 .post-detail {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   max-height: min(50rem, 88vh);
-  background: #fff;
 }
 
 .post-detail__header,
@@ -26,12 +28,12 @@
 }
 
 .post-detail__header {
+  border-bottom: 1px solid $border;
   display: grid;
   grid-template-columns: minmax(12rem, auto) 1fr auto;
   grid-template-areas:
     "author chips actions";
   align-items: start;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .post-detail__body {
@@ -84,8 +86,6 @@
   height: 3.25rem;
   overflow: hidden;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #334155;
   font-weight: 800;
 }
 
@@ -96,7 +96,6 @@
 }
 
 .post-detail__author strong {
-  color: #334155;
 }
 
 .post-detail__author p,
@@ -105,7 +104,6 @@
 .post-detail__comment span,
 .post-detail__source p {
   margin: 0;
-  color: #8a8f98;
 }
 
 .post-detail__chips {
@@ -119,10 +117,7 @@
 
 .post-detail__chips span {
   padding: 0.35rem 0.65rem;
-  border: 1px solid #d1d5db;
   border-radius: 0.45rem;
-  background: #f8fafc;
-  color: #6b7280;
   font-weight: 700;
 }
 
@@ -131,13 +126,10 @@
   width: 100%;
   max-height: 36rem;
   object-fit: cover;
-  background: #f3f4f6;
 }
 
 .post-detail__caption {
   margin: 0;
-  border-bottom: 1px solid #e5e7eb;
-  color: #334155;
   font-size: 1.05rem;
   line-height: 1.55;
 }
@@ -153,16 +145,15 @@
 }
 
 .post-detail__source {
+  border: 1px solid $border;
   display: grid;
   gap: 0.25rem;
   padding: 0.8rem;
   border-radius: 0.75rem;
-  background: #f8fafc;
 }
 
 .post-detail__source h3 {
   margin: 0;
-  color: #334155;
   font-size: 0.95rem;
 }
 
@@ -174,19 +165,17 @@
   display: grid;
   gap: 1rem;
   min-height: 12rem;
-  border-top: 1px solid #e5e7eb;
 }
 
 .post-detail__comments h2 {
   margin: 0;
-  color: #334155;
   font-size: 1.35rem;
 }
 
 .post-detail__comment-box {
   display: grid;
+  border-top: 1px solid $border;
   gap: 0.5rem;
-  border-top: 1px solid #e5e7eb;
 }
 
 .comments-loading,
@@ -195,7 +184,6 @@
   justify-items: center;
   gap: 0.45rem;
   padding: 2.5rem 1rem;
-  color: #888;
 }
 
 .comments-loading i,
@@ -207,7 +195,6 @@
 .comments-loading p,
 .comments-empty p {
   margin: 0;
-  color: #888;
 }
 
 .comment {
@@ -229,8 +216,6 @@
   height: 2.15rem;
   overflow: hidden;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #334155;
   font-size: 0.85rem;
   font-weight: 800;
 }
@@ -262,14 +247,12 @@
 }
 
 .comment-username {
-  color: #334155;
   font-size: 0.9rem;
   font-weight: 700;
 }
 
 .comment-time,
 .comment-edited {
-  color: #888;
   font-size: 0.78rem;
 }
 
@@ -280,7 +263,6 @@
 
 .comment-content {
   margin: 0;
-  color: #334155;
   font-size: 0.94rem;
   line-height: 1.45;
 }
@@ -299,7 +281,6 @@
   align-items: center;
   border: 0;
   background: transparent;
-  color: #888;
   cursor: pointer;
 }
 
@@ -335,11 +316,10 @@
 }
 
 .edit-form textarea {
+  border: 1px solid $border;
   min-height: 4rem;
   padding: 0.85rem 1rem;
-  border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
-  color: #334155;
   font: inherit;
   font-size: 1rem;
   line-height: 1.4;
@@ -358,7 +338,6 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #64748b;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 700;
@@ -366,8 +345,6 @@
 }
 
 .edit-actions button:first-child {
-  background: #050509;
-  color: #fff;
 }
 
 .edit-actions button:disabled {
@@ -379,7 +356,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #888;
   font-size: 0.85rem;
 }
 
@@ -391,12 +367,11 @@
 
 .comment-input-row input,
 .comment-input {
+  border: 1px solid $border;
   flex: 1;
   min-width: 0;
   padding: 0.7rem 0.9rem;
-  border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
-  color: #334155;
   font: inherit;
 }
 
@@ -407,7 +382,6 @@
   height: 2.5rem;
   border: 0;
   background: transparent;
-  color: #64748b;
   cursor: pointer;
 }
 
