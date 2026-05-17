@@ -98,7 +98,7 @@
   border: 1px solid rgba(203, 213, 225, 0.8);
   border-radius: 1rem;
   background: rgba(248, 250, 252, 0.9);
-  color: var(--p-text-color);
+  color: #111827;
   font-weight: 500;
 }
 
@@ -109,7 +109,7 @@
   border-radius: 1rem;
   font-family: inherit;
   font-size: 0.95rem;
-  color: var(--p-text-color);
+  color: #111827;
   resize: vertical;
   background: rgba(248, 250, 252, 0.9);
   transition: all 0.2s ease;
@@ -163,7 +163,7 @@
   border: 2px solid rgba(203, 213, 225, 0.8);
   border-radius: 1rem;
   background: rgba(248, 250, 252, 0.9);
-  color: var(--p-text-color);
+  color: #111827;
   font-weight: 500;
   font-size: 0.95rem;
   cursor: pointer;
@@ -191,4 +191,3 @@
     grid-template-columns: 1fr;
   }
 }
-
