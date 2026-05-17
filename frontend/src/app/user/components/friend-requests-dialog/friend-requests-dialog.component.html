@@ -1,0 +1,92 @@
+<div class="friend-requests-dialog">
+  <!-- Incoming Requests Section (Top Half) -->
+  <div class="requests-section">
+    <h3>Incoming Requests ({{ incomingRequests().length }})</h3>
+
+    @if (incomingRequests().length === 0) {
+      <div class="empty-state">
+        <p>No pending friend requests</p>
+      </div>
+    } @else {
+      <div class="requests-list">
+        @for (request of incomingRequests(); track request.username) {
+          <div class="request-item incoming">
+            <div class="profile-avatar">
+              @if (request.profilePicture) {
+                <img
+                  [src]="request.profilePicture"
+                  alt=""
+                  class="profile-avatar__image"
+                />
+              } @else {
+                <span class="profile-avatar__initial">{{ request.username.charAt(0) }}</span>
+              }
+            </div>
+
+            <div class="request-info">
+              <span class="username">&#64;{{ request.username }}</span>
+              <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
+            </div>
+
+            <div class="request-actions">
+              <p-button
+                icon="pi pi-check"
+                severity="success"
+                (onClick)="acceptRequest(request)"
+                pTooltip="Accept" />
+              <p-button
+                icon="pi pi-times"
+                severity="danger"
+                (onClick)="declineRequest(request)"
+                pTooltip="Decline" />
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <p-divider />
+
+  <!-- Sent Requests Section (Bottom Half) -->
+  <div class="requests-section">
+    <h3>Sent Requests ({{ sentRequests().length }})</h3>
+
+    @if (sentRequests().length === 0) {
+      <div class="empty-state">
+        <p>No sent friend requests pending</p>
+      </div>
+    } @else {
+      <div class="requests-list">
+        @for (request of sentRequests(); track request.username) {
+          <div class="request-item sent">
+            <div class="profile-avatar">
+              @if (request.profilePicture) {
+                <img
+                  [src]="request.profilePicture"
+                  alt=""
+                  class="profile-avatar__image"
+                />
+              } @else {
+                <span class="profile-avatar__initial">{{ request.username.charAt(0) }}</span>
+              }
+            </div>
+
+            <div class="request-info">
+              <span class="username">&#64;{{ request.username }}</span>
+              <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
+            </div>
+
+            <div class="request-actions">
+              <p-button
+                icon="pi pi-times"
+                severity="secondary"
+                (onClick)="cancelRequest(request)"
+                label="Cancel" />
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,291 @@
+<section class="post-page" [class.post-page--create-only]="createOnlyMode()">
+  @if (!createOnlyMode()) {
+    <header class="post-profile-card">
+    <div class="profile-avatar profile-avatar--display" aria-hidden="true">
+      @if (currentProfilePicture()) {
+        <img
+          [src]="currentProfilePicture()!"
+          alt=""
+          class="profile-avatar__image"
+        />
+      } @else {
+        <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+      }
+    </div>
+    @if (updatingAvatar()) {
+      <span class="profile-avatar-status" aria-live="polite">Saving...</span>
+    }
+
+    <input
+      #avatarInput
+      type="file"
+      accept="image/*"
+      class="sr-only"
+      (change)="onAvatarSelected($event)"
+    />
+
+    <div class="post-profile-card__copy">
+      <h1>{{ username() }}</h1>
+      <div class="profile-bio">
+        <p>{{ userBio() }}</p>
+        @if (canEditProfile()) {
+          <p-button
+            label="Edit"
+            icon="pi pi-pencil"
+            size="small"
+            severity="secondary"
+            [text]="true"
+            (onClick)="startProfileEdit()"
+          />
+        }
+      </div>
+    </div>
+
+    @if (canEditProfile()) {
+      <div class="post-profile-card__actions">
+        <p-button
+          icon="pi pi-cog"
+          ariaLabel="Open profile settings"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="openProfileSettings()"
+        />
+        <p-button
+          label="Create Post"
+          icon="pi pi-plus"
+          size="large"
+          (onClick)="openCreateDialog()"
+        />
+      </div>
+    }
+    </header>
+
+    <section class="my-posts-section" aria-labelledby="my-posts-title">
+      <div class="my-posts-section__header">
+        <div>
+          <p class="post-page__eyebrow">{{ profileEyebrow() }}</p>
+          <h2 id="my-posts-title">{{ postsHeading() }}</h2>
+        </div>
+        <span class="my-posts-section__count" aria-live="polite">
+          {{ postsCountLabel() }}
+        </span>
+      </div>
+
+      @if (loadingPosts()) {
+        <div class="posts-empty-card" aria-live="polite">
+          Loading your posts...
+        </div>
+      } @else if (myPosts().length === 0) {
+        <div class="posts-empty-card">
+          <h3>{{ emptyPostsTitle() }}</h3>
+          <p>{{ emptyPostsMessage() }}</p>
+        </div>
+      } @else {
+        <div class="my-posts-grid">
+          @for (post of myPosts(); track post.postId) {
+            <button
+              type="button"
+              class="post-card"
+              (click)="openPost(post)"
+            >
+              @if (postMediaUrl(post) && postMediaKind(post) === 'image') {
+                <img
+                  [src]="postMediaUrl(post)!"
+                  alt=""
+                  class="post-card__media"
+                />
+              } @else if (postMediaUrl(post) && postMediaKind(post) === 'video') {
+                <video
+                  [src]="postMediaUrl(post)!"
+                  muted
+                  class="post-card__media"
+                ></video>
+              }
+
+              <div class="post-card__body">
+                <div class="post-card__meta">
+                  <span
+                    class="post-visibility-badge"
+                    [class.post-visibility-badge--public]="post.isPublic"
+                    [class.post-visibility-badge--private]="!post.isPublic"
+                    [pTooltip]="post.isPublic ? 'This is a public post.' : 'This is a private post.'"
+                    tooltipPosition="top"
+                    [attr.aria-label]="post.isPublic ? 'Public post' : 'Private post'"
+                  >
+                    <i [class]="post.isPublic ? 'pi pi-globe' : 'pi pi-lock'"></i>
+                  </span>
+                </div>
+
+                <p class="post-card__caption">{{ post.caption }}</p>
+
+                @if (post.topicIds.length > 0) {
+                  <div class="post-card__topics" aria-label="Selected topics">
+                    @for (topicId of post.topicIds; track topicId) {
+                      <span>{{ topicLabelById(topicId) }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+</section>
+
+<p-dialog
+  header="Edit profile"
+  [visible]="editingProfile()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!updatingProfile()"
+  [style]="{ width: 'min(34rem, 92vw)' }"
+  (visibleChange)="!$event && cancelProfileEdit()"
+>
+  <div class="profile-edit-dialog">
+    <div class="profile-edit-dialog__avatar">
+      <button
+        type="button"
+        class="profile-avatar profile-avatar--dialog"
+        aria-label="Choose profile picture"
+        (click)="openAvatarPicker()"
+      >
+        @if (currentProfilePicture()) {
+          <img
+            [src]="currentProfilePicture()!"
+            alt=""
+            class="profile-avatar__image"
+          />
+        } @else {
+          <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+        }
+        <span class="profile-avatar__edit">Change</span>
+      </button>
+      <p-button
+        label="Choose image"
+        icon="pi pi-image"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="updatingProfile()"
+        (onClick)="openAvatarPicker()"
+      />
+    </div>
+
+    <label class="profile-edit-field">
+      <span>Username</span>
+      <input
+        class="profile-edit-input"
+        type="text"
+        [value]="profileUsernameDraft()"
+        [disabled]="updatingProfile()"
+        (input)="updateUsernameDraft($event)"
+      />
+      <small class="profile-edit-hint" aria-live="polite">
+        @if (checkingUsername()) {
+          Checking username...
+        } @else if (usernameEmpty()) {
+          Username is required.
+        } @else if (usernameAvailable() === false) {
+          This username is already taken.
+        } @else if (usernameChanged() && usernameAvailable() === true) {
+          Username is available.
+        } @else {
+          Your current username.
+        }
+      </small>
+    </label>
+
+    <label class="profile-edit-field">
+      <span>Bio</span>
+      <textarea
+        class="profile-bio-editor__input"
+        rows="4"
+        maxlength="280"
+        [value]="profileBioDraft()"
+        [disabled]="updatingProfile()"
+        (input)="updateBioDraft($event)"
+        aria-label="Edit bio"
+      ></textarea>
+      <span
+        class="profile-bio-editor__meta"
+        [class.profile-bio-editor__meta--error]="bioTooLong()"
+      >
+        {{ bioLength() }} / {{ maxBioLength }}
+      </span>
+    </label>
+
+    <div class="profile-edit-dialog__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="updatingProfile()"
+        (onClick)="cancelProfileEdit()"
+      />
+      <p-button
+        label="Save"
+        icon="pi pi-check"
+        [loading]="updatingProfile()"
+        [disabled]="!canSaveProfile()"
+        (onClick)="saveProfileChanges()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
+<app-post-detail-dialog
+  [post]="selectedPost()"
+  [topicOptions]="topicOptions()"
+  [currentProfilePicture]="currentProfilePicture()"
+  [avatarInitial]="avatarInitial()"
+  [canDelete]="canEditProfile()"
+  (dismissed)="closePost()"
+  (deleteRequested)="requestPostDeletion($event)"
+/>
+
+<p-dialog
+  [visible]="postPendingDeletion() !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!deletingPost()"
+  [style]="{ width: 'min(28rem, 92vw)' }"
+  header="Delete post?"
+  (visibleChange)="!$event && cancelPostDeletion()"
+>
+  <div class="delete-confirmation">
+    <p>
+      This action is irreversible. Are you sure you want to permanently delete
+      this post?
+    </p>
+    <div class="delete-confirmation__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="deletingPost()"
+        (onClick)="cancelPostDeletion()"
+      />
+      <p-button
+        label="Delete permanently"
+        icon="pi pi-trash"
+        severity="danger"
+        [loading]="deletingPost()"
+        (onClick)="confirmPostDeletion()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
+<app-post-composer
+  [visible]="dialogVisible()"
+  [isVerifiedUser]="isVerifiedUser()"
+  [topicOptions]="topicOptions()"
+  [loadingTopics]="loadingTopics()"
+  [modal]="!createOnlyMode()"
+  [dismissableMask]="!createOnlyMode()"
+  (visibleChange)="onComposerVisibleChange($event)"
+  (created)="onPostCreated()"
+/>

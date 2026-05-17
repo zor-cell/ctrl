@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: ctrl
+
+  task:
+    scheduling:
+      enabled: false
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${POSTGRES_DB:${DB_NAME:ctrl}}}
+    username: ${POSTGRES_USER:${DB_USERNAME:your_user}}
+    password: ${POSTGRES_PASSWORD:${DB_PASSWORD:your_password}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector;
+
+  sql:
+    init:
+      mode: always
+      separator: ^
+
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
+garage:
+  url: http://localhost:3900
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: PT2M
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket-name: ctrl-test-media
+  private-bucket-name: ctrl-test-private-media
+  public-bucket-name: ctrl-test-public-media
+
+infinity:
+  url: http://localhost:7997
+  model: test-model
+
+application:
+  security:
+    jwt:
+      secret-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      expiration: 86400000  # 1 day in ms
+    id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      client-id: "ctrl-test"
+      client-secret: "ctrl-test-secret"
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
+  auth:
+    require-email-verification: true
+  seed:
+    admin:
+      username: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin}

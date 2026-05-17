@@ -1,0 +1,45 @@
+<div class="friend-list">
+  <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
+
+  @if (friends().length === 0) {
+    <div class="empty-state">
+      @if (searchQuery()) {
+        <p>No friends match your search. Try a different search term or clear the search.</p>
+      } @else {
+        <p>No friends yet. Click "Find People" to add friends!</p>
+      }
+    </div>
+  } @else {
+    <div class="list-container">
+      @for (friend of friends(); track friend.id) {
+        <div class="friend-item">
+          <button
+            type="button"
+            class="profile-avatar"
+            (click)="navigateToProfile(friend.username)">
+            @if (friend.profilePicture) {
+              <img
+                [src]="friend.profilePicture"
+                alt=""
+                class="profile-avatar__image"
+              />
+            } @else {
+              <span class="profile-avatar__initial">{{ friend.name.charAt(0) || friend.username.charAt(0) }}</span>
+            }
+          </button>
+
+          <div class="friend-info">
+            <span class="name">{{ friend.name }}</span>
+            <span class="username">&#64;{{ friend.username }}</span>
+          </div>
+
+          <p-button
+            icon="pi pi-ellipsis-v"
+            severity="secondary"
+            text
+            (onClick)="openMenu($event, friend.username)" />
+        </div>
+      }
+    </div>
+  }
+</div>

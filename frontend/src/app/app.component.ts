@@ -1,0 +1,24 @@
+import { Component, inject, OnInit } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { Toast } from 'primeng/toast';
+
+import { AuthService } from './auth/auth.service';
+import { NavigationComponent } from './navigation/navigation.component';
+import { UserService } from './user/user.service';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Toast, NavigationComponent],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
+})
+export class AppComponent implements OnInit {
+  protected readonly userService = inject(UserService);
+  private readonly authService = inject(AuthService);
+
+  ngOnInit() {
+    if (this.authService.validateSession()) {
+      this.userService.loadUser().subscribe();
+    }
+  }
+}

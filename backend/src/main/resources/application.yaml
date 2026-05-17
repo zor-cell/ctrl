@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: ctrl
+  config:
+    import: "optional:configtree:/run/secrets/"
+  datasource:
+    url: jdbc:postgresql://db:5432/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      separator: ^
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: true
+
+garage:
+  url: http://garage:3900
+  presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
+  internal-presign-url: ${GARAGE_INTERNAL_PRESIGN_URL:http://garage:3900}
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
+  bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
+
+infinity:
+  url: http://infinity:7997
+  model: ${INFINITY_MODEL}
+
+files:
+  cleanup:
+    orphan-post-media:
+      initial-delay: ${ORPHAN_POST_MEDIA_CLEANUP_INITIAL_DELAY:PT10M}
+      fixed-delay: ${ORPHAN_POST_MEDIA_CLEANUP_FIXED_DELAY:PT30M}
+      min-age: ${ORPHAN_POST_MEDIA_CLEANUP_MIN_AGE:PT30M}
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: 86400000 #1 day in ms
+    id-austria:
+      issuer-uri: "http://keycloak:8080/realms/id-austria-mock"
+      client-id: "http://localhost:8080"
+      client-secret: ${ID_AUSTRIA_SECRET}
+      token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: ${ID_AUSTRIA_REDIRECT_URI:http://localhost:80/verification-callback}
+  auth:
+    require-email-verification: ${MAIL_REQUIRED}
+  seed:
+    admin:
+      username: ${ADMIN_USERNAME}
+      password: ${ADMIN_PASSWORD}
+
+management:
+  health:
+    mail:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include:
+          health
+  endpoint:
+    health:
+      show-details:
+        always
+
+logging:
+  level:
+    org.springframework.mail: DEBUG
+    org.eclipse.angus.mail: DEBUG
+    jakarta.mail: DEBUG

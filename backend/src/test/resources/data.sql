@@ -1,0 +1,105 @@
+CREATE OR REPLACE FUNCTION update_post_votes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        IF NEW.vote_type = 'up' THEN
+            UPDATE posts SET upvotes = COALESCE(upvotes, 0) + 1 WHERE post_id = NEW.post_id;
+        ELSIF NEW.vote_type = 'down' THEN
+            UPDATE posts SET downvotes = COALESCE(downvotes, 0) + 1 WHERE post_id = NEW.post_id;
+        END IF;
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        IF OLD.vote_type = 'up' THEN
+            UPDATE posts SET upvotes = GREATEST(COALESCE(upvotes, 0) - 1, 0) WHERE post_id = OLD.post_id;
+        ELSIF OLD.vote_type = 'down' THEN
+            UPDATE posts SET downvotes = GREATEST(COALESCE(downvotes, 0) - 1, 0) WHERE post_id = OLD.post_id;
+        END IF;
+        RETURN OLD;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        IF OLD.vote_type IS DISTINCT FROM NEW.vote_type THEN
+            IF OLD.vote_type = 'up' THEN
+                UPDATE posts SET upvotes = GREATEST(COALESCE(upvotes, 0) - 1, 0) WHERE post_id = OLD.post_id;
+            ELSIF OLD.vote_type = 'down' THEN
+                UPDATE posts SET downvotes = GREATEST(COALESCE(downvotes, 0) - 1, 0) WHERE post_id = OLD.post_id;
+            END IF;
+            IF NEW.vote_type = 'up' THEN
+                UPDATE posts SET upvotes = COALESCE(upvotes, 0) + 1 WHERE post_id = NEW.post_id;
+            ELSIF NEW.vote_type = 'down' THEN
+                UPDATE posts SET downvotes = COALESCE(downvotes, 0) + 1 WHERE post_id = NEW.post_id;
+            END IF;
+        END IF;
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql^
+
+--- Creates a trigger for source votes to be visible on the post entity
+DROP TRIGGER IF EXISTS trg_update_post_votes ON post_votes^
+CREATE TRIGGER trg_update_post_votes
+    AFTER INSERT OR UPDATE OR DELETE ON post_votes
+    FOR EACH ROW EXECUTE FUNCTION update_post_votes_count()^
+
+CREATE OR REPLACE FUNCTION update_source_votes_count()
+    RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        IF NEW.vote_type = 'up' THEN
+            UPDATE sources SET upvotes = COALESCE(upvotes, 0) + 1 WHERE source_id = NEW.source_id;
+        ELSIF NEW.vote_type = 'down' THEN
+            UPDATE sources SET downvotes = COALESCE(downvotes, 0) + 1 WHERE source_id = NEW.source_id;
+        END IF;
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        IF OLD.vote_type = 'up' THEN
+            UPDATE sources SET upvotes = GREATEST(COALESCE(upvotes, 0) - 1, 0) WHERE source_id = OLD.source_id;
+        ELSIF OLD.vote_type = 'down' THEN
+            UPDATE sources SET downvotes = GREATEST(COALESCE(downvotes, 0) - 1, 0) WHERE source_id = OLD.source_id;
+        END IF;
+        RETURN OLD;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        IF OLD.vote_type IS DISTINCT FROM NEW.vote_type THEN
+            IF OLD.vote_type = 'up' THEN
+                UPDATE sources SET upvotes = GREATEST(COALESCE(upvotes, 0) - 1, 0) WHERE source_id = OLD.source_id;
+            ELSIF OLD.vote_type = 'down' THEN
+                UPDATE sources SET downvotes = GREATEST(COALESCE(downvotes, 0) - 1, 0) WHERE source_id = OLD.source_id;
+            END IF;
+            IF NEW.vote_type = 'up' THEN
+                UPDATE sources SET upvotes = COALESCE(upvotes, 0) + 1 WHERE source_id = NEW.source_id;
+            ELSIF NEW.vote_type = 'down' THEN
+                UPDATE sources SET downvotes = COALESCE(downvotes, 0) + 1 WHERE source_id = NEW.source_id;
+            END IF;
+        END IF;
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql^
+
+DROP TRIGGER IF EXISTS trg_update_source_votes ON source_votes^
+CREATE TRIGGER trg_update_source_votes
+    AFTER INSERT OR UPDATE OR DELETE ON source_votes
+    FOR EACH ROW EXECUTE FUNCTION update_source_votes_count()^
+
+CREATE OR REPLACE FUNCTION wilson_score(upvotes integer, downvotes integer)
+    RETURNS numeric AS $$
+DECLARE
+    n integer;
+    p numeric;
+    z numeric := 1.96;     -- z-score for 95% confidence
+    z2 numeric := 3.8416;  -- z^2
+BEGIN
+    n := COALESCE(upvotes, 0) + COALESCE(downvotes, 0);
+
+    IF n = 0 THEN
+        RETURN 0.0;
+    END IF;
+
+    p := COALESCE(upvotes, 0)::numeric / n;
+
+    RETURN (
+        (p + z2 / (2 * n) - z * SQRT((p * (1 - p)) / n + z2 / (4 * n * n)))
+            / (1 + z2 / n)
+        );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE^

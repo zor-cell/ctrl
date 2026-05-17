@@ -1,0 +1,402 @@
+// ─── Tokens ───────────────────────────────────────────
+$border:      var(--border);
+$text-muted:   #888;
+$upvote:       #5bc97a;
+$downvote:     #e05858;
+$radius:       16px;
+$radius-sm:    10px;
+
+// ─── Tab List ─────────────────────────────────────
+:host ::ng-deep .p-tablist-tab-list {
+  justify-content: center;
+}
+
+// ─── Feed Wrapper ─────────────────────────────────────
+.feed-wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+// ─── Tabs Container (wraps p-tabs + floating button) ──
+.tabs-container {
+  position: relative;
+}
+
+// ─── Algorithm Config Button (right side of tab bar) ──
+.tablist-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 48px; // match PrimeNG tab bar height
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+  z-index: 1;
+}
+
+// ─── Refresh Button Spin ───────────────────────────────
+@keyframes spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+:host ::ng-deep .refresh-btn.spinning .p-button-icon {
+  animation: spin-once 0.6s linear 1;
+}
+
+// ─── Posts List ───────────────────────────────────────
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  // Scroll-snap container
+  height: calc(100vh - 120px); // minus header + tabs height
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+
+  // Hide scrollbar but keep functionality
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+// ─── Post Card ────────────────────────────────────────
+.post-card {
+  border-radius: $radius;
+  border: 1px solid $border;
+
+  // Snap each post into view
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  flex-shrink: 0;
+
+  height: auto;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+
+}
+
+// ─── Post Header ──────────────────────────────────────
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+
+  .post-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-username {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .post-info {
+    font-size: 0.78rem;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .separator { opacity: 0.5; }
+  }
+}
+
+// ─── Header Right: Labels + Why Button ────────────────
+.post-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// ─── Why Button ───────────────────────────────────────
+:host ::ng-deep .why-btn {
+  font-size: 0.8rem !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  border-color: $border !important;
+  color: $text-muted !important;
+
+}
+
+// ─── Post Image ───────────────────────────────────────
+.post-image-wrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+.post-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+
+}
+
+// ─── Caption ──────────────────────────────────────────
+.post-caption {
+  padding: 14px 16px 8px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-line;
+}
+
+// ─── Source Link ──────────────────────────────────────
+.post-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 16px 0 16px 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid $border;
+  font-size: 0.75rem;
+  color: $text-muted;
+  text-decoration: none;
+  transition: all 0.2s;
+
+  i { font-size: 0.7rem; }
+
+  &:hover {
+    color: var(--p-primary-color, #6366f1);
+    border-color: var(--p-primary-color, #6366f1);
+  }
+}
+.post-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 14px;
+  .post-source-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+
+// ─── Labels ───────────────────────────────────────────
+.post-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+:host ::ng-deep .post-label {
+  color: $text-muted !important;
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+  border: 1px solid $border !important;
+}
+
+// ─── Actions ──────────────────────────────────────────
+.post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 14px;
+  border-top: 1px solid $border;
+
+  .post-actions-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.action-btn {
+  margin: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid $border;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  i { font-size: 0.9rem; }
+
+  &.heart:hover {border-color: $downvote; color: $downvote}
+  &.heart.active {color: $downvote; border-color: $downvote }
+
+  &.upvote:hover  { color: $upvote;   border-color: $upvote; }
+  &.downvote:hover { color: $downvote; border-color: $downvote; }
+
+  &.upvote.active { color: $upvote; border-color: $upvote }
+  &.downvote.active { color: $downvote; border-color: $downvote }
+
+  &.flag-btn {
+    background: transparent;
+    border-color: transparent;
+    padding: 6px 8px;
+    &:hover { color: $downvote; border-color: transparent; background: transparent; }
+  }
+}
+
+// ─── Empty State ──────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: $text-muted;
+
+  i { font-size: 2.5rem; opacity: 0.4; }
+  p  { font-size: 0.9rem; margin: 0; }
+}
+
+// ─── Why Dialog ───────────────────────────────────────
+:host ::ng-deep .why-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+  //width: ;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid $border !important;
+    border-radius: 0 0 $radius $radius !important;
+    padding: 12px 16px !important;
+  }
+}
+
+.why-dialog-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 4px 0;
+
+  .why-icon {
+    font-size: 1.4rem;
+    color: #f0c040;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  p {
+    white-space: pre-line;
+    font-size: 0.93rem;
+    margin: 0;
+  }
+}
+
+// ─── Algorithm Config Dialog ──────────────────────────
+:host ::ng-deep .algorithm-config-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
+  }
+}
+
+
+
+
+.dialog-grid {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2rem;
+  margin: 2rem 2rem 1rem 2rem;
+}
+
+.score-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.score-row {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.5rem;
+}
+
+.score-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hint-icon {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #9ca3af);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+.bi-bar-container {
+  height: 8px !important;
+  border-radius: 4px;
+}
+
+/* Styles for bidirectional bar */
+.bi-bar-container {
+  position: relative;
+  height: 12px;
+  background: var(--surface-variant, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.bi-bar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 12px;
+  background: black;
+  z-index: 2;
+  opacity: 0.3;
+}
+
+.bi-bar {
+  height: 100%;
+  transition: width 0.5s ease-out;
+}
+
+.bi-bar.neg {
+  position: absolute;
+  right: 50%;
+  border-radius: 4px 0 0 4px;
+  background-color: #F43F5E;
+}
+
+.bi-bar.pos {
+  position: absolute;
+  left: 50%;
+  border-radius: 0 4px 4px 0;
+  background-color: #6366F1;
+}

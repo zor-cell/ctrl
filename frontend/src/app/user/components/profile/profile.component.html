@@ -1,0 +1,226 @@
+@if(isLoading()) {
+    <div class="loading-spinner">
+        <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
+    </div>
+} @else if(currentUser(); as user) {
+    <div class="profile-layout">
+        <div class="form-container profile-section">
+            <div class="form-header">
+                <h2>Profile Details</h2>
+            </div>
+
+            <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+                <div>
+                    <p-floatlabel variant="on">
+                        <input pInputText id="name" formControlName="name" fluid/>
+                        <label for="name">Full Name</label>
+                    </p-floatlabel>
+
+                    @if (profileForm.controls.name.invalid && profileForm.controls.name.touched) {
+                        <p-message severity="error" size="small" variant="simple">Name is required.</p-message>
+                    }
+                </div>
+
+                <div>
+                    <p-floatlabel variant="on">
+                        <p-date-picker
+                                inputId="birthdate"
+                                formControlName="birthdate"
+                                [maxDate]="maxDate"
+                                [showIcon]="true"
+                                dateFormat="dd.mm.yy"
+                                fluid
+                        />
+                        <label for="birthdate">Birthdate</label>
+                    </p-floatlabel>
+
+                    @if (profileForm.controls.birthdate.invalid && profileForm.controls.birthdate.touched) {
+                        <p-message severity="error" size="small" variant="simple">Birthdate is required.</p-message>
+                    }
+                </div>
+
+                <div>
+                    <p-floatlabel variant="on">
+                        <input pInputText type="email" id="name" formControlName="email" fluid/>
+                        <label for="name">Email</label>
+                    </p-floatlabel>
+
+                    @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) {
+                        <p-message severity="error" size="small" variant="simple">Email is required.</p-message>
+                    }
+                </div>
+
+                <div class="verification-box">
+                    @if (user.isVerified) {
+                        <p-message severity="success" variant="simple" size="small" [text]="getVerificationText()"></p-message>
+                    } @else {
+                        <p-message severity="warn" variant="simple" size="small"[text]="getVerificationText()"></p-message>
+                        @if (currentVerificationStatus()?.status !== VerificationStatus.REJECTED && currentVerificationStatus()?.status !== VerificationStatus.PENDING) {
+                          <p-button
+                                  label="Verify Now"
+                                  size="small"
+                                  severity="secondary"
+                                  (onClick)="openVerifyDialog()"
+                          >
+                          </p-button>
+                        }
+                    }
+                </div>
+
+                <div class="input-action-group" style="justify-content: end;">
+                    <p-button
+                            type="submit"
+                            label="Save Changes"
+                            icon="pi pi-check"
+                            [disabled]="profileForm.invalid || profileForm.pristine"
+                    >
+                    </p-button>
+                </div>
+            </form>
+        </div>
+
+        <div class="form-container profile-section">
+            <div class="form-header">
+                <h2>Account Settings</h2>
+            </div>
+
+            <div class="settings-stack">
+                <!-- created at field, is not really interesting
+                <div class="account-item">
+                    <div class="item-details">
+                        <span class="item-label">Member since</span>
+                        <span class="item-value">{{ createdAt() | date:'dd.MM.yyyy' }}</span>
+                    </div>
+                </div>-->
+
+                <div class="input-action-group account-item">
+                    <div class="item-details">
+                        <span class="item-label">Username</span>
+                        <span class="item-value">{{ user.username }}</span>
+                    </div>
+                    <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()"></p-button>
+                </div>
+
+                <div class="input-action-group account-item">
+                    <div class="item-details">
+                        <span class="item-label">Password</span>
+                        <span class="item-value">********</span>
+                    </div>
+                    <p-button label="Change" severity="secondary" (onClick)="openPasswordDialog()"></p-button>
+                </div>
+            </div>
+        </div>
+    </div>
+} @else {
+    <div>Login to see your profile</div>
+}
+
+<p-dialog header="Change Password" [modal]="true" [(visible)]="isPasswordDialogOpen" [style]="{ width: '25rem' }">
+    <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="dialog-form">
+        <div>
+            <p-floatlabel variant="on">
+                <p-password id="password"
+                            formControlName="currentPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
+                <label for="currentPassword">Current Password</label>
+            </p-floatlabel>
+        </div>
+
+        <div>
+            <p-floatlabel variant="on">
+                <p-password id="password"
+                            formControlName="newPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
+                <label for="newPassword">New Password</label>
+            </p-floatlabel>
+        </div>
+
+        <div>
+            <p-floatlabel variant="on">
+                <p-password id="password"
+                            formControlName="confirmPassword"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            fluid />
+                <label for="confirmPassword">Confirm Password</label>
+            </p-floatlabel>
+        </div>
+
+        <div class="input-action-group">
+            <p-button label="Cancel" severity="secondary" (onClick)="isPasswordDialogOpen.set(false)"></p-button>
+            <p-button label="Update Password" type="submit" [disabled]="passwordForm.invalid"></p-button>
+        </div>
+    </form>
+</p-dialog>
+
+<p-dialog header="Change Username" [modal]="true" [(visible)]="isUsernameDialogOpen" [style]="{ width: '25rem' }">
+    <form [formGroup]="usernameForm" (ngSubmit)="updateUsername()" class="dialog-form">
+        <div>
+            <p-floatlabel variant="on">
+                <input pInputText id="newUsername" formControlName="newUsername" fluid />
+                <label for="newUsername">Username</label>
+            </p-floatlabel>
+        </div>
+
+        <div class="input-action-group">
+            <p-button label="Cancel" severity="secondary" (onClick)="isUsernameDialogOpen.set(false)"></p-button>
+            <p-button label="Update Username" type="submit" [disabled]="usernameForm.invalid"></p-button>
+        </div>
+    </form>
+</p-dialog>
+
+
+<p-dialog header="Verify Account" [modal]="true" [(visible)]="isVerifyDialogOpen" [style]="{ width: '25rem' }">
+  <div class="dialog-form">
+    <p-message
+      severity="contrast"
+      variant="simple"
+      [text]="'Select your account type for verification:'"
+      styleClass="w-full"
+      [ngStyle]="{ 'margin-bottom': '1.5rem'}">
+    </p-message>
+
+    <div style="margin: 0.5rem 0; display: flex; flex-direction: row; gap: 1rem; justify-content: center;">
+      <p-button
+        label="Personal Account"
+        (onClick)="verifyPersonal()"
+      >
+        <ng-template pTemplate="content">
+          <div style="text-align: left;">
+            <strong>Personal Account</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
+              Verify via ID Austria
+            </p>
+          </div>
+        </ng-template>
+      </p-button>
+
+      <p-button
+        label="Business Account"
+        (onClick)="verifyBusiness()"
+      >
+        <ng-template pTemplate="content">
+          <div style="text-align: left;">
+            <strong>Business Account</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
+              Submit business verification request
+            </p>
+          </div>
+        </ng-template>
+      </p-button>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      (onClick)="isVerifyDialogOpen.set(false)"
+    ></p-button>
+  </ng-template>
+</p-dialog>
+

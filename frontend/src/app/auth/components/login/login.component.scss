@@ -1,0 +1,42 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 58px); //subtract header size
+  padding: 1rem;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+
+  a {
+    color: var(--p-primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.25rem;
+    transition: color 0.2s;
+
+    &:hover {
+      text-decoration: underline;
+      filter: brightness(1.2);
+    }
+  }
+}
+
+.forgot-password-link {
+  text-align: center;
+  margin-bottom: 1rem;
+
+  a {
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: var(--primary-color);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

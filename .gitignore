@@ -1,2 +1,10 @@
 /.idea/
 .env
+
+#db_credentials
+db_password.txt
+db_username.txt
+cypress/screenshots
+
+/backend/tokens/StoredCredential
+/backend/src/main/resources/credentials.json

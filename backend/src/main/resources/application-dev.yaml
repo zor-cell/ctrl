@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/${DB_NAME}
+
+garage:
+  url: http://localhost:3900
+  presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
+  internal-presign-url: ${GARAGE_INTERNAL_PRESIGN_URL:http://garage:3900}
+  public-url: http://localhost:8080/api/files/media-url?ref=
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
+  access-key: ${GARAGE_ACCESS_KEY}
+  secret-key: ${GARAGE_SECRET_KEY}
+  bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
+
+application:
+  security:
+    id-austria:
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "http://localhost:4200/verification-callback"
+  auth:
+    require-email-verification: false
+
+infinity:
+  url: http://localhost:7997
+
+files:
+  cleanup:
+    orphan-post-media:
+      initial-delay: PT10M
+      fixed-delay: PT30M
+      min-age: PT30M
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    at.ac.tuwien.inso.ctrl.config.security: DEBUG
