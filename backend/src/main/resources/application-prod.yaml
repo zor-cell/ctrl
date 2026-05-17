@@ -1,4 +1,6 @@
 spring:
+  application:
+    url: https://www.ctrl-ase.dev
   datasource:
     url: jdbc:postgresql://${DB_HOST:db-service}:${DB_PORT:5432}/${DB_NAME}
 
@@ -23,7 +25,7 @@ application:
       token-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "https://www.ctrl-ase.dev/verification-callback"
   auth:
-    require-email-verification: false # true
+    require-email-verification: false
 
 management:
   endpoints:

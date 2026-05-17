@@ -1,6 +1,7 @@
 spring:
   application:
     name: ctrl
+    url: http://localhost:4200
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
     username: ${DB_USERNAME}
