@@ -6,9 +6,7 @@ import {ButtonModule} from 'primeng/button';
 import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
-import {Menu} from "primeng/menu";
 import {UserService} from "../user/user.service";
-import {PanelMenu} from "primeng/panelmenu";
 import {TieredMenu} from "primeng/tieredmenu";
 
 @Component({
