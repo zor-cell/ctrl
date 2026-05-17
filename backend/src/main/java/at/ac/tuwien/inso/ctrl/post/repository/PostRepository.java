@@ -132,29 +132,29 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(
       value =
           """
+    WITH public_posts AS (
+            SELECT p.post_id, p.embedding, p.created_at, p.upvotes
+            FROM posts p
+            WHERE p.is_public = true
+                AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+    )
     ( --interaction candidates
-      SELECT p.post_id FROM posts p
-       WHERE p.is_public = true AND p.embedding IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-       ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
+      SELECT pp.post_id FROM public_posts pp
+       WHERE pp.embedding IS NOT NULL
+       ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --topic candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true AND p.embedding IS NOT NULL
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         WHERE pp.embedding IS NOT NULL
+         ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --recency candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.created_at DESC LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         ORDER BY pp.created_at DESC LIMIT :poolSize)
     UNION
     ( --popularity candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.upvotes DESC LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         ORDER BY pp.upvotes DESC LIMIT :poolSize)
     """,
       nativeQuery = true)
   List<String> getPublicPostCandidatePool(
@@ -166,20 +166,38 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(
       value =
           """
-    SELECT p.post_id FROM posts p
-    WHERE p.is_public = false
-        AND EXISTS (
-           SELECT 1 FROM friend_relation f
-           WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
-              OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
+        WITH private_posts AS (
+            SELECT p.post_id, p.embedding, p.created_at, p.upvotes
+            FROM posts p
+            WHERE p.is_public = false
+              AND EXISTS (
+                 SELECT 1 FROM friend_relation f
+                 WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
+                    OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
+              )
+              AND (
+                (:fetchOld = false AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+                OR
+                (:fetchOld = true AND EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+              )
         )
-        AND (
-          (:fetchOld = false AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
-          OR
-          (:fetchOld = true AND EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
-        )
-    ORDER BY p.created_at DESC
-    LIMIT :poolSize
+        (--interaction candidates
+            SELECT pp.post_id FROM private_posts pp
+            WHERE pp.embedding IS NOT NULL
+            ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize )
+          UNION
+          ( --topic candidates
+            SELECT pp.post_id FROM private_posts pp
+            WHERE pp.embedding IS NOT NULL
+            ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize )
+          UNION
+          ( --recency candidates
+            SELECT pp.post_id FROM private_posts pp
+            ORDER BY pp.created_at DESC LIMIT :poolSize )
+          UNION
+          ( --popularity candidates
+            SELECT pp.post_id FROM private_posts pp
+            ORDER BY pp.upvotes DESC LIMIT :poolSize )
     """,
       nativeQuery = true)
   List<String> getPrivatePostCandidatePool(
