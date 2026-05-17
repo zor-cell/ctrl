@@ -17,6 +17,7 @@ import { getReportReason } from '../../dto/reportReasons';
 import { ReportSummaryResponse } from '../../dto/ReportSummaryResponse';
 import { TableModule } from 'primeng/table';
 import { Dialog } from 'primeng/dialog';
+import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-cache.service';
 
 @Component({
   selector: 'app-report-review',
@@ -43,10 +44,14 @@ export class ReportReviewComponent implements OnInit {
   protected readonly timeAgo = timeAgo;
   private userService = inject(UserService);
   private reportService = inject(ReportService);
+  private mediaCacheService = inject(MediaCacheService);
   private confirmationService = inject(ConfirmationService);
 
   //protected allReports = signal<ReportedPostResponse[]>([]);
   protected reportedPosts = signal<ReportedPostResponse[]>([]);
+  protected profilePictureUrls = signal<Record<string, string>>({});
+  protected postMediaUrls = signal<Record<string, string>>({});
+  protected failedProfilePictures = signal<Set<string>>(new Set());
   protected reportedSources = signal<ReportedSourceResponse[]>([]);
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
@@ -68,6 +73,8 @@ export class ReportReviewComponent implements OnInit {
   async changeToPosts() {
     const reports = await this.reportService.getReportedPosts();
     this.reportedPosts.set(reports);
+    this.loadProfilePictures(reports);
+    this.loadPostMedia(reports);
     this.currentTab.set(ContentTypeEnum.POST);
   }
 
@@ -80,6 +87,33 @@ export class ReportReviewComponent implements OnInit {
 
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  }
+
+  profilePictureUrl(report: ReportedPostResponse): string | null {
+    return this.profilePictureUrls()[report.reportId]
+      ?? this.directProfilePictureUrl(report.userProfilePic);
+  }
+
+  hasProfilePicture(report: ReportedPostResponse): boolean {
+    return Boolean(this.profilePictureUrl(report))
+      && !this.failedProfilePictures().has(report.reportId);
+  }
+
+  markProfilePictureFailed(report: ReportedPostResponse): void {
+    this.failedProfilePictures.update(failedIds => {
+      const nextFailedIds = new Set(failedIds);
+      nextFailedIds.add(report.reportId);
+      return nextFailedIds;
+    });
+  }
+
+  getInitial(report: ReportedPostResponse): string {
+    return report.username.charAt(0).toUpperCase();
+  }
+
+  postMediaUrl(report: ReportedPostResponse): string | null {
+    return this.postMediaUrls()[report.reportId]
+      ?? this.directMediaUrl(report.mediaUrl ?? report.mediaRef);
   }
 
   getDomain(url: string): string {
@@ -165,4 +199,90 @@ export class ReportReviewComponent implements OnInit {
   }
 
   protected readonly ReportAction = ReportAction;
+
+  private loadProfilePictures(reports: ReportedPostResponse[]): void {
+    const activeIds = new Set(reports.map(report => report.reportId));
+    this.profilePictureUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([id, url]) => {
+        if (activeIds.has(id)) {
+          nextUrls[id] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    reports.forEach(report => {
+      if (!report.userProfilePic) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(report.userProfilePic, 'image', 'high').subscribe({
+        next: url => {
+          if (url) {
+            this.profilePictureUrls.update(urls => ({
+              ...urls,
+              [report.reportId]: url,
+            }));
+          }
+        },
+        error: () => this.markProfilePictureFailed(report),
+      });
+    });
+  }
+
+  private directProfilePictureUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
+  }
+
+  private loadPostMedia(reports: ReportedPostResponse[]): void {
+    const activeIds = new Set(reports.map(report => report.reportId));
+    this.postMediaUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([id, url]) => {
+        if (activeIds.has(id)) {
+          nextUrls[id] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    reports.forEach(report => {
+      const mediaUrl = report.mediaUrl ?? report.mediaRef;
+      if (!mediaUrl) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(
+        mediaUrl,
+        this.mediaKind(mediaUrl),
+        'high',
+      ).subscribe({
+        next: url => {
+          if (url) {
+            this.postMediaUrls.update(urls => ({
+              ...urls,
+              [report.reportId]: url,
+            }));
+          }
+        },
+      });
+    });
+  }
+
+  private directMediaUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
+  }
+
+  private mediaKind(url: string): MediaCacheKind {
+    return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url) ? 'video' : 'image';
+  }
 }

@@ -2,7 +2,7 @@
 
   <!-- Tabs: Public / Private -->
   <div class="tabs-container">
-    <p-tabs value="private">
+    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
 
       <p-tablist>
         <p-tab value="public">
@@ -96,10 +96,15 @@
         [style]="{ width: '42px', height: '42px' }"
       />
       <div class="post-meta">
-        <span class="post-username">{{ post.username }}</span>
-        <span class="post-info">
-          {{ timeAgo(post.createdAt) }}
-        </span>
+        @if (post.isExternal) {
+          <span class="post-username">{{ post.username }}</span>
+        } @else {
+          <a class="post-username post-username--link"
+             [routerLink]="['/profile', post.username]">
+            {{ post.username }}
+          </a>
+        }
+        <span class="post-info">{{ timeAgo(post.createdAt) }}</span>
       </div>
     </div>
 

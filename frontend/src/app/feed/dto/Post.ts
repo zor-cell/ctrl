@@ -17,6 +17,7 @@ export interface Post {
   labelIds: [string, string][];
   topicIds: string[];
   videoImageRef: string[];
+  isExternal: boolean;
   sourceIds: PostSource[];
   comments: PostComment[];
   explanation: PostExplanation;

@@ -81,19 +81,25 @@ public interface PostRepository extends JpaRepository<Post, String> {
                             (
                              CASE
                                -- Slider favors Exploration (> 0.5): Boost unfollowed users
-                               WHEN :wExploration > 0.5 AND f.follower_id IS NULL AND (p.user_id IS NULL OR p.user_id != :userId)
+                               WHEN :wExploration > 0.5 AND fr.friend_id_1 IS NULL AND f.follower_id IS NULL AND (p.user_id IS NULL OR p.user_id != :userId)
                                  THEN (:wExploration - 0.5) * 2.0
+                               -- Slider favors Following (< 0.5): Boost friend users
+                               WHEN :wExploration < 0.5 AND fr.friend_id_1 IS NOT NULL
+                                 THEN (0.5 - :wExploration) * 2.0
                                -- Slider favors Following (< 0.5): Boost followed users
                                WHEN :wExploration < 0.5 AND f.follower_id IS NOT NULL
-                                 THEN (0.5 - :wExploration) * 2.0
+                                 THEN (0.5 - :wExploration) * 1.5
                                ELSE 0.0
                              END
                              ) AS score_exploration
                       FROM posts p
                       LEFT JOIN sources s ON p.source_id = s.source_id
                       LEFT JOIN follow_relations f
-                                     ON f.followed_id = p.user_id
-                                    AND f.follower_id = :userId
+                         ON f.followed_id = p.user_id
+                         AND f.follower_id = :userId
+                      LEFT JOIN friend_relation fr
+                         ON (fr.friend_id_1 = :userId AND fr.friend_id_2 = p.user_id)
+                         OR (fr.friend_id_1 = p.user_id AND fr.friend_id_2 = :userId)
                       WHERE p.post_id IN (:candidatePosts)
                   )
                   SELECT
@@ -132,29 +138,29 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(
       value =
           """
+    WITH public_posts AS (
+            SELECT p.post_id, p.embedding, p.created_at, p.upvotes
+            FROM posts p
+            WHERE p.is_public = true
+                AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+    )
     ( --interaction candidates
-      SELECT p.post_id FROM posts p
-       WHERE p.is_public = true AND p.embedding IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-       ORDER BY p.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
+      SELECT pp.post_id FROM public_posts pp
+       WHERE pp.embedding IS NOT NULL AND CAST(:interactionVector AS real[]) IS NOT NULL
+       ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --topic candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true AND p.embedding IS NOT NULL
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         WHERE pp.embedding IS NOT NULL AND CAST(:topicVector AS real[]) IS NOT NULL
+         ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --recency candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.created_at DESC LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         ORDER BY pp.created_at DESC LIMIT :poolSize)
     UNION
     ( --popularity candidates
-        SELECT p.post_id FROM posts p
-         WHERE p.is_public = true
-         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-         ORDER BY p.upvotes DESC LIMIT :poolSize)
+        SELECT pp.post_id FROM public_posts pp
+         ORDER BY pp.upvotes DESC LIMIT :poolSize)
     """,
       nativeQuery = true)
   List<String> getPublicPostCandidatePool(
@@ -166,23 +172,46 @@ public interface PostRepository extends JpaRepository<Post, String> {
   @Query(
       value =
           """
-    SELECT p.post_id FROM posts p
-    WHERE p.is_public = false
-        AND EXISTS (
-           SELECT 1 FROM friend_relation f
-           WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
-              OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
+        WITH private_posts AS (
+            SELECT p.post_id, p.embedding, p.created_at, p.upvotes
+            FROM posts p
+            WHERE p.is_public = false
+              AND EXISTS (
+                 SELECT 1 FROM friend_relation f
+                 WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
+                    OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
+              )
+              AND (
+                (:fetchOld = false AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+                OR
+                (:fetchOld = true AND EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+              )
         )
-        AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
-    ORDER BY p.created_at DESC
-    LIMIT :poolSize
+        (--interaction candidates
+            SELECT pp.post_id FROM private_posts pp
+            WHERE pp.embedding IS NOT NULL AND CAST(:interactionVector AS real[]) IS NOT NULL
+            ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize )
+          UNION
+          ( --topic candidates
+            SELECT pp.post_id FROM private_posts pp
+            WHERE pp.embedding IS NOT NULL AND CAST(:topicVector AS real[]) IS NOT NULL
+            ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize )
+          UNION
+          ( --recency candidates
+            SELECT pp.post_id FROM private_posts pp
+            ORDER BY pp.created_at DESC LIMIT :poolSize )
+          UNION
+          ( --popularity candidates
+            SELECT pp.post_id FROM private_posts pp
+            ORDER BY pp.upvotes DESC LIMIT :poolSize )
     """,
       nativeQuery = true)
   List<String> getPrivatePostCandidatePool(
       @Param("userId") UUID userId,
       @Param("interactionVector") float[] interactionVector,
       @Param("topicVector") float[] topicVector,
-      @Param("poolSize") int poolSize);
+      @Param("poolSize") int poolSize,
+      @Param("fetchOld") boolean fetchOld);
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);

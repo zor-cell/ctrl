@@ -1,9 +1,8 @@
-//TODO: warning should be fixed!
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {firstValueFrom, map} from 'rxjs';
+import {firstValueFrom, map, switchMap} from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 import { MediaCacheKind, MediaCacheService } from '../../core/services/media-cache.service';
@@ -29,9 +28,15 @@ export class FeedService {
     return this.httpClient
       .get<any[]>(`${this.baseUri}?publicFeed=${isPublic}&page=${page}&postsPerPage=${postsPerPage}`)
       .pipe(
-        map((response: any[]) => response.map(item => this.mapToPost(item)))
+        map((response: any[]) => response.map(item => this.mapToPost(item))),
+        switchMap(async posts => {
+          await this.resolveFeedMedia(posts);
+          return posts;
+        })
       );
   }
+
+  /** Helper **/
 
   /**
    *
@@ -45,6 +50,7 @@ export class FeedService {
     return {
       postId: item.postId,
       userId: item.userId ?? item.username,
+      isExternal: !item.userId,
       username: item.username,
       userProfilePic: item.userProfilePic ?? '',
       createdAt: item.createdAt,
@@ -56,7 +62,7 @@ export class FeedService {
       userVote: item.userVote ?? null,
       labelIds: item.labelIds?.map((l: any) => [l.name, l.explanation]) ?? [],
       topicIds: item.topicIds ?? [],
-      videoImageRef: item.mediaRef ? [item.mediaRef] : [],
+      videoImageRef: this.resolveVideoImageRef(item),
       sourceIds: item.sourceIds ?? [],
       comments:
         item.comments?.map((c: any) => ({
@@ -101,4 +107,24 @@ export class FeedService {
   private mediaKind(mediaUrl: string): MediaCacheKind {
     return /\.(mp4|webm|mov)(\?|#|$)/i.test(mediaUrl) ? 'video' : 'image';
   }
+
+  private resolveVideoImageRef(item: any): string[] {
+    // Case 1: The Feed API already provides ready-made URLs in videoImageRef
+    if (item.videoImageRef?.length > 0) {
+      return item.videoImageRef;
+    }
+    // Case 2: mediaUrl is present
+    if (item.mediaUrl) {
+      return [item.mediaUrl];
+    }
+    // Case 3: mediaRef – either a complete URL or a raw path
+    if (item.mediaRef) {
+      if (item.mediaRef.startsWith('http')) {
+        return [item.mediaRef]; // Already done → use straight away
+      }
+      return [`${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(item.mediaRef)}`];
+    }
+    return [];
+  }
+
 }

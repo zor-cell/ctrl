@@ -20,14 +20,15 @@
                   type="button"
                   class="profile-avatar"
                   (click)="navigateToProfile(verification.user.username)">
-                  @if (verification.user.profilePicture) {
+                  @if (hasProfilePicture(verification)) {
                     <img
-                      [src]="verification.user.profilePicture"
+                      [src]="profilePictureUrl(verification)"
                       alt=""
                       class="profile-avatar__image"
+                      (error)="markProfilePictureFailed(verification)"
                     />
                   } @else {
-                    <span class="profile-avatar__initial">{{ verification.user.name.charAt(0) || verification.user.username.charAt(0) }}</span>
+                    <span class="profile-avatar__initial">{{ getInitial(verification) }}</span>
                   }
                 </button>
                 <div class="user-details">
