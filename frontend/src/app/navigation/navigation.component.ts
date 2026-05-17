@@ -8,11 +8,13 @@ import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {Menu} from "primeng/menu";
 import {UserService} from "../user/user.service";
+import {PanelMenu} from "primeng/panelmenu";
+import {TieredMenu} from "primeng/tieredmenu";
 
 @Component({
   selector: 'app-navigation',
   standalone: true,
-  imports: [ButtonModule, RouterModule, Menubar, Avatar, Menu],
+  imports: [ButtonModule, RouterModule, Menubar, Avatar, TieredMenu],
   templateUrl: './navigation.component.html',
   styleUrl: './navigation.component.scss'
 })
@@ -38,12 +40,6 @@ export class NavigationComponent {
       );
     }
 
-    if (this.authService.isAdmin()) {
-      items.push(
-        { icon: 'pi pi-flag', routerLink: '/report'},
-      { icon: 'pi pi-shield', routerLink: '/business-verification'}
-      );
-    }
     return items;
   });
 
@@ -60,7 +56,10 @@ export class NavigationComponent {
         {
           label: 'Admin Panel',
           icon: 'pi pi-shield',
-          routerLink: '/admin'
+          items: [
+            { label: 'Reports', icon: 'pi pi-flag', routerLink: '/report'},
+            { label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'}
+          ]
         });
     }
 

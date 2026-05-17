@@ -14,7 +14,7 @@
                             (click)="profileMenu.toggle($event)"
                     />
 
-                    <p-menu #profileMenu [model]="profileItems()" [popup]="true" />
+                    <p-tiered-menu #profileMenu [model]="profileItems()" [popup]="true" />
                 } @else {
                     <p-button label="Login" size="small" [text]="true" routerLink="/login" />
                     <p-button label="Register" size="small" routerLink="/register" />
