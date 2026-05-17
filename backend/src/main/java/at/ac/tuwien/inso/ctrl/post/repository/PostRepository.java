@@ -140,12 +140,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
     )
     ( --interaction candidates
       SELECT pp.post_id FROM public_posts pp
-       WHERE pp.embedding IS NOT NULL
+       WHERE pp.embedding IS NOT NULL AND CAST(:interactionVector AS real[]) IS NOT NULL
        ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --topic candidates
         SELECT pp.post_id FROM public_posts pp
-         WHERE pp.embedding IS NOT NULL
+         WHERE pp.embedding IS NOT NULL AND CAST(:topicVector AS real[]) IS NOT NULL
          ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize)
     UNION
     ( --recency candidates
@@ -183,12 +183,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
         )
         (--interaction candidates
             SELECT pp.post_id FROM private_posts pp
-            WHERE pp.embedding IS NOT NULL
+            WHERE pp.embedding IS NOT NULL AND CAST(:interactionVector AS real[]) IS NOT NULL
             ORDER BY pp.embedding <=> CAST(:interactionVector AS real[])::vector LIMIT :poolSize )
           UNION
           ( --topic candidates
             SELECT pp.post_id FROM private_posts pp
-            WHERE pp.embedding IS NOT NULL
+            WHERE pp.embedding IS NOT NULL AND CAST(:topicVector AS real[]) IS NOT NULL
             ORDER BY pp.embedding <=> CAST(:topicVector AS real[])::vector LIMIT :poolSize )
           UNION
           ( --recency candidates

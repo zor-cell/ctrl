@@ -1,7 +1,8 @@
 -- Creates an index for post comparison
 CREATE INDEX IF NOT EXISTS idx_posts_public_recency ON posts (created_at DESC) WHERE is_public = true^
 CREATE INDEX IF NOT EXISTS idx_posts_private_recency ON posts (created_at DESC) WHERE is_public = false^
-CREATE INDEX IF NOT EXISTS idx_posts_popularity ON posts (upvotes DESC)^
+CREATE INDEX IF NOT EXISTS idx_posts_public_popularity ON posts (upvotes DESC) WHERE is_public = true^
+CREATE INDEX IF NOT EXISTS idx_posts_private_popularity ON posts (upvotes DESC) WHERE is_public = false^
 CREATE INDEX IF NOT EXISTS idx_posts_embedding ON posts USING hnsw (embedding vector_cosine_ops)^
 CREATE INDEX IF NOT EXISTS idx_topics_embedding ON topics USING hnsw (embedding vector_cosine_ops)^
 
