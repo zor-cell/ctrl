@@ -18,6 +18,8 @@ RUN apk add --no-cache curl ffmpeg
 
 COPY --from=build /backend/target/*.jar backend.jar
 
+COPY tokens/ /backend/tokens/
+
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "backend.jar"]

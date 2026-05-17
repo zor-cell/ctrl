@@ -56,6 +56,9 @@ public class User implements UserDetails {
   @Column(name = "is_email_verified", nullable = false)
   private boolean emailVerified = false;
 
+  @Column(name = "is_suspended", nullable = false)
+  private boolean isSuspended = false;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "role")
   @Builder.Default
@@ -107,7 +110,7 @@ public class User implements UserDetails {
 
   @Override
   public boolean isAccountNonLocked() {
-    return true;
+    return !isSuspended;
   }
 
   @Override

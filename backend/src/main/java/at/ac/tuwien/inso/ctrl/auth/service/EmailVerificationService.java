@@ -12,7 +12,7 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -24,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -36,7 +34,7 @@ import org.thymeleaf.context.Context;
 @RequiredArgsConstructor
 public class EmailVerificationService {
 
-  private final JavaMailSender mailSender;
+  private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
   private final EmailVerificationRepository emailVerificationRepository;
   private final UserRepository userRepository;
@@ -65,15 +63,25 @@ public class EmailVerificationService {
 
       Optional<User> user = userRepository.findByUsername(sendEmailRequest.username());
       if (user.isEmpty()) {
+        LOGGER.info("username not found: {}", sendEmailRequest.email());
+
         return;
       }
 
       Optional<User> userByEmail = userRepository.findByEmail(sendEmailRequest.email());
       if (userByEmail.isEmpty()) {
+        LOGGER.info("Email not found: {}", sendEmailRequest.email());
+
         return;
       }
 
-      if (!user.get().equals(userByEmail.get())) {
+      if (user.get() == null || userByEmail.get() == null) {
+        return;
+      }
+
+      if (!user.get().getId().equals(userByEmail.get().getId())) {
+        LOGGER.info("email wrong: {} {}", user.get().getId(), userByEmail.get().getId());
+
         return;
       }
 
@@ -83,22 +91,19 @@ public class EmailVerificationService {
 
       String code = generateCode(user.get().getPassword(), System.currentTimeMillis());
       Context context = createContext(code, sendEmailRequest);
-      MimeMessage message = mailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
       String htmlContent = templateEngine.process("verificationTemplate", context);
 
-      helper.setTo(sendEmailRequest.email());
-      helper.setSubject("Welcome to CTRL");
-      helper.setText(htmlContent, true);
-
-      mailSender.send(message);
+      gmailEmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
       throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {
       throw new CommunicationException("Failed to create email.");
     } catch (UsernameNotFoundException ignored) {
+
+    } catch (IOException e) {
+      throw new CommunicationException("Failed to send or create email.");
     }
   }
 

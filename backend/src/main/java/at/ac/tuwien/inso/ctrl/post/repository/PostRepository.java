@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
+import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -168,11 +169,9 @@ public interface PostRepository extends JpaRepository<Post, String> {
     SELECT p.post_id FROM posts p
     WHERE p.is_public = false
         AND EXISTS (
-           -- friend is a mutual follow relation
-           SELECT 1 FROM follow_relations f
-           WHERE (f.follower_id = :userId AND f.followed_id = p.user_id)
-              OR (f.follower_id = p.user_id AND f.followed_id = :userId)
-           HAVING COUNT(*) = 2
+           SELECT 1 FROM friend_relation f
+           WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
+              OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
         )
         AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
     ORDER BY p.created_at DESC
@@ -226,4 +225,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
         """,
       nativeQuery = true)
   long countPostsWithoutTopics();
+
+  Optional<Post> findBySource(Source source);
+
+  Optional<Post> getPostByPostId(String contentId);
 }

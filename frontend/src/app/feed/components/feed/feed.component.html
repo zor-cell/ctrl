@@ -158,6 +158,7 @@
   <!-- Source -->
   @if (post.sourceIds.length > 0) {
     <div class="post-source-row">
+      <div class="post-source-left">
       <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
         <i class="pi pi-external-link"></i>
         {{ getDomain(post.sourceIds[0].url) }}
@@ -184,6 +185,10 @@
       >
         <i class="pi pi-times"></i>
         <!--<span>{{ post.sourceIds[0].downvotes }}</span>-->
+      </button>
+        </div>
+      <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
+        <i class="pi pi-flag"></i>
       </button>
     </div>
   }
@@ -232,7 +237,7 @@
       </button>
     </div>
 
-    <button class="action-btn flag-btn">
+    <button class="action-btn flag-btn" (click)="reportPost(post)" pTooltip="Report Post" tooltipPosition="top">
       <i class="pi pi-flag"></i>
     </button>
   </div>
@@ -358,6 +363,30 @@
   [visible]="commentsDialogVisible()"
   (visibleChange)="commentsDialogVisible.set($event)"
 />
+
+<!-- ─── Report Dialog ─── -->
+
+<app-report
+  [contentType]="ContentTypeEnum.POST"
+  [contentId]="selectedPostForReport()?.postId"
+  [contentTitle]="selectedPostForReport()?.caption"
+  [userProfilePic]="selectedPostForReport()?.userProfilePic"
+  [username]="selectedPostForReport()?.username"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)">
+</app-report>
+
+<app-report
+  [contentType]="ContentTypeEnum.SOURCE"
+  [contentId]="selectedSourceForReport()?.sourceId"
+  [contentTitle]="selectedSourceForReport()?.url"
+  [userProfilePic]="selectedPostForSourceReport()?.userProfilePic"
+  [username]="selectedPostForSourceReport()?.username"
+  [visible]="reportSourceDialogVisible()"
+  (visibleChange)="reportSourceDialogVisible.set($event)">
+</app-report>
+
+
 
 <!-- ─── Algorithm Config Dialog ─── -->
 <p-dialog

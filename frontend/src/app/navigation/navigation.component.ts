@@ -37,6 +37,13 @@ export class NavigationComponent {
         { icon: 'pi pi-comments', routerLink: '/chat' }
       );
     }
+
+    if (this.authService.isAdmin()) {
+      items.push(
+        { icon: 'pi pi-flag', routerLink: '/report'},
+      { icon: 'pi pi-shield', routerLink: '/business-verification'}
+      );
+    }
     return items;
   });
 

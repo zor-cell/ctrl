@@ -13,6 +13,8 @@ import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Password} from "primeng/password";
+import {NgStyle} from '@angular/common';
+import {VerificationStatus, VerificationStatusResponse} from '../../dto/BusinessVerification';
 import {Router} from '@angular/router';
 import {AuthService} from '../../../auth/auth.service';
 
@@ -28,7 +30,8 @@ import {AuthService} from '../../../auth/auth.service';
     Dialog,
     FormsModule,
     ProgressSpinner,
-    Password
+    Password,
+    NgStyle,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -43,6 +46,10 @@ export class ProfileComponent implements OnInit {
   protected currentUser = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
   protected isUsernameDialogOpen = signal(false);
+  protected isVerifyDialogOpen = signal(false);
+  protected verificationType = signal<'personal' | 'business'>('personal');
+
+  protected currentVerificationStatus = signal<VerificationStatusResponse | null>(null);
 
   protected createdAt = computed(() => {
     const dateString = this.currentUser()?.createdAt;
@@ -54,20 +61,21 @@ export class ProfileComponent implements OnInit {
     name: ['', Validators.required],
     birthdate: [new Date(), Validators.required],
     email: ['', Validators.required],
-    bio: ['']
+    bio: [''],
   });
 
-  protected passwordForm = this.fb.group({
-    currentPassword: ['', Validators.required],
-    newPassword: ['', Validators.required],
-    confirmPassword: ['', Validators.required]
-  }, {validators: passwordMatchValidator});
+  protected passwordForm = this.fb.group(
+    {
+      currentPassword: ['', Validators.required],
+      newPassword: ['', Validators.required],
+      confirmPassword: ['', Validators.required],
+    },
+    { validators: passwordMatchValidator },
+  );
 
   protected usernameForm = this.fb.group({
-    newUsername: ['', Validators.required]
+    newUsername: ['', Validators.required],
   });
-
-
 
   constructor() {
     effect(() => {
@@ -78,7 +86,7 @@ export class ProfileComponent implements OnInit {
           name: currentUser.name,
           email: currentUser.email,
           bio: currentUser.bio ?? '',
-          birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date()
+          birthdate: currentUser.birthdate ? new Date(currentUser.birthdate) : new Date(),
         });
 
         //dynamic disabling of controls
@@ -89,16 +97,28 @@ export class ProfileComponent implements OnInit {
           this.profileForm.controls.name.enable();
           this.profileForm.controls.birthdate.enable();
         }
-
       }
     });
   }
 
   ngOnInit() {
     this.userService.loadUser().subscribe({
-      next: () => this.isLoading.set(false),
-      error: () => this.isLoading.set(false)
+
+      next: () => {
+        this.userService.getVerificationStatus().subscribe({
+          next: (status) => {
+            this.currentVerificationStatus.set(status)
+            this.isLoading.set(false)
+
+          },
+          error: () => this.isLoading.set(false),
+        });
+
+      },
+      error: () => this.isLoading.set(false),
     });
+
+
   }
 
   protected updateProfile() {
@@ -133,15 +153,15 @@ export class ProfileComponent implements OnInit {
   }
 
   protected updatePassword() {
-    if(this.passwordForm.invalid) {
+    if (this.passwordForm.invalid) {
       return;
     }
 
-    const {currentPassword, newPassword} = this.passwordForm.getRawValue();
+    const { currentPassword, newPassword } = this.passwordForm.getRawValue();
     const request: UpdatePasswordRequest = {
       currentPassword: currentPassword,
-      newPassword: newPassword
-    }
+      newPassword: newPassword,
+    };
 
     this.userService.updatePassword(request).subscribe(() => {
       this.isPasswordDialogOpen.set(false);
@@ -149,14 +169,14 @@ export class ProfileComponent implements OnInit {
   }
 
   protected updateUsername() {
-    if(this.usernameForm.invalid) {
+    if (this.usernameForm.invalid) {
       return;
     }
 
     const request: UpdateUsernameRequest = this.usernameForm.getRawValue();
     this.userService.updateUsername(request).subscribe(() => {
       this.isUsernameDialogOpen.set(false);
-    })
+    });
   }
 
   protected openPasswordDialog() {
@@ -166,9 +186,24 @@ export class ProfileComponent implements OnInit {
 
   protected openUsernameDialog() {
     this.usernameForm.reset({
-      newUsername: this.currentUser()?.username ?? ''
+      newUsername: this.currentUser()?.username ?? '',
     });
     this.isUsernameDialogOpen.set(true);
+  }
+
+  protected openVerifyDialog() {
+    this.verificationType.set('personal');
+    this.isVerifyDialogOpen.set(true);
+  }
+
+  protected verifyPersonal() {
+    this.isVerifyDialogOpen.set(false);
+    this.initiateVerification();
+  }
+
+  protected verifyBusiness() {
+    this.isVerifyDialogOpen.set(false);
+    this.initiateBusinessVerification();
   }
 
   /**
@@ -182,9 +217,57 @@ export class ProfileComponent implements OnInit {
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
       scope: config.scope,
-      prompt: 'login'
+      prompt: 'login',
     });
 
     window.location.href = `${config.authUrl}?${params.toString()}`;
   }
+
+  protected getVerificationText(): string {
+    const status = this.currentVerificationStatus();
+
+    if (!status) {
+      return 'Your account is unverified';
+    }
+
+    switch (status.status) {
+      case VerificationStatus.NOT_VERIFIED:
+        return 'Your account is unverified';
+      case VerificationStatus.REJECTED:
+        return 'Your verification was rejected';
+      case VerificationStatus.APPROVED:
+        if (status.type === 'PERSONAL') {
+          return 'Verified with id austria';
+        } else if (status.type === 'BUSINESS') {
+          return 'Verified as business account';
+        }
+        return 'Account verified';
+      case VerificationStatus.PENDING:
+        return 'Verification pending';
+      default:
+        return 'your account is unverified';
+    }
+  }
+
+  protected initiateBusinessVerification() {
+    this.userService.requestBusinessVerification().subscribe({
+
+        next: () => {
+          this.userService.getVerificationStatus().subscribe({
+            next: (status) => {
+              this.currentVerificationStatus.set(status)
+              this.isLoading.set(false)
+
+            },
+            error: () => this.isLoading.set(false),
+          });
+
+        },
+        error: () => this.isLoading.set(false),
+      }
+
+    );
+  }
+
+  protected readonly VerificationStatus = VerificationStatus;
 }

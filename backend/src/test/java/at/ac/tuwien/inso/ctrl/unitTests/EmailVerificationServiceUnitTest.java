@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,14 +17,15 @@ import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.entity.EmailVerification;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
+import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidEmailVerificationCodeException;
 import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,14 +33,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.MailException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 @ExtendWith(MockitoExtension.class)
 public class EmailVerificationServiceUnitTest {
-  @Mock private JavaMailSender mailSender;
+  @Mock private GmailEmailService gmailEmailService;
   @Mock private TemplateEngine templateEngine;
 
   @Mock private EmailVerificationRepository emailVerificationRepository;
@@ -57,6 +59,7 @@ public class EmailVerificationServiceUnitTest {
 
     testUser =
         User.builder()
+            .id(UUID.randomUUID())
             .username("testUser")
             .password("hashedPassword")
             .email("test@domain.com")
@@ -68,14 +71,16 @@ public class EmailVerificationServiceUnitTest {
   }
 
   @Test
-  void sendVerificationEmail_ShouldSaveVerificationCode_WhenRequestIsValid() {
+  void sendVerificationEmail_ShouldSaveVerificationCode_WhenRequestIsValid() throws Exception {
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
     when(userRepository.findByEmail("test@domain.com")).thenReturn(Optional.of(testUser));
-    when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
     when(templateEngine.process(eq("verificationTemplate"), any(Context.class)))
         .thenReturn("<html>verification</html>");
 
     emailVerificationService.sendVerificationEmail(validSendEmailRequest);
+
+    verify(gmailEmailService)
+        .sendHtmlEmail(eq("test@domain.com"), eq("Welcome to CTRL"), any(String.class));
 
     ArgumentCaptor<EmailVerification> verificationCaptor =
         ArgumentCaptor.forClass(EmailVerification.class);
@@ -88,7 +93,18 @@ public class EmailVerificationServiceUnitTest {
   }
 
   @Test
-  void sendVerificationEmail_ShouldThrowException_WhenUserAlreadyVerified() {
+  void sendVerificationEmail_ShouldThrowNothingButNotSendEmail_WhenUsernameNotFound()
+      throws Exception {
+    when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
+
+    emailVerificationService.sendVerificationEmail(validSendEmailRequest);
+
+    verify(gmailEmailService, never())
+        .sendHtmlEmail(any(String.class), any(String.class), any(String.class));
+  }
+
+  @Test
+  void sendVerificationEmail_ShouldThrowException_WhenUserAlreadyVerified() throws Exception {
     testUser.setEmailVerified(true);
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
     when(userRepository.findByEmail("test@domain.com")).thenReturn(Optional.of(testUser));
@@ -97,7 +113,25 @@ public class EmailVerificationServiceUnitTest {
         UserAlreadyVerifiedException.class,
         () -> emailVerificationService.sendVerificationEmail(validSendEmailRequest));
 
-    verify(mailSender, never()).send((MimeMessage) any());
+    verify(gmailEmailService, never())
+        .sendHtmlEmail(any(String.class), any(String.class), any(String.class));
+  }
+
+  @Test
+  void sendVerificationEmail_ShouldThrowCommunicationException_WhenGmailServiceFails()
+      throws Exception {
+    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(userRepository.findByEmail("test@domain.com")).thenReturn(Optional.of(testUser));
+    when(templateEngine.process(eq("verificationTemplate"), any(Context.class)))
+        .thenReturn("<html>verification</html>");
+
+    doThrow(new MailException("Mail server error") {})
+        .when(gmailEmailService)
+        .sendHtmlEmail(any(String.class), any(String.class), any(String.class));
+
+    assertThrows(
+        CommunicationException.class,
+        () -> emailVerificationService.sendVerificationEmail(validSendEmailRequest));
   }
 
   @Test

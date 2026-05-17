@@ -10,6 +10,7 @@ spring:
 garage:
   url: http://localhost:3900
   presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
+  internal-presign-url: ${GARAGE_INTERNAL_PRESIGN_URL:http://garage:3900}
   public-url: http://localhost:8080/api/files/media-url?ref=
   presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
   access-key: ${GARAGE_ACCESS_KEY}

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -110,6 +111,10 @@ public class PostControllerDatabaseIntegrationTest {
             invocation ->
                 "http://localhost:8080/api/files/media-url?ref="
                     + invocation.getArgument(0, String.class).replace("/", "%2F"));
+    when(fileStorageService.resolveInternalPostMediaUrl(anyString()))
+        .thenAnswer(
+            invocation ->
+                "http://garage:3900/ctrl-test-private/" + invocation.getArgument(0, String.class));
   }
 
   @AfterEach
@@ -123,7 +128,8 @@ public class PostControllerDatabaseIntegrationTest {
 
   @Test
   void createPost_withValidRequest_persistsPostAndReturnsCreated() throws Exception {
-    when(embeddingService.embedText("A valid caption")).thenReturn(new float[768]);
+    when(embeddingService.embedTextWithImage(eq("A valid caption"), anyString()))
+        .thenReturn(new float[768]);
 
     mockMvc
         .perform(

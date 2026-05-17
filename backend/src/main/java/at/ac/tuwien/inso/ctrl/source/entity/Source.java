@@ -23,6 +23,9 @@ public class Source implements Votable {
 
   private Integer downvotes;
 
+  @Column(name = "is_removed")
+  private Boolean isRemoved = false;
+
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 

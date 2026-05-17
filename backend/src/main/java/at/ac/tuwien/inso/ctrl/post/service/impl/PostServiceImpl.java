@@ -23,13 +23,14 @@ import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -54,7 +55,7 @@ public class PostServiceImpl implements PostService {
   private final PostVoteRepository postVoteRepository;
   private final SeenPostRepository seenPostRepository;
   private final VoteManager voteManager;
-  private final FollowRelationRepository friendRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
 
@@ -83,10 +84,7 @@ public class PostServiceImpl implements PostService {
             .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
-    // embed post information
-    // String fileUrl = fileStorageService.resolveFileUrl(post.getMediaRef());
-    // TODO: image needs to be embedded again as well!
-    float[] embedding = embeddingService.embedText(post.getCaption());
+    float[] embedding = createEmbedding(post);
     post.setEmbedding(embedding);
 
     Post savedPost = postRepository.save(post);
@@ -131,6 +129,39 @@ public class PostServiceImpl implements PostService {
   }
 
   /** Helpers * */
+  private float[] createEmbedding(Post post) {
+    String mediaRef = post.getMediaRef();
+    if (isEmbeddableImageReference(mediaRef)) {
+      String imageUrl = fileStorageService.resolveInternalPostMediaUrl(mediaRef);
+      return embeddingService.embedTextWithImage(post.getCaption(), imageUrl);
+    }
+
+    return embeddingService.embedText(post.getCaption());
+  }
+
+  private boolean isEmbeddableImageReference(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return false;
+    }
+
+    String normalizedRef = mediaRef.toLowerCase(Locale.ROOT);
+    int queryStart = normalizedRef.indexOf('?');
+    if (queryStart >= 0) {
+      normalizedRef = normalizedRef.substring(0, queryStart);
+    }
+
+    int fragmentStart = normalizedRef.indexOf('#');
+    if (fragmentStart >= 0) {
+      normalizedRef = normalizedRef.substring(0, fragmentStart);
+    }
+
+    return normalizedRef.endsWith(".jpg")
+        || normalizedRef.endsWith(".jpeg")
+        || normalizedRef.endsWith(".png")
+        || normalizedRef.endsWith(".webp")
+        || normalizedRef.endsWith(".gif");
+  }
+
   @Transactional(readOnly = true)
   public List<PostResponse> getPostsForUser(String username) {
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
@@ -146,7 +177,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByFollowerAndFollowed(profileOwner, viewer);
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
         canSeePrivatePosts
