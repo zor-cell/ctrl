@@ -201,7 +201,7 @@ export class FeedComponent implements OnInit {
   }
 
   isVideo(url: string): boolean {
-    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+    return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);
   }
 
   onPostViewed(event: ViewEvent): void {
