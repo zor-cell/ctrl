@@ -255,6 +255,8 @@ $border:      var(--border);
     box-shadow 0.18s ease,
     transform 0.18s ease,
     border-color 0.18s ease;
+  background: var(--p-content-background);
+
 }
 
 .post-card:hover {
