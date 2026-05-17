@@ -41,11 +41,11 @@ public class RecommendationService {
           postRepository.getPrivatePostCandidatePool(
               user.getId(), interactionPreference, topicPreference, 50, false);
 
-      //if no new posts are available, fetch the old ones
-      if(candidatePosts.isEmpty()) {
+      // if no new posts are available, fetch the old ones
+      if (candidatePosts.isEmpty()) {
         candidatePosts =
-                postRepository.getPrivatePostCandidatePool(
-                        user.getId(), interactionPreference, topicPreference, 50, true);
+            postRepository.getPrivatePostCandidatePool(
+                user.getId(), interactionPreference, topicPreference, 50, true);
       }
     }
 
