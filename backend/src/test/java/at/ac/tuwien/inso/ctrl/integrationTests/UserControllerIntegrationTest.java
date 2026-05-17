@@ -22,13 +22,10 @@ import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerificationStatus;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDate;
-
-import jakarta.validation.constraints.AssertTrue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -280,13 +277,15 @@ public class UserControllerIntegrationTest {
   }
 
   @Test
-  public void submitBusinessVerification_shouldCreatePendingVerification_WhenCalled() throws Exception {
+  public void submitBusinessVerification_shouldCreatePendingVerification_WhenCalled()
+      throws Exception {
     mockMvc
         .perform(
             post(meEndpoint + "/verify/business")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
         .andExpect(status().isOk());
-    BusinessVerification verification = businessVerificationRepository.findByBusinessUser(existingUser);
+    BusinessVerification verification =
+        businessVerificationRepository.findByBusinessUser(existingUser);
 
     assertNotNull(verification);
     assertEquals(verification.getBusinessUser(), existingUser);
@@ -340,7 +339,6 @@ public class UserControllerIntegrationTest {
         .andExpect(jsonPath("$.type").value("PERSONAL"))
         .andExpect(jsonPath("$.status").value("NOT_VERIFIED"));
   }
-
 
   @Test
   public void getVerificationStatus_shouldReturnVerified_WhenCalled() throws Exception {

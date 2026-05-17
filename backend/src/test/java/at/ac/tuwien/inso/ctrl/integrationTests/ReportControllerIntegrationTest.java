@@ -1,7 +1,16 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
-import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
+import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
@@ -20,6 +29,8 @@ import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,18 +47,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -101,10 +100,7 @@ public class ReportControllerIntegrationTest {
             .build();
     userRepository.save(contentUser);
 
-    source = Source.builder()
-        .sourceId("source-1")
-        .singleSources(List.of())
-        .build();
+    source = Source.builder().sourceId("source-1").singleSources(List.of()).build();
 
     sourceRepository.save(source);
 
@@ -120,8 +116,6 @@ public class ReportControllerIntegrationTest {
             .createdAt(LocalDateTime.now())
             .build();
     postRepository.save(post);
-    
-
   }
 
   @AfterEach
@@ -135,14 +129,9 @@ public class ReportControllerIntegrationTest {
   @Test
   public void makeReport_shouldPersistReportOfPost_WhenGivenReportVerification() throws Exception {
 
-
     CreateReportRequest request =
         new CreateReportRequest(
-            "spam",
-            "bad content",
-            post.getPostId(),
-            ContentTypeEnum.POST,
-            adminUser.getUsername());
+            "spam", "bad content", post.getPostId(), ContentTypeEnum.POST, adminUser.getUsername());
 
     mockMvc
         .perform(
@@ -165,7 +154,8 @@ public class ReportControllerIntegrationTest {
   }
 
   @Test
-  public void getReportedSourcesWithStatusCreated_shouldReturnNoReports_WhenCalled() throws Exception {
+  public void getReportedSourcesWithStatusCreated_shouldReturnNoReports_WhenCalled()
+      throws Exception {
 
     mockMvc
         .perform(
@@ -177,9 +167,11 @@ public class ReportControllerIntegrationTest {
   }
 
   @Test
-  public void getReportedSourcesWithStatusCreated_shouldReturnOneReport_WhenCalled() throws Exception {
+  public void getReportedSourcesWithStatusCreated_shouldReturnOneReport_WhenCalled()
+      throws Exception {
 
-    Report report = Report.builder()
+    Report report =
+        Report.builder()
             .usernameReported(contentUser)
             .contentType(ContentTypeEnum.SOURCE)
             .contentId(source.getSourceId())
@@ -199,23 +191,26 @@ public class ReportControllerIntegrationTest {
         .andExpect(jsonPath("$[0].contentType").value("SOURCE"))
         .andExpect(jsonPath("$[0].status").value("CREATED"))
         .andExpect(jsonPath("$[0].reportReason").value("Inappropriate content"))
-        .andExpect(jsonPath("$[0].reportDescription").value("This source contains inappropriate content."))
+        .andExpect(
+            jsonPath("$[0].reportDescription").value("This source contains inappropriate content."))
         .andExpect(jsonPath("$[0].sourceResponse.sourceId").value(source.getSourceId()))
         .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
         .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()));
   }
 
   @Test
-  public void getReportedPostsWithStatusCreated_shouldReturnOneReport_WhenCalled() throws Exception {
-    Report report = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Spam")
-        .description("This post is spam.")
-        .fromUser(adminUser)
-        .status(ReportStatus.CREATED)
-        .build();
+  public void getReportedPostsWithStatusCreated_shouldReturnOneReport_WhenCalled()
+      throws Exception {
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Spam")
+            .description("This post is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
     reportRepository.save(report);
 
     mockMvc
@@ -244,18 +239,19 @@ public class ReportControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
   }
-  
+
   @Test
   public void getAccountReportSummary_shouldReturnEmpty_WhenNoValidatedReports() throws Exception {
-    Report report = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Spam")
-        .description("This post is spam.")
-        .fromUser(adminUser)
-        .status(ReportStatus.CREATED)
-        .build();
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Spam")
+            .description("This post is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
     reportRepository.save(report);
 
     mockMvc
@@ -267,25 +263,28 @@ public class ReportControllerIntegrationTest {
   }
 
   @Test
-  public void getAccountReportSummary_shouldReturnSummary_WhenValidatedReportsExist() throws Exception {
-    Report firstReport = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Spam")
-        .description("Repeated spam content.")
-        .fromUser(adminUser)
-        .status(ReportStatus.VALIDATED)
-        .build();
-    Report secondReport = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Abuse")
-        .description("Harassment in comments.")
-        .fromUser(adminUser)
-        .status(ReportStatus.VALIDATED)
-        .build();
+  public void getAccountReportSummary_shouldReturnSummary_WhenValidatedReportsExist()
+      throws Exception {
+    Report firstReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Spam")
+            .description("Repeated spam content.")
+            .fromUser(adminUser)
+            .status(ReportStatus.VALIDATED)
+            .build();
+    Report secondReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Abuse")
+            .description("Harassment in comments.")
+            .fromUser(adminUser)
+            .status(ReportStatus.VALIDATED)
+            .build();
     reportRepository.save(firstReport);
     reportRepository.save(secondReport);
 
@@ -295,23 +294,32 @@ public class ReportControllerIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
-        .andExpect(jsonPath("$[*].contentType", org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("POST"))))
-        .andExpect(jsonPath("$[*].reason", org.hamcrest.Matchers.containsInAnyOrder("Spam", "Abuse")))
-        .andExpect(jsonPath("$[*].description", org.hamcrest.Matchers.containsInAnyOrder("Repeated spam content.", "Harassment in comments.")));
+        .andExpect(
+            jsonPath(
+                "$[*].contentType",
+                org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("POST"))))
+        .andExpect(
+            jsonPath("$[*].reason", org.hamcrest.Matchers.containsInAnyOrder("Spam", "Abuse")))
+        .andExpect(
+            jsonPath(
+                "$[*].description",
+                org.hamcrest.Matchers.containsInAnyOrder(
+                    "Repeated spam content.", "Harassment in comments.")));
   }
 
   @Test
   public void updateReport_shouldDeleteItemAndValidate_WhenPostReported() throws Exception {
-    Report report = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Spam")
-        .description("This post is spam.")
-        .fromUser(adminUser)
-        .status(ReportStatus.CREATED)
-        .createdAt(null)
-        .build();
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Spam")
+            .description("This post is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .createdAt(null)
+            .build();
     reportRepository.save(report);
 
     UpdateReportRequest request =
@@ -334,16 +342,17 @@ public class ReportControllerIntegrationTest {
 
   @Test
   public void updateReport_shouldSuspendAccount_WhenDeleteAccountAction() throws Exception {
-    Report report = Report.builder()
-        .usernameReported(contentUser)
-        .contentType(ContentTypeEnum.POST)
-        .contentId(post.getPostId())
-        .reason("Spam")
-        .description("This post is spam.")
-        .fromUser(adminUser)
-        .status(ReportStatus.CREATED)
-        .createdAt(null)
-        .build();
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .reason("Spam")
+            .description("This post is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .createdAt(null)
+            .build();
     reportRepository.save(report);
 
     UpdateReportRequest request =

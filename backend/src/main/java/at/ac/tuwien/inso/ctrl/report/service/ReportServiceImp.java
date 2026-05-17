@@ -249,7 +249,6 @@ public class ReportServiceImp implements ReportService {
                 .orElseThrow(
                     () ->
                         new EntityNotFoundException("Source not found: " + report.getContentId()));
-
         Post post =
             postRepository
                 .findBySource(source)

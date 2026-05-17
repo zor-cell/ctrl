@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
@@ -35,8 +35,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -87,11 +85,14 @@ public class AdminControllerIntegrationTest {
             .build();
     userRepository.save(adminUser);
     adminJwtToken = jwtService.generateToken(adminUser);
-    
-    standardBusinessVerification = BusinessVerification.builder()
-        .status(BusinessVerificationStatus.PENDING)
-        .businessUser(standardUser).build();
-    standardBusinessVerification = businessVerificationRepository.save(standardBusinessVerification);
+
+    standardBusinessVerification =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.PENDING)
+            .businessUser(standardUser)
+            .build();
+    standardBusinessVerification =
+        businessVerificationRepository.save(standardBusinessVerification);
   }
 
   @AfterEach
@@ -127,7 +128,7 @@ public class AdminControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)));
   }
-  
+
   @Test
   public void reviewRequests_shouldPersistChanges_WhenGivenValidVerification() throws Exception {
     BusinessVerificationDecisionRequest decisionRequest =
@@ -135,16 +136,17 @@ public class AdminControllerIntegrationTest {
 
     mockMvc
         .perform(
-            put(adminEndpoint + "/verifications/" + standardBusinessVerification.getId() + "/decision")
+            put(adminEndpoint
+                    + "/verifications/"
+                    + standardBusinessVerification.getId()
+                    + "/decision")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(decisionRequest)))
         .andExpect(status().isOk());
 
     BusinessVerification updatedVerification =
-        businessVerificationRepository
-            .findById(standardBusinessVerification.getId())
-            .orElseThrow();
+        businessVerificationRepository.findById(standardBusinessVerification.getId()).orElseThrow();
 
     User updatedUser = userRepository.findById(standardUser.getId()).orElseThrow();
 
@@ -159,16 +161,17 @@ public class AdminControllerIntegrationTest {
 
     mockMvc
         .perform(
-            put(adminEndpoint + "/verifications/" + standardBusinessVerification.getId() + "/decision")
+            put(adminEndpoint
+                    + "/verifications/"
+                    + standardBusinessVerification.getId()
+                    + "/decision")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(decisionRequest)))
         .andExpect(status().isOk());
 
     BusinessVerification updatedVerification =
-        businessVerificationRepository
-            .findById(standardBusinessVerification.getId())
-            .orElseThrow();
+        businessVerificationRepository.findById(standardBusinessVerification.getId()).orElseThrow();
 
     User updatedUser = userRepository.findById(standardUser.getId()).orElseThrow();
 

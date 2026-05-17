@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -26,14 +27,13 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import jakarta.mail.MessagingException;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,13 +43,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.MailSendException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
-
-import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -389,14 +386,17 @@ public class ReportServiceIntegrationTest {
                 new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
                 report.getReportId()));
   }
-  
-  @Test 
-  void getAccountReportSummary_withNonExistentReportId_throwsException() {
-    assertThrows(EntityNotFoundException.class, () -> reportService.getAccountReportSummary("ID that does not exist"));
-  }
-  
+
   @Test
-  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void getAccountReportSummary_withNonExistentReportId_throwsException() {
+    assertThrows(
+        EntityNotFoundException.class,
+        () -> reportService.getAccountReportSummary("ID that does not exist"));
+  }
+
+  @Test
+  void
+      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-post");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Post post = createPost("post-ext-1", null, externalAuthor, null);
@@ -421,7 +421,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -447,7 +448,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -463,14 +465,17 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
-        report.getReportId()));
-
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                report.getReportId()));
   }
 
-
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -486,14 +491,17 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
-        report.getReportId()));
-
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                report.getReportId()));
   }
 
-
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -508,12 +516,15 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
-        report.getReportId()));
-
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                report.getReportId()));
   }
-  
-  @Test 
+
+  @Test
   void makeReport_withSourceFromExternalUser_ShouldCreateReport() {
     User reporter = createUser("reporter-external-source-report");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-report-1");

@@ -1,5 +1,8 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
@@ -16,6 +19,10 @@ import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import jakarta.mail.MessagingException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,14 +34,6 @@ import org.springframework.mail.MailException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BusinessVerificationServiceUnitTest {
@@ -103,7 +102,8 @@ public class BusinessVerificationServiceUnitTest {
     when(businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING))
         .thenReturn(List.of());
 
-    List<BusinessVerificationResponse> verifications = businessVerificationService.getAllPendingVerifications();
+    List<BusinessVerificationResponse> verifications =
+        businessVerificationService.getAllPendingVerifications();
 
     assertNotNull(verifications);
     assertEquals(0, verifications.size());
@@ -111,69 +111,101 @@ public class BusinessVerificationServiceUnitTest {
 
   @Test
   void whenGetAllPendingVerifications_withOnePending_shouldContainVerification() {
-    UserDetailsResponse userDetails = new UserDetailsResponse(
-        testUser.getId(), testUser.getUsername(), testUser.getEmail(),
-        testUser.getName(), testUser.getBio(), testUser.getBirthdate(),
-        testUser.getProfilePicture(), testUser.getCreatedAt(), testUser.isEmailVerified());
+    UserDetailsResponse userDetails =
+        new UserDetailsResponse(
+            testUser.getId(),
+            testUser.getUsername(),
+            testUser.getEmail(),
+            testUser.getName(),
+            testUser.getBio(),
+            testUser.getBirthdate(),
+            testUser.getProfilePicture(),
+            testUser.getCreatedAt(),
+            testUser.isEmailVerified());
 
-    BusinessVerification verification = BusinessVerification.builder()
-        .status(BusinessVerificationStatus.PENDING)
-        .id(UUID.randomUUID()).businessUser(testUser).build();
+    BusinessVerification verification =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.PENDING)
+            .id(UUID.randomUUID())
+            .businessUser(testUser)
+            .build();
 
     List<BusinessVerification> listVer = List.of(verification);
 
-    BusinessVerificationResponse ver = new BusinessVerificationResponse(userDetails, verification.getId());
+    BusinessVerificationResponse ver =
+        new BusinessVerificationResponse(userDetails, verification.getId());
 
     when(userMapper.toUserDetailsResponse(testUser)).thenReturn(ver.user());
-    when(businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING)).thenReturn(listVer);
+    when(businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING))
+        .thenReturn(listVer);
 
-    List< BusinessVerificationResponse> verifications = businessVerificationService.getAllPendingVerifications();
-
+    List<BusinessVerificationResponse> verifications =
+        businessVerificationService.getAllPendingVerifications();
 
     assertNotNull(verifications);
     assertEquals(1, verifications.size());
     assertEquals(ver, verifications.getFirst());
-
   }
 
   @Test
   void whenGetAllPendingVerifications_withTwoPending_shouldContainBothVerification() {
-    UserDetailsResponse userDetails = new UserDetailsResponse(
-        testUser.getId(), testUser.getUsername(), testUser.getEmail(),
-        testUser.getName(), testUser.getBio(), testUser.getBirthdate(),
-        testUser.getProfilePicture(), testUser.getCreatedAt(), testUser.isEmailVerified());
+    UserDetailsResponse userDetails =
+        new UserDetailsResponse(
+            testUser.getId(),
+            testUser.getUsername(),
+            testUser.getEmail(),
+            testUser.getName(),
+            testUser.getBio(),
+            testUser.getBirthdate(),
+            testUser.getProfilePicture(),
+            testUser.getCreatedAt(),
+            testUser.isEmailVerified());
 
-    UserDetailsResponse userDetails1 = new UserDetailsResponse(
-        testUser1.getId(), testUser1.getUsername(), testUser1.getEmail(),
-        testUser1.getName(), testUser1.getBio(), testUser1.getBirthdate(),
-        testUser1.getProfilePicture(), testUser1.getCreatedAt(), testUser1.isEmailVerified());
+    UserDetailsResponse userDetails1 =
+        new UserDetailsResponse(
+            testUser1.getId(),
+            testUser1.getUsername(),
+            testUser1.getEmail(),
+            testUser1.getName(),
+            testUser1.getBio(),
+            testUser1.getBirthdate(),
+            testUser1.getProfilePicture(),
+            testUser1.getCreatedAt(),
+            testUser1.isEmailVerified());
 
+    BusinessVerification verification =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.PENDING)
+            .id(UUID.randomUUID())
+            .businessUser(testUser)
+            .build();
 
-    BusinessVerification verification = BusinessVerification.builder()
-        .status(BusinessVerificationStatus.PENDING)
-        .id(UUID.randomUUID()).businessUser(testUser).build();
-
-    BusinessVerification verification1 = BusinessVerification.builder()
-        .status(BusinessVerificationStatus.PENDING)
-        .id(UUID.randomUUID()).businessUser(testUser1).build();
+    BusinessVerification verification1 =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.PENDING)
+            .id(UUID.randomUUID())
+            .businessUser(testUser1)
+            .build();
 
     List<BusinessVerification> listVer = List.of(verification, verification1);
 
-    BusinessVerificationResponse ver = new BusinessVerificationResponse(userDetails, verification.getId());
-    BusinessVerificationResponse ver1 = new BusinessVerificationResponse(userDetails1, verification1.getId());
+    BusinessVerificationResponse ver =
+        new BusinessVerificationResponse(userDetails, verification.getId());
+    BusinessVerificationResponse ver1 =
+        new BusinessVerificationResponse(userDetails1, verification1.getId());
 
     when(userMapper.toUserDetailsResponse(testUser)).thenReturn(ver.user());
     when(userMapper.toUserDetailsResponse(testUser1)).thenReturn(ver1.user());
-    when(businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING)).thenReturn(listVer);
+    when(businessVerificationRepository.findAllByStatus(BusinessVerificationStatus.PENDING))
+        .thenReturn(listVer);
 
-    List< BusinessVerificationResponse> verifications = businessVerificationService.getAllPendingVerifications();
-
+    List<BusinessVerificationResponse> verifications =
+        businessVerificationService.getAllPendingVerifications();
 
     assertNotNull(verifications);
     assertEquals(2, verifications.size());
     assertTrue(verifications.contains(ver));
     assertTrue(verifications.contains(ver1));
-
   }
 
   @Test
@@ -187,7 +219,8 @@ public class BusinessVerificationServiceUnitTest {
         ResourceAlreadyExistsException.class,
         () ->
             businessVerificationService.updateVerification(
-                requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.PENDING)));
+                requestId,
+                new BusinessVerificationDecisionRequest(BusinessVerificationStatus.PENDING)));
 
     verify(businessVerificationRepository, never()).save(any(BusinessVerification.class));
     verify(userRepository, never()).save(any(User.class));
@@ -263,11 +296,13 @@ public class BusinessVerificationServiceUnitTest {
         requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED));
 
     verify(gmailEmailService)
-        .sendHtmlEmail(eq(testUser.getEmail()), eq("Business Verification Update"), any(String.class));
+        .sendHtmlEmail(
+            eq(testUser.getEmail()), eq("Business Verification Update"), any(String.class));
   }
 
   @Test
-  void whenUpdateVerificationEmailSendThrowsMailException_thenThrowCommunicationException() throws MessagingException, IOException {
+  void whenUpdateVerificationEmailSendThrowsMailException_thenThrowCommunicationException()
+      throws MessagingException, IOException {
     ReflectionTestUtils.setField(businessVerificationService, "requireEmailVerification", true);
     UUID requestId = UUID.randomUUID();
     BusinessVerification verification =
@@ -288,11 +323,13 @@ public class BusinessVerificationServiceUnitTest {
         CommunicationException.class,
         () ->
             businessVerificationService.updateVerification(
-                requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
+                requestId,
+                new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
   }
 
   @Test
-  void whenUpdateVerificationEmailSendThrowsMessagingException_thenThrowMessagingException() throws MessagingException, IOException {
+  void whenUpdateVerificationEmailSendThrowsMessagingException_thenThrowMessagingException()
+      throws MessagingException, IOException {
     ReflectionTestUtils.setField(businessVerificationService, "requireEmailVerification", true);
     UUID requestId = UUID.randomUUID();
     BusinessVerification verification =
@@ -313,11 +350,13 @@ public class BusinessVerificationServiceUnitTest {
         CommunicationException.class,
         () ->
             businessVerificationService.updateVerification(
-                requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
+                requestId,
+                new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
   }
 
   @Test
-  void whenUpdateVerificationEmailSendThrowsIOExceptionException_thenThrowCommunicationException() throws MessagingException, IOException {
+  void whenUpdateVerificationEmailSendThrowsIOExceptionException_thenThrowCommunicationException()
+      throws MessagingException, IOException {
     ReflectionTestUtils.setField(businessVerificationService, "requireEmailVerification", true);
     UUID requestId = UUID.randomUUID();
     BusinessVerification verification =
@@ -338,7 +377,8 @@ public class BusinessVerificationServiceUnitTest {
         CommunicationException.class,
         () ->
             businessVerificationService.updateVerification(
-                requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
+                requestId,
+                new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
   }
 
   @Test
@@ -359,40 +399,48 @@ public class BusinessVerificationServiceUnitTest {
         ResourceAlreadyExistsException.class,
         () ->
             businessVerificationService.updateVerification(
-                requestId, new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
+                requestId,
+                new BusinessVerificationDecisionRequest(BusinessVerificationStatus.REJECTED)));
   }
 
-  @Test void whenGetVerificationStatusWithVerificationApproved_thenReturnApproved() {
-    BusinessVerification ver = BusinessVerification.builder()
-        .businessUser(testUser)
-        .status(BusinessVerificationStatus.APPROVED)
-        .id(UUID.randomUUID()).build();
+  @Test
+  void whenGetVerificationStatusWithVerificationApproved_thenReturnApproved() {
+    BusinessVerification ver =
+        BusinessVerification.builder()
+            .businessUser(testUser)
+            .status(BusinessVerificationStatus.APPROVED)
+            .id(UUID.randomUUID())
+            .build();
 
     when(businessVerificationRepository.findByBusinessUser(testUser)).thenReturn(ver);
 
-    VerificationStatusResponse verResponse = businessVerificationService.getVerificationStatus(testUser);
+    VerificationStatusResponse verResponse =
+        businessVerificationService.getVerificationStatus(testUser);
 
     assertEquals(BusinessVerificationStatus.APPROVED, verResponse.status());
     assertEquals(VerificationType.BUSINESS, verResponse.type());
-
   }
 
-  @Test void whenGetVerificationStatusWithVerificationRejected_thenReturnApproved() {
-    BusinessVerification ver = BusinessVerification.builder()
-        .businessUser(testUser)
-        .status(BusinessVerificationStatus.REJECTED)
-        .id(UUID.randomUUID()).build();
+  @Test
+  void whenGetVerificationStatusWithVerificationRejected_thenReturnApproved() {
+    BusinessVerification ver =
+        BusinessVerification.builder()
+            .businessUser(testUser)
+            .status(BusinessVerificationStatus.REJECTED)
+            .id(UUID.randomUUID())
+            .build();
 
     when(businessVerificationRepository.findByBusinessUser(testUser)).thenReturn(ver);
 
-    VerificationStatusResponse verResponse = businessVerificationService.getVerificationStatus(testUser);
+    VerificationStatusResponse verResponse =
+        businessVerificationService.getVerificationStatus(testUser);
 
     assertEquals(BusinessVerificationStatus.REJECTED, verResponse.status());
     assertEquals(VerificationType.BUSINESS, verResponse.type());
-
   }
 
-  @Test void whenGetVerificationStatusWithVerifiedUser_thenReturnApproved() {
+  @Test
+  void whenGetVerificationStatusWithVerifiedUser_thenReturnApproved() {
 
     User testUser2 =
         User.builder()
@@ -406,14 +454,15 @@ public class BusinessVerificationServiceUnitTest {
 
     when(businessVerificationRepository.findByBusinessUser(testUser2)).thenReturn(null);
 
-    VerificationStatusResponse verResponse = businessVerificationService.getVerificationStatus(testUser2);
+    VerificationStatusResponse verResponse =
+        businessVerificationService.getVerificationStatus(testUser2);
 
     assertEquals(BusinessVerificationStatus.APPROVED, verResponse.status());
     assertEquals(VerificationType.PERSONAL, verResponse.type());
-
   }
 
-  @Test void whenGetVerificationStatusWithNotVerifiedUser_thenReturnApproved() {
+  @Test
+  void whenGetVerificationStatusWithNotVerifiedUser_thenReturnApproved() {
 
     User testUser2 =
         User.builder()
@@ -427,11 +476,10 @@ public class BusinessVerificationServiceUnitTest {
 
     when(businessVerificationRepository.findByBusinessUser(testUser2)).thenReturn(null);
 
-    VerificationStatusResponse verResponse = businessVerificationService.getVerificationStatus(testUser2);
+    VerificationStatusResponse verResponse =
+        businessVerificationService.getVerificationStatus(testUser2);
 
     assertEquals(BusinessVerificationStatus.NOT_VERIFIED, verResponse.status());
     assertEquals(VerificationType.PERSONAL, verResponse.type());
-
   }
-
 }
