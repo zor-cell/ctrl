@@ -1,0 +1,54 @@
+spring:
+  application:
+    url: https://www.ctrl-ase.dev
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:db-service}:${DB_PORT:5432}/${DB_NAME}
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  web:
+    resources:
+      static-locations: classpath:/static/,file:/app/static/
+
+server.forward-headers-strategy: native
+
+application:
+  security:
+    id-austria:
+      issuer-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock"
+      jwk-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock"
+      client-id: "https://www.ctrl-ase.dev"
+      client-secret: ${ID_AUSTRIA_SECRET}
+      token-uri: "https://www.ctrl-ase.dev/realms/id-austria-mock/protocol/openid-connect/token"
+      redirect-uri: "https://www.ctrl-ase.dev/verification-callback"
+  auth:
+    require-email-verification: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+garage:
+  url: http://filestorage-service:3900
+  presign-url: ${GARAGE_PRESIGN_URL:https://www.ctrl-ase.dev}
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
+  public-url: https://www.ctrl-ase.dev/api/files/media-url?ref=
+  private-bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
+  public-bucket-name: ${GARAGE_PUBLIC_BUCKET_NAME:ctrl-dev-media-public}
+
+infinity:
+  url: http://embedding-service:7997

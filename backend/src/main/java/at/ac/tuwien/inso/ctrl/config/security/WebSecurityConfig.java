@@ -5,7 +5,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -40,19 +39,16 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                // allows all public api endpoints
+                auth.requestMatchers(
+                        "/api/auth/**", "/api/labels", "/api/feed/**", "/api/topics/**")
                     .permitAll()
-                    .requestMatchers(
-                        "/api/auth/**",
-                        "/api/labels",
-                        "/api/topics",
-                        "/actuator/health",
-                        "/api/feed/**",
-                        "/api/files/media",
-                        "/api/files/media-url")
-                    .permitAll()
+                    // requires auth for all remaining private api endpoints
+                    .requestMatchers("/api/**")
+                    .authenticated()
+                    // allows all other traffic (frontend)
                     .anyRequest()
-                    .authenticated())
+                    .permitAll())
         .exceptionHandling( // auth endpoints that reach an exception should return 401
             exceptions ->
                 exceptions
@@ -73,8 +69,11 @@ public class WebSecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
 
     configuration.setAllowedOrigins(
-        List.of("http://localhost:4200", "http://localhost", "http://127.0.0.1"));
-    /*configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));*/
+        List.of(
+            "http://localhost:4200",
+            "http://localhost",
+            "http://127.0.0.1",
+            "https://www.ctrl-ase.dev"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 

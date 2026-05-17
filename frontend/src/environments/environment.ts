@@ -1,10 +1,10 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api',
+  apiUrl: 'https://www.ctrl-ase.dev/api',
   idAustria: {
-    clientId: 'http://localhost:8080',
-    redirectUri: 'http://localhost:80/verification-callback',
-    authUrl: 'http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/auth',
+    clientId: 'https://www.ctrl-ase.dev',
+    redirectUri: 'https://www.ctrl-ase.dev/verification-callback',
+    authUrl: 'https://www.ctrl-ase.dev/realms/id-austria-mock/protocol/openid-connect/auth',
     scope: 'openid profile'
   },
   auth: {

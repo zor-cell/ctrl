@@ -18,6 +18,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,9 @@ public class ResetPasswordService {
   private final PasswordResetRepository passwordResetRepository;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Value("${spring.application.url:https://www.ctrl-ase.dev}")
+  private String baseUrl;
 
   /**
    * Sends a password reset email to the user with the specified email address verifies if the email
@@ -129,7 +133,7 @@ public class ResetPasswordService {
    */
   private Context createContext(String code) {
     Context context = new Context();
-    context.setVariable("redirectUrl", "http://localhost:80/reset-password?token=" + code);
+    context.setVariable("redirectUrl", baseUrl + "/reset-password?token=" + code);
     return context;
   }
 }

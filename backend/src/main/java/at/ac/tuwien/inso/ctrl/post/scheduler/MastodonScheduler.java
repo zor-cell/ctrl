@@ -61,7 +61,7 @@ public class MastodonScheduler {
    * To add a plain account just provide null as sourceName:
    *
    * <pre>
-   *   new AccountConfig("mastodon.social", "someuser", null)
+   * new AccountConfig("mastodon.social", "someuser", null)
    * </pre>
    */
   private static final List<AccountConfig> ACCOUNTS =
@@ -333,7 +333,8 @@ public class MastodonScheduler {
         "mastodon",
         "Mastodon",
         "🐘",
-        "Mastodon is a decentralized social media platform where this post was originally published.");
+        "Mastodon is a decentralized social media platform where this post was originally"
+            + " published.");
   }
 
   // ── per-account fetch ─────────────────────────────────────────────────────
@@ -418,7 +419,8 @@ public class MastodonScheduler {
     }
 
     // Topics are intentionally NOT assigned here.
-    // TopicAssignmentScheduler picks up posts without topics and assigns them via pgvector.
+    // TopicAssignmentScheduler picks up posts without topics and assigns them via
+    // pgvector.
 
     postRepository.save(post);
     return true;

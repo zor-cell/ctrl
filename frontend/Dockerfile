@@ -1,4 +1,4 @@
-FROM node:alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /frontend
 
@@ -8,7 +8,7 @@ RUN npm install
 
 # copy source code
 COPY . .
-RUN npm run build
+RUN npm run build -- --configuration=development
 
 FROM nginx:alpine
 
