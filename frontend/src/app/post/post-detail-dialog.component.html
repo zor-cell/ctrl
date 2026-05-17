@@ -47,14 +47,6 @@
           />
         </div>
 
-        <div class="post-detail__chips">
-          @for (topicId of currentPost.topicIds; track topicId) {
-            <span>{{ topicLabelById(topicId) }}</span>
-          }
-          @for (labelId of currentPost.labelIds; track labelId) {
-            <span>{{ labelId }}</span>
-          }
-        </div>
       </header>
 
       <div class="post-detail__body">

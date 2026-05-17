@@ -7,7 +7,6 @@
   overflow: hidden;
   border: 1px solid var(--p-surface-300);
   border-radius: 999px;
-  background: var(--p-surface-100);
   color: var(--p-text-color);
   cursor: pointer;
   padding: 0;
@@ -71,7 +70,7 @@
   }
 }
 
-.app-dark .followed-item {
+:host-context(.app-dark) .followed-item {
   background: var(--p-surface-800);
 
   &:hover {

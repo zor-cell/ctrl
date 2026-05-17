@@ -107,7 +107,6 @@
       padding: 0.75rem;
       border: 0;
       border-radius: 0.5rem;
-      background: var(--p-surface-100);
       color: inherit;
       cursor: pointer;
       font: inherit;
@@ -215,10 +214,10 @@
   }
 }
 
-.app-dark .user-item {
+:host-context(.app-dark) .user-item {
   background: var(--p-surface-800);
 
   &:hover {
-    background: var(--p-surface-700);
+    background: var(--p-surface-700) !important;
   }
 }

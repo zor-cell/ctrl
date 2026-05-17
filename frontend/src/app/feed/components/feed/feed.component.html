@@ -2,7 +2,7 @@
 
   <!-- Tabs: Public / Private -->
   <div class="tabs-container">
-    <p-tabs value="private">
+    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
 
       <p-tablist>
         <p-tab value="public">

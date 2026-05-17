@@ -118,13 +118,6 @@
 
                 <p class="post-card__caption">{{ post.caption }}</p>
 
-                @if (post.topicIds.length > 0) {
-                  <div class="post-card__topics" aria-label="Selected topics">
-                    @for (topicId of post.topicIds; track topicId) {
-                      <span>{{ topicLabelById(topicId) }}</span>
-                    }
-                  </div>
-                }
               </div>
             </button>
           }
