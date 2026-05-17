@@ -238,8 +238,7 @@ public class ReportServiceImp implements ReportService {
             postRepository
                 .findById(report.getContentId())
                 .orElseThrow(
-                    () ->
-                        new EntityNotFoundException("Post not found: " + report.getContentId()));
+                    () -> new EntityNotFoundException("Post not found: " + report.getContentId()));
         ExternalAuthor postUser = post.getExternalAuthor();
         postUser.setSuspended(true);
         externalAuthorRepository.save(postUser);
@@ -250,8 +249,7 @@ public class ReportServiceImp implements ReportService {
                 .findById(report.getContentId())
                 .orElseThrow(
                     () ->
-                        new EntityNotFoundException(
-                            "Source not found: " + report.getContentId()));
+                        new EntityNotFoundException("Source not found: " + report.getContentId()));
 
         Post post =
             postRepository
