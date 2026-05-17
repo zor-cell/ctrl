@@ -227,44 +227,42 @@ public class ReportServiceImp implements ReportService {
   }
 
   private void suspendAccount(Report report) {
-    if (report.getUsernameReported() != null) {
-      User user = report.getUsernameReported();
-      if (user != null) {
-        user.setSuspended(true);
-        userRepository.save(user);
-      } else {
-        ContentTypeEnum type = report.getContentType();
-        if (type == ContentTypeEnum.POST) {
-          Post post =
-              postRepository
-                  .findById(report.getContentId())
-                  .orElseThrow(
-                      () ->
-                          new EntityNotFoundException("Post not found: " + report.getContentId()));
-          ExternalAuthor postUser = post.getExternalAuthor();
-          postUser.setSuspended(true);
-          externalAuthorRepository.save(postUser);
+    User user = report.getUsernameReported();
+    if (user != null) {
+      user.setSuspended(true);
+      userRepository.save(user);
+    } else {
+      ContentTypeEnum type = report.getContentType();
+      if (type == ContentTypeEnum.POST) {
+        Post post =
+            postRepository
+                .findById(report.getContentId())
+                .orElseThrow(
+                    () ->
+                        new EntityNotFoundException("Post not found: " + report.getContentId()));
+        ExternalAuthor postUser = post.getExternalAuthor();
+        postUser.setSuspended(true);
+        externalAuthorRepository.save(postUser);
 
-        } else if (type == ContentTypeEnum.SOURCE) {
-          Source source =
-              sourceRepository
-                  .findById(report.getContentId())
-                  .orElseThrow(
-                      () ->
-                          new EntityNotFoundException(
-                              "Source not found: " + report.getContentId()));
+      } else if (type == ContentTypeEnum.SOURCE) {
+        Source source =
+            sourceRepository
+                .findById(report.getContentId())
+                .orElseThrow(
+                    () ->
+                        new EntityNotFoundException(
+                            "Source not found: " + report.getContentId()));
 
-          Post post =
-              postRepository
-                  .findBySource(source)
-                  .orElseThrow(
-                      () ->
-                          new EntityNotFoundException(
-                              "Post not found for source: " + source.getSourceId()));
-          ExternalAuthor author = post.getExternalAuthor();
-          author.setSuspended(true);
-          externalAuthorRepository.save(author);
-        }
+        Post post =
+            postRepository
+                .findBySource(source)
+                .orElseThrow(
+                    () ->
+                        new EntityNotFoundException(
+                            "Post not found for source: " + source.getSourceId()));
+        ExternalAuthor author = post.getExternalAuthor();
+        author.setSuspended(true);
+        externalAuthorRepository.save(author);
       }
     }
   }
