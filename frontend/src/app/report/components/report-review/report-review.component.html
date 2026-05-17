@@ -94,7 +94,8 @@
   <div class="post-header">
     <div class="post-user">
       <p-avatar
-        [image]="report.userProfilePic"
+        [image]="profilePictureUrl(report) ?? undefined"
+        [label]="hasProfilePicture(report) ? undefined : getInitial(report)"
         shape="circle"
         size="normal"
         [style]="{ width: '42px', height: '42px' }"
@@ -130,11 +131,11 @@
   </div>
 
   <!-- Post Video / Image -->
-  @if (report.mediaUrl) {
+  @if (postMediaUrl(report)) {
     <div class="post-image-wrapper">
-      @if (isVideo(report.mediaUrl)) {
+      @if (isVideo(postMediaUrl(report)!)) {
         <video
-          [src]="report.mediaUrl"
+          [src]="postMediaUrl(report)!"
           class="post-image"
           controls
           playsinline
@@ -142,7 +143,7 @@
         ></video>
       } @else {
         <img
-          [src]="report.mediaRef"
+          [src]="postMediaUrl(report)!"
           [alt]="report.caption"
           class="post-image"
           loading="lazy"
@@ -390,5 +391,3 @@
   }
   </div>
 </p-dialog>
-
-
