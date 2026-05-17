@@ -173,7 +173,11 @@ public interface PostRepository extends JpaRepository<Post, String> {
            WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)
               OR (f.friend_id_1 = p.user_id AND f.friend_id_2 = :userId)
         )
-        AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+        AND (
+          (:fetchOld = false AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+          OR
+          (:fetchOld = true AND EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id))
+        )
     ORDER BY p.created_at DESC
     LIMIT :poolSize
     """,
@@ -182,7 +186,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
       @Param("userId") UUID userId,
       @Param("interactionVector") float[] interactionVector,
       @Param("topicVector") float[] topicVector,
-      @Param("poolSize") int poolSize);
+      @Param("poolSize") int poolSize,
+      @Param("fetchOld") boolean fetchOld);
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);

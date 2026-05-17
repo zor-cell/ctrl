@@ -39,7 +39,14 @@ public class RecommendationService {
     } else {
       candidatePosts =
           postRepository.getPrivatePostCandidatePool(
-              user.getId(), interactionPreference, topicPreference, 50);
+              user.getId(), interactionPreference, topicPreference, 50, false);
+
+      //if no new posts are available, fetch the old ones
+      if(candidatePosts.isEmpty()) {
+        candidatePosts =
+                postRepository.getPrivatePostCandidatePool(
+                        user.getId(), interactionPreference, topicPreference, 50, true);
+      }
     }
 
     List<PostScoreProjection> scoredProjections =
