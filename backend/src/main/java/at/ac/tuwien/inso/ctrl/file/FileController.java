@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
 import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -125,6 +126,7 @@ public class FileController {
             .anyMatch(
                 post ->
                     post.isPublic()
+                        || viewer.getRole() == Role.ADMIN
                         || post.getUser().getId().equals(viewer.getId())
                         || friendRelationRepository.existsByUsers(post.getUser(), viewer));
 
