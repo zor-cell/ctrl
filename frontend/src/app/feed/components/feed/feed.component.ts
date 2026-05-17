@@ -72,6 +72,17 @@ export class FeedComponent implements OnInit {
   protected isRefreshing = signal(false);
   protected isSpinning = signal(false);
 
+  protected activeTab = signal<string>(
+    localStorage.getItem('feed-active-tab') ?? 'private'
+  );
+  protected onTabChange(tab: string | number | undefined): void {
+    if (tab == null) return;
+    const value = String(tab);
+    this.activeTab.set(value);
+    localStorage.setItem('feed-active-tab', value);
+  }
+
+
   private readonly elRef = inject(ElementRef);
 
   // Prevents double-clicks whilst a request is in progress
