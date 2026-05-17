@@ -102,6 +102,16 @@ $radius-sm:    10px;
     font-weight: 600;
   }
 
+  .post-username--link {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   .post-info {
     font-size: 0.78rem;
     color: $text-muted;
@@ -265,7 +275,6 @@ $radius-sm:    10px;
 :host ::ng-deep .why-dialog {
   border: 1px solid $border !important;
   border-radius: $radius !important;
-  //width: ;
 
   .p-dialog-header {
     border-bottom: 1px solid $border !important;

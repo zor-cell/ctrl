@@ -48,6 +48,7 @@ export class FeedService {
     return {
       postId: item.postId,
       userId: item.userId ?? item.username,
+      isExternal: !item.userId,
       username: item.username,
       userProfilePic: item.userProfilePic ?? '',
       createdAt: item.createdAt,
