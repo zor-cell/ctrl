@@ -209,6 +209,7 @@ export class FeedComponent implements OnInit {
     ]).subscribe(([publicPosts, privatePosts]) => {
       this.publicPosts.set(publicPosts);
       this.privatePosts.set(privatePosts);
+      console.log(privatePosts)
       this.isRefreshing.set(false);
       this.scrollFeedToTop();
     });

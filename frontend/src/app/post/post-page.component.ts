@@ -315,6 +315,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openPost(post: PostResponse) {
     this.selectedPost.set(this.withRenderablePostMedia(post));
+    console.log(post)
   }
 
   protected closePost() {
@@ -376,6 +377,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
       next: posts => {
+        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
