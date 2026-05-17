@@ -46,6 +46,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(SpringExtension.class)
@@ -422,6 +423,35 @@ public class ReportServiceIntegrationTest {
 
   @Test
   void
+      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthorAndNotSendEmail() {
+    User reporter = createUser("reporter-external-post");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+    Post post = createPost("post-ext-1", null, externalAuthor, null);
+    ReflectionTestUtils.setField(reportService, "requireEmailVerification", false);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.POST,
+            post.getPostId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    ExternalAuthor updatedAuthor =
+        externalAuthorRepository.findById(externalAuthor.getExternalAuthorId()).orElseThrow();
+    assertTrue(updatedAuthor.isSuspended());
+
+    ReflectionTestUtils.setField(reportService, "requireEmailVerification", true);
+  }
+
+  @Test
+  void
       updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
@@ -550,6 +580,93 @@ public class ReportServiceIntegrationTest {
         externalAuthor.getExternalAuthorId(),
         savedReport.getExternalAuthorReported().getExternalAuthorId());
     assertNotNull(savedReport.getCreatedAt());
+  }
+
+  @Test
+  void makeReport_withSourceFromExternalUserAndInvalidPostId_ShouldThrowException() {
+    User reporter = createUser("reporter-external-source-report");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-report-1");
+
+    CreateReportRequest request =
+        new CreateReportRequest(
+            "spam", "bad content", "wrongID", ContentTypeEnum.POST, reporter.getUsername());
+
+    assertThrows(EntityNotFoundException.class, () -> reportService.makeReport(request, reporter));
+  }
+
+  @Test
+  void makeReport_withSourceFromExternalUserAndSourceWithoutPost_ShouldThrowException() {
+    User reporter = createUser("reporter-external-source-report");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-report-1");
+    Source source = createSource("source-ext-1");
+
+    CreateReportRequest request =
+        new CreateReportRequest(
+            "spam",
+            "bad content",
+            source.getSourceId(),
+            ContentTypeEnum.SOURCE,
+            externalAuthor.getDisplayName());
+
+    assertThrows(EntityNotFoundException.class, () -> reportService.makeReport(request, reporter));
+  }
+
+  @Test
+  void makeReport_withSourceFromExternalUserAndInvalidType_ShouldThrowException() {
+    User reporter = createUser("reporter-external-source-report");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-report-1");
+    Source source = createSource("source-ext-1");
+
+    CreateReportRequest request =
+        new CreateReportRequest(
+            "spam",
+            "bad content",
+            source.getSourceId(),
+            ContentTypeEnum.COMMENT,
+            externalAuthor.getDisplayName());
+
+    assertThrows(IllegalArgumentException.class, () -> reportService.makeReport(request, reporter));
+  }
+
+  @Test
+  void getReportedSources_whenReportedUserMissing_usesExternalAuthorDisplayName() {
+    User reporter = createUser("reporter-source-user-missing");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-user-missing");
+    Source source = createSource("source-user-missing-1");
+    createPost("post-user-missing-1", null, externalAuthor, source);
+
+    createReport(
+        reporter,
+        null,
+        null,
+        ContentTypeEnum.SOURCE,
+        source.getSourceId(),
+        ReportStatus.CREATED,
+        null);
+
+    var responses = reportService.getReportedSources(ReportStatus.CREATED, 0, 10);
+
+    assertEquals(1, responses.size());
+    assertEquals(externalAuthor.getDisplayName(), responses.get(0).reportedUsername());
+  }
+
+  @Test
+  void getReportedSources_whenReportedUserMissingAndNoPost_throwsException() {
+    User reporter = createUser("reporter-source-no-post");
+    Source source = createSource("source-no-post-1");
+
+    createReport(
+        reporter,
+        null,
+        null,
+        ContentTypeEnum.SOURCE,
+        source.getSourceId(),
+        ReportStatus.CREATED,
+        null);
+
+    assertThrows(
+        EntityNotFoundException.class,
+        () -> reportService.getReportedSources(ReportStatus.CREATED, 0, 10));
   }
 
   private User createUser(String username) {
