@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embedding
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: embedding
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: embedding
+  template:
+    metadata:
+      labels:
+        component: embedding
+    spec:
+      containers:
+        - name: infinity
+          image: michaelf34/infinity:latest-cpu
+          ports:
+            - containerPort: 7997
+          env:
+            - name: INFINITY_MODEL_ID 
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: infinity-model-id
+            - name: INFINITY_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: infinity-batch-size
+            - name: INFINITY_ENGINE
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: infinity-engine
+          volumeMounts:
+            - name: embedding-cache
+              mountPath: /app/.cache
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 7997
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 7997
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+      volumes:
+        - name: embedding-cache
+          persistentVolumeClaim:
+            claimName: embedding-cache-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: embedding-service
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: embedding
+spec:
+  selector:
+    component: embedding
+  ports:
+    - port: 7997
+      targetPort: 7997
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: embedding-cache-pvc
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: embedding
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

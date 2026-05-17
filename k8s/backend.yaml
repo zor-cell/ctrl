@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: ctrl
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: registry.reset.inso-w.at/2026ss-ase-pr-group/26ss-ase-pr-inso-04:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: db-name
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: db-username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: jwt-secret
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: db-host
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: db-port
+            - name: GARAGE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: garage-access-key
+            - name: GARAGE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: garage-secret-key
+            - name: GARAGE_BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: garage-bucket-name
+            - name: GARAGE_PRESIGN_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: garage-presign-url
+            - name: ID_AUSTRIA_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: id-austria-secret
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: mail-username
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: mail-password
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: admin-username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: admin-password
+            - name: INFINITY_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: infinity-model-id
+            - name: MAIL_REQUIRED
+              value: "true"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+      imagePullSecrets:
+        - name: image-pull-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: backend
+spec:
+  selector:
+    component: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
