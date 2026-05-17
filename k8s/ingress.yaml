@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ctrl-ingress
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  tls:
+    - hosts:
+        - www.ctrl-ase.dev
+      secretName: ctrl-tls-secret
+  rules:
+    - host: www.ctrl-ase.dev
+      http:
+        paths:
+          - path: /realms
+            pathType: Prefix
+            backend:
+              service:
+                name: verification-service
+                port:
+                  number: 8080
+          - path: /resources
+            pathType: Prefix
+            backend:
+              service:
+                name: verification-service
+                port:
+                  number: 8080
+          - path: /ctrl-dev-media-private
+            pathType: Prefix
+            backend:
+              service:
+                name: filestorage-service
+                port:
+                  number: 3900
+          - path: /ctrl-dev-media-public
+            pathType: Prefix
+            backend:
+              service:
+                name: filestorage-service
+                port:
+                  number: 3900
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8080

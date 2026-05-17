@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: ctrl
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: registry.reset.inso-w.at/2026-ase-pr-group/26ss-ase-pr-inso-04/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+        - env:
+      imagePullSecrets:
+        - name: regcred
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: frontend
+spec:
+  selector:
+    component: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

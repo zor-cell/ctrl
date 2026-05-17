@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE SCHEMA IF NOT EXISTS keycloak;
 
 --Function to compute the wilson score
 --https://insightful-data-lab.com/2025/08/20/wilson-score-interval/

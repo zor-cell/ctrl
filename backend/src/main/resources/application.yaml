@@ -1,8 +1,7 @@
 spring:
   application:
     name: ctrl
-  config:
-    import: "optional:configtree:/run/secrets/"
+    url: http://localhost:4200
   datasource:
     url: jdbc:postgresql://db:5432/${DB_NAME}
     username: ${DB_USERNAME}
@@ -31,7 +30,6 @@ spring:
           auth: true
           starttls:
             enable: true
-        debug: true
 
 garage:
   url: http://garage:3900
@@ -62,7 +60,8 @@ application:
       secret-key: ${JWT_SECRET}
       expiration: 86400000 #1 day in ms
     id-austria:
-      issuer-uri: "http://keycloak:8080/realms/id-austria-mock"
+      issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      jwk-uri: "http://keycloak:8080/realms/id-austria-mock"
       client-id: "http://localhost:8080"
       client-secret: ${ID_AUSTRIA_SECRET}
       token-uri: "http://keycloak:8080/realms/id-austria-mock/protocol/openid-connect/token"
@@ -87,9 +86,3 @@ management:
     health:
       show-details:
         always
-
-logging:
-  level:
-    org.springframework.mail: DEBUG
-    org.eclipse.angus.mail: DEBUG
-    jakarta.mail: DEBUG

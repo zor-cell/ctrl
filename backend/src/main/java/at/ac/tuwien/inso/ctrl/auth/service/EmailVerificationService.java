@@ -44,6 +44,9 @@ public class EmailVerificationService {
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
 
+  @Value("${spring.application.url:https://www.ctrl-ase.dev}")
+  private String baseUrl;
+
   /**
    * Sends a verification email to the user with a verification code.
    *
@@ -160,8 +163,7 @@ public class EmailVerificationService {
 
     context.setVariable("verificationCode", code);
     context.setVariable(
-        "redirectUrl",
-        "http://localhost:80/email_verification/" + data.username() + "/" + data.email());
+        "redirectUrl", baseUrl + "/email_verification/" + data.username() + "/" + data.email());
     return context;
   }
 

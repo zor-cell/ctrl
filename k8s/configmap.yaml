@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ctrl-config
+  namespace: ctrl
+  labels:
+    app: ctrl
+data:
+  #backend - springboot
+  db-name: ctrl-db
+  db-host: db-service
+  db-port: "5432"
+
+  #filestorage - garage
+  garage-bucket-name: ctrl-dev-media-private
+  garage-presign-url: https://ctrl-media.web.garage.ctrl-ase.dev/
+  #embedding - infinity
+  infinity-model-id: jinaai/jina-clip-v1
+  infinity-batch-size: "32"
+  infinity-engine: torch
+
+  #verification - keycloak
+  kc-hostname: www.ctrl-ase.dev

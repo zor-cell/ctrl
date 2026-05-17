@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filestorage
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: filestorage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: filestorage
+  template:
+    metadata:
+      labels:
+        component: filestorage
+    spec:
+      containers:
+        - name: garage
+          image: dxflrs/garage:v2.2.0
+          securityContext:
+            readOnlyRootFilesystem: false
+          ports:
+            #TODO: add web gui and admin api ports
+            - containerPort: 3900
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3903
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3903
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+          env:
+            - name: GARAGE_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: garage-rpc-secret
+            - name: GARAGE_DEFAULT_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: garage-access-key
+            - name: GARAGE_DEFAULT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrl-secrets
+                  key: garage-secret-key
+            - name: GARAGE_DEFAULT_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: garage-bucket-name
+          volumeMounts:
+            - name: filestorage-config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+            - name: filestorage-data
+              mountPath: /var/lib/garage/data
+            - name: filestorage-meta
+              mountPath: /var/lib/garage/meta
+      volumes:
+        - name: filestorage-config
+          configMap:
+            name: filestorage-config
+            items:
+              - key: "config-file"
+                path: "garage.toml"
+        - name: filestorage-data
+          persistentVolumeClaim:
+            claimName: filestorage-data-pvc
+        - name: filestorage-meta
+          persistentVolumeClaim:
+            claimName: filestorage-meta-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: filestorage-service
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: filestorage
+spec:
+  selector:
+    component: filestorage
+  ports:
+    - port: 3900
+      targetPort: 3900
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filestorage-config
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: filestorage
+data:
+  config-file: |
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "lmdb"
+
+    replication_factor = 1
+    compression_level = 1
+
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "127.0.0.1:3901"
+
+    [s3_api]
+    s3_region = "garage"
+    api_bind_addr = "[::]:3900"
+    root_domain = ".s3.garage.ctrl-ase.dev"
+
+    [s3_web]
+    bind_addr = "[::]:3902"
+    root_domain = ".web.garage.ctrl-ase.dev"
+
+    [admin]
+    api_bind_addr = "[::]:3903"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filestorage-data-pvc
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: filestorage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 64Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filestorage-meta-pvc
+  namespace: ctrl
+  labels:
+    app: ctrl
+    component: filestorage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi

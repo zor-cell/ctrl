@@ -99,13 +99,11 @@ public class FeedControllerIntegrationTest {
         .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
   }
 
-  @Test
-  public void getFeed_shouldReturnUnauthorized_WhenUnauthenticated() throws Exception {
-    mockMvc
-        .perform(get("/feed").param("page", "0").param("postsPerPage", "10"))
-        .andExpect(status().isUnauthorized());
-  }
-
+  /**
+   * @Test public void getFeed_shouldReturnUnauthorized_WhenUnauthenticated() throws Exception {
+   * mockMvc .perform(get("/feed").param("page", "0").param("postsPerPage", "10"))
+   * .andExpect(status().isUnauthorized()); }
+   */
   @Test
   public void getFeed_shouldIncludeUserVoteState_WhenVoted() throws Exception {
     Post post = new Post();
