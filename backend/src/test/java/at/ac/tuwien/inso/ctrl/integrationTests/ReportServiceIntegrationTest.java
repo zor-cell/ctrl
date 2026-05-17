@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
@@ -25,10 +26,14 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,10 +42,14 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.mail.MailSendException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
+
+import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -295,6 +304,241 @@ public class ReportServiceIntegrationTest {
         reportService.getAccountReportSummary(report.getReportId());
 
     assertEquals(2, summary.size());
+  }
+
+  @Test
+  void updateReportStatus_whenMailSendFails_throwsCommunicationException() throws Exception {
+    User reporter = createUser("reporter");
+    User contentUser = createUser("contentUser");
+    Post post = createPost("post-mail-1", contentUser, null, null);
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.POST,
+            post.getPostId(),
+            ReportStatus.CREATED,
+            null);
+
+    Mockito.doThrow(new MailSendException("mail failure"))
+        .when(gmailEmailService)
+        .sendHtmlEmail(Mockito.eq(reporter.getEmail()), Mockito.anyString(), Mockito.anyString());
+
+    assertThrows(
+        CommunicationException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_whenMessagingFails_throwsCommunicationException() throws Exception {
+    User reporter = createUser("reporter2");
+    User contentUser = createUser("contentUser2");
+    Post post = createPost("post-mail-2", contentUser, null, null);
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.POST,
+            post.getPostId(),
+            ReportStatus.CREATED,
+            null);
+
+    Mockito.doThrow(new MessagingException("messaging failure"))
+        .when(gmailEmailService)
+        .sendHtmlEmail(Mockito.eq(reporter.getEmail()), Mockito.anyString(), Mockito.anyString());
+
+    assertThrows(
+        CommunicationException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_whenIOExceptionOccurs_throwsCommunicationException() throws Exception {
+    User reporter = createUser("reporter3");
+    User contentUser = createUser("contentUser3");
+    Post post = createPost("post-mail-3", contentUser, null, null);
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.POST,
+            post.getPostId(),
+            ReportStatus.CREATED,
+            null);
+
+    Mockito.doThrow(new IOException("io failure"))
+        .when(gmailEmailService)
+        .sendHtmlEmail(Mockito.eq(reporter.getEmail()), Mockito.anyString(), Mockito.anyString());
+
+    assertThrows(
+        CommunicationException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
+  }
+  
+  @Test 
+  void getAccountReportSummary_withNonExistentReportId_throwsException() {
+    assertThrows(EntityNotFoundException.class, () -> reportService.getAccountReportSummary("ID that does not exist"));
+  }
+  
+  @Test
+  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+    User reporter = createUser("reporter-external-post");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+    Post post = createPost("post-ext-1", null, externalAuthor, null);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.POST,
+            post.getPostId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    ExternalAuthor updatedAuthor =
+        externalAuthorRepository.findById(externalAuthor.getExternalAuthorId()).orElseThrow();
+    assertTrue(updatedAuthor.isSuspended());
+  }
+
+  @Test
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+    User reporter = createUser("reporter-external-source");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
+    Source source = createSource("source-ext-1");
+    Post post = createPost("post-ext-2", null, externalAuthor, source);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    ExternalAuthor updatedAuthor =
+        externalAuthorRepository.findById(externalAuthor.getExternalAuthorId()).orElseThrow();
+    assertTrue(updatedAuthor.isSuspended());
+  }
+
+  @Test
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
+    User reporter = createUser("reporter-external-source");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
+    Source source = createSource("source-ext-1");
+    Post post = createPost("post-ext-2", null, externalAuthor, source);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.POST,
+            "invlaid_id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId()));
+
+  }
+
+
+  @Test
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
+    User reporter = createUser("reporter-external-source");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
+    Source source = createSource("source-ext-1");
+    Post post = createPost("post-ext-2", null, externalAuthor, source);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            "invalid_id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId()));
+
+  }
+
+
+  @Test
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
+    User reporter = createUser("reporter-external-source");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
+    Source source = createSource("source-ext-1");
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class, () -> reportService.updateReportStatus(new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId()));
+
+  }
+  
+  @Test 
+  void makeReport_withSourceFromExternalUser_ShouldCreateReport() {
+    User reporter = createUser("reporter-external-source-report");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-source-report-1");
+    Source source = createSource("source-report-1");
+    createPost("post-report-1", null, externalAuthor, source);
+
+    CreateReportRequest request =
+        new CreateReportRequest(
+            "spam",
+            "bad content",
+            source.getSourceId(),
+            ContentTypeEnum.SOURCE,
+            reporter.getUsername());
+
+    reportService.makeReport(request, reporter);
+
+    Report savedReport = reportRepository.findAll().get(0);
+    assertEquals(ReportStatus.CREATED, savedReport.getStatus());
+    assertEquals(ContentTypeEnum.SOURCE, savedReport.getContentType());
+    assertEquals(source.getSourceId(), savedReport.getContentId());
+    assertNotNull(savedReport.getExternalAuthorReported());
+    assertEquals(
+        externalAuthor.getExternalAuthorId(),
+        savedReport.getExternalAuthorReported().getExternalAuthorId());
+    assertNotNull(savedReport.getCreatedAt());
   }
 
   private User createUser(String username) {
