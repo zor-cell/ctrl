@@ -45,6 +45,7 @@ public class FeedControllerIntegrationTest {
   @Autowired private JwtService jwtService;
 
   private User existingUser;
+  private User otherUser;
   private String validJwtToken;
 
   private final String feedEndpoint = "/api/feed";
@@ -64,7 +65,16 @@ public class FeedControllerIntegrationTest {
             .interactionPreferenceEmbedding(embedding)
             .build();
 
+    otherUser =
+        User.builder()
+            .username("feedTester2")
+            .password("securePass123!")
+            .email("tester@testddd.com")
+            .interactionPreferenceEmbedding(embedding)
+            .build();
+
     userRepository.save(existingUser);
+    userRepository.save(otherUser);
     validJwtToken = jwtService.generateToken(existingUser);
   }
 
@@ -80,7 +90,7 @@ public class FeedControllerIntegrationTest {
     Post post = new Post();
     post.setPostId("post-id2");
     post.setCaption("Integration Test Caption");
-    post.setUser(existingUser);
+    post.setUser(otherUser);
     post.setPublic(true);
     post.setEmbedding(generateDummyEmbedding());
     post.setCreatedAt(LocalDateTime.now());
@@ -109,7 +119,7 @@ public class FeedControllerIntegrationTest {
     Post post = new Post();
     post.setPostId("post-id1");
     post.setCaption("Voted Post");
-    post.setUser(existingUser);
+    post.setUser(otherUser);
     post.setPublic(true);
     post.setEmbedding(generateDummyEmbedding());
     post.setCreatedAt(LocalDateTime.now());
