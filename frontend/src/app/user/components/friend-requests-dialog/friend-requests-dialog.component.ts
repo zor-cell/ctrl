@@ -1,4 +1,4 @@
-import { Component, inject, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, effect, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Divider } from 'primeng/divider';
@@ -8,6 +8,7 @@ import { RelationshipService } from '../../relationship.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { FriendRequest } from '../../dto/Relationship';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
 
 /**
  * Friend Requests Dialog Component
@@ -28,15 +29,27 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   private relationshipService = inject(RelationshipService);
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
+  private mediaCacheService = inject(MediaCacheService);
 
   @Output() closeEvent = new EventEmitter<void>();
 
   incomingRequests = this.relationshipService.incomingRequests;
   sentRequests = this.relationshipService.sentRequests;
+  profilePictureUrls = signal<Record<string, string>>({});
+  failedProfilePictures = signal<Set<string>>(new Set());
 
   private _destroy$ = new Subject<void>();
 
   isLoading = this.eventBus.state().isLoading;
+
+  constructor() {
+    effect(() => {
+      this.loadProfilePictures([
+        ...this.incomingRequests(),
+        ...this.sentRequests(),
+      ]);
+    });
+  }
 
   ngOnInit(): void {
     this.eventBus.state$
@@ -91,5 +104,66 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
 
   close() {
     this.closeEvent.emit();
+  }
+
+  hasProfilePicture(request: FriendRequest): boolean {
+    return Boolean(this.profilePictureUrl(request))
+      && !this.failedProfilePictures().has(request.username);
+  }
+
+  profilePictureUrl(request: FriendRequest): string | null {
+    return this.profilePictureUrls()[request.username]
+      ?? this.directProfilePictureUrl(request.profilePicture);
+  }
+
+  markProfilePictureFailed(request: FriendRequest): void {
+    this.failedProfilePictures.update(failedUsernames => {
+      const nextFailedUsernames = new Set(failedUsernames);
+      nextFailedUsernames.add(request.username);
+      return nextFailedUsernames;
+    });
+  }
+
+  getInitial(request: FriendRequest): string {
+    return request.username.charAt(0).toUpperCase();
+  }
+
+  private loadProfilePictures(requests: FriendRequest[]): void {
+    const activeUsernames = new Set(requests.map(request => request.username));
+    this.profilePictureUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([username, url]) => {
+        if (activeUsernames.has(username)) {
+          nextUrls[username] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    requests.forEach(request => {
+      if (!request.profilePicture) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(request.profilePicture, 'image', 'high').subscribe({
+        next: url => {
+          if (url) {
+            this.profilePictureUrls.update(urls => ({
+              ...urls,
+              [request.username]: url,
+            }));
+          }
+        },
+        error: () => this.markProfilePictureFailed(request),
+      });
+    });
+  }
+
+  private directProfilePictureUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
   }
 }

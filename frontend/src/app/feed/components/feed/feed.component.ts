@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, ElementRef } from '@angular/core';
+import {Component, inject, OnInit, signal, ElementRef} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -94,6 +94,7 @@ export class FeedComponent implements OnInit {
 
   ngOnInit(): void {
     this.userService.loadUser();
+    this.viewTracking.startTracking();
     this.loadFeed();
   }
 

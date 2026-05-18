@@ -1,10 +1,16 @@
 $border: var(--border);
 
+:host ::ng-deep .post-detail-dialog {
+  overflow: hidden;
+  border: 1px solid $border;
+  border-radius: 1.5rem;
+}
+
 :host ::ng-deep .post-detail-dialog .p-dialog-content {
   padding: 0;
   overflow: hidden;
-  border-radius: 1.5rem;
-  border: 1px solid $border;
+  border: 0;
+  border-radius: 0;
 }
 
 .post-detail {

@@ -12,10 +12,33 @@ export class ViewTrackingService {
   private queue: ViewEvent[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private isTrackingEnabled = true;
+
   /** Adds a new view event to the queue and schedules the next flush. */
   track(event: ViewEvent): void {
+    if(!this.isTrackingEnabled) return;
+
     this.queue.push(event);
     this.scheduleFlush();
+  }
+
+  /**
+   * Resumes tracking when a user enters the feed.
+   */
+  startTracking(): void {
+    this.isTrackingEnabled = true;
+  }
+
+  /**
+   * Immediately stops timers, empties the queue, AND rejects new events.
+   */
+  stopAndClear(): void {
+    this.isTrackingEnabled = false; // Prevent teardown events from repopulating the queue
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    this.queue = [];
   }
 
   /**
