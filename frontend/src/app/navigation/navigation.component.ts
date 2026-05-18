@@ -8,6 +8,7 @@ import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {UserService} from "../user/user.service";
 import {TieredMenu} from "primeng/tieredmenu";
+import {ViewTrackingService} from "../post/services/view-tracking.service";
 
 @Component({
   selector: 'app-navigation',
@@ -21,6 +22,7 @@ export class NavigationComponent {
   protected authService = inject(AuthService);
   private userService = inject(UserService);
   protected themeService = inject(ThemeService);
+  private viewTrackingService = inject(ViewTrackingService);
 
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
@@ -67,6 +69,7 @@ export class NavigationComponent {
         label: 'Logout',
         icon: 'pi pi-sign-out',
         command: () => {
+          this.viewTrackingService.stopAndClear();
           this.authService.logout();
           this.userService.clearUser();
           this.router.navigate(['/login']);
