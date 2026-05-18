@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild, input } from '@angular/core';
+import { Component, effect, inject, input, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Menu, MenuModule } from 'primeng/menu';
@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { Followed } from '../../dto/Relationship';
 
 @Component({
   selector: 'app-followed-list',
@@ -20,6 +22,7 @@ export class FollowedListComponent {
   private eventBus = inject(FriendRequestEventBusService);
   private router = inject(Router);
   private notificationService = inject(NotificationService);
+  private mediaCacheService = inject(MediaCacheService);
 
   @ViewChild('menu') menu!: Menu;
 
@@ -27,6 +30,8 @@ export class FollowedListComponent {
   searchQuery = input<string>('');
 
   followed = this.relationshipService.followed;
+  profilePictureUrls = signal<Record<string, string>>({});
+  failedProfilePictures = signal<Set<string>>(new Set());
   selectedUsername: string | null = null;
 
   menuItems = [
@@ -36,6 +41,12 @@ export class FollowedListComponent {
       command: () => this.unfollow(),
     },
   ];
+
+  constructor() {
+    effect(() => {
+      this.loadProfilePictures(this.followed());
+    });
+  }
 
   openMenu(event: Event, username: string) {
     this.selectedUsername = username;
@@ -59,5 +70,61 @@ export class FollowedListComponent {
 
   navigateToProfile(username: string) {
     this.router.navigate(['/profile', username]);
+  }
+
+  hasProfilePicture(user: Followed): boolean {
+    return Boolean(this.profilePictureUrl(user)) && !this.failedProfilePictures().has(user.id);
+  }
+
+  profilePictureUrl(user: Followed): string | null {
+    return this.profilePictureUrls()[user.id] ?? this.directProfilePictureUrl(user.profilePicture);
+  }
+
+  markProfilePictureFailed(user: Followed): void {
+    this.failedProfilePictures.update(failedIds => {
+      const nextFailedIds = new Set(failedIds);
+      nextFailedIds.add(user.id);
+      return nextFailedIds;
+    });
+  }
+
+  getInitial(user: Followed): string {
+    return user.username.charAt(0).toUpperCase();
+  }
+
+  private loadProfilePictures(users: Followed[]): void {
+    const activeIds = new Set(users.map(user => user.id));
+    this.profilePictureUrls.update(urls => {
+      const nextUrls: Record<string, string> = {};
+      Object.entries(urls).forEach(([id, url]) => {
+        if (activeIds.has(id)) {
+          nextUrls[id] = url;
+        }
+      });
+      return nextUrls;
+    });
+
+    users.forEach(user => {
+      if (!user.profilePicture) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(user.profilePicture, 'image', 'high').subscribe({
+        next: url => {
+          if (url) {
+            this.profilePictureUrls.update(urls => ({ ...urls, [user.id]: url }));
+          }
+        },
+        error: () => this.markProfilePictureFailed(user),
+      });
+    });
+  }
+
+  private directProfilePictureUrl(url: string | null): string | null {
+    if (!url || this.mediaCacheService.isBackendManagedMediaUrl(url)) {
+      return null;
+    }
+
+    return url;
   }
 }

@@ -17,14 +17,15 @@
             type="button"
             class="profile-avatar"
             (click)="navigateToProfile(friend.username)">
-            @if (friend.profilePicture) {
+            @if (hasProfilePicture(friend)) {
               <img
-                [src]="friend.profilePicture"
+                [src]="profilePictureUrl(friend)"
                 alt=""
                 class="profile-avatar__image"
+                (error)="markProfilePictureFailed(friend)"
               />
             } @else {
-              <span class="profile-avatar__initial">{{ friend.name.charAt(0) || friend.username.charAt(0) }}</span>
+              <span class="profile-avatar__initial">{{ getInitial(friend) }}</span>
             }
           </button>
 
