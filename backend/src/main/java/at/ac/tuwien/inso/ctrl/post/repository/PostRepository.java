@@ -143,6 +143,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
             FROM posts p
             WHERE p.is_public = true
                 AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
+                AND (p.user_id IS NULL OR p.user_id != :userId)
     )
     ( --interaction candidates
       SELECT pp.post_id FROM public_posts pp
