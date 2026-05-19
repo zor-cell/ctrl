@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil} from 'rxjs';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -13,6 +13,7 @@ import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { DialogModule } from 'primeng/dialog';
 
 import { SearchService } from '../../services/search.service';
 import { TopicService } from '../../../algorithm/topic.service';
@@ -20,6 +21,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { Post } from '../../../feed/dto/Post';
 import { TopicResponse } from '../../../post/dto/TopicResponse';
 import { PostService, VoteType } from '../../../post/post.service';
+import { CommentsComponent } from '../../../feed/components/comments/comments.component';
 
 /**
  * Posts Search Component
@@ -48,6 +50,8 @@ import { PostService, VoteType } from '../../../post/post.service';
     AvatarModule,
     TooltipModule,
     TagModule,
+    DialogModule,
+    CommentsComponent,
   ],
   templateUrl: './posts-search.component.html',
   styleUrl: './posts-search.component.scss',
@@ -109,6 +113,10 @@ export class PostsSearchComponent implements OnInit {
   currentPage = signal<number>(0);
   hasMoreResults = signal<boolean>(true);
   private readonly postsPerPage = 20;
+
+  // Comments dialog state
+  commentsDialogVisible = signal<boolean>(false);
+  selectedPostForComments = signal<Post | null>(null);
 
   private _destroy$ = new Subject<void>();
 
@@ -255,6 +263,11 @@ export class PostsSearchComponent implements OnInit {
       });
       this.notificationService.showError('Failed to vote on source');
     }
+  }
+
+  openCommentsDialog(post: Post): void {
+    this.selectedPostForComments.set(post);
+    this.commentsDialogVisible.set(true);
   }
 
   // Helper methods

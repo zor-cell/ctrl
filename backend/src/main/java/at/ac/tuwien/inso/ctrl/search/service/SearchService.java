@@ -1,8 +1,5 @@
 package at.ac.tuwien.inso.ctrl.search.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import at.ac.tuwien.inso.ctrl.algorithm.service.AlgorithmService;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
@@ -36,23 +33,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class SearchService {
 
   private final EmbeddingService embeddingService;
-  private final AlgorithmService algorithmService;
   private final PostRepository postRepository;
   private final PostVoteRepository postVoteRepository;
   private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
-  private final TopicRepository topicRepository;
   private final FeedMapper feedMapper;
   private final FollowService followService;
   private final FriendRequestRepository friendRequestRepository;
   private final RelationshipMapper relationshipMapper;
 
-  /**
-   * Searches for posts based on query embedding similarity with optional topic filtering. The
-   * search follows a candidate pool approach: 1. Optional topic filtering (OR logic) 2. Select top
-   * N posts by cosine similarity to query embedding 3. Apply algorithmic scoring to rank the
-   * candidate pool
-   */
   @Transactional(readOnly = true)
   public List<FeedPostResponse> searchPosts(PostSearchRequest request, User user) {
     // Validate that we have at least a query or topics
@@ -71,36 +60,16 @@ public class SearchService {
       queryEmbedding = embeddingService.embedText(request.query().trim());
     }
 
-    // Get user's algorithm configuration for personalization
-    AlgorithmConfigDto config = algorithmService.getConfig(user);
-
-    // Calculate preference vectors (same logic as RecommendationService)
-    List<Float> interactionVectorList =
-        userRepository.calculateUserInteractionPreferenceVector(user.getId());
-    float[] interactionPreference = vectorFromVectorList(interactionVectorList);
-
-    List<Float> topicVectorList =
-        topicRepository.calculateTopicPreferenceVector(
-            config.topics() != null ? config.topics() : Collections.emptyList());
-    float[] topicPreference = vectorFromVectorList(topicVectorList);
-
     // Convert topicIds to array for the query
     String[] topicIdsArray = hasTopics ? request.topicIds().toArray(new String[0]) : new String[0];
 
-    // Call the repository to get scored posts
-    List<PostScoreProjection> scoredProjections =
-        postRepository.searchPostsByEmbedding(
+    List<PostScoreProjection> scoredProjections;
+
+    scoredProjections =
+        postRepository.searchPostsBySimilarityOnly(
             user.getId(),
             queryEmbedding,
             topicIdsArray,
-            config.weightInteraction() / 100.0,
-            interactionPreference,
-            config.weightTopic() / 100.0,
-            topicPreference,
-            config.weightRecency() / 100.0,
-            config.weightTrending() / 100.0,
-            config.weightSourceQuality() / 100.0,
-            config.weightExploration() / 100.0,
             request.postsPerPage(),
             request.page() * request.postsPerPage());
 
@@ -190,23 +159,5 @@ public class SearchService {
               return relationshipMapper.toUserSearchResponse(user, status, displayName);
             })
         .toList();
-  }
-
-  private float[] vectorFromVectorList(List<Float> vectorList) {
-    if (vectorList == null || vectorList.isEmpty()) {
-      return null;
-    }
-
-    boolean hasData = false;
-    float[] vector = new float[vectorList.size()];
-    for (int i = 0; i < vectorList.size(); i++) {
-      float val = vectorList.get(i) != null ? vectorList.get(i) : 0f;
-      vector[i] = val;
-      if (val != 0f) {
-        hasData = true;
-      }
-    }
-
-    return hasData ? vector : null;
   }
 }

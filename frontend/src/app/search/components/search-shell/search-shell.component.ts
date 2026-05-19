@@ -1,11 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { TabsModule } from 'primeng/tabs';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { filter } from 'rxjs/operators';
-import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
 
 @Component({
   selector: 'app-search-shell',
@@ -17,11 +16,9 @@ import { AlgorithmConfigComponent } from '../../../algorithm/components/config/c
     TabsModule,
     ButtonModule,
     DialogModule,
-    AlgorithmConfigComponent,
   ],
   template: `
     <div class="search-wrapper">
-      <!-- Tabs Container with Algorithm Config Button -->
       <div class="tabs-container">
         <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
           <p-tablist>
@@ -33,41 +30,13 @@ import { AlgorithmConfigComponent } from '../../../algorithm/components/config/c
             </p-tab>
           </p-tablist>
         </p-tabs>
-
-        <!-- Algorithm Config Button – only on Posts tab, floats right -->
-        @if (activeTab() === 'posts') {
-          <div class="tablist-actions">
-            <p-button
-              label=""
-              icon="pi pi-sliders-h"
-              severity="secondary"
-              size="small"
-              [rounded]="true"
-              [outlined]="true"
-              (onClick)="openAlgorithmConfig()"
-            />
-          </div>
-        }
-      </div>
+     </div>
 
       <!-- Router outlet for child components -->
       <div class="search-content">
         <router-outlet />
       </div>
     </div>
-
-    <!-- Algorithm Config Dialog -->
-    <p-dialog
-      header="Configure your Algorithm"
-      [visible]="algorithmConfigVisible()"
-      (visibleChange)="algorithmConfigVisible.set($event)"
-      [modal]="true"
-      [draggable]="false"
-      [resizable]="false"
-      [style]="{ width: '90vw', maxWidth: '520px' }"
-      styleClass="algorithm-config-dialog">
-      <app-config />
-    </p-dialog>
   `,
   styles: [`
     :host ::ng-deep .p-tablist-tab-list {
@@ -110,11 +79,13 @@ import { AlgorithmConfigComponent } from '../../../algorithm/components/config/c
     }
   `],
 })
+
 export class SearchShellComponent {
   activeTab = signal<string>('posts');
-  algorithmConfigVisible = signal<boolean>(false);
 
-  constructor(private router: Router) {
+  private router = inject(Router);
+
+  constructor() {
     // Set initial tab based on current URL
     this.updateActiveTabFromUrl(this.router.url);
 
@@ -140,7 +111,4 @@ export class SearchShellComponent {
     }
   }
 
-  openAlgorithmConfig(): void {
-    this.algorithmConfigVisible.set(true);
-  }
 }

@@ -46,7 +46,6 @@
           <!-- Dropdown Item Template -->
           <ng-template let-topic pTemplate="item">
             <div class="topic-item" [class.selected-topic]="isTopicSelected(topic.topicId)">
-              <span class="topic-emoji">{{ topic.emoji }}</span>
               <span class="topic-name">{{ topic.name }}</span>
             </div>
           </ng-template>
@@ -101,146 +100,160 @@
     </div>
   }
 
-  <!-- Results -->
-  @if (searchResults().length > 0) {
-    <div class="results-container">
-      <div class="posts-list">
-        @for (post of searchResults(); track post.postId) {
-          <p-card styleClass="post-card">
-            <!-- Post Header -->
-            <div class="post-header">
-              <div class="post-user">
-                <p-avatar
-                  [image]="post.userProfilePic"
-                  shape="circle"
-                  size="normal"
-                  [style]="{ width: '42px', height: '42px' }"
-                />
-                <div class="post-meta">
-                  <span class="post-username">{{ post.username }}</span>
-                  <span class="post-info">{{ timeAgo(post.createdAt) }}</span>
-                </div>
-              </div>
+  <div class="posts-list">
+    @if (searchResults().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox"></i>
+        <p>No public posts yet.</p>
+      </div>
+    }
+    @for (post of searchResults(); track post.postId) {
+      <section
+        class="post-card"
+      >
+        <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+      </section>
+    }
+  </div>
 
-              <div class="post-header-right">
-                @if (post.labelIds.length > 0) {
-                  <div class="post-labels">
-                    @for (label of post.labelIds; track label) {
-                      <p-tag
-                        [value]="label[0]"
-                        severity="secondary"
-                        styleClass="post-label"
-                        [pTooltip]="label[1]"
-                        tooltipPosition="bottom"
-                      />
-                    }
-                  </div>
-                }
-              </div>
-            </div>
+  <ng-template #postCard let-post="post">
 
-            <!-- Post Media -->
-            @if (post.videoImageRef.length > 0) {
-              <div class="post-media">
-                @if (isVideo(post.videoImageRef[0])) {
-                  <video
-                    [src]="post.videoImageRef[0]"
-                    controls
-                    playsinline
-                    preload="metadata">
-                  </video>
-                } @else {
-                  <img
-                    [src]="post.videoImageRef[0]"
-                    [alt]="post.caption"
-                    loading="lazy" />
-                }
-              </div>
-            }
-
-            <!-- Caption -->
-            <p class="post-caption">{{ post.caption }}</p>
-
-            <!-- Topics -->
-            @if (post.topicIds.length > 0) {
-              <div class="post-topics">
-                @for (topic of post.topicIds; track topic) {
-                  <span class="topic-tag">{{ topic }}</span>
-                }
-              </div>
-            }
-
-            <!-- Source -->
-            @if (post.sourceIds.length > 0) {
-              <div class="post-source-row">
-                <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
-                  <i class="pi pi-external-link"></i>
-                  {{ getDomain(post.sourceIds[0].url) }}
-                </a>
-                <i class="pi pi-info-circle hint-icon"
-                   pTooltip="Is the source reliable and relevant to the post?"
-                   tooltipPosition="right"></i>
-                <button
-                  class="action-btn upvote"
-                  [class.active]="post.sourceIds[0].userVote === 'up'"
-                  (click)="voteSource(post, 'up')">
-                  <i class="pi pi-check"></i>
-                  <span>{{ post.sourceIds[0].upvotes }}</span>
-                </button>
-                <button
-                  class="action-btn downvote"
-                  [class.active]="post.sourceIds[0].userVote === 'down'"
-                  (click)="voteSource(post, 'down')">
-                  <i class="pi pi-times"></i>
-                  <span>{{ post.sourceIds[0].downvotes }}</span>
-                </button>
-              </div>
-            }
-
-            <!-- Actions -->
-            <div class="post-actions">
-              <div class="post-actions-left">
-                <!-- Public posts: Up/Down votes -->
-                @if (post.isPublic) {
-                  <button
-                    class="action-btn upvote"
-                    [class.active]="post.userVote === 'up'"
-                    (click)="votePost(post, 'up')">
-                    <i class="pi pi-thumbs-up"></i>
-                    <span>{{ post.upvotes }}</span>
-                  </button>
-                  <button
-                    class="action-btn downvote"
-                    [class.active]="post.userVote === 'down'"
-                    (click)="votePost(post, 'down')">
-                    <i class="pi pi-thumbs-down"></i>
-                    <span>{{ post.downvotes }}</span>
-                  </button>
-                }
-
-                <!-- Comments -->
-                <button class="action-btn">
-                  <i class="pi pi-comment"></i>
-                  <span>{{ post.comments.length }}</span>
-                </button>
-              </div>
-            </div>
-          </p-card>
-        }
+    <!-- Post Header -->
+    <div class="post-header">
+      <div class="post-user">
+        <p-avatar
+          [image]="post.userProfilePic"
+          shape="circle"
+          size="normal"
+          [style]="{ width: '42px', height: '42px' }"
+        />
+        <div class="post-meta">
+          <span class="post-username">{{ post.username }}</span>
+          <span class="post-info">
+            {{ timeAgo(post.createdAt) }}
+          </span>
+        </div>
       </div>
 
-      <!-- Load More -->
-      @if (hasMoreResults()) {
-        <div class="load-more">
-          <p-button
-            icon="pi pi-chevron-down"
-            (onClick)="loadMore()"
-            label="Load More"
-            [loading]="isSearching()"
-            severity="secondary"
-            [outlined]="true" />
-        </div>
-      }
+      <!-- Labels + Why Button -->
+      <div class="post-header-right">
+        @if (post.labelIds.length > 0) {
+          <div class="post-labels">
+            @for (label of post.labelIds; track label) {
+              <p-tag
+                [value]="label[0]"
+                severity="secondary"
+                styleClass="post-label"
+                [pTooltip]="label[1]"
+                tooltipPosition="bottom"
+              />
+            }
+          </div>
+        }
     </div>
-  }
+    </div>
+
+    <!-- Post Video / Image -->
+    @if (post.videoImageRef?.length > 0) {
+      <div class="post-image-wrapper">
+        @if (isVideo(post.videoImageRef[0])) {
+          <video
+            [src]="post.videoImageRef[0]"
+            class="post-image"
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+        } @else {
+          <img
+            [src]="post.videoImageRef[0]"
+            [alt]="post.caption"
+            class="post-image"
+            loading="lazy"
+          />
+        }
+      </div>
+    }
+
+    <!-- Caption -->
+    <p class="post-caption">{{ post.caption }}</p>
+
+    <!-- Source -->
+    @if (post.sourceIds.length > 0) {
+      <div class="post-source-row">
+        <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ getDomain(post.sourceIds[0].url) }}
+        </a>
+        <i class="pi pi-info-circle hint-icon"
+          pTooltip="Is the source reliable and relevant to the post?"
+          tooltipPosition="right"></i>
+        <button
+          class="action-btn upvote"
+          [class.active]="post.sourceIds[0].userVote === 'up'"
+          (click)="voteSource(post, 'up')"
+          [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
+        >
+          <i class="pi pi-check"></i>
+          <span>{{ post.sourceIds[0].upvotes }}</span>
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="post.sourceIds[0].userVote === 'down'"
+          (click)="voteSource(post, 'down')"
+          [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
+        >
+          <i class="pi pi-times"></i>
+          <span>{{ post.sourceIds[0].downvotes }}</span>
+        </button>
+      </div>
+    }
+
+    <!-- Actions -->
+    <div class="post-actions">
+      <div class="post-actions-left">
+        <!-- PUBLIC: Up/Downvotes -->
+        @if (post.isPublic) {
+          <button
+            class="action-btn upvote"
+            [class.active]="post.userVote === 'up'"
+            (click)="votePost(post, 'up')"
+            [attr.aria-label]="'Upvote – ' + post.upvotes"
+            [attr.aria-pressed]="post.userVote === 'up'"
+          >
+            <i class="pi pi-thumbs-up"></i>
+          </button>
+          <button
+            class="action-btn downvote"
+            [class.active]="post.userVote === 'down'"
+            (click)="votePost(post, 'down')"
+            [attr.aria-label]="'Downvote – ' + post.downvotes"
+            [attr.aria-pressed]="post.userVote === 'down'"
+          >
+            <i class="pi pi-thumbs-down"></i>
+          </button>
+        }
+
+        <!-- Comments -->
+        <button class="action-btn" (click)="openCommentsDialog(post)">
+          <i class="pi pi-comment"></i>
+          <span>{{ post.comments.length }}</span>
+        </button>
+      </div>
+
+      <button class="action-btn flag-btn">
+        <i class="pi pi-flag"></i>
+      </button>
+    </div>
+
+  </ng-template>
 </div>
+
+<!-- Comments Dialog -->
+<app-comments
+  [post]="selectedPostForComments()"
+  [visible]="commentsDialogVisible()"
+  (visibleChange)="commentsDialogVisible.set($event)"
+/>
