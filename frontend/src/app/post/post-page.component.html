@@ -57,6 +57,15 @@
           (onClick)="openCreateDialog()"
         />
       </div>
+    } @else if (publicProfileMode()) {
+      <div class="post-profile-card__actions">
+        <p-button
+          icon="pi pi-flag"
+          severity="secondary"
+          [rounded]="true"
+          (onClick)="openReportDialog()"
+        />
+      </div>
     }
     </header>
 
@@ -238,6 +247,16 @@
   (deleteRequested)="requestPostDeletion($event)"
 />
 
+<app-report
+  [contentType]="ContentTypeEnum.ACCOUNT"
+  [contentId]="publicProfile()?.id"
+  [contentTitle]="publicProfile()?.bio ?? (username() + ' has no bio')"
+  [userProfilePic]="currentProfilePicture() ?? undefined"
+  [username]="username()"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)"
+></app-report>
+
 <p-dialog
   [visible]="postPendingDeletion() !== null"
   [modal]="true"
@@ -280,5 +299,5 @@
   [modal]="!createOnlyMode()"
   [dismissableMask]="!createOnlyMode()"
   (visibleChange)="onComposerVisibleChange($event)"
-  (created)="onPostCreated()"
-/>
+  (created)="onPostCreated()">
+</app-post-composer>

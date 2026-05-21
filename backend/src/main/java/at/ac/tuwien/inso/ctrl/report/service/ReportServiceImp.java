@@ -18,6 +18,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportedAccountResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedCommentResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
@@ -31,6 +32,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,6 +43,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,6 +73,7 @@ public class ReportServiceImp implements ReportService {
   private final TemplateEngine templateEngine;
   private final CommentRepository commentRepository;
   private final CommentMapper commentMapper;
+  private final UserMapper userMapper;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -263,6 +267,39 @@ public class ReportServiceImp implements ReportService {
         .toList();
   }
 
+  @Override
+  public List<ReportedAccountResponse> getAccountReports(ReportStatus reportStatus, int page, int postsPerPage) {
+    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
+
+    List<Report> reports =
+        reportRepository.findByContentTypeAndStatus(ContentTypeEnum.ACCOUNT, reportStatus, pageable);
+
+    return reports.stream()
+        .map(report -> {
+          User reportedUser = report.getUsernameReported();
+          if (reportedUser == null) {
+            return null;
+          }
+
+          String reportedByUsername =
+              report.getFromUser() != null ? report.getFromUser().getUsername() : null;
+          String reportedUsername = reportedUser.getUsername();
+
+          return new ReportedAccountResponse(
+              userMapper.toPublicUserProfileResponse(reportedUser, true),
+              report.getReportId(),
+              report.getReason(),
+              report.getDescription(),
+              reportedByUsername,
+              reportedUsername,
+              report.getContentType(),
+              report.getStatus(),
+              report.getCreatedAt());
+        })
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
   private void deleteReportedItem(Report report) {
     if (report.getContentType() == ContentTypeEnum.POST) {
       Post post =
@@ -286,6 +323,18 @@ public class ReportServiceImp implements ReportService {
           () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
       comment.setIsRemoved(true);
       commentRepository.save(comment);
+    } else if (report.getContentType() == ContentTypeEnum.ACCOUNT) {
+      User user = report.getUsernameReported();
+      
+      if (user != null) {
+        user.setSuspended(true);
+        userRepository.save(user);
+      } else {
+        throw new IllegalArgumentException("User cannot be null for reported User");
+      }
+      
+    } else {
+      throw new IllegalArgumentException("Invalid content type: " + report.getContentType());
     }
   }
 
@@ -330,7 +379,10 @@ public class ReportServiceImp implements ReportService {
         User commentUser = comment.getUser();
         commentUser.setSuspended(true);
         userRepository.save(commentUser);
+      } else {
+        throw new IllegalArgumentException("User cannot be null for reported User");
       }
+      
     }
   }
 
@@ -516,6 +568,10 @@ public class ReportServiceImp implements ReportService {
       Comment comment = commentRepository.findById(createReportRequest.contentId()).orElseThrow(
           () -> new EntityNotFoundException("Comment not found: " + createReportRequest.contentId()));
       return comment.getUser();
+      
+    } else if (createReportRequest.contentType().equals(ContentTypeEnum.ACCOUNT)) {
+      return userRepository.findById(UUID.fromString(createReportRequest.contentId())).orElseThrow(
+          () -> new EntityNotFoundException("User not found: " + createReportRequest.contentId()));
       
     } else {
       throw new IllegalArgumentException(

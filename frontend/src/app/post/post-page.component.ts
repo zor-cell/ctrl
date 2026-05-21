@@ -20,6 +20,8 @@ import { MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
+import { ReportComponent } from '../report/components/report/report.component';
+import { ContentTypeEnum } from '../report/dto/report';
 import { PostResponse } from './dto/PostResponse';
 import { TopicResponse } from './dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
@@ -37,6 +39,7 @@ import { PostService } from './post.service';
     TooltipModule,
     PostComposerComponent,
     PostDetailDialogComponent,
+    ReportComponent,
   ],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
@@ -53,6 +56,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
   protected readonly dialogVisible = signal(false);
+  protected readonly reportDialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
@@ -139,6 +143,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
+  protected readonly ContentTypeEnum = ContentTypeEnum;
+
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
 
@@ -167,6 +173,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openCreateDialog() {
     this.dialogVisible.set(true);
+  }
+
+  protected openReportDialog() {
+    this.reportDialogVisible.set(true);
   }
 
   protected onPostCreated() {

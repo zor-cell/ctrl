@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { timeAgo } from '../../../core/utils/date-time.utils';
 import { Avatar } from 'primeng/avatar';
 import { Tag } from 'primeng/tag';
@@ -19,6 +20,7 @@ import { TableModule } from 'primeng/table';
 import { Dialog } from 'primeng/dialog';
 import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-cache.service';
 import { ReportedCommentResponse } from '../../dto/ReportedCommentResponse';
+import { ReportedAccountResponse } from '../../dto/ReportedAccountResponse';
 
 @Component({
   selector: 'app-report-review',
@@ -33,6 +35,7 @@ import { ReportedCommentResponse } from '../../dto/ReportedCommentResponse';
     Tooltip,
     Button,
     NgTemplateOutlet,
+    RouterLink,
     ConfirmDialog,
     TableModule,
     Dialog,
@@ -55,15 +58,20 @@ export class ReportReviewComponent implements OnInit {
   protected failedProfilePictures = signal<Set<string>>(new Set());
   protected reportedSources = signal<ReportedSourceResponse[]>([]);
   protected reportedComments = signal<ReportedCommentResponse[]>([]);
+  protected reportedAccounts = signal<ReportedAccountResponse[]>([]);
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
   protected summaryDialogVisible = signal(false);
   protected reportSummaryData = signal<ReportSummaryResponse[]>([]);
 
   protected actionDialogVisible = signal(false);
-  protected selectedReport = signal<ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | null>(null);
+  protected selectedReport = signal<
+    ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse | null
+  >(null);
 
-  openActionDialog(report: ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse) {
+  openActionDialog(
+    report: ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse,
+  ) {
     this.selectedReport.set(report);
     this.actionDialogVisible.set(true);
   }
@@ -86,6 +94,14 @@ export class ReportReviewComponent implements OnInit {
     console.log(reports);
     this.currentTab.set(ContentTypeEnum.SOURCE);
   }
+
+  async changeToAccounts() {
+    const reports = await this.reportService.getReportedAccounts();
+    this.reportedAccounts.set(reports);
+    console.log(reports);
+    this.currentTab.set(ContentTypeEnum.ACCOUNT);
+  }
+
 
   async changeToComments() {
     const reports = await this.reportService.getReportedComments();
@@ -162,6 +178,10 @@ export class ReportReviewComponent implements OnInit {
       );
     } else if (this.currentTab() === ContentTypeEnum.COMMENT) {
       this.reportedComments.update((reports) =>
+        reports.filter((report) => report.reportId !== reportId),
+      );
+    } else if (this.currentTab() === ContentTypeEnum.ACCOUNT) {
+      this.reportedAccounts.update((reports) =>
         reports.filter((report) => report.reportId !== reportId),
       );
     }

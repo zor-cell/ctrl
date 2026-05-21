@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user.repository;
 
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,4 +79,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
           """,
       nativeQuery = true)
   List<Float> calculateUserInteractionPreferenceVector(@Param("userId") UUID userId);
+
+  User getUserById(UUID uuid);
 }

@@ -8,6 +8,7 @@ import { ReportedPostResponse } from '../dto/ReportedPostResponse';
 import { ReportedSourceResponse } from '../dto/ReportedSourceResponse';
 import { ReportSummaryResponse } from '../dto/ReportSummaryResponse';
 import { ReportedCommentResponse } from '../dto/ReportedCommentResponse';
+import {ReportedAccountResponse} from '../dto/ReportedAccountResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -59,6 +60,18 @@ export class ReportService {
     return await firstValueFrom(
       this.httpClient.get<ReportedSourceResponse[]>(
         `${this.baseUri}/sources?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
+      ),
+    );
+  }
+
+  async getReportedAccounts(
+    status = ReportStatus.CREATED,
+    page = 0,
+    postsPerPage = 20,
+  ): Promise<ReportedAccountResponse[]> {
+    return await firstValueFrom(
+      this.httpClient.get<ReportedAccountResponse[]>(
+        `${this.baseUri}/accounts?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
       ),
     );
   }
