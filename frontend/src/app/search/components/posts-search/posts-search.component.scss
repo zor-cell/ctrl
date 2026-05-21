@@ -1,15 +1,13 @@
-// ─── Tokens ───────────────────────────────────────────
-$border:      var(--border);
-$text-muted:   #888;
-$upvote:       #5bc97a;
-$downvote:     #e05858;
-$radius:       16px;
-$radius-sm:    10px;
+$border: var(--border);
+$text-muted: #888;
+$radius: 16px;
+$radius-sm: 10px;
 
-// ─── Posts Search Container ─────────────────────────────────
+// ─── Posts Search Container ───────────────────────────────
 .posts-search {
-  max-width: 640px;
+  width: min(100%, 72rem);
   margin: 0 auto;
+  padding: 0 1.5rem 1.5rem 1.5rem;
 }
 
 // ─── Search Controls ───────────────────────────────────────
@@ -17,7 +15,15 @@ $radius-sm:    10px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--p-content-background);
+  padding: 1rem 1.5rem;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  border-bottom: 1px solid $border;
 }
 
 .search-row {
@@ -66,70 +72,11 @@ $radius-sm:    10px;
   min-width: 200px;
 }
 
-// ─── Algorithm Controls ────────────────────────────────────
-.algorithm-controls {
-  padding: 14px 16px;
-  background: var(--p-surface-50);
-  border-radius: $radius;
-  border: 1px solid $border;
-
-  .algorithm-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-
-    .algorithm-title {
-      font-weight: 600;
-      font-size: 0.92rem;
-      color: var(--p-text-color);
-    }
-  }
-
-  .algorithm-sliders {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    label {
-      min-width: 100px;
-      font-size: 0.875rem;
-      color: var(--p-text-color);
-    }
-
-    p-slider {
-      flex: 1;
-    }
-
-    span {
-      min-width: 60px;
-      text-align: right;
-      font-size: 0.875rem;
-      color: $text-muted;
-    }
-  }
-
-  .algorithm-disabled-hint {
-    padding: 12px;
-    background: var(--p-surface-100);
-    border-radius: $radius-sm;
-    text-align: center;
-
-    span {
-      font-size: 0.875rem;
-      color: $text-muted;
-      font-style: italic;
-    }
-  }
+.search-button-wrapper {
+  flex-shrink: 0;
 }
 
-// ─── Loading State ─────────────────────────────────────────
+// ─── Loading States ──────────────────────────────────────
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -141,6 +88,19 @@ $radius-sm:    10px;
   p {
     font-size: 0.9rem;
     margin: 0;
+  }
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  color: $text-muted;
+
+  span {
+    font-size: 0.9rem;
   }
 }
 
@@ -181,244 +141,49 @@ $radius-sm:    10px;
   }
 }
 
-// ─── Results Container ────────────────────────────────────
+// ─── Results Container ──────────────────────────────────
 .results-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
-.posts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+// ─── Posts Grid ─────────────────────────────────────────
+.posts-preview-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  // Ensure all grid items have the same height
+  grid-auto-rows: 1fr;
+  align-items: stretch;
 
-// ─── Post Card (copied from feed) ────────────────────────
-::ng-deep .post-card {
-  border-radius: $radius !important;
-  border: 1px solid $border !important;
-
-  .p-card-content {
-    padding: 0;
-  }
-}
-
-.post-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-
-  .post-user {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .post-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
   }
 
-  .post-username {
-    font-size: 0.92rem;
-    font-weight: 600;
-  }
-
-  .post-info {
-    font-size: 0.78rem;
-    color: $text-muted;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  // Make all cards stretch to fill the grid cell
+  > * {
+    height: 100%;
   }
 }
 
-.post-header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.post-labels {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-::ng-deep .post-label {
-  color: $text-muted !important;
-  font-size: 0.75rem !important;
-  border-radius: 6px !important;
-  border: 1px solid $border !important;
-}
-
-.post-media {
-  width: 100%;
-  overflow: hidden;
-
-  img, video {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    display: block;
-  }
-}
-
-.post-caption {
-  padding: 14px 16px 8px;
-  font-size: 0.93rem;
-  line-height: 1.55;
-  margin: 0;
-  white-space: pre-line;
-}
-
-.post-topics {
-  padding: 8px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-
-  .topic-tag {
-    font-size: 0.75rem;
-    padding: 4px 10px;
-    background: var(--p-surface-100);
-    border-radius: 20px;
-    border: 1px solid $border;
-    color: $text-muted;
-  }
-}
-
-.post-source-row {
-  display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid $border;
-  gap: 8px;
-
-  .post-source {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid $border;
-    font-size: 0.75rem;
-    color: $text-muted;
-    text-decoration: none;
-    transition: all 0.2s;
-
-    i { font-size: 0.7rem; }
-
-    &:hover {
-      color: var(--p-primary-color, #6366f1);
-      border-color: var(--p-primary-color, #6366f1);
-    }
-  }
-
-  .hint-icon {
-    font-size: 0.8rem;
-    color: $text-muted;
-    cursor: pointer;
-  }
-
-  .action-btn {
-    margin: 0;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-
-    &.upvote:hover, &.upvote.active {
-      color: $upvote;
-      border-color: $upvote;
-    }
-
-    &.downvote:hover, &.downvote.active {
-      color: $downvote;
-      border-color: $downvote;
-    }
-  }
-}
-
-.post-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px 14px;
-  border-top: 1px solid $border;
-
-  .post-actions-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-}
-
-.action-btn {
-  margin: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid $border;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: transparent;
-
-  i { font-size: 0.9rem; }
-
-  &.upvote:hover, &.upvote.active {
-    color: $upvote;
-    border-color: $upvote;
-  }
-
-  &.downvote:hover, &.downvote.active {
-    color: $downvote;
-    border-color: $downvote;
-  }
-
-  span {
-    font-size: 0.82rem;
-  }
-}
-
-// ─── Load More Button ─────────────────────────────────────
+// ─── Load More Button ────────────────────────────────────
 .load-more {
   display: flex;
   justify-content: center;
   padding: 20px;
 }
 
-// ─── Topic Dropdown Styling ─────────────────────────────────
+// ─── Topic Dropdown Styling ───────────────────────────────
 ::ng-deep .topic-multiselect {
   width: 100%;
 }
 
 ::ng-deep .p-multiselect-panel {
-  .topics-header {
-    display: flex;
-    flex-direction: column;
-    padding: 12px 16px;
-    border-bottom: 1px solid $border;
-    background: var(--p-surface-50);
-
-    .header-text {
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: var(--p-text-color);
-    }
-
-    .header-hint {
-      font-size: 0.75rem;
-      color: $text-muted;
-      margin-top: 4px;
-    }
-  }
-
   .topic-item {
     display: flex;
     align-items: center;
@@ -430,20 +195,52 @@ $radius-sm:    10px;
       background: var(--p-primary-color-soft, rgba(99, 102, 241, 0.1));
     }
 
-    .topic-emoji {
-      font-size: 1.1rem;
-      width: 24px;
-      text-align: center;
-    }
-
     .topic-name {
       flex: 1;
       font-size: 0.875rem;
     }
+  }
+}
 
-    .selected-indicator {
-      color: var(--p-primary-color);
-      font-size: 0.875rem;
-    }
+// ─── Selected Topics Display ──────────────────────────────
+.single-topic,
+.two-topics,
+.multiple-topics {
+  font-size: 0.875rem;
+  color: var(--p-text-color);
+}
+
+.multiple-topics {
+  color: $text-muted;
+  font-style: italic;
+}
+
+// ─── Responsive Adjustments ─────────────────────────────
+@media (max-width: 900px) {
+  .posts-search {
+    padding: 1rem;
+  }
+
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-wrapper,
+  .topic-filter-wrapper,
+  .search-button-wrapper {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+  }
+
+  .posts-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .posts-preview-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,13 +1,13 @@
 <div class="posts-search">
   <!-- Search Controls -->
   <div class="search-controls">
-    <!-- Search Input and Topic Filter Row -->
     <div class="search-row">
       <!-- Search Input -->
       <div class="search-input-wrapper">
         <p-iconField iconPosition="left">
           <p-inputIcon styleClass="pi pi-search" />
           <input
+            #searchInput
             type="text"
             pInputText
             placeholder="Search posts..."
@@ -19,7 +19,7 @@
             <button
               type="button"
               class="clear-button"
-              (click)="clearSearch()"
+              (click)="clearSearch(searchInput)"
               title="Clear search">
               <i class="pi pi-times"></i>
             </button>
@@ -32,10 +32,10 @@
         <p-multiSelect
           [options]="sortedTopics()"
           [ngModel]="selectedTopics()"
-          (ngModelChange)="selectedTopics.set($event)"
+          (ngModelChange)="onTopicsChange($event)"
           optionLabel="name"
           optionValue="topicId"
-          placeholder="Select topics to filter..."
+          placeholder="Select topics..."
           [filter]="true"
           filterBy="name"
           [showHeader]="true"
@@ -43,13 +43,11 @@
           [style]="{'width':'100%'}"
           styleClass="topic-multiselect"
           [disabled]="isSearching()">
-          <!-- Dropdown Item Template -->
           <ng-template let-topic pTemplate="item">
             <div class="topic-item" [class.selected-topic]="isTopicSelected(topic.topicId)">
               <span class="topic-name">{{ topic.name }}</span>
             </div>
           </ng-template>
-          <!-- Selected Items Template -->
           <ng-template let-selected pTemplate="selectedItems">
             @if (selectedTopics().length === 1) {
               <span class="single-topic">{{ getTopicDisplayName(selectedTopics()[0]) }}</span>
@@ -74,7 +72,7 @@
     </div>
   </div>
 
-  <!-- Loading State -->
+  <!-- Loading State (initial search) -->
   @if (isSearching() && currentPage() === 0) {
     <div class="loading-state">
       <p-progressSpinner styleClass="custom-spinner" />
@@ -100,160 +98,36 @@
     </div>
   }
 
-  <div class="posts-list">
-    @if (searchResults().length === 0) {
-      <div class="empty-state">
-        <i class="pi pi-inbox"></i>
-        <p>No public posts yet.</p>
+      <!-- Results Grid -->
+  @if (hasSearched() && searchResults().length > 0) {
+    <div class="results-container" #resultsContainer>
+      <div class="posts-preview-grid">
+        @for (preview of searchResults(); track preview.postId) {
+          <app-post-preview-card
+            [post]="preview"
+            (open)="onPostSelected(preview)" />
+        }
       </div>
-    }
-    @for (post of searchResults(); track post.postId) {
-      <section
-        class="post-card"
-      >
-        <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-      </section>
-    }
-  </div>
 
-  <ng-template #postCard let-post="post">
-
-    <!-- Post Header -->
-    <div class="post-header">
-      <div class="post-user">
-        <p-avatar
-          [image]="post.userProfilePic"
-          shape="circle"
-          size="normal"
-          [style]="{ width: '42px', height: '42px' }"
-        />
-        <div class="post-meta">
-          <span class="post-username">{{ post.username }}</span>
-          <span class="post-info">
-            {{ timeAgo(post.createdAt) }}
-          </span>
+      <!-- Load More -->
+      @if (hasMoreResults() && !isSearching()) {
+        <div class="load-more">
+          <p-button
+            label="Load more"
+            icon="pi pi-chevron-down"
+            (onClick)="loadMore()"
+            severity="secondary"
+            [text]="true" />
         </div>
-      </div>
+      }
 
-      <!-- Labels + Why Button -->
-      <div class="post-header-right">
-        @if (post.labelIds.length > 0) {
-          <div class="post-labels">
-            @for (label of post.labelIds; track label) {
-              <p-tag
-                [value]="label[0]"
-                severity="secondary"
-                styleClass="post-label"
-                [pTooltip]="label[1]"
-                tooltipPosition="bottom"
-              />
-            }
-          </div>
-        }
+      <!-- Loading more indicator -->
+      @if (isSearching() && currentPage() > 0) {
+        <div class="loading-more">
+          <p-progressSpinner styleClass="small-spinner" />
+          <span>Loading more...</span>
+        </div>
+      }
     </div>
-    </div>
-
-    <!-- Post Video / Image -->
-    @if (post.videoImageRef?.length > 0) {
-      <div class="post-image-wrapper">
-        @if (isVideo(post.videoImageRef[0])) {
-          <video
-            [src]="post.videoImageRef[0]"
-            class="post-image"
-            controls
-            playsinline
-            preload="metadata"
-          ></video>
-        } @else {
-          <img
-            [src]="post.videoImageRef[0]"
-            [alt]="post.caption"
-            class="post-image"
-            loading="lazy"
-          />
-        }
-      </div>
-    }
-
-    <!-- Caption -->
-    <p class="post-caption">{{ post.caption }}</p>
-
-    <!-- Source -->
-    @if (post.sourceIds.length > 0) {
-      <div class="post-source-row">
-        <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
-          <i class="pi pi-external-link"></i>
-          {{ getDomain(post.sourceIds[0].url) }}
-        </a>
-        <i class="pi pi-info-circle hint-icon"
-          pTooltip="Is the source reliable and relevant to the post?"
-          tooltipPosition="right"></i>
-        <button
-          class="action-btn upvote"
-          [class.active]="post.sourceIds[0].userVote === 'up'"
-          (click)="voteSource(post, 'up')"
-          [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
-        >
-          <i class="pi pi-check"></i>
-          <span>{{ post.sourceIds[0].upvotes }}</span>
-        </button>
-        <button
-          class="action-btn downvote"
-          [class.active]="post.sourceIds[0].userVote === 'down'"
-          (click)="voteSource(post, 'down')"
-          [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
-        >
-          <i class="pi pi-times"></i>
-          <span>{{ post.sourceIds[0].downvotes }}</span>
-        </button>
-      </div>
-    }
-
-    <!-- Actions -->
-    <div class="post-actions">
-      <div class="post-actions-left">
-        <!-- PUBLIC: Up/Downvotes -->
-        @if (post.isPublic) {
-          <button
-            class="action-btn upvote"
-            [class.active]="post.userVote === 'up'"
-            (click)="votePost(post, 'up')"
-            [attr.aria-label]="'Upvote – ' + post.upvotes"
-            [attr.aria-pressed]="post.userVote === 'up'"
-          >
-            <i class="pi pi-thumbs-up"></i>
-          </button>
-          <button
-            class="action-btn downvote"
-            [class.active]="post.userVote === 'down'"
-            (click)="votePost(post, 'down')"
-            [attr.aria-label]="'Downvote – ' + post.downvotes"
-            [attr.aria-pressed]="post.userVote === 'down'"
-          >
-            <i class="pi pi-thumbs-down"></i>
-          </button>
-        }
-
-        <!-- Comments -->
-        <button class="action-btn" (click)="openCommentsDialog(post)">
-          <i class="pi pi-comment"></i>
-          <span>{{ post.comments.length }}</span>
-        </button>
-      </div>
-
-      <button class="action-btn flag-btn">
-        <i class="pi pi-flag"></i>
-      </button>
-    </div>
-
-  </ng-template>
+  }
 </div>
-
-<!-- Comments Dialog -->
-<app-comments
-  [post]="selectedPostForComments()"
-  [visible]="commentsDialogVisible()"
-  (visibleChange)="commentsDialogVisible.set($event)"
-/>

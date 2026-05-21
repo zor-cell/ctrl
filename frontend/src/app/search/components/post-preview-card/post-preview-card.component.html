@@ -1,0 +1,46 @@
+<button
+  type="button"
+  class="preview-card"
+  (click)="onClick()"
+  [class.has-media]="post().mediaUrl"
+  [class.no-media]="!post().mediaUrl"
+>
+  <!-- User info header -->
+  <div class="preview-card__user">
+    <p-avatar
+      [image]="post().userProfilePic ?? undefined"
+      [label]="post().username ? post().username.charAt(0).toUpperCase() : '?'"
+      shape="circle"
+    />
+    <span class="preview-card__username">{{ post().username }}</span>
+  </div>
+
+  <!-- Media (if available) -->
+  @if (post().mediaUrl) {
+    <div class="preview-card__media-wrapper">
+      @if (isVideo(post().mediaUrl!)) {
+        <video
+          [src]="post().mediaUrl"
+          class="preview-card__media"
+          muted
+          playsinline
+          preload="metadata"
+        ></video>
+      } @else {
+        <img
+          [src]="post().mediaUrl"
+          alt=""
+          class="preview-card__media"
+          loading="lazy"
+        />
+      }
+    </div>
+  }
+
+  <!-- Caption -->
+  <div class="preview-card__caption-wrapper">
+    <p class="preview-card__caption" [class.truncated]="post().mediaUrl">
+      {{ post().caption }}
+    </p>
+  </div>
+</button>

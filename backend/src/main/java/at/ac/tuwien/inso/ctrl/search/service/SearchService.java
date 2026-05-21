@@ -2,16 +2,13 @@ package at.ac.tuwien.inso.ctrl.search.service;
 
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
-import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
+import at.ac.tuwien.inso.ctrl.post.dto.response.PostPreviewResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
-import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
+import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
-import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.search.dto.PostSearchRequest;
 import at.ac.tuwien.inso.ctrl.search.dto.UserSearchRequest;
-import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
+import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
@@ -20,10 +17,8 @@ import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,96 +29,63 @@ public class SearchService {
 
   private final EmbeddingService embeddingService;
   private final PostRepository postRepository;
-  private final PostVoteRepository postVoteRepository;
-  private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
-  private final FeedMapper feedMapper;
+  private final PostMapper postMapper;
   private final FollowService followService;
   private final FriendRequestRepository friendRequestRepository;
   private final RelationshipMapper relationshipMapper;
 
   @Transactional(readOnly = true)
-  public List<FeedPostResponse> searchPosts(PostSearchRequest request, User user) {
-    // Validate that we have at least a query or topics
+  public List<PostPreviewResponse> searchPosts(PostSearchRequest request, User user) {
     boolean hasQuery =
         request.query() != null && !request.query().isBlank() && request.query().length() >= 3;
     boolean hasTopics = request.topicIds() != null && !request.topicIds().isEmpty();
 
-    if (!hasQuery && !hasTopics) {
-      throw new InvalidRequestException(
-          "Search requires either a query (3+ characters) or at least one topic");
-    }
-
-    // Embed the search query if present
     float[] queryEmbedding = null;
     if (hasQuery) {
       queryEmbedding = embeddingService.embedText(request.query().trim());
     }
 
-    // Convert topicIds to array for the query
+    String[] queryWords = request.query().trim().split(" ");
+
     String[] topicIdsArray = hasTopics ? request.topicIds().toArray(new String[0]) : new String[0];
 
-    List<PostScoreProjection> scoredProjections;
+    List<Post> posts;
 
-    scoredProjections =
-        postRepository.searchPostsBySimilarityOnly(
-            user.getId(),
-            queryEmbedding,
-            topicIdsArray,
-            request.postsPerPage(),
-            request.page() * request.postsPerPage());
+    if (!hasQuery && hasTopics) {
+      posts =
+          postRepository.searchPostsByTopics(
+              user.getId(),
+              topicIdsArray,
+              request.postsPerPage(),
+              request.page() * request.postsPerPage());
+    } else if (hasQuery && !hasTopics) {
+      posts =
+          postRepository.searchPostsBySimilarity(
+              user.getId(),
+              queryWords,
+              queryEmbedding,
+              request.postsPerPage(),
+              request.page() * request.postsPerPage());
+    } else if (hasQuery && hasTopics) {
+      posts =
+          postRepository.searchPostsBySimilarityAndTopics(
+              user.getId(),
+              queryWords,
+              queryEmbedding,
+              topicIdsArray,
+              request.postsPerPage(),
+              request.page() * request.postsPerPage());
+    } else {
+      throw new InvalidRequestException(
+          "Search requires either a query (3+ characters) or at least one topic");
+    }
 
-    if (scoredProjections.isEmpty()) {
+    if (posts.isEmpty()) {
       return Collections.emptyList();
     }
 
-    // Fetch full posts with associations
-    List<String> postIds = scoredProjections.stream().map(PostScoreProjection::getPostId).toList();
-    List<Post> fullPosts = postRepository.findAllWithAssociationsByIds(postIds);
-    Map<String, Post> postMap =
-        fullPosts.stream().collect(Collectors.toMap(Post::getPostId, post -> post));
-
-    // Get user votes for posts
-    String userIdStr = user.getId().toString();
-    Map<String, String> postVotes =
-        postVoteRepository.findByIdUserIdAndIdPostIdIn(userIdStr, postIds).stream()
-            .collect(Collectors.toMap(v -> v.getId().getPostId(), v -> v.getVoteType()));
-
-    // Get source votes
-    List<String> sourceIds =
-        scoredProjections.stream()
-            .map(score -> postMap.get(score.getPostId()))
-            .filter(post -> post != null && post.getSource() != null)
-            .map(post -> post.getSource().getSourceId())
-            .toList();
-
-    Map<String, String> sourceVotes =
-        sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userIdStr, sourceIds).stream()
-            .collect(Collectors.toMap(v -> v.getId().getSourceId(), v -> v.getVoteType()));
-
-    // Map to FeedPostResponse
-    return scoredProjections.stream()
-        .map(
-            score -> {
-              Post post = postMap.get(score.getPostId());
-              if (post == null) {
-                return null;
-              }
-              RecommendedPost recommendedPost =
-                  new RecommendedPost(
-                      post,
-                      new at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation(
-                          score.getScoreInteraction(),
-                          score.getScoreTopic(),
-                          score.getScoreRecency(),
-                          score.getScoreTrending(),
-                          score.getScoreSource(),
-                          score.getScoreExploration(),
-                          score.getTotalScore()));
-              return feedMapper.toFeedPostResponse(recommendedPost, postVotes, sourceVotes);
-            })
-        .filter(response -> response != null)
-        .toList();
+    return posts.stream().map(postMapper::toPostPreviewResponse).toList();
   }
 
   /** Searches for users based on username matching with optional relationship filters. */
@@ -148,15 +110,15 @@ public class SearchService {
         .filter(user -> !request.verifiedOnly() || user.isVerified())
         .map(
             user -> {
-              UserSearchResponse.RelationshipStatus status =
-                  relationshipMapper.determineRelationshipStatus(
+              List<RelationshipStatusItem> stati =
+                  relationshipMapper.determineRelationshipStatuses(
                       user,
                       followedIds,
                       friendIds,
                       pendingRequestSentIds,
                       pendingRequestIncomingIds);
-              String displayName = relationshipMapper.displayName(user, status);
-              return relationshipMapper.toUserSearchResponse(user, status, displayName);
+              String displayName = relationshipMapper.displayName(user, stati);
+              return relationshipMapper.toUserSearchResponse(user, stati, displayName);
             })
         .toList();
   }

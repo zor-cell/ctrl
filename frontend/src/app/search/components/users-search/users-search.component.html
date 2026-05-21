@@ -86,13 +86,13 @@
               @if (user.isVerified) {
                 <span class="verified-badge">Verified</span>
               }
-              @if (user.relationshipStatus === 'FRIEND') {
+              @if (getRelationshipStatus(user) === 'FRIEND') {
                 <span class="relationship-badge friend">Friend</span>
-              } @else if (user.relationshipStatus === 'FOLLOWED') {
+              } @else if (getRelationshipStatus(user) === 'FOLLOWED') {
                 <span class="relationship-badge followed">Followed</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_SENT') {
+              } @else if (getRelationshipStatus(user) === 'PENDING_REQUEST_SENT') {
                 <span class="relationship-badge pending-sent">Request Sent</span>
-              } @else if (user.relationshipStatus === 'PENDING_REQUEST_INCOMING') {
+              } @else if (getRelationshipStatus(user) === 'PENDING_REQUEST_INCOMING') {
                 <span class="relationship-badge pending-incoming">Request Incoming</span>
               }
             </div>

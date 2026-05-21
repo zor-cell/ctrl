@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil, debounceTime } from 'rxjs';
 
 import { InputTextModule } from 'primeng/inputtext';
@@ -47,6 +48,8 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
   private relationshipService = inject(RelationshipService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   // Updated defaults: excludeFriends=true, excludeFollowed=true
   searchQuery = signal<string>('');
@@ -62,6 +65,9 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
   private searchInput$ = new Subject<string>();
 
   ngOnInit(): void {
+    // Restore state from URL first
+    this.restoreStateFromUrl();
+
     // Debounced search input (300ms)
     this.searchInput$
       .pipe(
@@ -69,6 +75,7 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
         debounceTime(300)
       )
       .subscribe((query) => {
+        this.updateUrlState();
         if (query.length >= 2) {
           this.performSearch(query);
         }
@@ -92,6 +99,62 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Restore search state from URL query parameters
+   */
+  private restoreStateFromUrl(): void {
+    const queryParams = this.route.snapshot.queryParams;
+
+    // Restore search query
+    if (queryParams['q']) {
+      this.searchQuery.set(queryParams['q']);
+    }
+
+    // Restore filter states
+    if (queryParams['friends'] !== undefined) {
+      this.excludeFriends.set(queryParams['friends'] !== 'false');
+    }
+    if (queryParams['followed'] !== undefined) {
+      this.excludeFollowed.set(queryParams['followed'] !== 'false');
+    }
+    if (queryParams['verified'] !== undefined) {
+      this.verifiedOnly.set(queryParams['verified'] === 'true');
+    }
+
+    // If we have a query, perform the search
+    if (this.searchQuery().trim().length >= 2) {
+      this.performSearch(this.searchQuery().trim());
+    }
+  }
+
+  /**
+   * Update URL with current search state
+   */
+  private updateUrlState(): void {
+    const queryParams: Record<string, string> = {};
+
+    if (this.searchQuery()) {
+      queryParams['q'] = this.searchQuery();
+    }
+
+    // Always include filter states if they differ from defaults
+    if (!this.excludeFriends()) {
+      queryParams['friends'] = 'false';
+    }
+    if (!this.excludeFollowed()) {
+      queryParams['followed'] = 'false';
+    }
+    if (this.verifiedOnly()) {
+      queryParams['verified'] = 'true';
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+      replaceUrl: true
+    });
+  }
+
   ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
@@ -107,6 +170,13 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
   clearSearch(): void {
     this.searchQuery.set('');
     this.searchResults.set([]);
+
+    // Clear URL parameters
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: undefined,
+      replaceUrl: true
+    });
   }
 
   onSearch(): void {
@@ -115,6 +185,7 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
       this.notificationService.showError('Please enter at least 2 characters');
       return;
     }
+    this.updateUrlState();
     this.performSearch(query);
   }
 
@@ -135,6 +206,8 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
         next: (results) => {
           this.searchResults.set(results);
           this.isSearching.set(false);
+          // Update URL with current scroll position after search
+          this.updateUrlState();
         },
         error: () => {
           this.notificationService.showError('Search failed');
@@ -155,6 +228,9 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
         this.verifiedOnly.update(v => !v);
         break;
     }
+
+    // Update URL with new filter state
+    this.updateUrlState();
 
     // Re-search if there's a query
     const query = this.searchQuery().trim();
@@ -207,21 +283,39 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
     });
   }
 
+  private hasStatus(user: UserSearchResult, status: string): boolean {
+    return user.relationshipStatuses.some(r => r.status === status);
+  }
+
   canFollow(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'NONE' && user.isVerified;
+    return !this.hasStatus(user, 'FRIEND') &&
+      !this.hasStatus(user, 'FOLLOWED') &&
+      user.isVerified;
   }
 
   canAddFriend(user: UserSearchResult): boolean {
-    return user.relationshipStatus !== 'FRIEND' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_SENT' &&
-           user.relationshipStatus !== 'PENDING_REQUEST_INCOMING';
+    return !this.hasStatus(user, 'FRIEND') &&
+      !this.hasStatus(user, 'PENDING_REQUEST_SENT') &&
+      !this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasIncomingRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_INCOMING';
+    return this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasPendingSentRequest(user: UserSearchResult): boolean {
-    return user.relationshipStatus === 'PENDING_REQUEST_SENT';
+    return this.hasStatus(user, 'PENDING_REQUEST_SENT');
+  }
+
+  /**
+   * Get the primary relationship status for display purposes.
+   * Returns the most relevant status (FRIEND > PENDING_REQUEST_INCOMING > PENDING_REQUEST_SENT > FOLLOWED)
+   */
+  getRelationshipStatus(user: UserSearchResult): string | null {
+    if (this.hasStatus(user, 'FRIEND')) return 'FRIEND';
+    if (this.hasStatus(user, 'PENDING_REQUEST_INCOMING')) return 'PENDING_REQUEST_INCOMING';
+    if (this.hasStatus(user, 'PENDING_REQUEST_SENT')) return 'PENDING_REQUEST_SENT';
+    if (this.hasStatus(user, 'FOLLOWED')) return 'FOLLOWED';
+    return null;
   }
 }

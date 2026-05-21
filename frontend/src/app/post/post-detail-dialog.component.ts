@@ -40,6 +40,19 @@ export class PostDetailDialogComponent implements OnChanges {
   @Input() canDelete = true;
   @Input() resolvedMediaUrl: string | null = null;
 
+  /**
+   * Cached image URL for instant display while full post data loads.
+   * Used when opening from search preview to avoid waiting for image fetch.
+   */
+  @Input() cachedImageUrl: string | null = null;
+
+  /**
+   * Controls the visibility of the dialog from the parent component.
+   * Allows two-way binding for controlling dialog open/close state.
+   */
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();
 
@@ -75,6 +88,8 @@ export class PostDetailDialogComponent implements OnChanges {
     this.replyingTo.set(null);
     this.cancelEdit();
     this.sourcesExpanded.set(false);
+    this.visible = false;
+    this.visibleChange.emit(false);
     this.dismissed.emit();
   }
 
@@ -123,6 +138,16 @@ export class PostDetailDialogComponent implements OnChanges {
 
   protected postMediaUrl(): string | null {
     return this.resolvedMediaUrl;
+  }
+
+  /**
+   * Get the media URL for display, using cached image if available for instant display.
+   * Falls back to the post's mediaUrl if no cached image is provided.
+   */
+  protected displayMediaUrl(post: PostResponse): string | null {
+    // Use cached image URL first (for instant display from search preview)
+    // Fall back to the post's actual media URL
+    return this.cachedImageUrl ?? post.mediaUrl;
   }
 
   protected postSources(post: PostResponse): SingleSourceResponse[] {

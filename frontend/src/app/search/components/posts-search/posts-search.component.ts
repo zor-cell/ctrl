@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, OnDestroy, Injector, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil} from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom, forkJoin, from, Observable, Subject, switchMap, takeUntil } from 'rxjs';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -9,19 +10,14 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { MultiSelectModule, MultiSelectFilterEvent } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { CardModule } from 'primeng/card';
-import { AvatarModule } from 'primeng/avatar';
-import { TooltipModule } from 'primeng/tooltip';
-import { TagModule } from 'primeng/tag';
-import { DialogModule } from 'primeng/dialog';
 
 import { SearchService } from '../../services/search.service';
 import { TopicService } from '../../../algorithm/topic.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { Post } from '../../../feed/dto/Post';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../post/dto/TopicResponse';
-import { PostService, VoteType } from '../../../post/post.service';
-import { CommentsComponent } from '../../../feed/components/comments/comments.component';
+import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
 
 /**
  * Posts Search Component
@@ -29,10 +25,9 @@ import { CommentsComponent } from '../../../feed/components/comments/comments.co
  * Features:
  * - Search by text query (3+ characters) - triggers on button click or Enter
  * - Topic multi-select filter (OR logic)
- * - Algorithm config button (opens config dialog)
- * - Loading spinner during search (embedding takes time)
- * - Results displayed as feed posts
- * - Empty state message when no search performed
+ * - Results displayed in a grid preview layout (similar to profile page)
+ * - Clicking a post navigates to /posts/{postId} detail page
+ * - Sticky search bar that stays at top when scrolling
  */
 @Component({
   selector: 'app-posts-search',
@@ -46,21 +41,22 @@ import { CommentsComponent } from '../../../feed/components/comments/comments.co
     InputIconModule,
     MultiSelectModule,
     ProgressSpinnerModule,
-    CardModule,
-    AvatarModule,
-    TooltipModule,
-    TagModule,
-    DialogModule,
-    CommentsComponent,
+    PostPreviewCardComponent,
   ],
   templateUrl: './posts-search.component.html',
   styleUrl: './posts-search.component.scss',
 })
-export class PostsSearchComponent implements OnInit {
+
+export class PostsSearchComponent implements OnInit, OnDestroy {
   private searchService = inject(SearchService);
   private topicService = inject(TopicService);
   private notificationService = inject(NotificationService);
-  private postService = inject(PostService);
+  private mediaCacheService = inject(MediaCacheService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private injector = inject(Injector);
+
+  private _destroy$ = new Subject<void>();
 
   // Search state
   searchQuery = signal<string>('');
@@ -88,14 +84,12 @@ export class PostsSearchComponent implements OnInit {
     if (query) {
       sorted = sorted
         .map(t => ({ topic: t, score: this.scoreMatch(t.name, query) }))
-        .filter(x => x.score > 0 || selected.has(x.topic.topicId)) // Keep selected even if not matching
+        .filter(x => x.score > 0 || selected.has(x.topic.topicId))
         .sort((a, b) => {
-          // Selected items always at the top
           const aSelected = selected.has(a.topic.topicId);
           const bSelected = selected.has(b.topic.topicId);
           if (aSelected && !bSelected) return -1;
           if (!aSelected && bSelected) return 1;
-          // Then by match score
           return b.score - a.score;
         })
         .map(x => x.topic);
@@ -105,22 +99,41 @@ export class PostsSearchComponent implements OnInit {
   });
 
   // Results state
-  searchResults = signal<Post[]>([]);
+  searchResults = signal<PostPreview[]>([]);
   isSearching = signal<boolean>(false);
   hasSearched = signal<boolean>(false);
 
-  // Infinite scroll / pagination
+  // Pagination
   currentPage = signal<number>(0);
   hasMoreResults = signal<boolean>(true);
-  private readonly postsPerPage = 20;
-
-  // Comments dialog state
-  commentsDialogVisible = signal<boolean>(false);
-  selectedPostForComments = signal<Post | null>(null);
-
-  private _destroy$ = new Subject<void>();
+  private readonly postsPerPage = 21;
 
   ngOnInit(): void {
+    // Data is resolved by the route resolver BEFORE component renders
+    // This prevents any UI flicker of empty state
+    const resolvedData = this.route.snapshot.data['searchData'];
+
+    if (resolvedData) {
+      // Initialize from resolved data (cache or URL params)
+      this.searchQuery.set(resolvedData.query);
+      this.selectedTopics.set(resolvedData.topics);
+
+      if (resolvedData.query || resolvedData.topics.length > 0) {
+        this.hasSearched.set(true);
+
+        if (resolvedData.fromCache && resolvedData.results) {
+          this.searchResults.set(resolvedData.results);
+          this.hasMoreResults.set(resolvedData.results.length === this.postsPerPage);
+          // Restore scroll position after DOM update
+          if (resolvedData.scrollY > 0) {
+            afterNextRender(() => {
+              window.scrollTo({ top: resolvedData.scrollY, behavior: 'auto' });
+            }, { injector: this.injector });
+          }
+        }
+      }
+    }
+
     // Load available topics
     this.topicService.getTopics().subscribe({
       next: (topics) => {
@@ -132,21 +145,72 @@ export class PostsSearchComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this._destroy$.next();
+    this._destroy$.complete();
+  }
+
+  /**
+   * Update URL with current search state
+   */
+  private updateUrlState(): void {
+    const queryParams: Record<string, string> = {};
+
+    if (this.searchQuery()) {
+      queryParams['q'] = this.searchQuery();
+    }
+
+    if (this.selectedTopics().length > 0) {
+      queryParams['topics'] = this.selectedTopics().join(',');
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+      replaceUrl: true
+    });
+  }
+
   onSearchInputChange(query: string): void {
     this.searchQuery.set(query);
+    // Debounce URL update for query changes (don't search yet, just update URL)
+    if (this.searchQuery().length >= 3 || this.searchQuery().length === 0) {
+      this.updateUrlState();
+    }
   }
 
   onTopicFilter(event: MultiSelectFilterEvent): void {
     this.filterQuery.set(event.filter ?? '');
   }
 
-  clearSearch(): void {
+  /**
+   * Handle topic selection changes - update URL state
+   */
+  onTopicsChange(topics: string[]): void {
+    this.selectedTopics.set(topics);
+    this.currentPage.set(0);
+    this.updateUrlState();
+  }
+
+  clearSearch(inputElement?: HTMLInputElement): void {
     this.searchQuery.set('');
     this.selectedTopics.set([]);
     this.searchResults.set([]);
     this.hasSearched.set(false);
     this.currentPage.set(0);
     this.hasMoreResults.set(true);
+
+    // Clear cache and URL parameters
+    this.searchService.clearPostSearchCache();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: undefined,
+      replaceUrl: true
+    });
+
+    if (inputElement) {
+      setTimeout(() => inputElement.focus(), 0);
+    }
   }
 
   canSearch(): boolean {
@@ -164,10 +228,15 @@ export class PostsSearchComponent implements OnInit {
     // Reset pagination
     this.currentPage.set(0);
     this.hasMoreResults.set(true);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+
+    // Update URL with search state
+    this.updateUrlState();
     this.performSearch();
   }
 
   private performSearch(): void {
+    this.searchResults.set([]);
     this.isSearching.set(true);
     this.hasSearched.set(true);
 
@@ -178,11 +247,13 @@ export class PostsSearchComponent implements OnInit {
       postsPerPage: this.postsPerPage,
     };
 
-    this.searchService
-      .searchPosts(request)
-      .pipe(takeUntil(this._destroy$))
+    this.searchService.searchPosts(request)
+      .pipe(
+        takeUntil(this._destroy$),
+        switchMap(results => this.handleSearchResults(results))
+      )
       .subscribe({
-        next: (results) => {
+        next: results => {
           if (this.currentPage() === 0) {
             this.searchResults.set(results);
           } else {
@@ -191,12 +262,48 @@ export class PostsSearchComponent implements OnInit {
           this.hasMoreResults.set(results.length === this.postsPerPage);
           this.isSearching.set(false);
         },
-        error: (error) => {
-          this.notificationService.showError('Search failed. Please try again.');
+        error: err => {
+          this.notificationService.showError(err);
           this.isSearching.set(false);
-          console.error('Search error:', error);
-        },
+        }
       });
+  }
+
+  private handleSearchResults(results: PostPreview[]): Observable<PostPreview[]> {
+    return forkJoin(results.map(post => from(this.resolveSearchMedia(post))));
+  }
+
+  /**
+   * Resolve media URLs (images/videos) for search results.
+   * Processes videoImageRef and userProfilePic through the media cache.
+   */
+  private async resolveSearchMedia(post: PostPreview): Promise<PostPreview> {
+    if (post.userProfilePic) {
+      post.userProfilePic = await this.resolveMedia(
+        post.userProfilePic,
+        'image',
+        'normal'
+      ) ?? '';
+    }
+
+    if (post.mediaUrl) {
+      post.mediaUrl = await this.resolveMedia(post.mediaUrl, this.mediaKind(post.mediaUrl), 'high');
+    }
+    return post;
+  }
+
+  private async resolveMedia(
+    mediaUrl: string | null | undefined,
+    kind: 'image' | 'video',
+    priority: 'normal' | 'high'
+  ): Promise<string | null> {
+    return firstValueFrom(
+      this.mediaCacheService.resolveMediaUrl(mediaUrl, kind, priority)
+    ).catch(() => null);
+  }
+
+  private mediaKind(mediaUrl: string): 'image' | 'video' {
+    return /\.(mp4|webm|mov)(\?|#|$)/i.test(mediaUrl) ? 'video' : 'image';
   }
 
   loadMore(): void {
@@ -204,135 +311,17 @@ export class PostsSearchComponent implements OnInit {
       return;
     }
     this.currentPage.update(page => page + 1);
+    this.updateUrlState();
     this.performSearch();
   }
 
-  // Post interaction methods
-  async votePost(post: Post, voteType: VoteType): Promise<void> {
-    const previousVote = post.userVote;
-    const previousUpvotes = post.upvotes;
-    const previousDownvotes = post.downvotes;
-
-    // Optimistic update
-    const isSameVote = post.userVote === voteType;
-    const optimistic = this.calcOptimisticVote(post.upvotes, post.downvotes, post.userVote, voteType, isSameVote);
-    this.patchPost(post.postId, optimistic);
-
-    try {
-      const result = await this.postService.votePost(post.postId, voteType);
-      this.patchPost(post.postId, {
-        upvotes: result.upvotes,
-        downvotes: result.downvotes,
-        userVote: result.userVote,
-      });
-    } catch (err) {
-      // Revert on error
-      this.patchPost(post.postId, {
-        upvotes: previousUpvotes,
-        downvotes: previousDownvotes,
-        userVote: previousVote,
-      });
-      this.notificationService.showError('Failed to vote on post');
-    }
-  }
-
-  async voteSource(post: Post, voteType: VoteType): Promise<void> {
-    const source = post.sourceIds?.[0];
-    if (!source?.sourceId) return;
-
-    const previousVote = source.userVote;
-    const previousUpvotes = source.upvotes;
-    const previousDownvotes = source.downvotes;
-
-    const isSameVote = source.userVote === voteType;
-    const optimistic = this.calcOptimisticVote(source.upvotes, source.downvotes, source.userVote, voteType, isSameVote);
-    this.patchSource(post.postId, optimistic);
-
-    try {
-      const result = await this.postService.voteSource(source.sourceId, voteType);
-      this.patchSource(post.postId, {
-        upvotes: result.upvotes,
-        downvotes: result.downvotes,
-        userVote: result.userVote,
-      });
-    } catch (err) {
-      this.patchSource(post.postId, {
-        upvotes: previousUpvotes,
-        downvotes: previousDownvotes,
-        userVote: previousVote,
-      });
-      this.notificationService.showError('Failed to vote on source');
-    }
-  }
-
-  openCommentsDialog(post: Post): void {
-    this.selectedPostForComments.set(post);
-    this.commentsDialogVisible.set(true);
-  }
-
-  // Helper methods
-  private calcOptimisticVote(
-    upvotes: number,
-    downvotes: number,
-    currentVote: 'up' | 'down' | null | undefined,
-    voteType: VoteType,
-    isSameVote: boolean
-  ): { upvotes: number; downvotes: number; userVote: VoteType | null } {
-    if (isSameVote) {
-      if (voteType === 'up') upvotes = Math.max(0, upvotes - 1);
-      else downvotes = Math.max(0, downvotes - 1);
-      return { upvotes, downvotes, userVote: null };
-    }
-    if (voteType === 'up') {
-      upvotes += 1;
-      if (currentVote === 'down') downvotes = Math.max(0, downvotes - 1);
-    } else {
-      downvotes += 1;
-      if (currentVote === 'up') upvotes = Math.max(0, upvotes - 1);
-    }
-    return { upvotes, downvotes, userVote: voteType };
-  }
-
-  private patchPost(postId: string, patch: Partial<Post>): void {
-    this.searchResults.update(posts =>
-      posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
-    );
-  }
-
-  private patchSource(postId: string, patch: Partial<Post['sourceIds'][0]>): void {
-    this.searchResults.update(posts =>
-      posts.map(p => {
-        if (p.postId !== postId || !p.sourceIds?.length) return p;
-        const updatedSources = p.sourceIds.map((s, i) =>
-          i === 0 ? { ...s, ...patch } : s
-        );
-        return { ...p, sourceIds: updatedSources };
-      })
-    );
-  }
-
-  getDomain(url: string): string {
-    try {
-      return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
-  }
-
-  timeAgo(createdAt: string): string {
-    const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
-    const diffMs = Date.now() - new Date(normalized).getTime();
-    const minutes = Math.floor(diffMs / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} min ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
-
-  isVideo(url: string): boolean {
-    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+  /**
+   * Handle post selection from the preview grid - navigate to post detail page
+   * Saves current scroll position in search service cache
+   */
+  onPostSelected(preview: PostPreview): void {
+    this.searchService.saveScrollPosition(window.scrollY);
+    this.router.navigate(['/posts', preview.postId]);
   }
 
   /**
@@ -347,21 +336,22 @@ export class PostsSearchComponent implements OnInit {
    */
   getTopicDisplayName(topicId: string): string {
     const topic = this.availableTopics().find(t => t.topicId === topicId);
-    return topic ? `${topic.name}` : topicId;
+    return topic ? topic.name : topicId;
   }
 
   /**
-   * Scores how well `name` matches `query` (the query must already be lower-cased).
+   * Scores how well `name` matches `query`.
    *   3 – exact match
    *   2 – starts with query
-   *   1 – contains query (anywhere)
+   *   1 – contains query
    *   0 – no match
    */
   private scoreMatch(name: string, query: string): number {
     const n = name.toLowerCase();
-    if (n === query) return 3;
-    if (n.startsWith(query)) return 2;
-    if (n.includes(query)) return 1;
+    const q = query.toLowerCase();
+    if (n === q) return 3;
+    if (n.startsWith(q)) return 2;
+    if (n.includes(q)) return 1;
     return 0;
   }
 }

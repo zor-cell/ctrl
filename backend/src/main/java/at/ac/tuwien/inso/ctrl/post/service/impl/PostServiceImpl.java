@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
@@ -259,5 +260,21 @@ public class PostServiceImpl implements PostService {
     return userRepository
         .findByUsername(username)
         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+  }
+
+  @Override
+  public PostResponse getPostById(String postId, String username) {
+    Post post = this.fetchPost(postId);
+    User user = this.fetchUser(username);
+
+    if (!post.isPublic()) {
+      if (post.getUser() != null
+          && !post.getUser().getUsername().equals(username)
+          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+        throw new UnauthorizedException("post with Id " + postId);
+      }
+    }
+
+    return this.postMapper.toResponse(post);
   }
 }

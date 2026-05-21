@@ -63,6 +63,12 @@ export const routes: Routes = [
       import('./search/search.routes').then(m => m.searchRoutes),
   },
   {
+    path: 'posts/:postId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./post/components/post-detail-page/post-detail-page.component').then(m => m.PostDetailPageComponent),
+  },
+  {
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () =>

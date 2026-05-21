@@ -1,0 +1,280 @@
+<div class="post-detail-page">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <p-progressSpinner />
+      <p>Loading post...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error(); as errorMessage) {
+    <div class="error-state">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>{{ errorMessage }}</p>
+      <p-button
+        label="Go back"
+        icon="pi pi-arrow-left"
+        (onClick)="goBack()"
+        severity="secondary" />
+    </div>
+  }
+
+  <!-- Post Content -->
+  @if (post(); as currentPost) {
+    <!-- Back Button - positioned to the left of centered content -->
+    <div class="back-button-outside">
+      <p-button
+        icon="pi pi-arrow-left"
+        (onClick)="goBack()"
+        severity="secondary"
+        [text]="true"
+        size="small" />
+    </div>
+
+    <div class="post-content">
+      <!-- Post Card -->
+      <p-card styleClass="post-card">
+          <!-- Header with Author -->
+          <ng-template pTemplate="header">
+            <div class="post-header">
+              <div class="post-author">
+                <p-avatar
+                  [label]="currentPost.username.charAt(0).toUpperCase()"
+                  shape="circle" />
+                <div class="author-info">
+                  <span class="username">{{ currentPost.username }}</span>
+                  <span class="timestamp">{{ timeAgo(currentPost.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+
+        <!-- Media -->
+        @if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
+          <img
+            [src]="postMediaUrl(currentPost)!"
+            alt=""
+            class="post-media" />
+        } @else if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
+          <video
+            [src]="postMediaUrl(currentPost)!"
+            controls
+            class="post-media"></video>
+        }
+
+        <!-- Caption -->
+        <p class="post-caption">{{ currentPost.caption }}</p>
+
+        <!-- Sources -->
+        @if (postSources(currentPost).length > 0) {
+          <div class="sources-section">
+            <p-button
+              [label]="sourcesButtonLabel(currentPost)"
+              icon="pi pi-book"
+              severity="secondary"
+              size="small"
+              [text]="true"
+              (onClick)="toggleSources()" />
+
+            @if (sourcesExpanded()) {
+              <div class="sources-list">
+                @for (source of postSources(currentPost); track source.singleSourceId) {
+                  <div class="source-item">
+                    @if (source.title) {
+                      <h4>{{ source.title }}</h4>
+                    }
+                    @if (source.author) {
+                      <p class="source-author">{{ source.author }}</p>
+                    }
+                    @if (source.journal) {
+                      <p class="source-journal">{{ source.journal }}</p>
+                    }
+                    @if (source.url) {
+                      <a [href]="source.url" target="_blank" rel="noreferrer" class="source-link">
+                        {{ displaySourceUrl(source.url) }}
+                      </a>
+                    }
+                    @if (formattedSourceDate(source)) {
+                      <p class="source-date">{{ formattedSourceDate(source) }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </p-card>
+
+      <!-- Comments Section -->
+      <div class="comments-section">
+        <h2>Comments ({{ commentCount() }})</h2>
+
+        @if (loadingComments()) {
+          <div class="comments-loading">
+            <p-progressSpinner styleClass="small-spinner" />
+            <span>Loading comments...</span>
+          </div>
+        } @else if (topLevelComments().length > 0) {
+          <div class="comments-list">
+            @for (comment of topLevelComments(); track comment.commentId) {
+              <div class="comment">
+                <div class="comment-avatar">
+                  @if (comment.userProfilePic) {
+                    <img [src]="comment.userProfilePic" alt="" />
+                  } @else {
+                    {{ commentAvatarInitial(comment) }}
+                  }
+                </div>
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-username">{{ comment.username }}</span>
+                    <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
+                    @if (comment.edited) {
+                      <span class="comment-edited">edited</span>
+                    }
+                  </div>
+
+                  @if (editingCommentId() === comment.commentId) {
+                    <div class="edit-form">
+                      <textarea
+                        class="comment-input"
+                        rows="2"
+                        [value]="editDraft()"
+                        (input)="updateEditDraft($event)"></textarea>
+                      <div class="edit-actions">
+                        <button
+                          type="button"
+                          [disabled]="!editDraft().trim()"
+                          (click)="saveEdit(comment.commentId)">
+                          Save
+                        </button>
+                        <button type="button" (click)="cancelEdit()">Cancel</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <p class="comment-content">{{ comment.content }}</p>
+                    <div class="comment-actions">
+                      <button type="button" class="reply-btn" (click)="setReplyingTo(comment)">
+                        <i class="pi pi-reply"></i>
+                        Reply
+                      </button>
+                      @if (isOwnComment(comment)) {
+                        <button
+                          type="button"
+                          class="comment-action-btn edit-btn"
+                          (click)="startEdit(comment)">
+                          <i class="pi pi-pencil"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="comment-action-btn delete-btn"
+                          (click)="deleteComment(comment.commentId)">
+                          <i class="pi pi-trash"></i>
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  <!-- Replies -->
+                  @for (reply of repliesFor(comment.commentId); track reply.commentId) {
+                    <div class="comment reply">
+                      <div class="comment-avatar reply-avatar">
+                        @if (reply.userProfilePic) {
+                          <img [src]="reply.userProfilePic" alt="" />
+                        } @else {
+                          {{ commentAvatarInitial(reply) }}
+                        }
+                      </div>
+                      <div class="comment-body">
+                        <div class="comment-header">
+                          <span class="comment-username">{{ reply.username }}</span>
+                          <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
+                          @if (reply.edited) {
+                            <span class="comment-edited">edited</span>
+                          }
+                        </div>
+
+                        @if (editingCommentId() === reply.commentId) {
+                          <div class="edit-form">
+                            <textarea
+                              class="comment-input"
+                              rows="2"
+                              [value]="editDraft()"
+                              (input)="updateEditDraft($event)"></textarea>
+                            <div class="edit-actions">
+                              <button
+                                type="button"
+                                [disabled]="!editDraft().trim()"
+                                (click)="saveEdit(reply.commentId)">
+                                Save
+                              </button>
+                              <button type="button" (click)="cancelEdit()">Cancel</button>
+                            </div>
+                          </div>
+                        } @else {
+                          <p class="comment-content">{{ reply.content }}</p>
+                          @if (isOwnComment(reply)) {
+                            <div class="comment-actions">
+                              <button
+                                type="button"
+                                class="comment-action-btn edit-btn"
+                                (click)="startEdit(reply)">
+                                <i class="pi pi-pencil"></i>
+                              </button>
+                              <button
+                                type="button"
+                                class="comment-action-btn delete-btn"
+                                (click)="deleteComment(reply.commentId)">
+                                <i class="pi pi-trash"></i>
+                              </button>
+                            </div>
+                          }
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="comments-empty">
+            <i class="pi pi-comment"></i>
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        }
+
+        <!-- Comment Input -->
+        <div class="comment-input-section">
+          @if (replyingTo()) {
+            <div class="replying-to-banner">
+              <span>
+                Replying to <strong>{{ replyingTo()!.username }}</strong>
+              </span>
+              <button type="button" (click)="cancelReply()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          }
+          <div class="comment-input-row">
+            <input
+              type="text"
+              [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+              [value]="commentDraft()"
+              [disabled]="submittingComment()"
+              (input)="updateCommentDraft($event)"
+              (keydown.enter)="submitComment()" />
+            <button
+              type="button"
+              aria-label="Send comment"
+              [disabled]="!canSubmitComment() || submittingComment()"
+              (click)="submitComment()">
+              <i class="pi pi-send"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

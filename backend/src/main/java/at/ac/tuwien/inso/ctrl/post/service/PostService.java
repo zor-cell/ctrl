@@ -18,6 +18,15 @@ public interface PostService {
   PostResponse createPost(CreatePostRequest request, String username);
 
   /**
+   * Fetches a post.
+   *
+   * @param postId the Id of the requested post
+   * @param username the username of the authenticated user
+   * @return the post as response DTO
+   */
+  PostResponse getPostById(String postId, String username);
+
+  /**
    * Processes an upvote or downvote for a post. Submitting the same vote again toggles (removes)
    * the existing vote.
    *

@@ -39,6 +39,12 @@ public class PostController {
     return postService.getProfilePostsForUser(username, userDetails.getUsername());
   }
 
+  @GetMapping("/{postId}")
+  public PostResponse getPostById(
+      @PathVariable String postId, @AuthenticationPrincipal UserDetails userDetails) {
+    return postService.getPostById(postId, userDetails.getUsername());
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public PostResponse createPost(

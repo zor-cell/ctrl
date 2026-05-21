@@ -59,6 +59,20 @@ export class PostService {
   }
 
   /**
+   * Fetches a single post by its ID.
+   *
+   * GET /posts/{postId}
+   *
+   * @param postId - The unique identifier of the post
+   * @returns A promise that resolves to the {@link PostResponse}
+   */
+  async getPostById(postId: string): Promise<PostResponse> {
+    return firstValueFrom(
+      this.httpClient.get<PostResponse>(`${this.baseUri}/${postId}`)
+    );
+  }
+
+  /**
    * Sends an upvote or downvote for a post to the backend.
    * Sending the same vote type again toggles (removes) the existing vote.
    *

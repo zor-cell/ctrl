@@ -222,8 +222,89 @@ public interface PostRepository extends JpaRepository<Post, String> {
       @Param("poolSize") int poolSize,
       @Param("fetchOld") boolean fetchOld);
 
-  List<PostScoreProjection> searchPostsBySimilarityOnly(
-      UUID userId, float[] queryEmbedding, String[] topicList, int pageSize, int totalRequested);
+  /**
+   * Searches for posts based on a query and a topic list. Includes only posts labeled with at least
+   * one of the specified topics. Posts are ranked based on a calculated score: 70% normalized word
+   * frequency in the caption, 30% embedding cosine distance.
+   */
+  @Query(
+      value =
+          """
+              SELECT p.*,
+                  0.7 * (
+                      (SELECT COUNT(*)::float
+                      FROM unnest(ARRAY[:queryWords]) AS word
+                      WHERE LOWER(p.caption) LIKE '%' || LOWER(word) || '%'
+                      ) / CARDINALITY(ARRAY[:queryWords])
+                  ) +
+                  0.3 * (1 - (p.embedding <=> CAST(:queryEmbedding AS real[])::vector)) AS totalScore
+              FROM posts p
+              JOIN post_topics pt ON pt.post_id = p.post_id
+              WHERE p.is_public = true
+                AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND pt.topic_id = ANY(ARRAY[:topicList])
+              ORDER BY totalScore DESC
+              LIMIT 200
+          """,
+      nativeQuery = true)
+  List<Post> searchPostsBySimilarityAndTopics(
+      @Param("userId") UUID userId,
+      @Param("queryWords") String[] queryWords,
+      @Param("queryEmbedding") float[] queryEmbedding,
+      @Param("topicList") String[] topicList,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * Selects the most recent posts not created by the given user containing at least one of the
+   * topics provided, supports pagination
+   */
+  @Query(
+      value =
+          """
+          SELECT p.* from posts p
+          JOIN post_topics pt ON pt.post_id = p.post_id
+            WHERE p.is_public = true
+            AND (p.user_id IS NULL OR p.user_id != :userId)
+            AND pt.topic_id = ANY(ARRAY[:topicList])
+          ORDER BY p.created_at DESC
+          LIMIT :pageSize OFFSET :offset
+          """,
+      nativeQuery = true)
+  List<Post> searchPostsByTopics(
+      @Param("userId") UUID userId,
+      @Param("topicList") String[] topicList,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * Searches for posts based on a query. Posts are ranked based on a calculated score: 70%
+   * normalized word frequency in the caption, 30% embedding cosine distance.
+   */
+  @Query(
+      value =
+          """
+              SELECT p.*,
+                  0.7 * (
+                      (SELECT COUNT(*)::float
+                      FROM unnest(ARRAY[:queryWords]) AS word
+                      WHERE LOWER(p.caption) LIKE '%' || LOWER(word) || '%'
+                      ) / CARDINALITY(ARRAY[:queryWords])
+                  ) +
+                  0.3 * (1 - (p.embedding <=> CAST(:queryEmbedding AS real[])::vector)) AS totalScore
+              FROM posts p
+              WHERE p.is_public = true
+                AND (p.user_id IS NULL OR p.user_id != :userId)
+              ORDER BY totalScore DESC
+              LIMIT 200
+          """,
+      nativeQuery = true)
+  List<Post> searchPostsBySimilarity(
+      @Param("userId") UUID userId,
+      @Param("queryWords") String[] queryWords,
+      @Param("queryEmbedding") float[] queryEmbedding,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
 
   @Query("SELECT p FROM Post p ORDER BY p.createdAt DESC")
   Page<Post> findAllPaginated(Pageable pageable);
