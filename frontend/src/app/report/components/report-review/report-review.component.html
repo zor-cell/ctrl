@@ -12,6 +12,9 @@
       <p-tab value="sources" (click)="changeToSources()">
         <i class="pi pi-link"></i> Sources
       </p-tab>
+      <p-tab value="comments" (click)="changeToComments()">
+        <i class="pi pi-comment"></i> Comments
+      </p-tab>
     </p-tablist>
 
     <p-tabpanels>
@@ -51,10 +54,111 @@
         </div>
       </p-tabpanel>
 
+      <p-tabpanel value="comments">
+        <div class="sources-list">
+          @if (reportedComments().length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-inbox"></i>
+              <p>No reported comments.</p>
+            </div>
+          }
+          @for (report of reportedComments(); track report.reportId) {
+            <section class="post-card reported-source">
+              <ng-container *ngTemplateOutlet="reportedCommentCard; context: { report: report }" />
+            </section>
+          }
+        </div>
+      </p-tabpanel>
+
     </p-tabpanels>
   </p-tabs>
 
 </div>
+<!-- ─── Reported Comment Card Template ─── -->
+<ng-template #reportedCommentCard let-report="report">
+
+  <!-- Report Info Banner -->
+  <div class="report-info-banner">
+    <div class="report-info-left">
+      <div class="report-badge">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Reported</span>
+      </div>
+    </div>
+    <span class="report-date">{{ timeAgo(report.reportedAt) }}</span>
+  </div>
+
+  <!-- Report Details -->
+  <div class="report-details">
+    <div class="report-detail-item">
+      <span class="label">Reported by:</span>
+      <span class="value">{{ report.reportedByUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reported User:</span>
+      <span class="value">{{ report.reportedUsername }}</span>
+    </div>
+    <div class="report-detail-item">
+      <span class="label">Reason:</span>
+      <span class="value">{{ getReason(report.reportReason) }}</span>
+    </div>
+    <div class="report-detail-item full-width">
+      <span class="label">Description:</span>
+      <p class="value">{{ report.reportDescription }}</p>
+    </div>
+  </div>
+
+  <!-- Comment Info -->
+  @if (report.comment) {
+    <div class="comment">
+      <p-avatar
+        [image]="report.comment.userProfilePic"
+        shape="circle"
+        [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
+      />
+      <div class="comment-body">
+        <div class="comment-header">
+          <span class="comment-username">{{ report.comment.username }}</span>
+          <span class="comment-time">{{ timeAgo(report.comment.createdAt) }}</span>
+          @if (report.comment.edited) {
+            <span class="comment-edited">edited</span>
+          }
+        </div>
+        <p class="comment-content">{{ report.comment.content }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="post-actions">
+    <div class="report-actions">
+      <p-button
+        label="View Account Report History"
+        severity="info"
+        size="small"
+        (onClick)="viewReportSummary(report.reportId)"
+        icon="pi pi-list"
+      />
+      <p-button
+        label="Actions"
+        severity="warn"
+        size="small"
+        (onClick)="openActionDialog(report)"
+        icon="pi pi-ellipsis-v"
+      />
+
+      <p-button
+        label="Dismiss"
+        severity="success"
+        size="small"
+        (onClick)="dismissReport(report.reportId)"
+        icon="pi pi-check"
+      />
+    </div>
+  </div>
+
+</ng-template>
+
 
 <!-- ─── Reported Post Card Template ─── -->
 <ng-template #reportedPostCard let-report="report">

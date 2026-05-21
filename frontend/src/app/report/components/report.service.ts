@@ -2,11 +2,12 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService } from '../../core/services/notification.service';
-import {Report, ReportAction, ReportStatus} from '../dto/report';
-import {firstValueFrom, tap} from 'rxjs';
+import { Report, ReportAction, ReportStatus } from '../dto/report';
+import { firstValueFrom, tap } from 'rxjs';
 import { ReportedPostResponse } from '../dto/ReportedPostResponse';
-import {ReportedSourceResponse} from '../dto/ReportedSourceResponse';
-import {ReportSummaryResponse} from '../dto/ReportSummaryResponse';
+import { ReportedSourceResponse } from '../dto/ReportedSourceResponse';
+import { ReportSummaryResponse } from '../dto/ReportSummaryResponse';
+import { ReportedCommentResponse } from '../dto/ReportedCommentResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -52,12 +53,24 @@ export class ReportService {
 
   async getReportedSource(
     status = ReportStatus.CREATED,
-    page=0,
+    page = 0,
     postsPerPage = 20,
   ): Promise<ReportedSourceResponse[]> {
     return await firstValueFrom(
       this.httpClient.get<ReportedSourceResponse[]>(
         `${this.baseUri}/sources?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
+      ),
+    );
+  }
+
+  async getReportedComments(
+    status = ReportStatus.CREATED,
+    page = 0,
+    postsPerPage = 20,
+  ): Promise<ReportedCommentResponse[]> {
+    return await firstValueFrom(
+      this.httpClient.get<ReportedCommentResponse[]>(
+        `${this.baseUri}/comments?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
       ),
     );
   }

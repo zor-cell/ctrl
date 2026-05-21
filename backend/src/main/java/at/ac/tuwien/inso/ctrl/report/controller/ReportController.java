@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.report.controller;
 
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportedCommentResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
@@ -44,6 +45,16 @@ public class ReportController {
       @RequestParam(defaultValue = "20") int postsPerPage) {
 
     return reportService.getReportedPosts(status, page, postsPerPage);
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @GetMapping("/comments")
+  public List<ReportedCommentResponse> getReportedCommentsWithStatusCreated(
+      @RequestParam(defaultValue = "CREATED") ReportStatus status,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int postsPerPage) {
+
+    return reportService.getReportedComments(status, page, postsPerPage);
   }
 
   @PreAuthorize("hasRole('ADMIN')")

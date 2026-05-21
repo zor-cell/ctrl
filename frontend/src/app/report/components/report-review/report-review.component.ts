@@ -18,6 +18,7 @@ import { ReportSummaryResponse } from '../../dto/ReportSummaryResponse';
 import { TableModule } from 'primeng/table';
 import { Dialog } from 'primeng/dialog';
 import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-cache.service';
+import { ReportedCommentResponse } from '../../dto/ReportedCommentResponse';
 
 @Component({
   selector: 'app-report-review',
@@ -53,15 +54,16 @@ export class ReportReviewComponent implements OnInit {
   protected postMediaUrls = signal<Record<string, string>>({});
   protected failedProfilePictures = signal<Set<string>>(new Set());
   protected reportedSources = signal<ReportedSourceResponse[]>([]);
+  protected reportedComments = signal<ReportedCommentResponse[]>([]);
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
   protected summaryDialogVisible = signal(false);
   protected reportSummaryData = signal<ReportSummaryResponse[]>([]);
 
   protected actionDialogVisible = signal(false);
-  protected selectedReport = signal<ReportedPostResponse | ReportedSourceResponse | null>(null);
+  protected selectedReport = signal<ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | null>(null);
 
-  openActionDialog(report: ReportedPostResponse | ReportedSourceResponse) {
+  openActionDialog(report: ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse) {
     this.selectedReport.set(report);
     this.actionDialogVisible.set(true);
   }
@@ -83,6 +85,12 @@ export class ReportReviewComponent implements OnInit {
     this.reportedSources.set(reports);
     console.log(reports);
     this.currentTab.set(ContentTypeEnum.SOURCE);
+  }
+
+  async changeToComments() {
+    const reports = await this.reportService.getReportedComments();
+    this.reportedComments.set(reports);
+    this.currentTab.set(ContentTypeEnum.COMMENT);
   }
 
   isVideo(url: string): boolean {
@@ -150,6 +158,10 @@ export class ReportReviewComponent implements OnInit {
       );
     } else if (this.currentTab() === ContentTypeEnum.SOURCE) {
       this.reportedSources.update((reports) =>
+        reports.filter((report) => report.reportId !== reportId),
+      );
+    } else if (this.currentTab() === ContentTypeEnum.COMMENT) {
+      this.reportedComments.update((reports) =>
         reports.filter((report) => report.reportId !== reportId),
       );
     }

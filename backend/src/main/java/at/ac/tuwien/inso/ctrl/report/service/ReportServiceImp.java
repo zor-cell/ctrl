@@ -1,11 +1,15 @@
 package at.ac.tuwien.inso.ctrl.report.service;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
+import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
+import at.ac.tuwien.inso.ctrl.comments.mapper.CommentMapper;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SourceResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
@@ -14,6 +18,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
+import at.ac.tuwien.inso.ctrl.report.dto.ReportedCommentResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
@@ -35,14 +40,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -59,6 +68,8 @@ public class ReportServiceImp implements ReportService {
   private final ExternalAuthorRepository externalAuthorRepository;
   private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
+  private final CommentRepository commentRepository;
+  private final CommentMapper commentMapper;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -121,6 +132,53 @@ public class ReportServiceImp implements ReportService {
               return null;
             })
         .filter(r -> r != null)
+        .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<ReportedCommentResponse> getReportedComments(
+      ReportStatus reportStatus, int page, int postsPerPage) {
+    var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
+
+    List<Report> reports =
+        reportRepository.findByContentTypeAndStatus(ContentTypeEnum.COMMENT, reportStatus, pageable);
+
+    List<String> commentIds = reports.stream().map(Report::getContentId).distinct().toList();
+    List<Comment> comments = commentRepository.findAllById(commentIds);
+
+    Map<String, Comment> commentMap =
+        comments.stream().collect(Collectors.toMap(Comment::getCommentId, comment -> comment));
+
+    Map<String, List<Comment>> repliesByParent = Map.of();
+    return reports.stream()
+        .map(
+            report -> {
+              Comment comment = commentMap.get(report.getContentId());
+              if (comment == null) {
+                return null;
+              }
+
+              CommentResponse commentResponse = commentMapper.toResponse(comment, repliesByParent);
+              String reportedByUsername =
+                  report.getFromUser() != null ? report.getFromUser().getUsername() : null;
+              String reportedUsername =
+                  report.getUsernameReported() != null
+                      ? report.getUsernameReported().getUsername()
+                      : comment.getUser().getUsername();
+
+              return new ReportedCommentResponse(
+                  commentResponse,
+                  report.getReportId(),
+                  report.getReason(),
+                  report.getDescription(),
+                  reportedByUsername,
+                  reportedUsername,
+                  report.getContentType(),
+                  report.getStatus(),
+                  report.getCreatedAt());
+            })
+        .filter(Objects::nonNull)
         .toList();
   }
 
@@ -223,6 +281,11 @@ public class ReportServiceImp implements ReportService {
                   () -> new EntityNotFoundException("Source not found: " + report.getContentId()));
       source.setIsRemoved(true);
       sourceRepository.save(source);
+    } else if (report.getContentType() == ContentTypeEnum.COMMENT) {
+      Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
+          () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
+      comment.setIsRemoved(true);
+      commentRepository.save(comment);
     }
   }
 
@@ -261,6 +324,12 @@ public class ReportServiceImp implements ReportService {
         ExternalAuthor author = post.getExternalAuthor();
         author.setSuspended(true);
         externalAuthorRepository.save(author);
+      } else if (type == ContentTypeEnum.COMMENT) {
+        Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
+            () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
+        User commentUser = comment.getUser();
+        commentUser.setSuspended(true);
+        userRepository.save(commentUser);
       }
     }
   }
@@ -443,6 +512,11 @@ public class ReportServiceImp implements ReportService {
                           "Post not found for source: " + createReportRequest.contentId()));
       return post.getUser();
 
+    } else if (createReportRequest.contentType().equals(ContentTypeEnum.COMMENT)) {
+      Comment comment = commentRepository.findById(createReportRequest.contentId()).orElseThrow(
+          () -> new EntityNotFoundException("Comment not found: " + createReportRequest.contentId()));
+      return comment.getUser();
+      
     } else {
       throw new IllegalArgumentException(
           "Invalid content type: " + createReportRequest.contentType());
