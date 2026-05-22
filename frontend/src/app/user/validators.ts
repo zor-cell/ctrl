@@ -15,3 +15,15 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
   // check if password confirmation is correct
   return newPassword.value === confirmPassword.value ? null : { passwordsMismatch: true };
 };
+
+export const usernameValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const username = control.value as string;
+
+  if (!username) {
+    return null;
+  }
+
+  return username.length > 2 && /^[A-Za-z0-9_.]+$/.test(username)
+    ? null
+    : { invalidUsername: true };
+};

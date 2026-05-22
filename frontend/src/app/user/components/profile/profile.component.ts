@@ -7,7 +7,7 @@ import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {Dialog} from "primeng/dialog";
-import {passwordMatchValidator} from "../../validators";
+import {passwordMatchValidator, usernameValidator} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
@@ -74,7 +74,7 @@ export class ProfileComponent implements OnInit {
   );
 
   protected usernameForm = this.fb.group({
-    newUsername: ['', Validators.required],
+    newUsername: ['', [Validators.required, usernameValidator]],
   });
 
   constructor() {

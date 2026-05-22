@@ -164,6 +164,11 @@
                 <input pInputText id="newUsername" formControlName="newUsername" fluid />
                 <label for="newUsername">Username</label>
             </p-floatlabel>
+            @if (usernameForm.controls.newUsername.invalid && usernameForm.controls.newUsername.touched && usernameForm.controls.newUsername.dirty) {
+                <p-message severity="error" size="small" variant="simple">
+                    Username must be at least 3 characters and may only contain letters, numbers, underscores and dots.
+                </p-message>
+            }
         </div>
 
         <div class="input-action-group">
@@ -223,4 +228,3 @@
     ></p-button>
   </ng-template>
 </p-dialog>
-
