@@ -253,7 +253,7 @@ public class RelationshipMapperUnitTest {
   private static class TestFileStorageService extends FileStorageService {
 
     TestFileStorageService() {
-      super(null, null, null, null);
+      super(null, null, null, null, null);
     }
 
     @Override

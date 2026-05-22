@@ -4,6 +4,12 @@
     "secure": false,
     "changeOrigin": true
   },
+  "/ws": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true
+  },
   "/garage-s3": {
     "target": "http://localhost:3900",
     "secure": false,

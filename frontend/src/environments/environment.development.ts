@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: '/api',
+  wsUrl: '/ws',
   idAustria: {
     clientId: 'http://localhost:8080',
     redirectUri: 'http://localhost:4200/verification-callback',

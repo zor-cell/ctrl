@@ -56,114 +56,172 @@
     </div>
 
     <section class="sidebar-section group-section">
-      <button type="button" class="group-toggle" (click)="toggleGroupForm()">
+      <button type="button" class="new-group-button" (click)="openGroupDialog()">
         <i class="pi pi-users"></i>
         New group
       </button>
-
-      @if (groupFormOpen()) {
-        <form class="group-form" (ngSubmit)="createGroup()">
-          <label>
-            <span>Group name</span>
-            <input
-              type="text"
-              pInputText
-              placeholder="Name"
-              [ngModel]="groupName()"
-              (ngModelChange)="groupName.set($event)"
-              name="groupName" />
-          </label>
-
-          <div class="group-friends">
-            <div class="section-title">Members</div>
-            @for (friend of friends(); track friend.id) {
-              <label class="group-friend-row">
-                <input
-                  type="checkbox"
-                  [checked]="isGroupFriendSelected(friend.username)"
-                  (change)="toggleGroupFriend(friend.username)" />
-                <span class="avatar" aria-hidden="true">
-                  @if (avatarUrl(friend.id)) {
-                    <img [src]="avatarUrl(friend.id)" alt="" />
-                  } @else {
-                    {{ initialFor(friend) }}
-                  }
-                </span>
-                <span class="row-copy">
-                  <span class="row-title">{{ friend.name || friend.username }}</span>
-                  <span class="row-subtitle">&#64;{{ friend.username }}</span>
-                </span>
-              </label>
-            }
-          </div>
-
-          <div class="group-actions">
-            <button type="button" class="text-button" (click)="toggleGroupForm()">Cancel</button>
-            <button type="submit" class="primary-button" [disabled]="!canCreateGroup()">Create</button>
-          </div>
-        </form>
-      }
     </section>
 
     <section class="sidebar-section chat-section">
-      <div class="section-title">Existing chats</div>
-
       @if (loadingChats()) {
         <p class="sidebar-empty">Loading chats</p>
       } @else if (filteredChats().length === 0) {
         <p class="sidebar-empty">No chats yet</p>
       } @else {
-        <div class="chat-list">
-          @for (chat of filteredChats(); track chat.chatId) {
-            <button
-              type="button"
-              class="chat-row"
-              [class.active]="isSelected(chat)"
-              (click)="selectChat(chat)">
-              <span class="avatar" aria-hidden="true">
-                {{ chat.name.charAt(0).toUpperCase() }}
-              </span>
+        @if (filteredDirectChats().length > 0) {
+          <div class="section-title">
+            <i class="pi pi-user section-title-icon" aria-hidden="true"></i>
+            Direct
+          </div>
+          <div class="chat-list">
+            @for (chat of filteredDirectChats(); track chat.chatId) {
+              <ng-container
+                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+            }
+          </div>
+        }
 
-              <span class="row-copy">
-                <span class="row-title">{{ chat.name }}</span>
-                <span class="row-subtitle">
-                  @if (chat.lastMessage) {
-                    {{ chat.lastMessage.content }}
-                  } @else {
-                    {{ participantText(chat) }}
-                  }
-                </span>
-              </span>
-
-              @if (chat.lastMessage) {
-                <time class="chat-time">{{ chat.lastMessage.date | date: 'shortTime' }}</time>
-              }
-            </button>
-          }
-        </div>
+        @if (filteredGroupChats().length > 0) {
+          <div class="section-title" [class.section-title--spaced]="filteredDirectChats().length > 0">
+            <i class="pi pi-users section-title-icon" aria-hidden="true"></i>
+            Groups
+          </div>
+          <div class="chat-list">
+            @for (chat of filteredGroupChats(); track chat.chatId) {
+              <ng-container
+                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+            }
+          </div>
+        }
       }
     </section>
+
+    <ng-template #chatListRow let-chat>
+      <button
+        type="button"
+        class="chat-row"
+        [class.chat-row--group]="chat.groupChat"
+        [class.active]="isSelected(chat)"
+        [class.chat-row--unread]="hasUnreadMessages(chat)"
+        (click)="selectChat(chat)">
+        <span class="avatar" [class.avatar--group]="chat.groupChat" aria-hidden="true">
+          @if (chat.groupChat && groupImageUrl(chat)) {
+            <img [src]="groupImageUrl(chat)" alt="" />
+          } @else if (!chat.groupChat && otherParticipant(chat); as other) {
+            @if (avatarUrl(other.id)) {
+              <img [src]="avatarUrl(other.id)" alt="" />
+            } @else {
+              {{ chatAvatarLabel(chat) }}
+            }
+          } @else {
+            {{ chatAvatarLabel(chat) }}
+          }
+        </span>
+
+        <span class="row-copy">
+          <div class="row-header">
+            <span class="row-title" [class.row-title--unread]="hasUnreadMessages(chat)">
+              <span class="row-title-text">{{ chatDisplayName(chat) }}</span>
+            </span>
+
+            <span class="row-header-side">
+              @if (chat.lastMessage && !hasUnreadMessages(chat)) {
+                <time class="chat-time">{{ chat.lastMessage.date | date: 'shortTime' }}</time>
+              }
+              @if (hasUnreadMessages(chat)) {
+                <span class="chat-unread-badge" [attr.aria-label]="chat.unreadCount + ' unread'">
+                  {{ chat.unreadCount > 9 ? '9+' : chat.unreadCount }}
+                </span>
+              }
+            </span>
+          </div>
+
+          <span class="row-subtitle" [class.row-subtitle--unread]="hasUnreadMessages(chat)">
+            @if (chat.lastMessage) {
+              {{ chat.lastMessage.content }}
+            } @else {
+              {{ participantText(chat) }}
+            }
+          </span>
+        </span>
+      </button>
+    </ng-template>
   </aside>
 
   <section class="chat-detail">
     @if (selectedChat(); as chat) {
       <header class="chat-header">
-        <span class="avatar avatar-large" aria-hidden="true">
-          {{ chat.name.charAt(0).toUpperCase() }}
-        </span>
+        <button
+          type="button"
+          class="avatar avatar-large avatar-button"
+          [class.avatar-button--group]="chat.groupChat"
+          (click)="chat.groupChat ? openMembersDialog() : null"
+          [attr.aria-label]="chat.groupChat ? 'View group members' : null">
+          @if (chat.groupChat && groupImageUrl(chat)) {
+            <img [src]="groupImageUrl(chat)" alt="" />
+          } @else if (!chat.groupChat && otherParticipant(chat); as other) {
+            @if (avatarUrl(other.id)) {
+              <img [src]="avatarUrl(other.id)" alt="" />
+            } @else {
+              {{ chatAvatarLabel(chat) }}
+            }
+          } @else {
+            {{ chatAvatarLabel(chat) }}
+          }
+        </button>
 
         <div class="chat-header-copy">
-          <h2>{{ chat.name }}</h2>
-          @if (participantText(chat)) {
+          <h2>{{ chatDisplayName(chat) }}</h2>
+          @if (!chat.groupChat && directChatSubtitle(chat); as subtitle) {
+            <p>{{ subtitle }}</p>
+          } @else if (chat.groupChat && participantText(chat)) {
             <p>{{ participantText(chat) }}</p>
           }
         </div>
 
-        @if (chat.groupChat && chat.owner) {
-          <button type="button" class="delete-group-button" (click)="deleteSelectedGroup()">
-            Delete group
-          </button>
-        }
+        <div class="chat-header-actions">
+          @if (chat.groupChat) {
+            <button
+              type="button"
+              class="header-icon-button"
+              (click)="openMembersDialog()"
+              aria-label="View members">
+              <i class="pi pi-users"></i>
+            </button>
+          }
+
+          @if (chat.groupChat && chat.owner) {
+            <button
+              type="button"
+              class="header-icon-button delete-group-button"
+              (click)="deleteSelectedGroup()"
+              pTooltip="Delete group for everyone"
+              tooltipPosition="bottom"
+              aria-label="Delete group for everyone">
+              <i class="pi pi-trash"></i>
+            </button>
+          } @else if (chat.groupChat) {
+            <button
+              type="button"
+              class="header-icon-button leave-group-button"
+              (click)="leaveGroup()"
+              pTooltip="Leave group"
+              tooltipPosition="bottom"
+              aria-label="Leave group">
+              <i class="pi pi-sign-out"></i>
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="header-icon-button delete-direct-button"
+              (click)="deleteDirectChatForSelf()"
+              pTooltip="Delete chat for yourself"
+              tooltipPosition="bottom"
+              aria-label="Delete chat for yourself">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </div>
       </header>
 
       <div class="message-list">
@@ -173,6 +231,11 @@
           <p class="message-empty">No messages yet</p>
         } @else {
           @for (message of messages(); track message.messageId) {
+            @if (message.system) {
+              <div class="message-system">
+                <span class="message-system-pill">{{ systemMessageLabel(message) }}</span>
+              </div>
+            } @else {
             <article class="message-row" [class.own]="isOwnMessage(message)">
               @if (!isOwnMessage(message)) {
                 <span class="avatar message-avatar" aria-hidden="true">
@@ -184,28 +247,71 @@
                 </span>
               }
 
-              <div class="message-bubble">
-                <div class="message-meta">
-                  @if (!isOwnMessage(message)) {
-                    <span>{{ message.sender.name || message.sender.username }}</span>
+              <div
+                class="message-stack"
+                [class.message-stack--own]="isOwnMessage(message)"
+                (mouseenter)="setHoveredMessage(message.messageId)"
+                (mouseleave)="clearHoveredMessage(message.messageId)"
+                (click)="setHoveredMessage(message.messageId)">
+                <div
+                  class="reaction-bar"
+                  [class.reaction-bar--visible]="
+                    reactionPickerMessageId() === message.messageId
+                    || hoveredMessageId() === message.messageId
+                  ">
+                  @for (emoji of reactionEmojis; track emoji) {
+                    <button
+                      type="button"
+                      class="reaction-bar-item"
+                      (click)="toggleReaction(message, emoji)"
+                      [attr.aria-label]="'React with ' + emoji">
+                      {{ emoji }}
+                    </button>
                   }
-                  <time>{{ message.date | date: 'shortTime' }}</time>
                 </div>
-                <p>{{ message.content }}</p>
+
+                <div class="message-bubble">
+                  <div class="message-meta">
+                    @if (!isOwnMessage(message)) {
+                      <span>{{ message.sender.name || message.sender.username }}</span>
+                    }
+                    <time>{{ message.date | date: 'shortTime' }}</time>
+                  </div>
+                  <p class="message-content">{{ message.content }}</p>
+                </div>
+
+                @if (message.reactions.length > 0) {
+                  <div class="message-reactions-floating">
+                    @for (reaction of message.reactions; track reaction.emoji) {
+                      <button
+                        type="button"
+                        class="reaction-chip"
+                        [class.reaction-chip--active]="reaction.reactedByCurrentUser"
+                        (click)="toggleReaction(message, reaction.emoji)"
+                        [attr.aria-label]="'React with ' + reaction.emoji">
+                        <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
+                        <span class="reaction-chip-count">{{ reaction.count }}</span>
+                      </button>
+                    }
+                  </div>
+                }
               </div>
             </article>
+            }
           }
         }
       </div>
 
       <form class="message-composer" (ngSubmit)="sendMessage()">
-        <textarea
-          pTextarea
-          rows="1"
-          placeholder="Write a message..."
-          [ngModel]="messageText()"
-          (ngModelChange)="messageText.set($event)"
-          name="message"></textarea>
+        <div class="composer-main">
+          <textarea
+            pTextarea
+            rows="1"
+            placeholder="Write a message..."
+            [ngModel]="messageText()"
+            (ngModelChange)="messageText.set($event)"
+            name="message"></textarea>
+        </div>
 
         <p-button
           type="submit"
@@ -222,3 +328,210 @@
     }
   </section>
 </main>
+
+<p-dialog
+  header="Create group"
+  [visible]="groupDialogVisible()"
+  (visibleChange)="onGroupDialogVisibilityChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '520px' }"
+  styleClass="chat-dialog group-create-dialog">
+  <form class="group-form" (ngSubmit)="createGroup()">
+    <label class="group-field">
+      <span class="field-label">Group name</span>
+      <input
+        type="text"
+        pInputText
+        placeholder="Name"
+        [ngModel]="groupName()"
+        (ngModelChange)="groupName.set($event)"
+        name="groupName" />
+      @if (groupName().trim() && !isGroupNameValid()) {
+        <span class="field-error">Only letters, numbers, dots and underscores allowed</span>
+      }
+    </label>
+
+    <div class="group-image-picker">
+      <span class="field-label">Group image (optional)</span>
+      <div class="group-image-picker-row">
+        <span class="avatar group-image-preview" aria-hidden="true">
+          @if (groupImagePreview()) {
+            <img [src]="groupImagePreview()" alt="" />
+          } @else {
+            <i class="pi pi-image"></i>
+          }
+        </span>
+        <div class="group-image-actions">
+          <label class="secondary-button">
+            Choose image
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              (change)="onGroupImageSelected($event)" />
+          </label>
+          @if (groupImagePreview()) {
+            <button
+              type="button"
+              class="header-icon-button remove-image-button"
+              (click)="clearGroupImageSelection()"
+              aria-label="Remove group image">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <section class="members-picker">
+      <div class="members-picker-header">
+        <span class="section-title">Members</span>
+        <span class="selected-count">{{ selectedGroupUsernames().length }} selected</span>
+      </div>
+
+      <p-iconField iconPosition="left" class="members-search">
+        <p-inputIcon styleClass="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          placeholder="Search friends"
+          [ngModel]="groupMemberSearch()"
+          (ngModelChange)="groupMemberSearch.set($event)"
+          name="groupMemberSearch" />
+      </p-iconField>
+
+      <div class="group-friends-list">
+        @if (filteredGroupFriends().length === 0) {
+          <p class="picker-empty">No friends found</p>
+        } @else {
+          @for (friend of filteredGroupFriends(); track friend.id) {
+            <label class="group-friend-row">
+              <input
+                type="checkbox"
+                [checked]="isGroupFriendSelected(friend.username)"
+                (change)="toggleGroupFriend(friend.username)" />
+              <span class="avatar" aria-hidden="true">
+                @if (avatarUrl(friend.id)) {
+                  <img [src]="avatarUrl(friend.id)" alt="" />
+                } @else {
+                  {{ initialFor(friend) }}
+                }
+              </span>
+              <span class="row-copy">
+                <span class="row-title">{{ friend.name || friend.username }}</span>
+                <span class="row-subtitle">&#64;{{ friend.username }}</span>
+              </span>
+            </label>
+          }
+        }
+      </div>
+    </section>
+
+    <div class="group-actions">
+      <button type="button" class="text-button" (click)="closeGroupDialog()">Cancel</button>
+      <button type="submit" class="primary-button" [disabled]="!canCreateGroup()">Create</button>
+    </div>
+  </form>
+</p-dialog>
+
+@if (selectedChat(); as chat) {
+  <p-dialog
+    [header]="chat.name + ' – Members'"
+    [visible]="membersDialogVisible()"
+    (visibleChange)="onMembersDialogVisibilityChange($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '90vw', maxWidth: '420px' }"
+    styleClass="chat-dialog members-dialog">
+    <ul class="members-list">
+      @for (participant of sortedGroupMembers(); track participant.id) {
+        <li class="member-row" [class.member-row--owner]="isGroupOwner(participant, chat)">
+          <span class="avatar" aria-hidden="true">
+            @if (avatarUrl(participant.id)) {
+              <img [src]="avatarUrl(participant.id)" alt="" />
+            } @else {
+              {{ initialFor(participant) }}
+            }
+          </span>
+          <span class="row-copy">
+            <span class="row-title">
+              {{ participant.name || participant.username }}
+              @if (isGroupOwner(participant, chat)) {
+                <span class="owner-badge">Owner</span>
+              }
+            </span>
+            <span class="row-subtitle">&#64;{{ participant.username }}</span>
+          </span>
+          @if (canRemoveMember(participant, chat)) {
+            <button
+              type="button"
+              class="member-remove-button"
+              (click)="removeMemberFromGroup(participant)"
+              pTooltip="Remove member"
+              tooltipPosition="left"
+              aria-label="Remove member">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (chat.owner) {
+    <section class="add-members-section">
+      <div class="members-picker-header">
+        <span class="section-title">Add members</span>
+        <span class="selected-count">{{ selectedAddMemberUsernames().length }} selected</span>
+      </div>
+
+      <p-iconField iconPosition="left" class="members-search">
+        <p-inputIcon styleClass="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          placeholder="Search friends"
+          [ngModel]="addMemberSearch()"
+          (ngModelChange)="addMemberSearch.set($event)"
+          name="addMemberSearch" />
+      </p-iconField>
+
+      <div class="group-friends-list add-members-list">
+        @if (filteredAddMemberFriends().length === 0) {
+          <p class="picker-empty">No friends to add</p>
+        } @else {
+          @for (friend of filteredAddMemberFriends(); track friend.id) {
+            <label class="group-friend-row">
+              <input
+                type="checkbox"
+                [checked]="isAddMemberFriendSelected(friend.username)"
+                (change)="toggleAddMemberFriend(friend.username)" />
+              <span class="avatar" aria-hidden="true">
+                @if (avatarUrl(friend.id)) {
+                  <img [src]="avatarUrl(friend.id)" alt="" />
+                } @else {
+                  {{ initialFor(friend) }}
+                }
+              </span>
+              <span class="row-copy">
+                <span class="row-title">{{ friend.name || friend.username }}</span>
+                <span class="row-subtitle">&#64;{{ friend.username }}</span>
+              </span>
+            </label>
+          }
+        }
+      </div>
+
+      <button
+        type="button"
+        class="primary-button add-members-button"
+        [disabled]="selectedAddMemberUsernames().length === 0 || addingMembers()"
+        (click)="addMembersToGroup()">
+        Add to group
+      </button>
+    </section>
+    }
+  </p-dialog>
+}

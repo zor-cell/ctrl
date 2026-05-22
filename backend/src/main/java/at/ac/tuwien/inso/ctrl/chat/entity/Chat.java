@@ -24,6 +24,9 @@ public class Chat {
 
   private String name;
 
+  @Column(name = "image_ref")
+  private String imageRef;
+
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 

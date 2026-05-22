@@ -38,6 +38,35 @@
   }
 }
 
+:host ::ng-deep .nav-chat-item {
+  .p-menubar-item-link {
+    position: relative;
+    overflow: visible;
+  }
+
+  .p-menubar-item-icon {
+    position: relative;
+  }
+
+  .p-badge {
+    position: absolute;
+    top: 0.1rem;
+    left: calc(50% + 0.35rem);
+    min-width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    padding: 0 0.2rem;
+    border: 2px solid var(--p-menubar-background, var(--p-surface-0));
+    background: var(--p-text-muted-color) !important;
+    color: var(--p-surface-0);
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    transform: translateY(-35%);
+    box-shadow: none;
+  }
+}
+
 //mobile layout switch logo and hamburger
 @media screen and (max-width: 959px) {
   :host ::ng-deep .p-menubar {

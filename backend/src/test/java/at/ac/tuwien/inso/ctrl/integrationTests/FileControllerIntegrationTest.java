@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import at.ac.tuwien.inso.ctrl.exception.GlobalExceptionHandler;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.file.FileController;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
@@ -33,6 +35,10 @@ public class FileControllerIntegrationTest {
 
   @Mock private PostRepository postRepository;
 
+  @Mock private ChatRepository chatRepository;
+
+  @Mock private ChatMemberRepository chatMemberRepository;
+
   @Mock private UserRepository userRepository;
 
   @Mock private FriendRelationRepository friendRelationRepository;
@@ -42,7 +48,12 @@ public class FileControllerIntegrationTest {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new FileController(
-                    fileStorageService, postRepository, userRepository, friendRelationRepository))
+                    fileStorageService,
+                    postRepository,
+                    chatRepository,
+                    chatMemberRepository,
+                    userRepository,
+                    friendRelationRepository))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
   }

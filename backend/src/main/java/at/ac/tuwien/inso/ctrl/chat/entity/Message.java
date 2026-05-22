@@ -4,6 +4,8 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -41,6 +43,17 @@ public class Message {
 
   @Column(name = "date")
   private LocalDateTime date;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean system = false;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "system_event")
+  private SystemEventType systemEvent;
+
+  @Column(name = "system_target_user_ids")
+  private String systemTargetUserIds;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "chat_id", referencedColumnName = "chat_id", nullable = false)

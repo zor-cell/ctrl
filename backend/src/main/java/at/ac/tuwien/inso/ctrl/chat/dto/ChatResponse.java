@@ -7,8 +7,12 @@ import java.util.UUID;
 public record ChatResponse(
     UUID chatId,
     String name,
+    String groupImage,
     List<ChatParticipantResponse> participants,
     ChatMessageResponse lastMessage,
     LocalDateTime createdAt,
     boolean groupChat,
-    boolean owner) {}
+    UUID ownerId,
+    ChatParticipantResponse groupOwner,
+    boolean owner,
+    long unreadCount) {}

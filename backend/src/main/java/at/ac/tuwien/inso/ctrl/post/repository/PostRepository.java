@@ -35,6 +35,14 @@ public interface PostRepository extends JpaRepository<Post, String> {
       """)
   List<Post> findAllByMediaRefReferenceWithUser(@Param("mediaRef") String mediaRef);
 
+  @Query(
+      """
+      SELECT p FROM Post p
+      JOIN FETCH p.user
+      WHERE p.mediaRef LIKE CONCAT('posts/media/', :mediaUuid, '.%')
+      """)
+  List<Post> findAllByMediaUuidWithUser(@Param("mediaUuid") String mediaUuid);
+
   /**
    * A query that finds the best matching posts when given multiple weights of preference. PgVector
    * operations can be read about here: <a href="https://github.com/pgvector/pgvector</a>

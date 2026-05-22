@@ -2,6 +2,9 @@ package at.ac.tuwien.inso.ctrl.file;
 
 import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
 import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
+import at.ac.tuwien.inso.ctrl.chat.entity.Chat;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;
@@ -34,10 +37,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class FileController {
   private static final String POST_MEDIA_PREFIX = "posts/media/";
+  private static final String POST_MEDIA_THUMBNAIL_PREFIX = "posts/media/thumbnails/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
+  private static final String CHAT_GROUP_IMAGE_PREFIX = "chats/group-images/";
 
   private final FileStorageService fileStorageService;
   private final PostRepository postRepository;
+  private final ChatRepository chatRepository;
+  private final ChatMemberRepository chatMemberRepository;
   private final UserRepository userRepository;
   private final FriendRelationRepository friendRelationRepository;
 
@@ -98,7 +105,31 @@ public class FileController {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid media reference");
     }
 
-    if (ref.startsWith(PROFILE_PICTURE_PREFIX)) {
+    if (ref.startsWith(PROFILE_PICTURE_PREFIX) || ref.startsWith(CHAT_GROUP_IMAGE_PREFIX)) {
+      if (!ref.startsWith(CHAT_GROUP_IMAGE_PREFIX)) {
+        return true;
+      }
+
+      if (username == null) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+      }
+
+      User viewer =
+          userRepository
+              .findByUsername(username)
+              .orElseThrow(
+                  () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+      Chat chat =
+          chatRepository
+              .findByImageRef(ref)
+              .orElseThrow(
+                  () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Group image not found"));
+
+      if (!chatMemberRepository.existsByChatChatIdAndUser(chat.getChatId(), viewer)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Media access denied");
+      }
+
       return true;
     }
 
@@ -110,7 +141,7 @@ public class FileController {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
     }
 
-    List<Post> matchingPosts = postRepository.findAllByMediaRefReferenceWithUser(ref);
+    List<Post> matchingPosts = resolvePostsForMediaRef(ref);
     if (matchingPosts.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Media not found");
     }
@@ -135,5 +166,18 @@ public class FileController {
     }
 
     return matchingPosts.stream().anyMatch(Post::isPublic);
+  }
+
+  private List<Post> resolvePostsForMediaRef(String ref) {
+    if (ref.startsWith(POST_MEDIA_THUMBNAIL_PREFIX)) {
+      String mediaUuid = fileStorageService.extractMediaUuid(ref);
+      if (mediaUuid == null) {
+        return List.of();
+      }
+
+      return postRepository.findAllByMediaUuidWithUser(mediaUuid);
+    }
+
+    return postRepository.findAllByMediaRefReferenceWithUser(ref);
   }
 }

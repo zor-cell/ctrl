@@ -31,7 +31,7 @@ spring:
 garage:
   url: http://localhost:3900
   public-url: http://localhost:8080/api/files/media-url?ref=
-  presigned-url-duration: PT2M
+  presigned-url-duration: PT30M
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: ctrl-test-media

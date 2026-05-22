@@ -2,11 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { InputText } from 'primeng/inputtext';
 import { Textarea } from 'primeng/textarea';
-import { Subject, finalize, takeUntil } from 'rxjs';
+import { TooltipModule } from 'primeng/tooltip';
+import { Subject, finalize, of, switchMap, takeUntil } from 'rxjs';
+import { USERNAME_PATTERN } from '../user/validators';
 import { jwtDecode } from 'jwt-decode';
 
 import { AuthService } from '../auth/auth.service';
@@ -15,12 +18,18 @@ import { MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
 import { Friend } from '../user/dto/Relationship';
 import { RelationshipService } from '../user/relationship.service';
+import { UserService } from '../user/user.service';
 import { Chat, ChatMessage, ChatParticipant } from './chat.models';
+import { ChatRealtimePayload } from './chat-realtime.service';
+import { ChatRealtimeBridgeService } from './chat-realtime-bridge.service';
+import { ChatUnreadService } from './chat-unread.service';
 import { ChatService } from './chat.service';
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
 
 @Component({
   selector: 'app-chat-page',
-  imports: [CommonModule, FormsModule, Button, IconField, InputIcon, InputText, Textarea],
+  imports: [CommonModule, FormsModule, Button, Dialog, IconField, InputIcon, InputText, Textarea, TooltipModule],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.scss',
 })
@@ -30,6 +39,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private readonly relationshipService = inject(RelationshipService);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
+  private readonly chatUnreadService = inject(ChatUnreadService);
+  private readonly chatRealtimeBridge = inject(ChatRealtimeBridgeService);
+  private readonly userService = inject(UserService);
   private readonly destroy$ = new Subject<void>();
 
   protected readonly chats = signal<Chat[]>([]);
@@ -41,10 +53,23 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly loadingMessages = signal(false);
   protected readonly sendingMessage = signal(false);
   protected readonly friendDropdownOpen = signal(false);
-  protected readonly groupFormOpen = signal(false);
+  protected readonly groupDialogVisible = signal(false);
+  protected readonly membersDialogVisible = signal(false);
+  protected readonly addMemberSearch = signal('');
+  protected readonly selectedAddMemberUsernames = signal<string[]>([]);
+  protected readonly addingMembers = signal(false);
+  protected readonly reactionPickerMessageId = signal<string | null>(null);
+  protected readonly hoveredMessageId = signal<string | null>(null);
+  protected readonly loadingMembersDialog = signal(false);
+
+  protected readonly reactionEmojis = REACTION_EMOJIS;
   protected readonly groupName = signal('');
+  protected readonly groupMemberSearch = signal('');
   protected readonly selectedGroupUsernames = signal<string[]>([]);
+  protected readonly groupImageFile = signal<File | null>(null);
+  protected readonly groupImagePreview = signal<string | null>(null);
   protected readonly avatarUrls = signal<Record<string, string>>({});
+  protected readonly groupImageUrls = signal<Record<string, string>>({});
 
   protected readonly friends = this.relationshipService.friends;
   protected readonly currentUsername = computed(() => {
@@ -71,12 +96,68 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return this.chats().filter(chat => this.matchesChat(chat, query));
   });
 
+  protected readonly filteredDirectChats = computed(() =>
+    this.dedupeDirectChats(this.filteredChats().filter(chat => !chat.groupChat)),
+  );
+
+  protected readonly filteredGroupChats = computed(() =>
+    this.filteredChats().filter(chat => chat.groupChat),
+  );
+
+  protected readonly filteredGroupFriends = computed(() => {
+    const query = this.groupMemberSearch().trim().toLowerCase();
+    return this.friends().filter(friend => this.matchesFriend(friend, query));
+  });
+
+  protected readonly filteredAddMemberFriends = computed(() => {
+    const chat = this.selectedChat();
+    if (!chat?.groupChat) {
+      return [];
+    }
+
+    const memberUsernames = new Set(chat.participants.map(participant => participant.username));
+    const query = this.addMemberSearch().trim().toLowerCase();
+
+    return this.friends()
+      .filter(friend => !memberUsernames.has(friend.username))
+      .filter(friend => this.matchesFriend(friend, query));
+  });
+
+  protected readonly isGroupNameValid = computed(() => {
+    const name = this.groupName().trim();
+    return name.length > 0 && USERNAME_PATTERN.test(name);
+  });
+
+  protected readonly sortedGroupMembers = computed(() => {
+    const chat = this.selectedChat();
+    if (!chat) {
+      return [];
+    }
+
+    return [...chat.participants].sort((left, right) => {
+      const leftIsOwner = this.isGroupOwner(left, chat);
+      const rightIsOwner = this.isGroupOwner(right, chat);
+      if (leftIsOwner !== rightIsOwner) {
+        return leftIsOwner ? -1 : 1;
+      }
+
+      const leftLabel = (left.name || left.username).toLowerCase();
+      const rightLabel = (right.name || right.username).toLowerCase();
+      return leftLabel.localeCompare(rightLabel);
+    });
+  });
+
   ngOnInit(): void {
     this.loadFriends();
     this.loadChats();
+    this.chatRealtimeBridge.setMessageHandler(payload => this.handleRealtimeMessage(payload));
+    this.chatRealtimeBridge.setChatListHandler(chat => this.handleRealtimeChatSummary(chat));
   }
 
   ngOnDestroy(): void {
+    this.chatRealtimeBridge.setMessageHandler(null);
+    this.chatRealtimeBridge.setChatListHandler(null);
+    this.chatRealtimeBridge.unwatchChat();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -121,20 +202,246 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected directChatFor(friend: Friend): Chat | null {
-    return this.chats().find(chat =>
+    const matches = this.chats().filter(chat =>
       !chat.groupChat
       && chat.participants.some(participant => participant.username === friend.username)
-    ) ?? null;
+    );
+
+    return this.pickLatestDirectChat(matches);
   }
 
   protected selectChat(chat: Chat): void {
     this.friendDropdownOpen.set(false);
+    this.reactionPickerMessageId.set(null);
     this.selectedChat.set(chat);
+    this.chatRealtimeBridge.watchChat(chat.chatId);
     this.loadMessages(chat.chatId);
   }
 
-  protected toggleGroupForm(): void {
-    this.groupFormOpen.update(open => !open);
+  protected openGroupDialog(): void {
+    this.groupDialogVisible.set(true);
+  }
+
+  protected closeGroupDialog(): void {
+    this.onGroupDialogVisibilityChange(false);
+  }
+
+  protected onGroupDialogVisibilityChange(visible: boolean): void {
+    this.groupDialogVisible.set(visible);
+    if (!visible) {
+      this.groupName.set('');
+      this.groupMemberSearch.set('');
+      this.selectedGroupUsernames.set([]);
+      this.clearGroupImageSelection();
+    }
+  }
+
+  protected onGroupImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      return;
+    }
+
+    this.revokeGroupImagePreview();
+    this.groupImageFile.set(file);
+    this.groupImagePreview.set(URL.createObjectURL(file));
+    input.value = '';
+  }
+
+  protected clearGroupImageSelection(): void {
+    this.revokeGroupImagePreview();
+    this.groupImageFile.set(null);
+  }
+
+  protected openMembersDialog(): void {
+    const chat = this.selectedChat();
+    if (!chat?.groupChat) {
+      return;
+    }
+
+    this.resetAddMemberSelection();
+    this.membersDialogVisible.set(true);
+    this.refreshSelectedGroupChat(chat.chatId);
+  }
+
+  protected setHoveredMessage(messageId: string): void {
+    this.hoveredMessageId.set(messageId);
+  }
+
+  protected clearHoveredMessage(messageId: string): void {
+    if (this.hoveredMessageId() === messageId) {
+      this.hoveredMessageId.set(null);
+    }
+  }
+
+  protected canRemoveMember(participant: ChatParticipant, chat: Chat): boolean {
+    if (!chat.owner || !chat.groupChat) {
+      return false;
+    }
+
+    if (this.isGroupOwner(participant, chat)) {
+      return false;
+    }
+
+    const currentUsername = this.currentUsername();
+    return currentUsername ? participant.username !== currentUsername : false;
+  }
+
+  protected removeMemberFromGroup(participant: ChatParticipant): void {
+    const chat = this.selectedChat();
+    if (!chat?.groupChat || !chat.owner) {
+      return;
+    }
+
+    this.chatService.removeMember(chat.chatId, participant.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.refreshSelectedGroupChat(chat.chatId);
+          this.loadMessages(chat.chatId);
+          this.notificationService.showSuccess('Member removed');
+        },
+        error: () => this.notificationService.showError('Failed to remove member'),
+      });
+  }
+
+  protected closeMembersDialog(): void {
+    this.membersDialogVisible.set(false);
+    this.resetAddMemberSelection();
+  }
+
+  protected onMembersDialogVisibilityChange(visible: boolean): void {
+    this.membersDialogVisible.set(visible);
+    if (!visible) {
+      this.resetAddMemberSelection();
+    }
+  }
+
+  protected isAddMemberFriendSelected(username: string): boolean {
+    return this.selectedAddMemberUsernames().includes(username);
+  }
+
+  protected toggleAddMemberFriend(username: string): void {
+    this.selectedAddMemberUsernames.update(usernames =>
+      usernames.includes(username)
+        ? usernames.filter(selectedUsername => selectedUsername !== username)
+        : [...usernames, username]
+    );
+  }
+
+  protected addMembersToGroup(): void {
+    const chat = this.selectedChat();
+    const usernames = this.selectedAddMemberUsernames();
+    if (!chat?.groupChat || usernames.length === 0 || this.addingMembers()) {
+      return;
+    }
+
+    this.addingMembers.set(true);
+    this.chatService.addMembers(chat.chatId, usernames)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.addingMembers.set(false))
+      )
+      .subscribe({
+        next: updatedChat => {
+          this.resetAddMemberSelection();
+          this.upsertChat(updatedChat);
+          this.selectedChat.set(updatedChat);
+          this.loadMessages(updatedChat.chatId);
+        },
+        error: () => this.notificationService.showError('Failed to add members'),
+      });
+  }
+
+  protected isGroupOwner(participant: ChatParticipant, chat: Chat): boolean {
+    const owner = chat.groupOwner;
+    if (!owner) {
+      return false;
+    }
+
+    return this.normalizeId(owner.id) === this.normalizeId(participant.id);
+  }
+
+  protected groupImageUrl(chat: Chat): string | null {
+    return this.groupImageUrls()[chat.chatId] ?? null;
+  }
+
+  protected otherParticipant(chat: Chat): ChatParticipant | null {
+    if (chat.groupChat || chat.participants.length === 0) {
+      return null;
+    }
+
+    const lastMessage = chat.lastMessage;
+    if (lastMessage) {
+      if (!lastMessage.own) {
+        return lastMessage.sender;
+      }
+
+      const otherBySender = chat.participants.find(
+        participant =>
+          this.normalizeId(participant.id) !== this.normalizeId(lastMessage.sender.id),
+      );
+      if (otherBySender) {
+        return otherBySender;
+      }
+    }
+
+    return this.findOtherParticipant(chat.participants);
+  }
+
+  private findOtherParticipant(participants: ChatParticipant[]): ChatParticipant | null {
+    const currentUserId = this.userService.user()?.id;
+    const currentUsername = this.currentUsername()?.toLowerCase();
+    const others = participants.filter(
+      participant => !this.isCurrentParticipant(participant, currentUserId, currentUsername),
+    );
+
+    return others[0] ?? null;
+  }
+
+  private isCurrentParticipant(
+    participant: ChatParticipant,
+    currentUserId: string | undefined,
+    currentUsername: string | undefined,
+  ): boolean {
+    if (currentUserId && this.normalizeId(participant.id) === this.normalizeId(currentUserId)) {
+      return true;
+    }
+
+    return !!currentUsername && participant.username.toLowerCase() === currentUsername;
+  }
+
+  protected chatDisplayName(chat: Chat): string {
+    if (chat.groupChat) {
+      return chat.name;
+    }
+
+    const other = this.otherParticipant(chat);
+    if (other) {
+      return other.username;
+    }
+
+    const lastMessage = chat.lastMessage;
+    if (lastMessage && !lastMessage.own) {
+      return lastMessage.sender.username;
+    }
+
+    return chat.name;
+  }
+
+  protected directChatSubtitle(chat: Chat): string | null {
+    const other = this.otherParticipant(chat);
+    return other?.name ?? null;
+  }
+
+  protected chatAvatarLabel(chat: Chat): string {
+    const other = this.otherParticipant(chat);
+    if (other) {
+      return (other.name || other.username).charAt(0).toUpperCase();
+    }
+
+    return chat.name.charAt(0).toUpperCase();
   }
 
   protected isGroupFriendSelected(username: string): boolean {
@@ -150,23 +457,29 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected canCreateGroup(): boolean {
-    return this.groupName().trim().length > 0 && this.selectedGroupUsernames().length > 0;
+    return this.isGroupNameValid() && this.selectedGroupUsernames().length > 0;
   }
 
   protected createGroup(): void {
     const name = this.groupName().trim();
     const usernames = this.selectedGroupUsernames();
-    if (!name || usernames.length === 0) {
+    const imageFile = this.groupImageFile();
+    if (!this.canCreateGroup() || usernames.length === 0) {
       return;
     }
 
     this.chatService.createChat({ name, usernames })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        switchMap(chat =>
+          imageFile
+            ? this.chatService.uploadGroupImage(chat.chatId, imageFile)
+            : of(chat)
+        ),
+        takeUntil(this.destroy$)
+      )
       .subscribe({
         next: chat => {
-          this.groupName.set('');
-          this.selectedGroupUsernames.set([]);
-          this.groupFormOpen.set(false);
+          this.closeGroupDialog();
           this.upsertChat(chat);
           this.selectChat(chat);
         },
@@ -184,14 +497,142 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          this.chats.update(chats =>
-            chats.filter(existingChat => existingChat.chatId !== chat.chatId)
-          );
-          this.messages.set([]);
-          this.selectedChat.set(null);
+          this.removeChatFromState(chat.chatId);
         },
         error: () => this.notificationService.showError('Failed to delete group'),
       });
+  }
+
+  protected leaveGroup(): void {
+    const chat = this.selectedChat();
+    if (!chat?.groupChat || chat.owner) {
+      return;
+    }
+
+    this.chatService.leaveChat(chat.chatId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.removeChatFromState(chat.chatId);
+        },
+        error: () => this.notificationService.showError('Failed to leave group'),
+      });
+  }
+
+  protected deleteDirectChatForSelf(): void {
+    const chat = this.selectedChat();
+    if (!chat || chat.groupChat) {
+      return;
+    }
+
+    this.chatService.leaveChat(chat.chatId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.removeChatFromState(chat.chatId);
+        },
+        error: () => this.notificationService.showError('Failed to delete chat'),
+      });
+  }
+
+  protected isSystemMessage(message: ChatMessage): boolean {
+    return message.system;
+  }
+
+  protected systemMessageLabel(message: ChatMessage): string {
+    if (!message.system) {
+      return message.content;
+    }
+
+    if (message.systemEvent && message.systemTargets) {
+      return this.formatSystemMessage(message);
+    }
+
+    return message.content;
+  }
+
+  private formatSystemMessage(message: ChatMessage): string {
+    const actorLabel = message.own ? 'You' : this.participantLabel(message.sender);
+    const currentUserId = this.userService.user()?.id;
+    const currentUserIsTarget = currentUserId
+      ? message.systemTargets.some(
+          target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
+        )
+      : false;
+
+    switch (message.systemEvent) {
+      case 'MEMBER_ADDED':
+        if (message.own) {
+          return `You added ${this.formatTargetList(message.systemTargets)}`;
+        }
+        if (currentUserIsTarget && message.systemTargets.length === 1) {
+          return `${actorLabel} added you`;
+        }
+        return `${actorLabel} added ${this.formatTargetList(message.systemTargets)}`;
+      case 'MEMBER_REMOVED': {
+        const removed = message.systemTargets.length > 0
+          ? this.formatTargetList(message.systemTargets)
+          : 'a member';
+        return message.own
+          ? `You removed ${removed}`
+          : `${actorLabel} removed ${removed}`;
+      }
+      case 'MEMBER_LEFT':
+        return message.own
+          ? 'You left the group'
+          : `${actorLabel} left the group`;
+      default:
+        return message.content;
+    }
+  }
+
+  private participantLabel(participant: ChatParticipant): string {
+    return participant.name || participant.username;
+  }
+
+  private formatTargetList(targets: ChatParticipant[]): string {
+    if (targets.length === 0) {
+      return 'members';
+    }
+
+    const currentUserId = this.userService.user()?.id;
+    const labels = targets.map(target => {
+      if (currentUserId && this.normalizeId(target.id) === this.normalizeId(currentUserId)) {
+        return 'you';
+      }
+      return this.participantLabel(target);
+    });
+
+    if (labels.length === 1) {
+      return labels[0];
+    }
+    if (labels.length === 2) {
+      return `${labels[0]} and ${labels[1]}`;
+    }
+
+    return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+  }
+
+  protected toggleReaction(message: ChatMessage, emoji: string): void {
+    const chat = this.selectedChat();
+    if (!chat || message.system) {
+      return;
+    }
+
+    this.chatService.reactToMessage(chat.chatId, message.messageId, emoji)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: updatedMessage => {
+          this.reactionPickerMessageId.set(null);
+          this.hoveredMessageId.set(null);
+          this.updateMessageInState(updatedMessage);
+        },
+        error: () => this.notificationService.showError('Failed to react to message'),
+      });
+  }
+
+  protected hasUnreadMessages(chat: Chat): boolean {
+    return chat.unreadCount > 0 && !this.isSelected(chat);
   }
 
   protected sendMessage(): void {
@@ -211,7 +652,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: message => {
-          this.messages.update(messages => [...messages, message]);
+          this.messages.update(messages => [...messages, this.normalizeMessage(message)]);
           this.loadChats();
         },
         error: () => {
@@ -261,12 +702,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: chats => {
-          this.chats.set(chats);
-          chats.forEach(chat =>
+          const dedupedChats = this.applyChatListDedupe(chats);
+          this.chats.set(dedupedChats);
+          this.chatUnreadService.syncFromChats(dedupedChats);
+          chats.forEach(chat => {
             chat.participants.forEach(participant =>
               this.loadAvatar(participant.id, participant.profilePicture)
-            )
-          );
+            );
+            if (chat.groupOwner) {
+              this.loadAvatar(chat.groupOwner.id, chat.groupOwner.profilePicture);
+            }
+            this.loadGroupImage(chat);
+          });
 
           const selectedChat = this.selectedChat();
           if (selectedChat) {
@@ -289,10 +736,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: messages => {
-          this.messages.set(messages);
+          this.messages.set(messages.map(message => this.normalizeMessage(message)));
           messages.forEach(message =>
             this.loadAvatar(message.sender.id, message.sender.profilePicture)
           );
+          this.markChatReadInState(chatId);
         },
         error: () => this.notificationService.showError('Failed to load messages'),
       });
@@ -301,12 +749,39 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private upsertChat(nextChat: Chat): void {
     this.chats.update(chats => {
       const otherChats = chats.filter(chat => chat.chatId !== nextChat.chatId);
-      return [nextChat, ...otherChats];
+      return this.applyChatListDedupe([nextChat, ...otherChats]);
     });
 
     nextChat.participants.forEach(participant =>
       this.loadAvatar(participant.id, participant.profilePicture)
     );
+    if (nextChat.groupOwner) {
+      this.loadAvatar(nextChat.groupOwner.id, nextChat.groupOwner.profilePicture);
+    }
+    this.loadGroupImage(nextChat);
+  }
+
+  private loadGroupImage(chat: Chat): void {
+    if (!chat.groupImage || this.groupImageUrls()[chat.chatId]) {
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(url => {
+        if (!url) {
+          return;
+        }
+        this.groupImageUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+      });
+  }
+
+  private revokeGroupImagePreview(): void {
+    const preview = this.groupImagePreview();
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+    this.groupImagePreview.set(null);
   }
 
   private loadAvatar(id: string, profilePicture: string | null): void {
@@ -335,6 +810,170 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     return friend.username.toLowerCase().includes(query)
       || (friend.name ?? '').toLowerCase().includes(query);
+  }
+
+  private removeChatFromState(chatId: string): void {
+    this.chats.update(chats => {
+      const nextChats = chats.filter(existingChat => existingChat.chatId !== chatId);
+      this.chatUnreadService.syncFromChats(nextChats);
+      return nextChats;
+    });
+    this.messages.set([]);
+    this.selectedChat.set(null);
+  }
+
+  private markChatReadInState(chatId: string): void {
+    this.chats.update(chats => {
+      const nextChats = chats.map(chat =>
+        chat.chatId === chatId ? { ...chat, unreadCount: 0 } : chat
+      );
+      this.chatUnreadService.syncFromChats(nextChats);
+      return nextChats;
+    });
+
+    const selectedChat = this.selectedChat();
+    if (selectedChat?.chatId === chatId) {
+      this.selectedChat.set({ ...selectedChat, unreadCount: 0 });
+    }
+  }
+
+  private normalizeId(id: string): string {
+    return id.trim().toLowerCase();
+  }
+
+  private applyChatListDedupe(chats: Chat[]): Chat[] {
+    const groups = chats.filter(chat => chat.groupChat);
+    const direct = this.dedupeDirectChats(chats.filter(chat => !chat.groupChat));
+    return [...groups, ...direct];
+  }
+
+  private directChatPartnerKey(chat: Chat): string {
+    const other = this.otherParticipant(chat);
+    if (other) {
+      return other.username.toLowerCase();
+    }
+
+    const lastMessage = chat.lastMessage;
+    if (lastMessage && !lastMessage.own) {
+      return lastMessage.sender.username.toLowerCase();
+    }
+
+    return chat.chatId;
+  }
+
+  private dedupeDirectChats(chats: Chat[]): Chat[] {
+    const byOtherUser = new Map<string, Chat>();
+
+    for (const chat of chats) {
+      const key = this.directChatPartnerKey(chat);
+      const existing = byOtherUser.get(key);
+
+      if (!existing || this.isChatMoreRecent(chat, existing)) {
+        byOtherUser.set(key, chat);
+      }
+    }
+
+    return Array.from(byOtherUser.values()).sort(
+      (left, right) => this.chatActivityTime(right) - this.chatActivityTime(left),
+    );
+  }
+
+  private pickLatestDirectChat(chats: Chat[]): Chat | null {
+    if (chats.length === 0) {
+      return null;
+    }
+
+    return chats.reduce((latest, chat) =>
+      this.isChatMoreRecent(chat, latest) ? chat : latest,
+    );
+  }
+
+  private isChatMoreRecent(left: Chat, right: Chat): boolean {
+    return this.chatActivityTime(left) > this.chatActivityTime(right);
+  }
+
+  private chatActivityTime(chat: Chat): number {
+    const date = chat.lastMessage?.date ?? chat.createdAt;
+    return new Date(date).getTime();
+  }
+
+  private handleRealtimeMessage(payload: ChatRealtimePayload): void {
+    const selected = this.selectedChat();
+    if (!selected || selected.chatId !== payload.chatId) {
+      return;
+    }
+
+    const normalizedMessage = this.normalizeMessage(payload.message);
+    if (payload.type === 'MESSAGE') {
+      this.messages.update(messages => {
+        if (messages.some(message => message.messageId === normalizedMessage.messageId)) {
+          return messages;
+        }
+        return [...messages, normalizedMessage];
+      });
+      this.markChatReadInState(payload.chatId);
+    } else {
+      this.updateMessageInState(normalizedMessage);
+    }
+
+    this.loadAvatar(
+      normalizedMessage.sender.id,
+      normalizedMessage.sender.profilePicture,
+    );
+  }
+
+  private handleRealtimeChatSummary(chat: Chat): void {
+    this.upsertChat(chat);
+
+    const selected = this.selectedChat();
+    if (selected?.chatId === chat.chatId) {
+      this.selectedChat.set(chat);
+      if (chat.unreadCount === 0) {
+        this.markChatReadInState(chat.chatId);
+      }
+    }
+  }
+
+  private refreshSelectedGroupChat(chatId: string): void {
+    this.loadingMembersDialog.set(true);
+    this.chatService.getChat(chatId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loadingMembersDialog.set(false))
+      )
+      .subscribe({
+        next: chat => {
+          this.upsertChat(chat);
+          if (this.selectedChat()?.chatId === chat.chatId) {
+            this.selectedChat.set(chat);
+          }
+        },
+        error: () => this.notificationService.showError('Failed to load group members'),
+      });
+  }
+
+  private normalizeMessage(message: ChatMessage): ChatMessage {
+    return {
+      ...message,
+      system: message.system ?? false,
+      systemEvent: message.systemEvent ?? null,
+      systemTargets: message.systemTargets ?? [],
+      reactions: message.reactions ?? [],
+    };
+  }
+
+  private updateMessageInState(updatedMessage: ChatMessage): void {
+    const normalizedMessage = this.normalizeMessage(updatedMessage);
+    this.messages.update(messages =>
+      messages.map(message =>
+        message.messageId === normalizedMessage.messageId ? normalizedMessage : message
+      )
+    );
+  }
+
+  private resetAddMemberSelection(): void {
+    this.addMemberSearch.set('');
+    this.selectedAddMemberUsernames.set([]);
   }
 
   private matchesChat(chat: Chat, query: string): boolean {

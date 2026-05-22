@@ -218,11 +218,16 @@ export class FeedComponent implements OnInit {
     forkJoin([
       this.feedService.getFeed(true),
       this.feedService.getFeed(false),
-    ]).subscribe(([publicPosts, privatePosts]) => {
-      this.publicPosts.set(publicPosts);
-      this.privatePosts.set(privatePosts);
-      this.isRefreshing.set(false);
-      this.scrollFeedToTop();
+    ]).subscribe({
+      next: ([publicPosts, privatePosts]) => {
+        this.publicPosts.set(publicPosts);
+        this.privatePosts.set(privatePosts);
+        this.isRefreshing.set(false);
+        this.scrollFeedToTop();
+      },
+      error: () => {
+        this.isRefreshing.set(false);
+      },
     });
   }
 

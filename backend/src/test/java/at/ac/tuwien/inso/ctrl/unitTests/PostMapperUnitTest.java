@@ -54,8 +54,12 @@ public class PostMapperUnitTest {
     post.setPostLabels(createPostLabels(post));
     post.setPostTopics(createPostTopics(post));
     post.setComments(createComments(post, user));
+    when(fileStorageService.resolveThumbnailRef("posts/media/file.png"))
+        .thenReturn("posts/media/thumbnails/file.jpeg");
     when(fileStorageService.resolveFileUrl("posts/media/file.png"))
         .thenReturn("http://localhost:3900/ctrl-test-media/posts/media/file.png");
+    when(fileStorageService.resolveFileUrl("posts/media/thumbnails/file.jpeg"))
+        .thenReturn("http://localhost:3900/ctrl-test-media/posts/media/thumbnails/file.jpeg");
 
     PostResponse response = postMapper.toResponse(post);
 
@@ -66,6 +70,10 @@ public class PostMapperUnitTest {
     assertEquals("Caption", response.caption());
     assertEquals("posts/media/file.png", response.mediaRef());
     assertEquals("http://localhost:3900/ctrl-test-media/posts/media/file.png", response.mediaUrl());
+    assertEquals("posts/media/thumbnails/file.jpeg", response.mediaThumbnailRef());
+    assertEquals(
+        "http://localhost:3900/ctrl-test-media/posts/media/thumbnails/file.jpeg",
+        response.mediaThumbnailUrl());
     assertEquals(List.of("alpha", "zulu"), response.labelIds());
     assertEquals(List.of("topic-a", "topic-z"), response.topicIds());
     assertEquals("older comment", response.comments().get(0).content());

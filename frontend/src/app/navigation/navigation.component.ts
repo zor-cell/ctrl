@@ -8,6 +8,7 @@ import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {UserService} from "../user/user.service";
 import {TieredMenu} from "primeng/tieredmenu";
+import {ChatUnreadService} from '../chat/chat-unread.service';
 import {ViewTrackingService} from "../post/services/view-tracking.service";
 
 @Component({
@@ -23,9 +24,11 @@ export class NavigationComponent {
   private userService = inject(UserService);
   protected themeService = inject(ThemeService);
   private viewTrackingService = inject(ViewTrackingService);
+  private readonly chatUnreadService = inject(ChatUnreadService);
 
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
+    const unreadTotal = this.chatUnreadService.totalUnread();
 
     const items: MenuItem[] = [
 
@@ -36,12 +39,22 @@ export class NavigationComponent {
         { icon: 'pi pi-home', routerLink: '/feed' },
         { icon: 'pi pi-search', routerLink: '/search' },
         { icon: 'pi pi-plus', routerLink: '/post' },
-        { icon: 'pi pi-comments', routerLink: '/chat' }
+        {
+          icon: 'pi pi-comments',
+          routerLink: '/chat',
+          styleClass: 'nav-chat-item',
+          badge: unreadTotal > 0 ? this.formatUnreadBadge(unreadTotal) : undefined,
+          badgeSeverity: 'secondary',
+        }
       );
     }
 
     return items;
   });
+
+  private formatUnreadBadge(total: number): string {
+    return total > 9 ? '9+' : String(total);
+  }
 
   protected profileItems = computed<MenuItem[]>(() => {
     const items: MenuItem[] = [

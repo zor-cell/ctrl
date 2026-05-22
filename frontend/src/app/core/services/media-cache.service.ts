@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, finalize, map, of, shareReplay } from 'rxjs';
+import { Observable, finalize, map, of, shareReplay, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../interceptors';
 
 export type MediaCacheKind = 'image' | 'video';
 export type MediaCachePriority = 'low' | 'normal' | 'high';
@@ -14,21 +15,19 @@ interface CachedObjectUrl {
   lastUsedAt: number;
 }
 
-interface PresignedMediaUrlResponse {
-  mediaUrl: string;
-  expiresAt: string;
-}
-
 @Injectable({
   providedIn: 'root',
 })
 export class MediaCacheService {
+  private static readonly DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000;
+
   private readonly httpClient = inject(HttpClient);
 
   private readonly cachedUrls = new Set<string>();
   private readonly pendingUrls = new Set<string>();
   private readonly cachedObjectUrls = new Map<string, CachedObjectUrl>();
   private readonly pendingObjectUrls = new Map<string, Observable<string>>();
+  private readonly refreshScheduled = new Set<string>();
   private readonly maxCachedUrls = 120;
 
   resolveMediaUrl(
@@ -41,13 +40,14 @@ export class MediaCacheService {
     }
 
     const normalizedUrl = this.normalizeMediaUrl(url);
+    const resolvedKind = kind ?? this.inferKind(normalizedUrl);
 
     if (!this.isProtectedMediaUrl(normalizedUrl)) {
-      this.cacheUrl(normalizedUrl, kind);
+      this.cacheUrl(normalizedUrl, resolvedKind);
       return of(normalizedUrl);
     }
 
-    return this.resolveProtectedMediaUrl(normalizedUrl, priority);
+    return this.resolveProtectedMediaUrl(normalizedUrl, resolvedKind, priority);
   }
 
   cacheUrl(
@@ -60,9 +60,10 @@ export class MediaCacheService {
     }
 
     const normalizedUrl = this.normalizeMediaUrl(url);
+    const resolvedKind = kind ?? this.inferKind(normalizedUrl);
 
     if (this.isProtectedMediaUrl(normalizedUrl)) {
-      this.resolveProtectedMediaUrl(normalizedUrl, priority).subscribe();
+      this.resolveProtectedMediaUrl(normalizedUrl, resolvedKind, priority).subscribe();
       return;
     }
 
@@ -72,7 +73,7 @@ export class MediaCacheService {
 
     this.pendingUrls.add(normalizedUrl);
 
-    if ((kind ?? this.inferKind(normalizedUrl)) === 'video') {
+    if (resolvedKind === 'video') {
       this.preloadVideoMetadata(normalizedUrl);
       return;
     }
@@ -91,22 +92,28 @@ export class MediaCacheService {
     this.cachedObjectUrls.forEach(entry => this.revokeIfBlobUrl(entry.objectUrl));
     this.cachedObjectUrls.clear();
     this.pendingObjectUrls.clear();
+    this.refreshScheduled.clear();
     this.cachedUrls.clear();
     this.pendingUrls.clear();
   }
 
-  private resolveProtectedMediaUrl(url: string, priority: MediaCachePriority): Observable<string> {
+  private resolveProtectedMediaUrl(
+    url: string,
+    kind: MediaCacheKind,
+    priority: MediaCachePriority,
+  ): Observable<string> {
     const cachedEntry = this.cachedObjectUrls.get(url);
-    if (cachedEntry && !this.isExpired(cachedEntry)) {
+    if (cachedEntry) {
       cachedEntry.lastUsedAt = Date.now();
       if (this.priorityRank(priority) > this.priorityRank(cachedEntry.priority)) {
         cachedEntry.priority = priority;
       }
-      return of(cachedEntry.objectUrl);
-    }
 
-    if (cachedEntry) {
-      this.cachedObjectUrls.delete(url);
+      if (this.isExpired(cachedEntry)) {
+        this.scheduleProtectedMediaRefresh(url, kind, priority);
+      }
+
+      return of(cachedEntry.objectUrl);
     }
 
     const pendingObjectUrl = this.pendingObjectUrls.get(url);
@@ -114,19 +121,83 @@ export class MediaCacheService {
       return pendingObjectUrl;
     }
 
-    const request$ = this.httpClient.get<PresignedMediaUrlResponse>(url).pipe(
-      map(response => this.rememberObjectUrl(
-        url,
-        response.mediaUrl,
-        priority,
-        Date.parse(response.expiresAt),
-      )),
+    const request$ = this.fetchProtectedMedia(url, kind, priority).pipe(
       finalize(() => this.pendingObjectUrls.delete(url)),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
     this.pendingObjectUrls.set(url, request$);
     return request$;
+  }
+
+  private fetchProtectedMedia(
+    url: string,
+    kind: MediaCacheKind,
+    priority: MediaCachePriority,
+  ): Observable<string> {
+    const mediaRef = this.extractMediaRef(url);
+    if (!mediaRef) {
+      return throwError(() => new Error('Invalid media reference'));
+    }
+
+    const proxyUrl = `${environment.apiUrl}/files/media?ref=${encodeURIComponent(mediaRef)}`;
+    const expiresAt = Date.now() + MediaCacheService.DEFAULT_CACHE_TTL_MS;
+
+    return this.httpClient.get(proxyUrl, {
+      responseType: 'blob',
+      context: SILENT_ERROR_CONTEXT,
+    }).pipe(
+      map(blob => this.replaceObjectUrl(
+        url,
+        URL.createObjectURL(blob),
+        priority,
+        expiresAt,
+      )),
+    );
+  }
+
+  private extractMediaRef(url: string): string | null {
+    if (this.isMediaRef(url)) {
+      return url;
+    }
+
+    try {
+      const parsedUrl = new URL(url, window.location.origin);
+      const mediaRef = parsedUrl.searchParams.get('ref');
+      return mediaRef ? decodeURIComponent(mediaRef) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private scheduleProtectedMediaRefresh(
+    url: string,
+    kind: MediaCacheKind,
+    priority: MediaCachePriority,
+  ): void {
+    if (this.pendingObjectUrls.has(url) || this.refreshScheduled.has(url)) {
+      return;
+    }
+
+    this.refreshScheduled.add(url);
+    this.fetchProtectedMedia(url, kind, priority).pipe(
+      finalize(() => this.refreshScheduled.delete(url)),
+    ).subscribe();
+  }
+
+  private replaceObjectUrl(
+    url: string,
+    objectUrl: string,
+    priority: MediaCachePriority,
+    expiresAt: number | null = null,
+  ): string {
+    const previousEntry = this.cachedObjectUrls.get(url);
+    if (previousEntry) {
+      this.revokeIfBlobUrl(previousEntry.objectUrl);
+      this.cachedObjectUrls.delete(url);
+    }
+
+    return this.rememberObjectUrl(url, objectUrl, priority, expiresAt);
   }
 
   private rememberObjectUrl(
@@ -160,7 +231,7 @@ export class MediaCacheService {
       return false;
     }
 
-    return Date.now() > entry.expiresAt - 5000;
+    return Date.now() > entry.expiresAt - 30_000;
   }
 
   private findEvictionCandidateUrl(): string | null {
@@ -196,7 +267,9 @@ export class MediaCacheService {
   }
 
   private isProtectedMediaUrl(url: string): boolean {
-    return url.includes('/api/files/media?ref=') || url.includes('/api/files/media-url?ref=');
+    return url.includes('/api/files/media?ref=')
+      || url.includes('/api/files/media-url?ref=')
+      || this.isMediaRef(url);
   }
 
   isBackendManagedMediaUrl(url: string | null | undefined): boolean {
@@ -221,7 +294,9 @@ export class MediaCacheService {
   }
 
   private isMediaRef(url: string): boolean {
-    return url.startsWith('users/profile-pictures/') || url.startsWith('posts/media/');
+    return url.startsWith('users/profile-pictures/')
+      || url.startsWith('chats/group-images/')
+      || url.startsWith('posts/media/');
   }
 
   private extractLegacyGarageMediaRef(url: string): string | null {

@@ -92,3 +92,17 @@ DROP TRIGGER IF EXISTS trg_update_source_votes ON source_votes^
 CREATE TRIGGER trg_update_source_votes
     AFTER INSERT OR UPDATE OR DELETE ON source_votes
     FOR EACH ROW EXECUTE FUNCTION update_source_votes_count()^
+
+-- messages.system: NOT NULL without DEFAULT fails on existing rows via Hibernate ddl-auto
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS system BOOLEAN NOT NULL DEFAULT false^
+
+UPDATE chats c
+SET owner_id = (
+    SELECT cm.user_id
+    FROM chat_members cm
+    WHERE cm.chat_id = c.chat_id
+    ORDER BY cm.joined_at ASC NULLS LAST
+    LIMIT 1
+)
+WHERE c.name IS NOT NULL
+  AND c.owner_id IS NULL^

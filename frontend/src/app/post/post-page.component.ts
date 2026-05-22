@@ -59,6 +59,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
+  protected readonly postThumbnailObjectUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
   protected readonly selectedPost = signal<PostResponse | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
@@ -176,6 +177,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.revokeAvatarPreview();
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
+    this.revokePostThumbnailObjectUrls();
   }
 
   protected openCreateDialog() {
@@ -347,7 +349,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openPost(post: PostResponse) {
-    this.selectedPost.set(this.withRenderablePostMedia(post));
+    this.selectedPost.set(post);
+    this.loadFullPostMedia(post);
   }
 
   protected closePost() {
@@ -377,6 +380,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.deletePost(post.postId).subscribe({
       next: () => {
         this.revokePostMediaObjectUrl(post.postId);
+        this.revokePostThumbnailObjectUrl(post.postId);
         this.myPosts.update(posts =>
           posts.filter(currentPost => currentPost.postId !== post.postId),
         );
@@ -393,12 +397,33 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
   }
 
-  protected postMediaUrl(post: PostResponse | null): string | null {
+  protected postThumbnailUrl(post: PostResponse | null): string | null {
+    if (!post) {
+      return null;
+    }
+
+    return (
+      this.postThumbnailObjectUrls()[post.postId]
+      ?? this.directMediaUrl(post.mediaThumbnailUrl ?? post.mediaUrl)
+    );
+  }
+
+  protected selectedPostMediaUrl(): string | null {
+    const post = this.selectedPost();
     if (!post) {
       return null;
     }
 
     return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
+  }
+
+  protected selectedPostMediaKind(): PreviewKind {
+    const post = this.selectedPost();
+    if (!post) {
+      return null;
+    }
+
+    return postMediaKind(post.mediaRef ?? post.mediaUrl);
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
@@ -432,6 +457,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.myPosts.set([]);
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
+    this.revokePostThumbnailObjectUrls();
 
     if (this.publicProfileMode()) {
       this.loadPublicProfile();
@@ -555,25 +581,66 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private loadPostMedia(posts: PostResponse[]): void {
-    this.revokePostMediaObjectUrls();
+    this.revokePostThumbnailObjectUrls();
     posts.forEach(post => {
-      const mediaUrl = post.mediaUrl;
+      const mediaUrl = post.mediaThumbnailUrl ?? post.mediaUrl;
 
       if (!mediaUrl) {
         return;
       }
 
-      this.mediaCacheService.resolveMediaUrl(
-        mediaUrl,
-        postMediaKind(post.mediaRef ?? mediaUrl),
-        'high',
-      ).subscribe({
+      this.mediaCacheService.resolveMediaUrl(mediaUrl, 'image', 'normal').subscribe({
         next: objectUrl => {
           if (objectUrl) {
-            this.setPostMediaObjectUrl(post.postId, objectUrl);
+            this.setPostThumbnailObjectUrl(post.postId, objectUrl);
           }
         },
+        error: () => this.loadPostThumbnailFallback(post),
       });
+    });
+  }
+
+  private loadPostThumbnailFallback(post: PostResponse): void {
+    if (!post.mediaThumbnailUrl || !post.mediaUrl || post.mediaThumbnailUrl === post.mediaUrl) {
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(
+      post.mediaUrl,
+      postMediaKind(post.mediaRef ?? post.mediaUrl),
+      'normal',
+    ).subscribe({
+      next: objectUrl => {
+        if (objectUrl) {
+          this.setPostThumbnailObjectUrl(post.postId, objectUrl);
+        }
+      },
+    });
+  }
+
+  private loadFullPostMedia(post: PostResponse): void {
+    const mediaUrl = post.mediaUrl;
+
+    if (!mediaUrl) {
+      return;
+    }
+
+    if (this.postMediaObjectUrls()[post.postId]) {
+      this.selectedPost.set(this.withRenderablePostMedia(post));
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(
+      mediaUrl,
+      postMediaKind(post.mediaRef ?? mediaUrl),
+      'high',
+    ).subscribe({
+      next: objectUrl => {
+        if (objectUrl) {
+          this.setPostMediaObjectUrl(post.postId, objectUrl);
+          this.selectedPost.set(this.withRenderablePostMedia(post));
+        }
+      },
     });
   }
 
@@ -607,7 +674,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private withRenderablePostMedia(post: PostResponse): PostResponse {
-    const mediaUrl = this.postMediaUrl(post);
+    const mediaUrl =
+      this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
     return mediaUrl ? { ...post, mediaUrl } : post;
   }
 
@@ -629,6 +697,23 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private revokePostMediaObjectUrls(): void {
     this.postMediaObjectUrls.set({});
+  }
+
+  private setPostThumbnailObjectUrl(postId: string, objectUrl: string): void {
+    this.revokePostThumbnailObjectUrl(postId);
+    this.postThumbnailObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+  }
+
+  private revokePostThumbnailObjectUrl(postId: string): void {
+    this.postThumbnailObjectUrls.update(urls => {
+      const remaining = { ...urls };
+      delete remaining[postId];
+      return remaining;
+    });
+  }
+
+  private revokePostThumbnailObjectUrls(): void {
+    this.postThumbnailObjectUrls.set({});
   }
 
   private replaceProfilePictureObjectUrl(objectUrl: string): void {

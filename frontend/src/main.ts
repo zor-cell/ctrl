@@ -2,6 +2,9 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
 
+// Required by sockjs-client in some browser builds.
+(globalThis as typeof globalThis & { global?: typeof globalThis }).global ??= globalThis;
+
 async function clearLegacyServiceWorkers() {
   if (!('serviceWorker' in navigator)) {
     return;

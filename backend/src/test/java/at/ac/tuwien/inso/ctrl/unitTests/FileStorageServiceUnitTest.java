@@ -14,9 +14,11 @@ import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.file.ImageProcessingService;
 import at.ac.tuwien.inso.ctrl.file.VideoTranscodingService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,12 +46,19 @@ public class FileStorageServiceUnitTest {
 
   @Mock private VideoTranscodingService videoTranscodingService;
 
+  private final ImageProcessingService imageProcessingService = new ImageProcessingService();
+
   private FileStorageService fileStorageService;
 
   @BeforeEach
   void setUp() {
     fileStorageService =
-        new FileStorageService(s3Client, s3Presigner, internalS3Presigner, videoTranscodingService);
+        new FileStorageService(
+            s3Client,
+            s3Presigner,
+            internalS3Presigner,
+            videoTranscodingService,
+            imageProcessingService);
     ReflectionTestUtils.setField(fileStorageService, "bucketName", "ctrl-test-media");
     ReflectionTestUtils.setField(fileStorageService, "privateBucketName", "ctrl-test-private");
     ReflectionTestUtils.setField(fileStorageService, "publicBucketName", "ctrl-test-public");
@@ -158,21 +167,35 @@ public class FileStorageServiceUnitTest {
 
   @Test
   void movePostMediaToPublicBucket_withPostMediaRef_copiesToPublicAndDeletesPrivate() {
-    fileStorageService.movePostMediaToPublicBucket("posts/media/file.png");
+    fileStorageService.movePostMediaToPublicBucket("posts/media/11111111-1111-1111-1111-111111111111.png");
 
     ArgumentCaptor<CopyObjectRequest> copyCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
-    verify(s3Client).copyObject(copyCaptor.capture());
-    CopyObjectRequest copyRequest = copyCaptor.getValue();
-    assertEquals("ctrl-test-private", copyRequest.sourceBucket());
-    assertEquals("posts/media/file.png", copyRequest.sourceKey());
-    assertEquals("ctrl-test-public", copyRequest.destinationBucket());
-    assertEquals("posts/media/file.png", copyRequest.destinationKey());
+    verify(s3Client, org.mockito.Mockito.times(2)).copyObject(copyCaptor.capture());
+    List<CopyObjectRequest> copyRequests = copyCaptor.getAllValues();
+    CopyObjectRequest mediaCopyRequest = copyRequests.get(0);
+    assertEquals("ctrl-test-private", mediaCopyRequest.sourceBucket());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.sourceKey());
+    assertEquals("ctrl-test-public", mediaCopyRequest.destinationBucket());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png",
+        mediaCopyRequest.destinationKey());
+
+    CopyObjectRequest thumbnailCopyRequest = copyRequests.get(1);
+    assertEquals(
+        "posts/media/thumbnails/11111111-1111-1111-1111-111111111111.jpeg",
+        thumbnailCopyRequest.sourceKey());
+    assertEquals(
+        "posts/media/thumbnails/11111111-1111-1111-1111-111111111111.jpeg",
+        thumbnailCopyRequest.destinationKey());
 
     ArgumentCaptor<DeleteObjectRequest> deleteCaptor =
         ArgumentCaptor.forClass(DeleteObjectRequest.class);
-    verify(s3Client).deleteObject(deleteCaptor.capture());
-    assertEquals("ctrl-test-private", deleteCaptor.getValue().bucket());
-    assertEquals("posts/media/file.png", deleteCaptor.getValue().key());
+    verify(s3Client, org.mockito.Mockito.times(2)).deleteObject(deleteCaptor.capture());
+    assertEquals("ctrl-test-private", deleteCaptor.getAllValues().get(0).bucket());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png",
+        deleteCaptor.getAllValues().get(0).key());
   }
 
   @Test

@@ -37,6 +37,9 @@ public class PostMapper {
             .map(this::toCommentResponse)
             .toList();
 
+    String mediaRef = post.getMediaRef();
+    String mediaThumbnailRef = fileStorageService.resolveThumbnailRef(mediaRef);
+
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
@@ -44,8 +47,10 @@ public class PostMapper {
         sourceId,
         toSourceResponse(post.getSource()),
         post.getCaption(),
-        post.getMediaRef(),
-        fileStorageService.resolveFileUrl(post.getMediaRef()),
+        mediaRef,
+        fileStorageService.resolveFileUrl(mediaRef),
+        mediaThumbnailRef,
+        fileStorageService.resolveFileUrl(mediaThumbnailRef),
         post.isPublic(),
         post.isAiGenerated(),
         labelIds,

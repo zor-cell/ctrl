@@ -252,6 +252,8 @@ public class PostControllerIntegrationTest {
         caption,
         "posts/media/file.png",
         "http://localhost:3900/ctrl-dev-media/posts/media/file.png",
+        null,
+        null,
         true,
         false,
         List.of(),

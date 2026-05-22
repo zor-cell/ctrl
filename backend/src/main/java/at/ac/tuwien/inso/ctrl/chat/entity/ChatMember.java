@@ -28,4 +28,7 @@ public class ChatMember {
 
   @Column(name = "joined_at")
   private LocalDateTime joinedAt;
+
+  @Column(name = "last_read_at")
+  private LocalDateTime lastReadAt;
 }

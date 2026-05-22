@@ -13,6 +13,8 @@ public record PostResponse(
     String caption,
     String mediaRef,
     String mediaUrl,
+    String mediaThumbnailRef,
+    String mediaThumbnailUrl,
     boolean isPublic,
     boolean isAiGenerated,
     List<String> labelIds,

@@ -164,30 +164,30 @@ $border: var(--border);
   font-size: 0.98rem;
 }
 
-.post-detail__caption :where(h2, h3, p, ul) {
+:host ::ng-deep .post-detail__caption :where(h2, h3, p, ul) {
   margin: 0;
 }
 
-.post-detail__caption h2 {
+:host ::ng-deep .post-detail__caption h2 {
   font-size: 1.12rem;
   line-height: 1.18;
 }
 
-.post-detail__caption h3 {
+:host ::ng-deep .post-detail__caption h3 {
   font-size: 1.02rem;
   line-height: 1.24;
 }
 
-.post-detail__caption ul {
+:host ::ng-deep .post-detail__caption ul {
   padding-left: 1.5rem;
 }
 
-.post-detail__caption li + li {
+:host ::ng-deep .post-detail__caption li + li {
   margin-top: 0.35rem;
 }
 
-.post-detail__caption p,
-.post-detail__caption li {
+:host ::ng-deep .post-detail__caption p,
+:host ::ng-deep .post-detail__caption li {
   overflow-wrap: anywhere;
 }
 
