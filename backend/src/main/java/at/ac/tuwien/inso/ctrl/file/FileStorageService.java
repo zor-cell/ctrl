@@ -112,6 +112,21 @@ public class FileStorageService {
     }
   }
 
+  public void deleteProfilePicture(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return;
+    }
+
+    if (!mediaRef.startsWith(PROFILE_PICTURE_PREFIX)) {
+      throw new InvalidRequestException("Invalid profile picture reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
   public void deletePostMedia(String mediaRef) {
     if (mediaRef == null || mediaRef.isBlank() || !mediaRef.startsWith(POST_MEDIA_PREFIX)) {
       throw new InvalidRequestException("Invalid post media reference");

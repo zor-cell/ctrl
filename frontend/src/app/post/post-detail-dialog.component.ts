@@ -17,12 +17,13 @@ import { timeAgo as formatTimeAgo } from '../core/utils/date-time.utils';
 import { CommentService } from '../feed/services/comment.service';
 import { UserService } from '../user/user.service';
 import { CommentResponse, PostResponse, SingleSourceResponse } from './dto/PostResponse';
+import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 
 @Component({
   selector: 'app-post-detail-dialog',
-  imports: [CommonModule, Button, Dialog],
+  imports: [CommonModule, Button, Dialog, PostCaptionFormatPipe],
   templateUrl: './post-detail-dialog.component.html',
   styleUrl: './post-detail-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

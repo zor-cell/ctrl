@@ -1,5 +1,7 @@
 import {AbstractControl, ValidationErrors, ValidatorFn} from "@angular/forms";
 
+export const USERNAME_PATTERN = /^[A-Za-z0-9_.]+$/;
+
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
   const confirmPassword = control.get('confirmPassword');
@@ -23,7 +25,7 @@ export const usernameValidator: ValidatorFn = (control: AbstractControl): Valida
     return null;
   }
 
-  return username.length > 2 && /^[A-Za-z0-9_.]+$/.test(username)
+  return username.length > 2 && USERNAME_PATTERN.test(username)
     ? null
     : { invalidUsername: true };
 };

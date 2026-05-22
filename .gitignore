@@ -9,3 +9,4 @@ cypress/screenshots
 
 /backend/tokens/StoredCredential
 /backend/src/main/resources/credentials.json
+node_modules

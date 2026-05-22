@@ -86,6 +86,7 @@
             <button
               type="button"
               class="post-card"
+              [class.post-card--text-only]="!postMediaUrl(post)"
               (click)="openPost(post)"
             >
               @if (postMediaUrl(post) && postMediaKind(post) === 'image') {
@@ -116,7 +117,10 @@
                   </span>
                 </div>
 
-                <p class="post-card__caption">{{ post.caption }}</p>
+                <div
+                  class="post-card__caption"
+                  [innerHTML]="post.caption | postCaptionFormat"
+                ></div>
 
               </div>
             </button>
@@ -164,6 +168,16 @@
         [disabled]="updatingProfile()"
         (onClick)="openAvatarPicker()"
       />
+      @if (currentProfilePicture() || userService.user()?.profilePicture) {
+        <p-button
+          icon="pi pi-trash"
+          ariaLabel="Remove profile picture"
+          severity="secondary"
+          [text]="true"
+          [disabled]="updatingProfile()"
+          (onClick)="resetProfilePicture()"
+        />
+      }
     </div>
 
     <label class="profile-edit-field">
@@ -180,6 +194,8 @@
           Checking username...
         } @else if (usernameEmpty()) {
           Username is required.
+        } @else if (usernameInvalid()) {
+          Username must be at least 3 characters and may only contain letters, numbers, underscores and dots.
         } @else if (usernameAvailable() === false) {
           This username is already taken.
         } @else if (usernameChanged() && usernameAvailable() === true) {

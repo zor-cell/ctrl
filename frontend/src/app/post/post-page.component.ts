@@ -20,7 +20,9 @@ import { MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
+import { USERNAME_PATTERN } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
+import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from './dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
 import { PostDetailDialogComponent } from './post-detail-dialog.component';
@@ -35,6 +37,7 @@ import { PostService } from './post.service';
     Button,
     Dialog,
     TooltipModule,
+    PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
   ],
@@ -67,6 +70,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly profileBioDraft = signal('');
   protected readonly profileUsernameDraft = signal('');
   protected readonly selectedProfilePicture = signal<File | null>(null);
+  protected readonly removeProfilePicture = signal(false);
   protected readonly usernameAvailable = signal<boolean | null>(null);
   protected readonly checkingUsername = signal(false);
   protected readonly deletingPost = signal(false);
@@ -84,7 +88,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
     () => this.username().trim().charAt(0).toUpperCase() || '?',
   );
   protected readonly currentProfilePicture = computed(
-    () => this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
+    () =>
+      this.removeProfilePicture()
+        ? null
+        : this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
@@ -101,11 +108,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     () => this.usernameDraftTrimmed() !== this.userService.user()?.username,
   );
   protected readonly usernameEmpty = computed(() => this.usernameDraftTrimmed().length === 0);
+  protected readonly usernameInvalid = computed(
+    () => !this.usernameEmpty()
+      && (this.usernameDraftTrimmed().length < 3
+        || !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
+  );
   protected readonly canSaveProfile = computed(
     () =>
       !this.updatingProfile()
       && !this.bioTooLong()
       && !this.usernameEmpty()
+      && !this.usernameInvalid()
       && !this.checkingUsername()
       && this.usernameAvailable() !== false,
   );
@@ -200,6 +213,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.profileBioDraft.set(user.bio ?? '');
     this.usernameAvailable.set(null);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.editingProfile.set(true);
   }
 
@@ -213,6 +227,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.profileUsernameDraft.set('');
     this.usernameAvailable.set(null);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.revokeAvatarPreview();
   }
 
@@ -230,7 +245,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       clearTimeout(this.usernameCheckTimeout);
     }
 
-    if (this.usernameEmpty() || !this.usernameChanged()) {
+    if (this.usernameEmpty() || this.usernameInvalid() || !this.usernameChanged()) {
       this.checkingUsername.set(false);
       return;
     }
@@ -262,6 +277,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
     if (this.bioTooLong()) {
       this.notificationService.showWarning(
         `Bio must not be longer than ${this.maxBioLength} characters.`,
+      );
+      return;
+    }
+
+    if (this.usernameInvalid()) {
+      this.notificationService.showWarning(
+        'Username must be at least 3 characters and may only contain letters, numbers, underscores and dots.',
       );
       return;
     }
@@ -305,6 +327,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.revokeAvatarPreview();
     this.avatarPreviewUrl.set(URL.createObjectURL(file));
     this.selectedProfilePicture.set(file);
+    this.removeProfilePicture.set(false);
+  }
+
+  protected resetProfilePicture() {
+    if (this.updatingProfile()) {
+      return;
+    }
+
+    this.revokeAvatarPreview();
+    this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(Boolean(this.userService.user()?.profilePicture));
   }
 
   protected topicLabelById(topicId: string): string {
@@ -491,21 +524,31 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private saveProfilePictureIfNeeded() {
     const profilePicture = this.selectedProfilePicture();
-    if (!profilePicture) {
-      this.finishProfileSave();
+
+    if (profilePicture) {
+      this.userService.updateProfilePicture(profilePicture, false).subscribe({
+        next: () => this.finishProfileSave(),
+        error: () => this.updatingProfile.set(false),
+      });
       return;
     }
 
-    this.userService.updateProfilePicture(profilePicture, false).subscribe({
-      next: () => this.finishProfileSave(),
-      error: () => this.updatingProfile.set(false),
-    });
+    if (this.removeProfilePicture()) {
+      this.userService.deleteProfilePicture(false).subscribe({
+        next: () => this.finishProfileSave(),
+        error: () => this.updatingProfile.set(false),
+      });
+      return;
+    }
+
+    this.finishProfileSave();
   }
 
   private finishProfileSave() {
     this.updatingProfile.set(false);
     this.editingProfile.set(false);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.revokeAvatarPreview();
     this.loadProfilePicture(this.userService.user()?.profilePicture);
     this.notificationService.showSuccess('Updated profile');

@@ -128,10 +128,23 @@ public class UserService {
   @Transactional
   public UserDetailsResponse updateProfilePicture(User currentUser, MultipartFile file) {
     User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
     String profilePictureRef = fileStorageService.uploadProfilePicture(file);
     user.setProfilePicture(profilePictureRef);
 
     User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
+    return userMapper.toUserDetailsResponse(updatedUser);
+  }
+
+  @Transactional
+  public UserDetailsResponse deleteProfilePicture(User currentUser) {
+    User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
+    user.setProfilePicture(null);
+
+    User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 

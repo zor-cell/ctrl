@@ -3,7 +3,7 @@ $border: var(--border);
 :host ::ng-deep .post-detail-dialog {
   overflow: hidden;
   border: 1px solid $border;
-  border-radius: 1.5rem;
+  border-radius: 1rem;
 }
 
 :host ::ng-deep .post-detail-dialog .p-dialog-content {
@@ -16,7 +16,7 @@ $border: var(--border);
 .post-detail {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: min(50rem, 88vh);
+  max-height: min(46rem, 88vh);
 }
 
 .post-detail__header,
@@ -24,13 +24,13 @@ $border: var(--border);
 .post-detail__sources-panel,
 .post-detail__comments,
 .post-detail__comment-box {
-  padding: 1.25rem 1.5rem;
+  padding: 0.85rem 1rem;
 }
 
 .post-detail__header,
 .post-detail__comment-box {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .post-detail__header {
@@ -39,7 +39,7 @@ $border: var(--border);
   grid-template-columns: minmax(12rem, auto) 1fr auto;
   grid-template-areas:
     "author chips actions";
-  align-items: start;
+  align-items: center;
 }
 
 .post-detail__body {
@@ -88,10 +88,11 @@ $border: var(--border);
 .post-detail__avatar {
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2.625rem;
+  height: 2.625rem;
   overflow: hidden;
   border-radius: 999px;
+  font-size: 0.95rem;
   font-weight: 800;
 }
 
@@ -102,6 +103,13 @@ $border: var(--border);
 }
 
 .post-detail__author strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.post-detail__author p {
+  color: #888;
+  font-size: 0.78rem;
 }
 
 .post-detail__author p,
@@ -127,35 +135,78 @@ $border: var(--border);
   font-weight: 700;
 }
 
+.post-detail__media-wrapper {
+  display: grid;
+  justify-items: center;
+  padding: 0.85rem 1rem 0.25rem;
+}
+
 .post-detail__media {
   display: block;
-  width: 100%;
-  max-height: 36rem;
-  object-fit: cover;
+  width: min(100%, 34rem);
+  max-height: 24rem;
+  object-fit: contain;
+  border-radius: 0.45rem;
 }
 
 .post-detail__caption {
+  display: grid;
+  gap: 0.4rem;
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.93rem;
   line-height: 1.55;
 }
 
+.post-detail__caption--text-only {
+  min-height: 0;
+  align-content: start;
+  padding-block: 0.85rem;
+  font-size: 0.98rem;
+}
+
+.post-detail__caption :where(h2, h3, p, ul) {
+  margin: 0;
+}
+
+.post-detail__caption h2 {
+  font-size: 1.12rem;
+  line-height: 1.18;
+}
+
+.post-detail__caption h3 {
+  font-size: 1.02rem;
+  line-height: 1.24;
+}
+
+.post-detail__caption ul {
+  padding-left: 1.5rem;
+}
+
+.post-detail__caption li + li {
+  margin-top: 0.35rem;
+}
+
+.post-detail__caption p,
+.post-detail__caption li {
+  overflow-wrap: anywhere;
+}
+
 .post-detail__sources-panel {
-  padding-block: 0.5rem;
+  padding-block: 0.25rem 0.65rem;
 }
 
 .post-detail__sources {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
 }
 
 .post-detail__source {
   border: 1px solid $border;
   display: grid;
   gap: 0.25rem;
-  padding: 0.8rem;
-  border-radius: 0.75rem;
+  padding: 0.65rem;
+  border-radius: 0.65rem;
 }
 
 .post-detail__source h3 {
@@ -169,13 +220,14 @@ $border: var(--border);
 
 .post-detail__comments {
   display: grid;
-  gap: 1rem;
-  min-height: 12rem;
+  gap: 0.75rem;
+  min-height: 7rem;
+  border-top: 1px solid $border;
 }
 
 .post-detail__comments h2 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1rem;
 }
 
 .post-detail__comment-box {
@@ -189,7 +241,7 @@ $border: var(--border);
   display: grid;
   justify-items: center;
   gap: 0.45rem;
-  padding: 2.5rem 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .comments-loading i,
@@ -206,11 +258,11 @@ $border: var(--border);
 .comment {
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .comment--reply {
-  margin-top: 0.75rem;
+  margin-top: 0.55rem;
   padding-left: 0.45rem;
 }
 
@@ -269,7 +321,7 @@ $border: var(--border);
 
 .comment-content {
   margin: 0;
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   line-height: 1.45;
 }
 
@@ -368,7 +420,7 @@ $border: var(--border);
 .comment-input-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .comment-input-row input,
@@ -376,16 +428,16 @@ $border: var(--border);
   border: 1px solid $border;
   flex: 1;
   min-width: 0;
-  padding: 0.7rem 0.9rem;
-  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
   font: inherit;
 }
 
 .comment-input-row button {
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border: 0;
   background: transparent;
   cursor: pointer;
