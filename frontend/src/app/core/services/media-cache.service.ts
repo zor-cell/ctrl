@@ -3,13 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, finalize, map, of, shareReplay, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { MediaUrlResponse } from '../dto/MediaUrlResponse';
 import { SILENT_ERROR_CONTEXT } from '../interceptors';
 
 export type MediaCacheKind = 'image' | 'video';
 export type MediaCachePriority = 'low' | 'normal' | 'high';
 
-interface CachedObjectUrl {
-  objectUrl: string;
+interface CachedResolvedUrl {
+  resolvedUrl: string;
   expiresAt: number | null;
   priority: MediaCachePriority;
   lastUsedAt: number;
@@ -25,8 +26,8 @@ export class MediaCacheService {
 
   private readonly cachedUrls = new Set<string>();
   private readonly pendingUrls = new Set<string>();
-  private readonly cachedObjectUrls = new Map<string, CachedObjectUrl>();
-  private readonly pendingObjectUrls = new Map<string, Observable<string>>();
+  private readonly cachedResolvedUrls = new Map<string, CachedResolvedUrl>();
+  private readonly pendingResolvedUrls = new Map<string, Observable<string>>();
   private readonly refreshScheduled = new Set<string>();
   private readonly maxCachedUrls = 120;
 
@@ -41,6 +42,10 @@ export class MediaCacheService {
 
     const normalizedUrl = this.normalizeMediaUrl(url);
     const resolvedKind = kind ?? this.inferKind(normalizedUrl);
+
+    if (this.isPresignedObjectUrl(normalizedUrl)) {
+      return of(normalizedUrl);
+    }
 
     if (!this.isProtectedMediaUrl(normalizedUrl)) {
       this.cacheUrl(normalizedUrl, resolvedKind);
@@ -89,9 +94,9 @@ export class MediaCacheService {
   }
 
   clear(): void {
-    this.cachedObjectUrls.forEach(entry => this.revokeIfBlobUrl(entry.objectUrl));
-    this.cachedObjectUrls.clear();
-    this.pendingObjectUrls.clear();
+    this.cachedResolvedUrls.forEach(entry => this.revokeIfBlobUrl(entry.resolvedUrl));
+    this.cachedResolvedUrls.clear();
+    this.pendingResolvedUrls.clear();
     this.refreshScheduled.clear();
     this.cachedUrls.clear();
     this.pendingUrls.clear();
@@ -102,7 +107,7 @@ export class MediaCacheService {
     kind: MediaCacheKind,
     priority: MediaCachePriority,
   ): Observable<string> {
-    const cachedEntry = this.cachedObjectUrls.get(url);
+    const cachedEntry = this.cachedResolvedUrls.get(url);
     if (cachedEntry) {
       cachedEntry.lastUsedAt = Date.now();
       if (this.priorityRank(priority) > this.priorityRank(cachedEntry.priority)) {
@@ -113,24 +118,24 @@ export class MediaCacheService {
         this.scheduleProtectedMediaRefresh(url, kind, priority);
       }
 
-      return of(cachedEntry.objectUrl);
+      return of(cachedEntry.resolvedUrl);
     }
 
-    const pendingObjectUrl = this.pendingObjectUrls.get(url);
-    if (pendingObjectUrl) {
-      return pendingObjectUrl;
+    const pendingResolvedUrl = this.pendingResolvedUrls.get(url);
+    if (pendingResolvedUrl) {
+      return pendingResolvedUrl;
     }
 
-    const request$ = this.fetchProtectedMedia(url, kind, priority).pipe(
-      finalize(() => this.pendingObjectUrls.delete(url)),
+    const request$ = this.fetchPresignedMedia(url, kind, priority).pipe(
+      finalize(() => this.pendingResolvedUrls.delete(url)),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
-    this.pendingObjectUrls.set(url, request$);
+    this.pendingResolvedUrls.set(url, request$);
     return request$;
   }
 
-  private fetchProtectedMedia(
+  private fetchPresignedMedia(
     url: string,
     kind: MediaCacheKind,
     priority: MediaCachePriority,
@@ -140,19 +145,18 @@ export class MediaCacheService {
       return throwError(() => new Error('Invalid media reference'));
     }
 
-    const proxyUrl = `${environment.apiUrl}/files/media?ref=${encodeURIComponent(mediaRef)}`;
-    const expiresAt = Date.now() + MediaCacheService.DEFAULT_CACHE_TTL_MS;
+    const mediaUrlEndpoint =
+      `${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(mediaRef)}`;
 
-    return this.httpClient.get(proxyUrl, {
-      responseType: 'blob',
+    return this.httpClient.get<MediaUrlResponse>(mediaUrlEndpoint, {
       context: SILENT_ERROR_CONTEXT,
     }).pipe(
-      map(blob => this.replaceObjectUrl(
-        url,
-        URL.createObjectURL(blob),
-        priority,
-        expiresAt,
-      )),
+      map(response => {
+        const expiresAt = this.parseExpiresAt(response.expiresAt)
+          ?? (Date.now() + MediaCacheService.DEFAULT_CACHE_TTL_MS);
+
+        return this.replaceResolvedUrl(url, response.mediaUrl, priority, expiresAt);
+      }),
     );
   }
 
@@ -175,58 +179,77 @@ export class MediaCacheService {
     kind: MediaCacheKind,
     priority: MediaCachePriority,
   ): void {
-    if (this.pendingObjectUrls.has(url) || this.refreshScheduled.has(url)) {
+    if (this.pendingResolvedUrls.has(url) || this.refreshScheduled.has(url)) {
       return;
     }
 
     this.refreshScheduled.add(url);
-    this.fetchProtectedMedia(url, kind, priority).pipe(
+    this.fetchPresignedMedia(url, kind, priority).pipe(
       finalize(() => this.refreshScheduled.delete(url)),
     ).subscribe();
   }
 
-  private replaceObjectUrl(
+  private replaceResolvedUrl(
     url: string,
-    objectUrl: string,
+    resolvedUrl: string,
     priority: MediaCachePriority,
     expiresAt: number | null = null,
   ): string {
-    const previousEntry = this.cachedObjectUrls.get(url);
+    const previousEntry = this.cachedResolvedUrls.get(url);
     if (previousEntry) {
-      this.revokeIfBlobUrl(previousEntry.objectUrl);
-      this.cachedObjectUrls.delete(url);
+      this.revokeIfBlobUrl(previousEntry.resolvedUrl);
+      this.cachedResolvedUrls.delete(url);
     }
 
-    return this.rememberObjectUrl(url, objectUrl, priority, expiresAt);
+    return this.rememberResolvedUrl(url, resolvedUrl, priority, expiresAt);
   }
 
-  private rememberObjectUrl(
+  private rememberResolvedUrl(
     url: string,
-    objectUrl: string,
+    resolvedUrl: string,
     priority: MediaCachePriority,
     expiresAt: number | null = null,
   ): string {
-    if (this.cachedObjectUrls.size >= this.maxCachedUrls) {
+    if (this.cachedResolvedUrls.size >= this.maxCachedUrls) {
       const evictionUrl = this.findEvictionCandidateUrl();
       if (evictionUrl) {
-        const evictionEntry = this.cachedObjectUrls.get(evictionUrl);
+        const evictionEntry = this.cachedResolvedUrls.get(evictionUrl);
         if (evictionEntry) {
-          this.revokeIfBlobUrl(evictionEntry.objectUrl);
+          this.revokeIfBlobUrl(evictionEntry.resolvedUrl);
         }
-        this.cachedObjectUrls.delete(evictionUrl);
+        this.cachedResolvedUrls.delete(evictionUrl);
       }
     }
 
-    this.cachedObjectUrls.set(url, {
-      objectUrl,
+    this.cachedResolvedUrls.set(url, {
+      resolvedUrl,
       expiresAt,
       priority,
       lastUsedAt: Date.now(),
     });
-    return objectUrl;
+    return resolvedUrl;
   }
 
-  private isExpired(entry: CachedObjectUrl): boolean {
+  private parseExpiresAt(expiresAt: string | null | undefined): number | null {
+    if (!expiresAt) {
+      return null;
+    }
+
+    const parsed = Date.parse(expiresAt);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  private isPresignedObjectUrl(url: string): boolean {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.searchParams.has('X-Amz-Signature')
+        || parsedUrl.searchParams.has('X-Amz-Credential');
+    } catch {
+      return false;
+    }
+  }
+
+  private isExpired(entry: CachedResolvedUrl): boolean {
     if (entry.expiresAt === null || Number.isNaN(entry.expiresAt)) {
       return false;
     }
@@ -236,9 +259,9 @@ export class MediaCacheService {
 
   private findEvictionCandidateUrl(): string | null {
     let candidateUrl: string | null = null;
-    let candidateEntry: CachedObjectUrl | null = null;
+    let candidateEntry: CachedResolvedUrl | null = null;
 
-    this.cachedObjectUrls.forEach((entry, url) => {
+    this.cachedResolvedUrls.forEach((entry, url) => {
       if (
         candidateEntry === null
         || this.priorityRank(entry.priority) < this.priorityRank(candidateEntry.priority)

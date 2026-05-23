@@ -96,6 +96,7 @@
                   [src]="postThumbnailUrl(post)!"
                   alt=""
                   class="post-card__media"
+                  (error)="onPostThumbnailError(post)"
                 />
               }
 
@@ -242,6 +243,7 @@
 
 <app-post-detail-dialog
   [post]="selectedPost()"
+  [resolvedMediaUrl]="selectedPostMediaUrl()"
   [topicOptions]="topicOptions()"
   [currentProfilePicture]="currentProfilePicture()"
   [avatarInitial]="avatarInitial()"

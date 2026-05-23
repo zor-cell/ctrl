@@ -16,13 +16,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ImageProcessingService {
-  static final int PROFILE_MAX_SIDE = 512;
-  static final float PROFILE_JPEG_QUALITY = 0.75f;
+  static final int PROFILE_MAX_SIDE = 384;
+  static final float PROFILE_JPEG_QUALITY = 0.65f;
   static final int POST_MAX_SIDE = 1920;
-  static final long POST_COMPRESS_THRESHOLD_BYTES = 2L * 1024L * 1024L;
-  static final float POST_JPEG_QUALITY = 0.85f;
-  static final int THUMBNAIL_MAX_SIDE = 480;
-  static final float THUMBNAIL_JPEG_QUALITY = 0.75f;
+  static final long POST_COMPRESS_THRESHOLD_BYTES = 1536L * 1024L;
+  static final float POST_JPEG_QUALITY = 0.8f;
 
   private static final String JPEG_CONTENT_TYPE = "image/jpeg";
   private static final String JPEG_EXTENSION = ".jpeg";
@@ -33,29 +31,18 @@ public class ImageProcessingService {
     return toJpegProcessedImage(resized, PROFILE_JPEG_QUALITY);
   }
 
-  public PostImageProcessingResult processPostImage(InputStream inputStream, long fileSize)
-      throws IOException {
+  public ProcessedImage processPostImage(InputStream inputStream, long fileSize) throws IOException {
     BufferedImage source = readImage(inputStream);
     int maxSide = Math.max(source.getWidth(), source.getHeight());
     boolean compressMain =
         maxSide > POST_MAX_SIDE || fileSize > POST_COMPRESS_THRESHOLD_BYTES;
 
-    byte[] thumbnailData =
-        writeJpeg(resizeToMaxSide(source, THUMBNAIL_MAX_SIDE), THUMBNAIL_JPEG_QUALITY);
-
-    ProcessedImage main = null;
-    if (compressMain) {
-      BufferedImage resized = resizeToMaxSide(source, POST_MAX_SIDE);
-      main = toJpegProcessedImage(resized, POST_JPEG_QUALITY);
+    if (!compressMain) {
+      return null;
     }
 
-    return new PostImageProcessingResult(main, thumbnailData);
-  }
-
-  public byte[] createThumbnail(InputStream inputStream) throws IOException {
-    BufferedImage source = readImage(inputStream);
-    BufferedImage thumbnail = resizeToMaxSide(source, THUMBNAIL_MAX_SIDE);
-    return writeJpeg(thumbnail, THUMBNAIL_JPEG_QUALITY);
+    BufferedImage resized = resizeToMaxSide(source, POST_MAX_SIDE);
+    return toJpegProcessedImage(resized, POST_JPEG_QUALITY);
   }
 
   private BufferedImage readImage(InputStream inputStream) throws IOException {
@@ -131,6 +118,4 @@ public class ImageProcessingService {
   }
 
   public record ProcessedImage(byte[] data, String contentType, String extension) {}
-
-  public record PostImageProcessingResult(ProcessedImage main, byte[] thumbnailData) {}
 }

@@ -53,10 +53,7 @@ public class FileController {
   public FileUploadResponse uploadPostMedia(@RequestPart("file") MultipartFile file) {
     FileStorageService.UploadedFile uploadedFile = fileStorageService.uploadPostMedia(file);
     return new FileUploadResponse(
-        uploadedFile.mediaRef(),
-        fileStorageService.resolveFileUrl(uploadedFile.mediaRef()),
-        uploadedFile.contentType(),
-        uploadedFile.size());
+        uploadedFile.mediaRef(), uploadedFile.contentType(), uploadedFile.size());
   }
 
   @DeleteMapping("/post-media")
@@ -126,7 +123,7 @@ public class FileController {
               .orElseThrow(
                   () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Group image not found"));
 
-      if (!chatMemberRepository.existsByChatChatIdAndUser(chat.getChatId(), viewer)) {
+      if (!chatMemberRepository.existsActiveByChatChatIdAndUser(chat.getChatId(), viewer)) {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Media access denied");
       }
 

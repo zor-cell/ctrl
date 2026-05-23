@@ -66,21 +66,15 @@ public class FileControllerIntegrationTest {
         new FileStorageService.UploadedFile("posts/media/file.png", "image/png", 3L);
 
     when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/file.png"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/file.png");
 
     mockMvc
         .perform(multipart("/files/post-media").file(file))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:3900/ctrl-dev-media/posts/media/file.png"))
         .andExpect(jsonPath("$.contentType").value("image/png"))
         .andExpect(jsonPath("$.size").value(3));
 
     verify(fileStorageService).uploadPostMedia(any());
-    verify(fileStorageService).resolveFileUrl("posts/media/file.png");
   }
 
   @Test
@@ -91,21 +85,15 @@ public class FileControllerIntegrationTest {
         new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 3L);
 
     when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
 
     mockMvc
         .perform(multipart("/files/post-media").file(file))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.mediaRef").value("posts/media/video.mp4"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4"))
         .andExpect(jsonPath("$.contentType").value("video/mp4"))
         .andExpect(jsonPath("$.size").value(3));
 
     verify(fileStorageService).uploadPostMedia(any());
-    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
   }
 
   @Test

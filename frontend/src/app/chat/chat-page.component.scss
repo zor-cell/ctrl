@@ -1,18 +1,36 @@
 $border: var(--border);
+$chat-viewport-offset: 72px;
+
+:host {
+  display: block;
+  height: calc(100vh - #{$chat-viewport-offset});
+  overflow: hidden;
+}
 
 .chat-page {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  min-height: calc(100vh - 72px);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-sidebar {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 0;
+  height: 100%;
   padding: 1.25rem;
+  overflow: hidden;
   border-right: 1px solid $border;
   background: var(--p-surface-0);
+}
+
+.sidebar-header,
+.search-wrapper,
+.group-section {
+  flex-shrink: 0;
 }
 
 .search-wrapper {
@@ -44,6 +62,12 @@ $border: var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.chat-section {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .section-title {
@@ -196,7 +220,6 @@ $border: var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow-y: auto;
 }
 
 .row-header {
@@ -352,17 +375,26 @@ $border: var(--border);
 }
 
 .chat-detail {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--p-surface-0);
 }
 
 .chat-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.875rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid $border;
+  background: var(--p-surface-0);
 }
 
 .chat-header-actions {
@@ -480,10 +512,19 @@ $border: var(--border);
 
 .message-list {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.6rem;
-  padding: 2.75rem 1.5rem 1.25rem;
+  min-height: 0;
+  padding: 1rem 1.5rem 1.25rem;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.message-list-end {
+  flex-shrink: 0;
+  height: 0;
 }
 
 .message-row {
@@ -693,11 +734,13 @@ $border: var(--border);
 
 .message-composer {
   display: grid;
+  flex-shrink: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid $border;
+  background: var(--p-surface-0);
 }
 
 .composer-main {
@@ -712,10 +755,11 @@ $border: var(--border);
 
 .no-chat {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  min-height: calc(100vh - 72px);
+  min-height: 0;
   color: var(--p-text-muted-color);
 }
 

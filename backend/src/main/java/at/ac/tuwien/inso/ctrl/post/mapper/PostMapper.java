@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.post.mapper;
 
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
@@ -17,8 +16,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class PostMapper {
-  private final FileStorageService fileStorageService;
-
   public PostResponse toResponse(Post post) {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<String> labelIds =
@@ -37,9 +34,6 @@ public class PostMapper {
             .map(this::toCommentResponse)
             .toList();
 
-    String mediaRef = post.getMediaRef();
-    String mediaThumbnailRef = fileStorageService.resolveThumbnailRef(mediaRef);
-
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
@@ -47,10 +41,7 @@ public class PostMapper {
         sourceId,
         toSourceResponse(post.getSource()),
         post.getCaption(),
-        mediaRef,
-        fileStorageService.resolveFileUrl(mediaRef),
-        mediaThumbnailRef,
-        fileStorageService.resolveFileUrl(mediaThumbnailRef),
+        post.getMediaRef(),
         post.isPublic(),
         post.isAiGenerated(),
         labelIds,

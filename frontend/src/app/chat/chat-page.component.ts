@@ -1,5 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Injector,
+  OnDestroy,
+  OnInit,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
@@ -42,7 +53,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private readonly chatUnreadService = inject(ChatUnreadService);
   private readonly chatRealtimeBridge = inject(ChatRealtimeBridgeService);
   private readonly userService = inject(UserService);
+  private readonly injector = inject(Injector);
   private readonly destroy$ = new Subject<void>();
+  private readonly messageListRef = viewChild<ElementRef<HTMLElement>>('messageList');
+  private readonly messageListEndRef = viewChild<ElementRef<HTMLElement>>('messageListEnd');
 
   protected readonly chats = signal<Chat[]>([]);
   protected readonly messages = signal<ChatMessage[]>([]);
@@ -97,7 +111,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly filteredDirectChats = computed(() =>
-    this.dedupeDirectChats(this.filteredChats().filter(chat => !chat.groupChat)),
+    this.dedupeDirectChats(
+      this.filteredChats().filter(chat => !chat.groupChat && this.isValidDirectChat(chat)),
+    ),
   );
 
   protected readonly filteredGroupChats = computed(() =>
@@ -213,6 +229,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected selectChat(chat: Chat): void {
     this.friendDropdownOpen.set(false);
     this.reactionPickerMessageId.set(null);
+    this.messages.set([]);
     this.selectedChat.set(chat);
     this.chatRealtimeBridge.watchChat(chat.chatId);
     this.loadMessages(chat.chatId);
@@ -372,21 +389,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    const lastMessage = chat.lastMessage;
-    if (lastMessage) {
-      if (!lastMessage.own) {
-        return lastMessage.sender;
-      }
-
-      const otherBySender = chat.participants.find(
-        participant =>
-          this.normalizeId(participant.id) !== this.normalizeId(lastMessage.sender.id),
-      );
-      if (otherBySender) {
-        return otherBySender;
-      }
-    }
-
     return this.findOtherParticipant(chat.participants);
   }
 
@@ -419,15 +421,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const other = this.otherParticipant(chat);
     if (other) {
-      return other.username;
+      return other.name?.trim() || other.username;
     }
 
-    const lastMessage = chat.lastMessage;
-    if (lastMessage && !lastMessage.own) {
-      return lastMessage.sender.username;
-    }
-
-    return chat.name;
+    return 'Unknown chat';
   }
 
   protected directChatSubtitle(chat: Chat): string | null {
@@ -652,8 +649,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: message => {
-          this.messages.update(messages => [...messages, this.normalizeMessage(message)]);
-          this.loadChats();
+          const normalizedMessage = this.normalizeMessage(message);
+          this.appendMessageIfMissing(normalizedMessage);
+          this.patchChatLastMessage(chat, normalizedMessage);
         },
         error: () => {
           this.messageText.set(content);
@@ -741,6 +739,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
             this.loadAvatar(message.sender.id, message.sender.profilePicture)
           );
           this.markChatReadInState(chatId);
+          this.scrollToLatestMessage();
         },
         error: () => this.notificationService.showError('Failed to load messages'),
       });
@@ -843,8 +842,62 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private applyChatListDedupe(chats: Chat[]): Chat[] {
     const groups = chats.filter(chat => chat.groupChat);
-    const direct = this.dedupeDirectChats(chats.filter(chat => !chat.groupChat));
+    const direct = this.dedupeDirectChats(
+      chats.filter(chat => !chat.groupChat && this.isValidDirectChat(chat)),
+    );
     return [...groups, ...direct];
+  }
+
+  private isValidDirectChat(chat: Chat): boolean {
+    return this.findOtherParticipant(chat.participants) !== null;
+  }
+
+  private appendMessageIfMissing(message: ChatMessage): void {
+    let appended = false;
+    this.messages.update(messages => {
+      if (messages.some(existing => existing.messageId === message.messageId)) {
+        return messages;
+      }
+
+      appended = true;
+      return [...messages, message];
+    });
+
+    if (appended) {
+      this.scrollToLatestMessage();
+    }
+  }
+
+  private scrollToLatestMessage(): void {
+    afterNextRender(
+      () => {
+        requestAnimationFrame(() => {
+          const list = this.messageListRef()?.nativeElement;
+          const end = this.messageListEndRef()?.nativeElement;
+
+          if (end) {
+            end.scrollIntoView({ block: 'end' });
+          } else if (list) {
+            list.scrollTop = list.scrollHeight;
+          }
+        });
+      },
+      { injector: this.injector },
+    );
+  }
+
+  private patchChatLastMessage(chat: Chat, message: ChatMessage): void {
+    const updatedChat: Chat = {
+      ...chat,
+      lastMessage: message,
+      unreadCount: 0,
+    };
+
+    this.upsertChat(updatedChat);
+
+    if (this.selectedChat()?.chatId === chat.chatId) {
+      this.selectedChat.set(updatedChat);
+    }
   }
 
   private directChatPartnerKey(chat: Chat): string {
@@ -905,12 +958,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const normalizedMessage = this.normalizeMessage(payload.message);
     if (payload.type === 'MESSAGE') {
-      this.messages.update(messages => {
-        if (messages.some(message => message.messageId === normalizedMessage.messageId)) {
-          return messages;
-        }
-        return [...messages, normalizedMessage];
-      });
+      this.appendMessageIfMissing(normalizedMessage);
       this.markChatReadInState(payload.chatId);
     } else {
       this.updateMessageInState(normalizedMessage);

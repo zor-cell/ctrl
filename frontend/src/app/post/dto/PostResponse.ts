@@ -18,9 +18,6 @@ export interface PostResponse {
   source: SourceResponse | null;
   caption: string;
   mediaRef: string | null;
-  mediaUrl: string | null;
-  mediaThumbnailRef: string | null;
-  mediaThumbnailUrl: string | null;
   isPublic: boolean;
   isAiGenerated: boolean;
   labelIds: string[];

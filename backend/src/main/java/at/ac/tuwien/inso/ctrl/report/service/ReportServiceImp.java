@@ -366,7 +366,6 @@ public class ReportServiceImp implements ReportService {
         feedPostResponse.userProfilePic(),
         feedPostResponse.caption(),
         feedPostResponse.mediaRef(),
-        feedPostResponse.mediaRef(),
         feedPostResponse.isPublic(),
         feedPostResponse.upvotes(),
         feedPostResponse.downvotes(),

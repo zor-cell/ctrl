@@ -55,7 +55,6 @@ public class FileStorageService {
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
   private static final String CHAT_GROUP_IMAGE_PREFIX = "chats/group-images/";
   private static final int MAX_VIDEO_SIDE = 1920;
-  private static final int VIDEO_THUMBNAIL_MAX_WIDTH = 480;
 
   private final S3Client s3Client;
   private final S3Presigner s3Presigner;
@@ -435,30 +434,19 @@ public class FileStorageService {
 
   private UploadedFile uploadProcessedPostImage(MultipartFile file) throws IOException {
     try (InputStream inputStream = file.getInputStream()) {
-      ImageProcessingService.PostImageProcessingResult processingResult =
+      ImageProcessingService.ProcessedImage processedImage =
           imageProcessingService.processPostImage(inputStream, file.getSize());
 
-      UploadedFile uploadedFile;
-      if (processingResult.main() != null) {
-        ImageProcessingService.ProcessedImage main = processingResult.main();
-        uploadedFile =
-            uploadBytes(
-                main.data(),
-                POST_MEDIA_PREFIX,
-                main.contentType(),
-                main.extension(),
-                privateBucketName);
-      } else {
-        uploadedFile = uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+      if (processedImage != null) {
+        return uploadBytes(
+            processedImage.data(),
+            POST_MEDIA_PREFIX,
+            processedImage.contentType(),
+            processedImage.extension(),
+            privateBucketName);
       }
 
-      String thumbnailRef =
-          uploadThumbnail(processingResult.thumbnailData(), uploadedFile.mediaRef());
-      return new UploadedFile(
-          uploadedFile.mediaRef(),
-          uploadedFile.contentType(),
-          uploadedFile.size(),
-          thumbnailRef);
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } catch (IOException processingException) {
       return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     }
@@ -467,78 +455,39 @@ public class FileStorageService {
   private UploadedFile uploadPostVideo(MultipartFile file) throws IOException {
     Path inputFile = Files.createTempFile("post-media-", resolveExtension(file));
     Path outputFile = Files.createTempFile("post-media-", ".mp4");
-    Path thumbnailFile = Files.createTempFile("post-media-thumb-", ".jpeg");
 
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
 
-      UploadedFile uploadedFile;
-      Path thumbnailSource = inputFile;
       if (videoTranscodingService.shouldScaleVideo(inputFile, MAX_VIDEO_SIDE)) {
         videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
-        uploadedFile = uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
-        thumbnailSource = outputFile;
-      } else {
-        uploadedFile = uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+        return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
       }
 
-      videoTranscodingService.generateThumbnail(
-          thumbnailSource, thumbnailFile, VIDEO_THUMBNAIL_MAX_WIDTH);
-      String thumbnailRef =
-          uploadThumbnail(Files.readAllBytes(thumbnailFile), uploadedFile.mediaRef());
-      return new UploadedFile(
-          uploadedFile.mediaRef(),
-          uploadedFile.contentType(),
-          uploadedFile.size(),
-          thumbnailRef);
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
-      Files.deleteIfExists(thumbnailFile);
     }
   }
 
   private UploadedFile transcodeAndUploadQuickTimeVideo(MultipartFile file) throws IOException {
     Path inputFile = Files.createTempFile("post-media-", resolveExtension(file));
     Path outputFile = Files.createTempFile("post-media-", ".mp4");
-    Path thumbnailFile = Files.createTempFile("post-media-thumb-", ".jpeg");
 
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
-      videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
-      UploadedFile uploadedFile =
-          uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
-      videoTranscodingService.generateThumbnail(
-          outputFile, thumbnailFile, VIDEO_THUMBNAIL_MAX_WIDTH);
-      String thumbnailRef =
-          uploadThumbnail(Files.readAllBytes(thumbnailFile), uploadedFile.mediaRef());
-      return new UploadedFile(
-          uploadedFile.mediaRef(),
-          uploadedFile.contentType(),
-          uploadedFile.size(),
-          thumbnailRef);
+
+      if (videoTranscodingService.shouldScaleVideo(inputFile, MAX_VIDEO_SIDE)) {
+        videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
+        return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
+      }
+
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
-      Files.deleteIfExists(thumbnailFile);
     }
-  }
-
-  private String uploadThumbnail(byte[] thumbnailData, String mediaRef) {
-    String thumbnailRef = resolveThumbnailRef(mediaRef);
-    if (thumbnailRef == null) {
-      return null;
-    }
-
-    PutObjectRequest putObjectRequest =
-        PutObjectRequest.builder()
-            .bucket(privateBucketName)
-            .key(thumbnailRef)
-            .contentType(JPEG_MEDIA_TYPE)
-            .build();
-
-    s3Client.putObject(putObjectRequest, RequestBody.fromBytes(thumbnailData));
-    return thumbnailRef;
   }
 
   private UploadedFile uploadBytes(
@@ -613,11 +562,7 @@ public class FileStorageService {
     return extension.matches("\\.[a-z0-9]+") ? extension : "";
   }
 
-  public record UploadedFile(String mediaRef, String contentType, long size, String thumbnailRef) {
-    public UploadedFile(String mediaRef, String contentType, long size) {
-      this(mediaRef, contentType, size, null);
-    }
-  }
+  public record UploadedFile(String mediaRef, String contentType, long size) {}
 
   public record StoredFile(InputStream inputStream, String contentType, long size) {}
 

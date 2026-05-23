@@ -130,7 +130,7 @@
               }
               @if (hasUnreadMessages(chat)) {
                 <span class="chat-unread-badge" [attr.aria-label]="chat.unreadCount + ' unread'">
-                  {{ chat.unreadCount > 9 ? '9+' : chat.unreadCount }}
+                  {{ chat.unreadCount > 9 ? '+9' : chat.unreadCount }}
                 </span>
               }
             </span>
@@ -224,7 +224,7 @@
         </div>
       </header>
 
-      <div class="message-list">
+      <div class="message-list" #messageList>
         @if (loadingMessages()) {
           <p class="message-empty">Loading messages</p>
         } @else if (messages().length === 0) {
@@ -299,6 +299,7 @@
             </article>
             }
           }
+          <div #messageListEnd class="message-list-end" aria-hidden="true"></div>
         }
       </div>
 

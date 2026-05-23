@@ -30,6 +30,11 @@ export class ChatUnreadService {
     this.totalUnread.set(total);
   }
 
+  clear(): void {
+    this.unreadByChatId.clear();
+    this.totalUnread.set(0);
+  }
+
   refresh() {
     return this.chatService.getChats().pipe(
       tap(chats => this.syncFromChats(chats))

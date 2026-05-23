@@ -31,4 +31,7 @@ public class ChatMember {
 
   @Column(name = "last_read_at")
   private LocalDateTime lastReadAt;
+
+  @Column(name = "left_at")
+  private LocalDateTime leftAt;
 }

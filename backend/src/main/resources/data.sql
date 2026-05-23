@@ -96,6 +96,9 @@ CREATE TRIGGER trg_update_source_votes
 -- messages.system: NOT NULL without DEFAULT fails on existing rows via Hibernate ddl-auto
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS system BOOLEAN NOT NULL DEFAULT false^
 
+-- Soft-delete for chat membership (delete chat for self without breaking the other user)
+ALTER TABLE chat_members ADD COLUMN IF NOT EXISTS left_at TIMESTAMP^
+
 UPDATE chats c
 SET owner_id = (
     SELECT cm.user_id

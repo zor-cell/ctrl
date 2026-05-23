@@ -8,6 +8,7 @@ import {Menubar} from "primeng/menubar";
 import {Avatar} from "primeng/avatar";
 import {UserService} from "../user/user.service";
 import {TieredMenu} from "primeng/tieredmenu";
+import {ChatSessionService} from '../chat/chat-session.service';
 import {ChatUnreadService} from '../chat/chat-unread.service';
 import {ViewTrackingService} from "../post/services/view-tracking.service";
 
@@ -25,10 +26,13 @@ export class NavigationComponent {
   protected themeService = inject(ThemeService);
   private viewTrackingService = inject(ViewTrackingService);
   private readonly chatUnreadService = inject(ChatUnreadService);
+  private readonly chatSessionService = inject(ChatSessionService);
 
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
-    const unreadTotal = this.chatUnreadService.totalUnread();
+    const currentUser = this.userService.user();
+    const unreadTotal =
+      loggedIn && currentUser != null ? this.chatUnreadService.totalUnread() : 0;
 
     const items: MenuItem[] = [
 
@@ -43,7 +47,10 @@ export class NavigationComponent {
           icon: 'pi pi-comments',
           routerLink: '/chat',
           styleClass: 'nav-chat-item',
-          badge: unreadTotal > 0 ? this.formatUnreadBadge(unreadTotal) : undefined,
+          badge:
+            currentUser != null && unreadTotal > 0
+              ? this.formatUnreadBadge(unreadTotal)
+              : undefined,
           badgeSeverity: 'secondary',
         }
       );
@@ -53,7 +60,7 @@ export class NavigationComponent {
   });
 
   private formatUnreadBadge(total: number): string {
-    return total > 9 ? '9+' : String(total);
+    return total > 9 ? '+9' : String(total);
   }
 
   protected profileItems = computed<MenuItem[]>(() => {
@@ -83,6 +90,7 @@ export class NavigationComponent {
         icon: 'pi pi-sign-out',
         command: () => {
           this.viewTrackingService.stopAndClear();
+          this.chatSessionService.teardown();
           this.authService.logout();
           this.userService.clearUser();
           this.router.navigate(['/login']);

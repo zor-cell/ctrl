@@ -33,4 +33,23 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
   Optional<Chat> findByChatIdWithDetails(@Param("chatId") UUID chatId);
 
   Optional<Chat> findByImageRef(String imageRef);
+
+  @Query(
+      """
+      SELECT DISTINCT c FROM Chat c
+      LEFT JOIN FETCH c.owner
+      LEFT JOIN FETCH c.members member
+      LEFT JOIN FETCH member.user
+      WHERE c.owner IS NULL
+        AND EXISTS (
+          SELECT 1 FROM ChatMember m1
+          WHERE m1.chat = c AND m1.user.id = :userA
+        )
+        AND EXISTS (
+          SELECT 1 FROM ChatMember m2
+          WHERE m2.chat = c AND m2.user.id = :userB
+        )
+      """)
+  List<Chat> findDirectChatsBetweenUsers(
+      @Param("userA") UUID userA, @Param("userB") UUID userB);
 }

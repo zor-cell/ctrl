@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class VideoTranscodingService {
   private static final Duration TRANSCODING_TIMEOUT = Duration.ofMinutes(3);
   private static final int DEFAULT_MAX_VIDEO_SIDE = 1920;
-  private static final long VIDEO_SCALE_FALLBACK_SIZE_BYTES = 20L * 1024L * 1024L;
+  private static final long VIDEO_SCALE_FALLBACK_SIZE_BYTES = 25L * 1024L * 1024L;
 
   @Value("${ffmpeg.executable:ffmpeg}")
   private String ffmpegExecutable;
@@ -47,7 +47,7 @@ public class VideoTranscodingService {
     command.add("-preset");
     command.add("veryfast");
     command.add("-crf");
-    command.add("23");
+    command.add("24");
     command.add("-vf");
     command.add(
         "scale='min("
@@ -79,29 +79,6 @@ public class VideoTranscodingService {
                 return true;
               }
             });
-  }
-
-  public void generateThumbnail(Path inputFile, Path outputFile, int maxWidth) {
-    List<String> command =
-        List.of(
-            ffmpegExecutable,
-            "-y",
-            "-hide_banner",
-            "-ss",
-            "00:00:01",
-            "-i",
-            inputFile.toString(),
-            "-map",
-            "0:v:0",
-            "-frames:v",
-            "1",
-            "-vf",
-            "scale='min(" + maxWidth + ",iw)':-2",
-            "-q:v",
-            "4",
-            outputFile.toString());
-
-    runFfmpeg(command, outputFile, "Video thumbnail could not be generated");
   }
 
   public Optional<VideoDimensions> readVideoDimensions(Path inputFile) {

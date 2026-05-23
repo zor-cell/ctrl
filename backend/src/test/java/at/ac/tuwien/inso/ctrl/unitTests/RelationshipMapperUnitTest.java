@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
@@ -31,7 +30,7 @@ public class RelationshipMapperUnitTest {
 
   @BeforeEach
   void setupUsers() {
-    relationshipMapper = new RelationshipMapper(new TestFileStorageService());
+    relationshipMapper = new RelationshipMapper();
 
     alpha =
         User.builder()
@@ -196,9 +195,7 @@ public class RelationshipMapperUnitTest {
     assertEquals(alpha.getId(), response.id());
     assertEquals("alpha", response.username());
     assertEquals("Alpha User", response.name());
-    assertEquals(
-        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
-        response.profilePicture());
+    assertEquals("users/profile-pictures/alpha-avatar.jpg", response.profilePicture());
     assertTrue(response.isVerified());
     assertEquals(statuses, response.relationshipStatuses());
   }
@@ -218,9 +215,7 @@ public class RelationshipMapperUnitTest {
     FriendRequestResponse response = relationshipMapper.toIncomingFriendRequestResponse(request);
 
     assertEquals("alpha", response.username());
-    assertEquals(
-        "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Falpha-avatar.jpg",
-        response.profilePicture());
+    assertEquals("users/profile-pictures/alpha-avatar.jpg", response.profilePicture());
     assertTrue(response.isIncoming());
     assertEquals(createdAt, response.createdAt());
   }
@@ -250,19 +245,4 @@ public class RelationshipMapperUnitTest {
     return statuses.stream().anyMatch(item -> item.status() == status);
   }
 
-  private static class TestFileStorageService extends FileStorageService {
-
-    TestFileStorageService() {
-      super(null, null, null, null, null);
-    }
-
-    @Override
-    public String resolveFileUrl(String relativeFilename) {
-      if (relativeFilename == null) {
-        return null;
-      }
-      return "http://localhost:8080/api/files/media-url?ref="
-          + relativeFilename.replace("/", "%2F");
-    }
-  }
 }

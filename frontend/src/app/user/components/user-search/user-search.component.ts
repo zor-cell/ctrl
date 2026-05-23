@@ -257,8 +257,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
 
   profilePictureUrl(user: UserSearchResult): string | null {
     return this.profilePictureUrls()[user.id]
-      ?? this.directProfilePictureUrl(user.profilePicture)
-      ?? this.defaultProfilePictureUrl(user);
+      ?? this.directProfilePictureUrl(user.profilePicture);
   }
 
   markProfilePictureFailed(user: UserSearchResult): void {
@@ -343,13 +342,4 @@ export class UserSearchComponent implements OnInit, OnDestroy {
     return url;
   }
 
-  private defaultProfilePictureUrl(user: UserSearchResult): string {
-    const avatarIndex = this.avatarIndex(user.id || user.username);
-    return `/assets/users/user${avatarIndex}ProfilePic.jpeg`;
-  }
-
-  private avatarIndex(seed: string): number {
-    const sum = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0);
-    return (sum % 3) + 1;
-  }
 }

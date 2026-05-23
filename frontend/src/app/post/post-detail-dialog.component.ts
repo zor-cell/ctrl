@@ -37,6 +37,7 @@ export class PostDetailDialogComponent implements OnChanges {
   @Input() currentProfilePicture: string | null = null;
   @Input() avatarInitial = '?';
   @Input() canDelete = true;
+  @Input() resolvedMediaUrl: string | null = null;
 
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();
@@ -116,11 +117,11 @@ export class PostDetailDialogComponent implements OnChanges {
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
-    return postMediaKind(post.mediaRef ?? post.mediaUrl);
+    return postMediaKind(post.mediaRef);
   }
 
-  protected postMediaUrl(post: PostResponse): string | null {
-    return post.mediaUrl;
+  protected postMediaUrl(): string | null {
+    return this.resolvedMediaUrl;
   }
 
   protected postSources(post: PostResponse): SingleSourceResponse[] {

@@ -12,11 +12,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ChatMemberRepository extends JpaRepository<ChatMember, ChatMemberId> {
-  boolean existsByChatChatIdAndUser(UUID chatId, User user);
+  @Query(
+      """
+      SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END
+      FROM ChatMember m
+      WHERE m.chat.chatId = :chatId AND m.user = :user AND m.leftAt IS NULL
+      """)
+  boolean existsActiveByChatChatIdAndUser(@Param("chatId") UUID chatId, @Param("user") User user);
 
   Optional<ChatMember> findByChatChatIdAndUser(UUID chatId, User user);
 
-  @Query("SELECT DISTINCT m.chat.chatId FROM ChatMember m WHERE m.user.id = :userId")
+  @Query(
+      "SELECT DISTINCT m.chat.chatId FROM ChatMember m WHERE m.user.id = :userId AND m.leftAt IS NULL")
   List<UUID> findChatIdsForUser(@Param("userId") UUID userId);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)

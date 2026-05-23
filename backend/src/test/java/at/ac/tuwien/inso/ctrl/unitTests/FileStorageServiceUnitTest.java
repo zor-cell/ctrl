@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -88,6 +89,7 @@ public class FileStorageServiceUnitTest {
   void uploadPostMedia_withQuickTimeVideo_transcodesAndUploadsMp4() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile("file", "clip.mov", "video/quicktime", new byte[] {1, 2, 3});
+    when(videoTranscodingService.shouldScaleVideo(any(Path.class), anyInt())).thenReturn(true);
     doAnswer(
             invocation -> {
               Path outputFile = invocation.getArgument(1);
@@ -95,13 +97,14 @@ public class FileStorageServiceUnitTest {
               return null;
             })
         .when(videoTranscodingService)
-        .transcodeToMp4(any(Path.class), any(Path.class));
+        .transcodeToMp4(any(Path.class), any(Path.class), anyInt());
 
     FileStorageService.UploadedFile uploadedFile = fileStorageService.uploadPostMedia(file);
 
     ArgumentCaptor<Path> inputCaptor = ArgumentCaptor.forClass(Path.class);
     ArgumentCaptor<Path> outputCaptor = ArgumentCaptor.forClass(Path.class);
-    verify(videoTranscodingService).transcodeToMp4(inputCaptor.capture(), outputCaptor.capture());
+    verify(videoTranscodingService)
+        .transcodeToMp4(inputCaptor.capture(), outputCaptor.capture(), anyInt());
     PutObjectRequest request = capturePutObjectRequest();
     assertTrue(uploadedFile.mediaRef().startsWith("posts/media/"));
     assertTrue(uploadedFile.mediaRef().endsWith(".mp4"));

@@ -113,7 +113,7 @@ export class ReportReviewComponent implements OnInit {
 
   postMediaUrl(report: ReportedPostResponse): string | null {
     return this.postMediaUrls()[report.reportId]
-      ?? this.directMediaUrl(report.mediaUrl ?? report.mediaRef);
+      ?? this.directMediaUrl(report.mediaRef);
   }
 
   getDomain(url: string): string {
@@ -252,14 +252,13 @@ export class ReportReviewComponent implements OnInit {
     });
 
     reports.forEach(report => {
-      const mediaUrl = report.mediaUrl ?? report.mediaRef;
-      if (!mediaUrl) {
+      if (!report.mediaRef) {
         return;
       }
 
       this.mediaCacheService.resolveMediaUrl(
-        mediaUrl,
-        this.mediaKind(mediaUrl),
+        report.mediaRef,
+        this.mediaKind(report.mediaRef),
         'high',
       ).subscribe({
         next: url => {

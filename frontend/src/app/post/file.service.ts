@@ -34,10 +34,8 @@ export class FileService {
     );
   }
 
-  loadMediaUrl(mediaUrl: string) {
-    return this.httpClient
-      .get(mediaUrl, { responseType: 'blob' })
-      .pipe(map(blob => URL.createObjectURL(blob)));
+  resolvePresignedMediaUrl(mediaUrl: string) {
+    return this.httpClient.get<{ mediaUrl: string; expiresAt: string | null }>(mediaUrl);
   }
 
   private authHeaders() {

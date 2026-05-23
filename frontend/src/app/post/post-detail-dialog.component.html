@@ -50,18 +50,18 @@
       </header>
 
       <div class="post-detail__body">
-        @if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
+        @if (postMediaUrl() && postMediaKind(currentPost) === 'image') {
           <div class="post-detail__media-wrapper">
             <img
-              [src]="postMediaUrl(currentPost)!"
+              [src]="postMediaUrl()!"
               alt=""
               class="post-detail__media"
             />
           </div>
-        } @else if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
+        } @else if (postMediaUrl() && postMediaKind(currentPost) === 'video') {
           <div class="post-detail__media-wrapper">
             <video
-              [src]="postMediaUrl(currentPost)!"
+              [src]="postMediaUrl()!"
               controls
               class="post-detail__media"
             ></video>
@@ -70,7 +70,7 @@
 
         <div
           class="post-detail__caption"
-          [class.post-detail__caption--text-only]="!postMediaUrl(currentPost)"
+          [class.post-detail__caption--text-only]="!postMediaUrl()"
           [innerHTML]="currentPost.caption | postCaptionFormat"
         ></div>
 

@@ -14,9 +14,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
 
-import { MediaCacheService } from '../core/services/media-cache.service';
+import { MediaCacheKind, MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
@@ -60,6 +60,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
   protected readonly postThumbnailObjectUrls = signal<Record<string, string>>({});
+  private readonly postThumbnailFallbackAttempted = new Set<string>();
   protected readonly myPosts = signal<PostResponse[]>([]);
   protected readonly selectedPost = signal<PostResponse | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
@@ -402,10 +403,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return (
-      this.postThumbnailObjectUrls()[post.postId]
-      ?? this.directMediaUrl(post.mediaThumbnailUrl ?? post.mediaUrl)
-    );
+    return this.postThumbnailObjectUrls()[post.postId] ?? null;
   }
 
   protected selectedPostMediaUrl(): string | null {
@@ -414,7 +412,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
+    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaRef);
   }
 
   protected selectedPostMediaKind(): PreviewKind {
@@ -423,11 +421,28 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return postMediaKind(post.mediaRef ?? post.mediaUrl);
+    return postMediaKind(post.mediaRef);
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
-    return postMediaKind(post.mediaRef ?? post.mediaUrl);
+    return postMediaKind(post.mediaRef);
+  }
+
+  protected onPostThumbnailError(post: PostResponse): void {
+    if (!post.mediaRef || this.postThumbnailFallbackAttempted.has(post.postId)) {
+      this.revokePostThumbnailObjectUrl(post.postId);
+      return;
+    }
+
+    this.postThumbnailFallbackAttempted.add(post.postId);
+    this.resolveVerifiedMediaUrl(post.mediaRef, postMediaKind(post.mediaRef)).subscribe(url => {
+      if (url) {
+        this.setPostThumbnailObjectUrl(post.postId, url);
+        return;
+      }
+
+      this.revokePostThumbnailObjectUrl(post.postId);
+    });
   }
 
   private loadMyPosts() {
@@ -582,63 +597,76 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPostMedia(posts: PostResponse[]): void {
     this.revokePostThumbnailObjectUrls();
-    posts.forEach(post => {
-      const mediaUrl = post.mediaThumbnailUrl ?? post.mediaUrl;
-
-      if (!mediaUrl) {
-        return;
-      }
-
-      this.mediaCacheService.resolveMediaUrl(mediaUrl, 'image', 'normal').subscribe({
-        next: objectUrl => {
-          if (objectUrl) {
-            this.setPostThumbnailObjectUrl(post.postId, objectUrl);
-          }
-        },
-        error: () => this.loadPostThumbnailFallback(post),
-      });
-    });
+    this.postThumbnailFallbackAttempted.clear();
+    posts.forEach(post => this.loadPostCardThumbnail(post));
   }
 
-  private loadPostThumbnailFallback(post: PostResponse): void {
-    if (!post.mediaThumbnailUrl || !post.mediaUrl || post.mediaThumbnailUrl === post.mediaUrl) {
+  private loadPostCardThumbnail(post: PostResponse): void {
+    const mediaRef = post.mediaRef;
+    if (!mediaRef) {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(
-      post.mediaUrl,
-      postMediaKind(post.mediaRef ?? post.mediaUrl),
-      'normal',
-    ).subscribe({
-      next: objectUrl => {
-        if (objectUrl) {
-          this.setPostThumbnailObjectUrl(post.postId, objectUrl);
+    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
+      if (url) {
+        this.setPostThumbnailObjectUrl(post.postId, url);
+      }
+    });
+  }
+
+  private resolveVerifiedMediaUrl(
+    mediaRef: string,
+    kind: PreviewKind,
+  ): Observable<string | null> {
+    return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', 'normal').pipe(
+      switchMap(url => {
+        if (!url) {
+          return of(null);
         }
-      },
+
+        if (kind === 'video') {
+          return of(url);
+        }
+
+        return this.verifyImageLoads(url);
+      }),
+      catchError(() => of(null)),
+    );
+  }
+
+  private verifyImageLoads(url: string): Observable<string | null> {
+    return new Observable(observer => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        observer.next(url);
+        observer.complete();
+      };
+      image.onerror = () => {
+        observer.next(null);
+        observer.complete();
+      };
+      image.src = url;
     });
   }
 
   private loadFullPostMedia(post: PostResponse): void {
-    const mediaUrl = post.mediaUrl;
-
-    if (!mediaUrl) {
+    if (!post.mediaRef) {
       return;
     }
 
     if (this.postMediaObjectUrls()[post.postId]) {
-      this.selectedPost.set(this.withRenderablePostMedia(post));
       return;
     }
 
     this.mediaCacheService.resolveMediaUrl(
-      mediaUrl,
-      postMediaKind(post.mediaRef ?? mediaUrl),
+      post.mediaRef,
+      postMediaKind(post.mediaRef),
       'high',
     ).subscribe({
       next: objectUrl => {
         if (objectUrl) {
           this.setPostMediaObjectUrl(post.postId, objectUrl);
-          this.selectedPost.set(this.withRenderablePostMedia(post));
         }
       },
     });
@@ -646,6 +674,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadProfilePicture(url: string | null | undefined): void {
     this.revokeProfilePictureObjectUrl();
+
+    const directUrl = this.directMediaUrl(url);
+    if (directUrl) {
+      this.replaceProfilePictureObjectUrl(directUrl);
+      return;
+    }
 
     if (!url) {
       return;
@@ -673,18 +707,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return url;
   }
 
-  private withRenderablePostMedia(post: PostResponse): PostResponse {
-    const mediaUrl =
-      this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
-    return mediaUrl ? { ...post, mediaUrl } : post;
-  }
-
   private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
     this.revokePostMediaObjectUrl(postId);
     this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
-    this.selectedPost.update(post =>
-      post?.postId === postId ? { ...post, mediaUrl: objectUrl } : post,
-    );
   }
 
   private revokePostMediaObjectUrl(postId: string): void {

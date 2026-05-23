@@ -88,7 +88,9 @@ public class ChatService {
                     .reversed())
             .toList();
 
-    return dedupeDirectChats(chats, currentUser);
+    return dedupeDirectChats(chats, currentUser).stream()
+        .filter(chat -> chat.groupChat() || hasVisibleDirectPartner(chat, currentUser))
+        .toList();
   }
 
   @Transactional
@@ -98,9 +100,13 @@ public class ChatService {
     boolean groupChat = invitedUsers.size() > 1 || chatName != null;
 
     if (!groupChat) {
-      Optional<Chat> existingChat = findExistingDirectChat(currentUser, invitedUsers.getFirst());
+      User invitedUser = invitedUsers.getFirst();
+      Optional<Chat> existingChat = findExistingDirectChat(currentUser, invitedUser);
       if (existingChat.isPresent()) {
-        return toChatResponse(existingChat.get(), currentUser);
+        Chat chat = existingChat.get();
+        reactivateMembership(chat, currentUser);
+        reactivateMembership(chat, invitedUser);
+        return toChatResponse(reloadChatDetails(chat.getChatId()), currentUser);
       }
     }
 
@@ -336,9 +342,11 @@ public class ChatService {
       }
 
       createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
+      chatMemberRepository.deleteByChatIdAndUserId(chatId, currentUser.getId());
+      return;
     }
 
-    chatMemberRepository.deleteByChatIdAndUserId(chatId, currentUser.getId());
+    markMemberLeft(chatId, currentUser.getId());
   }
 
   private List<User> resolveInvitedUsers(User currentUser, List<String> usernames) {
@@ -376,10 +384,9 @@ public class ChatService {
   }
 
   private Optional<Chat> findExistingDirectChat(User currentUser, User invitedUser) {
-    return loadChatsForUser(currentUser).stream()
+    return chatRepository.findDirectChatsBetweenUsers(
+            currentUser.getId(), invitedUser.getId()).stream()
         .filter(chat -> !isGroupChat(chat))
-        .filter(chat -> chat.getMembers().size() == 2)
-        .filter(chat -> hasMember(chat, invitedUser))
         .max(Comparator.comparing(this::latestActivityAt));
   }
 
@@ -502,7 +509,7 @@ public class ChatService {
             .findByChatIdWithDetails(chatId)
             .orElseThrow(() -> new NotFoundException("Chat", chatId.toString()));
 
-    if (!chatMemberRepository.existsByChatChatIdAndUser(chatId, currentUser)) {
+    if (!chatMemberRepository.existsActiveByChatChatIdAndUser(chatId, currentUser)) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this chat");
     }
 
@@ -524,10 +531,7 @@ public class ChatService {
         chat.getChatId(),
         isGroupChat(chat) ? resolveChatName(chat, currentUser) : resolveDirectChatDisplayName(chat, currentUser),
         chat.getImageRef(),
-        chat.getMembers().stream()
-            .map(ChatMember::getUser)
-            .map(this::toParticipantResponse)
-            .toList(),
+        participantsForResponse(chat, currentUser),
         lastMessage,
         chat.getCreatedAt(),
         isGroupChat(chat),
@@ -776,8 +780,77 @@ public class ChatService {
   }
 
   private boolean hasMember(Chat chat, User user) {
-    return chat.getMembers().stream()
+    return activeMembers(chat).stream()
         .anyMatch(member -> member.getUser().getId().equals(user.getId()));
+  }
+
+  private List<ChatMember> activeMembers(Chat chat) {
+    return chat.getMembers().stream().filter(member -> member.getLeftAt() == null).toList();
+  }
+
+  private List<ChatParticipantResponse> participantsForResponse(Chat chat, User currentUser) {
+    if (isGroupChat(chat)) {
+      return activeMembers(chat).stream()
+          .map(ChatMember::getUser)
+          .map(this::toParticipantResponse)
+          .toList();
+    }
+
+    return chat.getMembers().stream()
+        .filter(
+            member ->
+                member.getLeftAt() == null
+                    || !member.getUser().getId().equals(currentUser.getId()))
+        .map(ChatMember::getUser)
+        .map(this::toParticipantResponse)
+        .toList();
+  }
+
+  private boolean hasVisibleDirectPartner(ChatResponse chat, User currentUser) {
+    return chat.participants().stream().anyMatch(participant -> !participant.id().equals(currentUser.getId()));
+  }
+
+  private void reactivateMembership(Chat chat, User user) {
+    ChatMemberId memberId = new ChatMemberId(chat.getChatId(), user.getId());
+    LocalDateTime now = LocalDateTime.now();
+    Optional<ChatMember> existingMember = chatMemberRepository.findById(memberId);
+
+    if (existingMember.isPresent()) {
+      ChatMember member = existingMember.get();
+      if (member.getLeftAt() != null) {
+        member.setLeftAt(null);
+        member.setJoinedAt(now);
+        member.setLastReadAt(now);
+        chatMemberRepository.save(member);
+      }
+      return;
+    }
+
+    ChatMember member =
+        ChatMember.builder()
+            .id(memberId)
+            .chat(chat)
+            .user(user)
+            .joinedAt(now)
+            .lastReadAt(now)
+            .build();
+    chat.getMembers().add(member);
+    chatMemberRepository.save(member);
+  }
+
+  private void markMemberLeft(UUID chatId, UUID userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new NotFoundException("User", userId.toString()));
+
+    chatMemberRepository
+        .findByChatChatIdAndUser(chatId, user)
+        .ifPresent(
+            member -> {
+              member.setLeftAt(LocalDateTime.now());
+              chatMemberRepository.save(member);
+            });
   }
 
   private String resolveChatName(Chat chat, User currentUser) {
@@ -822,7 +895,7 @@ public class ChatService {
   }
 
   private boolean isGroupChat(Chat chat) {
-    return trimToNull(chat.getName()) != null || chat.getMembers().size() > 2;
+    return chat.getOwner() != null || chat.getMembers().size() > 2;
   }
 
   private String trimToNull(String value) {
