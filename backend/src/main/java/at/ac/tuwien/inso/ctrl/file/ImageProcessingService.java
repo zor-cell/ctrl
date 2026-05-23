@@ -31,11 +31,11 @@ public class ImageProcessingService {
     return toJpegProcessedImage(resized, PROFILE_JPEG_QUALITY);
   }
 
-  public ProcessedImage processPostImage(InputStream inputStream, long fileSize) throws IOException {
+  public ProcessedImage processPostImage(InputStream inputStream, long fileSize)
+      throws IOException {
     BufferedImage source = readImage(inputStream);
     int maxSide = Math.max(source.getWidth(), source.getHeight());
-    boolean compressMain =
-        maxSide > POST_MAX_SIDE || fileSize > POST_COMPRESS_THRESHOLD_BYTES;
+    boolean compressMain = maxSide > POST_MAX_SIDE || fileSize > POST_COMPRESS_THRESHOLD_BYTES;
 
     if (!compressMain) {
       return null;
@@ -53,7 +53,8 @@ public class ImageProcessingService {
     return image;
   }
 
-  private ProcessedImage toJpegProcessedImage(BufferedImage image, float quality) throws IOException {
+  private ProcessedImage toJpegProcessedImage(BufferedImage image, float quality)
+      throws IOException {
     return new ProcessedImage(writeJpeg(image, quality), JPEG_CONTENT_TYPE, JPEG_EXTENSION);
   }
 
@@ -66,8 +67,7 @@ public class ImageProcessingService {
     }
 
     ImageWriter writer = writers.next();
-    try (ImageOutputStream imageOutputStream =
-        ImageIO.createImageOutputStream(outputStream)) {
+    try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {
       writer.setOutput(imageOutputStream);
       ImageWriteParam writeParam = writer.getDefaultWriteParam();
       writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);

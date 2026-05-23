@@ -16,7 +16,7 @@ import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
 
-import { MediaCacheKind, MediaCacheService } from '../core/services/media-cache.service';
+import { MediaCacheService } from '../core/services/media-cache.service';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';

@@ -1,10 +1,10 @@
 package at.ac.tuwien.inso.ctrl.file;
 
-import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
-import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
 import at.ac.tuwien.inso.ctrl.chat.entity.Chat;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
+import at.ac.tuwien.inso.ctrl.file.dto.FileUploadResponse;
+import at.ac.tuwien.inso.ctrl.file.dto.MediaUrlResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;

@@ -24,10 +24,7 @@ public class RelationshipMapper {
     }
 
     return new FriendResponse(
-        user.getId(),
-        user.getUsername(),
-        user.getName(),
-        user.getProfilePicture());
+        user.getId(), user.getUsername(), user.getName(), user.getProfilePicture());
   }
 
   public FollowedResponse toFollowedResponse(User user) {
@@ -35,10 +32,7 @@ public class RelationshipMapper {
       return null;
     }
 
-    return new FollowedResponse(
-        user.getId(),
-        user.getUsername(),
-        user.getProfilePicture());
+    return new FollowedResponse(user.getId(), user.getUsername(), user.getProfilePicture());
   }
 
   public FriendRequestResponse toIncomingFriendRequestResponse(FriendRequest request) {

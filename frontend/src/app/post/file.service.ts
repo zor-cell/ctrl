@@ -1,8 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map } from 'rxjs';
-
 import { AuthService } from '../auth/auth.service';
 import { environment } from '../../environments/environment';
 import { FileUploadResponse } from './dto/FileUploadResponse';

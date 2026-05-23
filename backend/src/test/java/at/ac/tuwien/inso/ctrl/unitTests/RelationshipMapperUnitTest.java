@@ -244,5 +244,4 @@ public class RelationshipMapperUnitTest {
       List<RelationshipStatusItem> statuses, RelationshipStatusItem.RelationshipStatus status) {
     return statuses.stream().anyMatch(item -> item.status() == status);
   }
-
 }

@@ -50,6 +50,5 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
           WHERE m2.chat = c AND m2.user.id = :userB
         )
       """)
-  List<Chat> findDirectChatsBetweenUsers(
-      @Param("userA") UUID userA, @Param("userB") UUID userB);
+  List<Chat> findDirectChatsBetweenUsers(@Param("userA") UUID userA, @Param("userB") UUID userB);
 }

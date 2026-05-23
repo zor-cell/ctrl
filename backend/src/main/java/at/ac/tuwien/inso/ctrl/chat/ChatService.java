@@ -3,8 +3,8 @@ package at.ac.tuwien.inso.ctrl.chat;
 import at.ac.tuwien.inso.ctrl.chat.dto.AddChatMembersRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.AddReactionRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatMessageResponse;
-import at.ac.tuwien.inso.ctrl.chat.dto.ChatRealtimePayload;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatParticipantResponse;
+import at.ac.tuwien.inso.ctrl.chat.dto.ChatRealtimePayload;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.CreateChatRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.MessageReactionResponse;
@@ -14,8 +14,8 @@ import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMemberId;
 import at.ac.tuwien.inso.ctrl.chat.entity.Message;
 import at.ac.tuwien.inso.ctrl.chat.entity.Reaction;
-import at.ac.tuwien.inso.ctrl.chat.entity.SystemEventType;
 import at.ac.tuwien.inso.ctrl.chat.entity.ReactionId;
+import at.ac.tuwien.inso.ctrl.chat.entity.SystemEventType;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
@@ -39,8 +39,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -124,8 +124,7 @@ public class ChatService {
             .chatId(UUID.randomUUID())
             .name(chatName)
             .createdAt(LocalDateTime.now())
-            .owner(
-                groupChat ? userRepository.getReferenceById(currentUser.getId()) : null)
+            .owner(groupChat ? userRepository.getReferenceById(currentUser.getId()) : null)
             .members(new ArrayList<>())
             .build();
 
@@ -178,8 +177,7 @@ public class ChatService {
             .date(LocalDateTime.now())
             .build();
 
-    ChatMessageResponse response =
-        toMessageResponse(messageRepository.save(message), currentUser);
+    ChatMessageResponse response = toMessageResponse(messageRepository.save(message), currentUser);
     broadcastChatEvents(chat, response, "MESSAGE");
     return response;
   }
@@ -226,7 +224,9 @@ public class ChatService {
 
     List<User> invitedUsers = resolveInvitedUsers(currentUser, request.usernames());
     Set<UUID> existingMemberIds =
-        chat.getMembers().stream().map(member -> member.getUser().getId()).collect(Collectors.toSet());
+        chat.getMembers().stream()
+            .map(member -> member.getUser().getId())
+            .collect(Collectors.toSet());
 
     List<User> newMembers =
         invitedUsers.stream().filter(user -> !existingMemberIds.contains(user.getId())).toList();
@@ -308,8 +308,7 @@ public class ChatService {
     }
 
     boolean isMember =
-        chat.getMembers().stream()
-            .anyMatch(member -> member.getUser().getId().equals(memberId));
+        chat.getMembers().stream().anyMatch(member -> member.getUser().getId().equals(memberId));
     if (!isMember) {
       throw new NotFoundException("Chat member", memberId.toString());
     }
@@ -384,8 +383,9 @@ public class ChatService {
   }
 
   private Optional<Chat> findExistingDirectChat(User currentUser, User invitedUser) {
-    return chatRepository.findDirectChatsBetweenUsers(
-            currentUser.getId(), invitedUser.getId()).stream()
+    return chatRepository
+        .findDirectChatsBetweenUsers(currentUser.getId(), invitedUser.getId())
+        .stream()
         .filter(chat -> !isGroupChat(chat))
         .max(Comparator.comparing(this::latestActivityAt));
   }
@@ -433,7 +433,8 @@ public class ChatService {
 
     result.addAll(directByOtherUser.values());
     result.sort(
-        Comparator.comparing(this::chatActivityAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        Comparator.comparing(
+            this::chatActivityAt, Comparator.nullsLast(Comparator.reverseOrder())));
     return result;
   }
 
@@ -486,10 +487,7 @@ public class ChatService {
                   existing.getMembers().stream()
                       .anyMatch(
                           existingMember ->
-                              existingMember
-                                  .getUser()
-                                  .getId()
-                                  .equals(member.getUser().getId()));
+                              existingMember.getUser().getId().equals(member.getUser().getId()));
               if (!alreadyPresent) {
                 existing.getMembers().add(member);
               }
@@ -529,7 +527,9 @@ public class ChatService {
 
     return new ChatResponse(
         chat.getChatId(),
-        isGroupChat(chat) ? resolveChatName(chat, currentUser) : resolveDirectChatDisplayName(chat, currentUser),
+        isGroupChat(chat)
+            ? resolveChatName(chat, currentUser)
+            : resolveDirectChatDisplayName(chat, currentUser),
         chat.getImageRef(),
         participantsForResponse(chat, currentUser),
         lastMessage,
@@ -551,8 +551,7 @@ public class ChatService {
               if (lastReadAt == null) {
                 return messageRepository.countUnreadMessagesWhenNeverRead(chat, currentUser);
               }
-              return messageRepository.countUnreadMessagesSince(
-                  chat, currentUser, lastReadAt);
+              return messageRepository.countUnreadMessagesSince(chat, currentUser, lastReadAt);
             })
         .orElse(0L);
   }
@@ -627,8 +626,7 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     Chat reloadedChat = reloadChatDetails(chat.getChatId());
-    broadcastChatEvents(
-        reloadedChat, toMessageResponse(savedMessage, actor), "MESSAGE");
+    broadcastChatEvents(reloadedChat, toMessageResponse(savedMessage, actor), "MESSAGE");
   }
 
   private List<ChatParticipantResponse> resolveSystemTargets(Message message) {
@@ -669,7 +667,8 @@ public class ChatService {
         yield actorLabel + " added " + formatTargetList(targets, currentUser);
       }
       case MEMBER_REMOVED -> {
-        String removedName = targets.isEmpty() ? "a member" : formatTargetList(targets, currentUser);
+        String removedName =
+            targets.isEmpty() ? "a member" : formatTargetList(targets, currentUser);
         if (message.getFromUser().getId().equals(currentUser.getId())) {
           yield "You removed " + removedName;
         }
@@ -684,8 +683,7 @@ public class ChatService {
     };
   }
 
-  private String formatTargetList(
-      List<ChatParticipantResponse> targets, User currentUser) {
+  private String formatTargetList(List<ChatParticipantResponse> targets, User currentUser) {
     if (targets.isEmpty()) {
       return "members";
     }
@@ -708,9 +706,7 @@ public class ChatService {
       return labels.getFirst() + " and " + labels.get(1);
     }
 
-    return String.join(", ", labels.subList(0, labels.size() - 1))
-        + " and "
-        + labels.getLast();
+    return String.join(", ", labels.subList(0, labels.size() - 1)) + " and " + labels.getLast();
   }
 
   private String formatDisplayName(User user) {
@@ -754,7 +750,8 @@ public class ChatService {
             .orElseThrow(() -> new NotFoundException("Message", messageId.toString()));
 
     if (!message.getChat().getChatId().equals(chat.getChatId())) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Message does not belong to this chat");
+      throw new ResponseStatusException(
+          HttpStatus.FORBIDDEN, "Message does not belong to this chat");
     }
 
     return message;
@@ -799,15 +796,15 @@ public class ChatService {
     return chat.getMembers().stream()
         .filter(
             member ->
-                member.getLeftAt() == null
-                    || !member.getUser().getId().equals(currentUser.getId()))
+                member.getLeftAt() == null || !member.getUser().getId().equals(currentUser.getId()))
         .map(ChatMember::getUser)
         .map(this::toParticipantResponse)
         .toList();
   }
 
   private boolean hasVisibleDirectPartner(ChatResponse chat, User currentUser) {
-    return chat.participants().stream().anyMatch(participant -> !participant.id().equals(currentUser.getId()));
+    return chat.participants().stream()
+        .anyMatch(participant -> !participant.id().equals(currentUser.getId()));
   }
 
   private void reactivateMembership(Chat chat, User user) {

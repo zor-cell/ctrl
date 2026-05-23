@@ -97,8 +97,7 @@ public class VideoTranscodingService {
 
     try {
       Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
-      boolean completed =
-          process.waitFor(TRANSCODING_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+      boolean completed = process.waitFor(TRANSCODING_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
       if (!completed) {
         process.destroyForcibly();
         return Optional.empty();
@@ -108,8 +107,8 @@ public class VideoTranscodingService {
         return Optional.empty();
       }
 
-      String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8)
-          .trim();
+      String output =
+          new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
       String[] parts = output.split("x");
       if (parts.length != 2) {
         return Optional.empty();
@@ -138,8 +137,7 @@ public class VideoTranscodingService {
 
     try {
       Process process = processBuilder.start();
-      boolean completed =
-          process.waitFor(TRANSCODING_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+      boolean completed = process.waitFor(TRANSCODING_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
 
       if (!completed) {
         process.destroyForcibly();

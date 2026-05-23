@@ -28,8 +28,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
         AND m.fromUser <> :user
         AND m.system = false
       """)
-  long countUnreadMessagesWhenNeverRead(
-      @Param("chat") Chat chat, @Param("user") User user);
+  long countUnreadMessagesWhenNeverRead(@Param("chat") Chat chat, @Param("user") User user);
 
   @Query(
       """

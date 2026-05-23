@@ -170,7 +170,8 @@ public class FileStorageServiceUnitTest {
 
   @Test
   void movePostMediaToPublicBucket_withPostMediaRef_copiesToPublicAndDeletesPrivate() {
-    fileStorageService.movePostMediaToPublicBucket("posts/media/11111111-1111-1111-1111-111111111111.png");
+    fileStorageService.movePostMediaToPublicBucket(
+        "posts/media/11111111-1111-1111-1111-111111111111.png");
 
     ArgumentCaptor<CopyObjectRequest> copyCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
     verify(s3Client, org.mockito.Mockito.times(2)).copyObject(copyCaptor.capture());
@@ -181,8 +182,7 @@ public class FileStorageServiceUnitTest {
         "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.sourceKey());
     assertEquals("ctrl-test-public", mediaCopyRequest.destinationBucket());
     assertEquals(
-        "posts/media/11111111-1111-1111-1111-111111111111.png",
-        mediaCopyRequest.destinationKey());
+        "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.destinationKey());
 
     CopyObjectRequest thumbnailCopyRequest = copyRequests.get(1);
     assertEquals(

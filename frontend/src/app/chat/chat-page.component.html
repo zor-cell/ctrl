@@ -250,9 +250,12 @@
               <div
                 class="message-stack"
                 [class.message-stack--own]="isOwnMessage(message)"
+                tabindex="0"
                 (mouseenter)="setHoveredMessage(message.messageId)"
                 (mouseleave)="clearHoveredMessage(message.messageId)"
-                (click)="setHoveredMessage(message.messageId)">
+                (click)="setHoveredMessage(message.messageId)"
+                (keydown.enter)="setHoveredMessage(message.messageId)"
+                (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
                 <div
                   class="reaction-bar"
                   [class.reaction-bar--visible]="
