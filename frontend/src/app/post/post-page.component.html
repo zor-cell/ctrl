@@ -92,12 +92,23 @@
               (click)="openPost(post)"
             >
               @if (postThumbnailUrl(post)) {
-                <img
-                  [src]="postThumbnailUrl(post)!"
-                  alt=""
-                  class="post-card__media"
-                  (error)="onPostThumbnailError(post)"
-                />
+                @if (postMediaKind(post) === 'video') {
+                  <video
+                    [src]="postThumbnailUrl(post)!"
+                    class="post-card__media"
+                    muted
+                    playsinline
+                    preload="metadata"
+                    (error)="onPostThumbnailError(post)"
+                  ></video>
+                } @else {
+                  <img
+                    [src]="postThumbnailUrl(post)!"
+                    alt=""
+                    class="post-card__media"
+                    (error)="onPostThumbnailError(post)"
+                  />
+                }
               }
 
               <div class="post-card__body">

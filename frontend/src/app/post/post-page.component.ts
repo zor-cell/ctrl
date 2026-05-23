@@ -435,7 +435,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.postThumbnailFallbackAttempted.add(post.postId);
-    this.resolveVerifiedMediaUrl(post.mediaRef, postMediaKind(post.mediaRef)).subscribe(url => {
+    const kind = postMediaKind(post.mediaRef);
+    this.resolveVerifiedMediaUrl(post.mediaRef, kind).subscribe(url => {
       if (url) {
         this.setPostThumbnailObjectUrl(post.postId, url);
         return;
