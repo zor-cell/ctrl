@@ -1,6 +1,8 @@
 import {AbstractControl, ValidationErrors, ValidatorFn} from "@angular/forms";
 
-export const USERNAME_PATTERN = /^[A-Za-z0-9_.]+$/;
+export const USERNAME_PATTERN = /^(?=.*[A-Za-z0-9])[A-Za-z0-9_.]+$/;
+export const USERNAME_VALIDATION_MESSAGE =
+  'Username must be at least 3 characters, contain at least one letter or number, and may only use letters, numbers, underscores and dots.';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');

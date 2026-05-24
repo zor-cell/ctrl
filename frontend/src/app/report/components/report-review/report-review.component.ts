@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { NgTemplateOutlet } from '@angular/common';
 import { timeAgo } from '../../../core/utils/date-time.utils';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { Avatar } from 'primeng/avatar';
 import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
@@ -108,7 +109,7 @@ export class ReportReviewComponent implements OnInit {
   }
 
   getInitial(report: ReportedPostResponse): string {
-    return report.username.charAt(0).toUpperCase();
+    return usernameInitial(report.username);
   }
 
   postMediaUrl(report: ReportedPostResponse): string | null {

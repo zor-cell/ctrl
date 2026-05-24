@@ -166,7 +166,7 @@
             </p-floatlabel>
             @if (usernameForm.controls.newUsername.invalid && usernameForm.controls.newUsername.touched && usernameForm.controls.newUsername.dirty) {
                 <p-message severity="error" size="small" variant="simple">
-                    Username must be at least 3 characters and may only contain letters, numbers, underscores and dots.
+                    {{ USERNAME_VALIDATION_MESSAGE }}
                 </p-message>
             }
         </div>

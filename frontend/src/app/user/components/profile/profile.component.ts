@@ -7,7 +7,7 @@ import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {Dialog} from "primeng/dialog";
-import {passwordMatchValidator, usernameValidator} from "../../validators";
+import {passwordMatchValidator, usernameValidator, USERNAME_VALIDATION_MESSAGE} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
@@ -41,6 +41,8 @@ export class ProfileComponent implements OnInit {
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
+
+  protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
 
   protected isLoading = signal(true);
   protected currentUser = this.userService.user;

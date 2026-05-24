@@ -9,6 +9,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { FriendRequest } from '../../dto/Relationship';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 
 /**
  * Friend Requests Dialog Component
@@ -125,7 +126,7 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   }
 
   getInitial(request: FriendRequest): string {
-    return request.username.charAt(0).toUpperCase();
+    return usernameInitial(request.username);
   }
 
   private loadProfilePictures(requests: FriendRequest[]): void {

@@ -26,6 +26,7 @@ import { jwtDecode } from 'jwt-decode';
 import { AuthService } from '../auth/auth.service';
 import { CustomJwtPayload } from '../auth/dto/CustomJwtPayload';
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { Friend } from '../user/dto/Relationship';
 import { RelationshipService } from '../user/relationship.service';
@@ -435,7 +436,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected chatAvatarLabel(chat: Chat): string {
     const other = this.otherParticipant(chat);
     if (other) {
-      return (other.name || other.username).charAt(0).toUpperCase();
+      return usernameInitial(other.username);
     }
 
     return chat.name.charAt(0).toUpperCase();
@@ -665,7 +666,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected initialFor(user: ChatParticipant | Friend): string {
-    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
+    return usernameInitial(user.username);
   }
 
   protected participantText(chat: Chat): string {

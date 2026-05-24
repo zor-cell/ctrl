@@ -17,10 +17,11 @@ import { TooltipModule } from 'primeng/tooltip';
 import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
-import { USERNAME_PATTERN } from '../user/validators';
+import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from './dto/TopicResponse';
@@ -55,6 +56,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
+  protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
@@ -86,9 +88,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       ?? this.userService.user()?.username
       ?? 'Unknown user',
   );
-  protected readonly avatarInitial = computed(
-    () => this.username().trim().charAt(0).toUpperCase() || '?',
-  );
+  protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
   protected readonly currentProfilePicture = computed(
     () =>
       this.removeProfilePicture()
@@ -285,9 +285,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     if (this.usernameInvalid()) {
-      this.notificationService.showWarning(
-        'Username must be at least 3 characters and may only contain letters, numbers, underscores and dots.',
-      );
+      this.notificationService.showWarning(USERNAME_VALIDATION_MESSAGE);
       return;
     }
 

@@ -13,6 +13,7 @@ import { InputIcon } from 'primeng/inputicon';
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserSearchResult } from '../../dto/Relationship';
 
@@ -269,7 +270,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   }
 
   getInitial(user: UserSearchResult): string {
-    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
+    return usernameInitial(user.username);
   }
 
   canFollow(user: UserSearchResult): boolean {
