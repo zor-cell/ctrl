@@ -27,7 +27,7 @@ export class ChatRealtimeService {
   private handlers: ChatRealtimeHandlers | null = null;
   private activeChatId: string | null = null;
   private sockJsFactory: SockJsFactory | null = null;
-  private readonly connectionReadyResolvers: Array<() => void> = [];
+  private readonly connectionReadyResolvers: (() => void)[] = [];
 
   isConnected(): boolean {
     return this.client?.connected ?? false;

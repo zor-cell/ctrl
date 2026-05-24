@@ -187,8 +187,7 @@ public class FileStorageServiceUnitTest {
     verify(s3Client).deleteObject(deleteCaptor.capture());
     assertEquals("ctrl-test-private", deleteCaptor.getValue().bucket());
     assertEquals(
-        "posts/media/11111111-1111-1111-1111-111111111111.png",
-        deleteCaptor.getValue().key());
+        "posts/media/11111111-1111-1111-1111-111111111111.png", deleteCaptor.getValue().key());
   }
 
   @Test
