@@ -10,8 +10,8 @@ public class AngularForwardController {
   // which does not contain any dots (static images like icons) to index.html so
   // angular routing can kick in
   @GetMapping({
-    "{path:^(?!api|public|swagger)[^\\.]*}/{subPath:[^\\.]*}",
-    "{path:^(?!api|public|swagger)[^\\.]*}"
+    "{path:^(?!api|ws|public|swagger)[^\\.]*}/{subPath:[^\\.]*}",
+    "{path:^(?!api|ws|public|swagger)[^\\.]*}"
   })
   public String handleForward() {
     return "forward:/index.html";
