@@ -88,7 +88,6 @@ public class FileStorageServiceUnitTest {
   void uploadPostMedia_withQuickTimeVideo_transcodesAndUploadsMp4() throws Exception {
     MockMultipartFile file =
         new MockMultipartFile("file", "clip.mov", "video/quicktime", new byte[] {1, 2, 3});
-    when(videoTranscodingService.shouldScaleVideo(any(Path.class), anyInt())).thenReturn(true);
     doAnswer(
             invocation -> {
               Path outputFile = invocation.getArgument(1);
