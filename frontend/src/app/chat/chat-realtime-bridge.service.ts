@@ -23,6 +23,14 @@ export class ChatRealtimeBridgeService {
     void this.chatRealtimeService.connect(token, this.createHandlers());
   }
 
+  whenConnected(): Promise<void> {
+    return this.chatRealtimeService.whenConnected();
+  }
+
+  resyncWatchedChat(chatId: string | null): void {
+    this.chatRealtimeService.watchChat(chatId);
+  }
+
   disconnect(): void {
     this.messageHandler = null;
     this.chatListHandler = null;

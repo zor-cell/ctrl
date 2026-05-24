@@ -19,7 +19,6 @@ import at.ac.tuwien.inso.ctrl.file.ImageProcessingService;
 import at.ac.tuwien.inso.ctrl.file.VideoTranscodingService;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -174,9 +173,8 @@ public class FileStorageServiceUnitTest {
         "posts/media/11111111-1111-1111-1111-111111111111.png");
 
     ArgumentCaptor<CopyObjectRequest> copyCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
-    verify(s3Client, org.mockito.Mockito.times(2)).copyObject(copyCaptor.capture());
-    List<CopyObjectRequest> copyRequests = copyCaptor.getAllValues();
-    CopyObjectRequest mediaCopyRequest = copyRequests.get(0);
+    verify(s3Client).copyObject(copyCaptor.capture());
+    CopyObjectRequest mediaCopyRequest = copyCaptor.getValue();
     assertEquals("ctrl-test-private", mediaCopyRequest.sourceBucket());
     assertEquals(
         "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.sourceKey());
@@ -184,21 +182,13 @@ public class FileStorageServiceUnitTest {
     assertEquals(
         "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.destinationKey());
 
-    CopyObjectRequest thumbnailCopyRequest = copyRequests.get(1);
-    assertEquals(
-        "posts/media/thumbnails/11111111-1111-1111-1111-111111111111.jpeg",
-        thumbnailCopyRequest.sourceKey());
-    assertEquals(
-        "posts/media/thumbnails/11111111-1111-1111-1111-111111111111.jpeg",
-        thumbnailCopyRequest.destinationKey());
-
     ArgumentCaptor<DeleteObjectRequest> deleteCaptor =
         ArgumentCaptor.forClass(DeleteObjectRequest.class);
-    verify(s3Client, org.mockito.Mockito.times(2)).deleteObject(deleteCaptor.capture());
-    assertEquals("ctrl-test-private", deleteCaptor.getAllValues().get(0).bucket());
+    verify(s3Client).deleteObject(deleteCaptor.capture());
+    assertEquals("ctrl-test-private", deleteCaptor.getValue().bucket());
     assertEquals(
         "posts/media/11111111-1111-1111-1111-111111111111.png",
-        deleteCaptor.getAllValues().get(0).key());
+        deleteCaptor.getValue().key());
   }
 
   @Test

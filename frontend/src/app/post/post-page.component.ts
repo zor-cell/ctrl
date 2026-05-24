@@ -61,8 +61,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
-  protected readonly postThumbnailObjectUrls = signal<Record<string, string>>({});
-  private readonly postThumbnailFallbackAttempted = new Set<string>();
+  protected readonly postCardMediaUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
   protected readonly selectedPost = signal<PostResponse | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
@@ -178,7 +177,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.revokeAvatarPreview();
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
-    this.revokePostThumbnailObjectUrls();
+    this.revokePostCardMediaUrls();
   }
 
   protected openCreateDialog() {
@@ -379,7 +378,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.deletePost(post.postId).subscribe({
       next: () => {
         this.revokePostMediaObjectUrl(post.postId);
-        this.revokePostThumbnailObjectUrl(post.postId);
+        this.revokePostCardMediaUrl(post.postId);
         this.myPosts.update(posts =>
           posts.filter(currentPost => currentPost.postId !== post.postId),
         );
@@ -396,12 +395,21 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
   }
 
-  protected postThumbnailUrl(post: PostResponse | null): string | null {
+  protected postCardMediaUrl(post: PostResponse | null): string | null {
     if (!post) {
       return null;
     }
 
-    return this.postThumbnailObjectUrls()[post.postId] ?? null;
+    return this.postCardMediaUrls()[post.postId] ?? null;
+  }
+
+  protected postCardVideoUrl(post: PostResponse): string | null {
+    const url = this.postCardMediaUrl(post);
+    if (!url) {
+      return null;
+    }
+
+    return this.withVideoStartFragment(url);
   }
 
   protected selectedPostMediaUrl(): string | null {
@@ -426,22 +434,24 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return postMediaKind(post.mediaRef);
   }
 
-  protected onPostThumbnailError(post: PostResponse): void {
-    if (!post.mediaRef || this.postThumbnailFallbackAttempted.has(post.postId)) {
-      this.revokePostThumbnailObjectUrl(post.postId);
+  protected onPostCardMediaError(post: PostResponse): void {
+    this.revokePostCardMediaUrl(post.postId);
+  }
+
+  protected primePostCardVideo(event: Event): void {
+    const video = event.target as HTMLVideoElement | null;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) {
       return;
     }
 
-    this.postThumbnailFallbackAttempted.add(post.postId);
-    const kind = postMediaKind(post.mediaRef);
-    this.resolveVerifiedMediaUrl(post.mediaRef, kind).subscribe(url => {
-      if (url) {
-        this.setPostThumbnailObjectUrl(post.postId, url);
-        return;
+    try {
+      if (video.currentTime < 0.05) {
+        video.currentTime = Math.min(0.1, video.duration);
       }
-
-      this.revokePostThumbnailObjectUrl(post.postId);
-    });
+      video.pause();
+    } catch {
+      // Some browsers do not allow programmatic seeking before enough data is available.
+    }
   }
 
   private loadMyPosts() {
@@ -471,7 +481,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.myPosts.set([]);
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
-    this.revokePostThumbnailObjectUrls();
+    this.revokePostCardMediaUrls();
 
     if (this.publicProfileMode()) {
       this.loadPublicProfile();
@@ -595,12 +605,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private loadPostMedia(posts: PostResponse[]): void {
-    this.revokePostThumbnailObjectUrls();
-    this.postThumbnailFallbackAttempted.clear();
-    posts.forEach(post => this.loadPostCardThumbnail(post));
+    this.revokePostCardMediaUrls();
+    posts.forEach(post => this.loadPostCardMedia(post));
   }
 
-  private loadPostCardThumbnail(post: PostResponse): void {
+  private loadPostCardMedia(post: PostResponse): void {
     const mediaRef = post.mediaRef;
     if (!mediaRef) {
       return;
@@ -608,7 +617,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
       if (url) {
-        this.setPostThumbnailObjectUrl(post.postId, url);
+        this.setPostCardMediaUrl(post.postId, url);
       }
     });
   }
@@ -706,6 +715,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return url;
   }
 
+  private withVideoStartFragment(url: string): string {
+    const fragmentIndex = url.indexOf('#');
+    const baseUrl = fragmentIndex >= 0 ? url.slice(0, fragmentIndex) : url;
+    return `${baseUrl}#t=0.1`;
+  }
+
   private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
     this.revokePostMediaObjectUrl(postId);
     this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
@@ -723,21 +738,21 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postMediaObjectUrls.set({});
   }
 
-  private setPostThumbnailObjectUrl(postId: string, objectUrl: string): void {
-    this.revokePostThumbnailObjectUrl(postId);
-    this.postThumbnailObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+  private setPostCardMediaUrl(postId: string, objectUrl: string): void {
+    this.revokePostCardMediaUrl(postId);
+    this.postCardMediaUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
   }
 
-  private revokePostThumbnailObjectUrl(postId: string): void {
-    this.postThumbnailObjectUrls.update(urls => {
+  private revokePostCardMediaUrl(postId: string): void {
+    this.postCardMediaUrls.update(urls => {
       const remaining = { ...urls };
       delete remaining[postId];
       return remaining;
     });
   }
 
-  private revokePostThumbnailObjectUrls(): void {
-    this.postThumbnailObjectUrls.set({});
+  private revokePostCardMediaUrls(): void {
+    this.postCardMediaUrls.set({});
   }
 
   private replaceProfilePictureObjectUrl(objectUrl: string): void {

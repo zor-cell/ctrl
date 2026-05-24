@@ -27,19 +27,29 @@ export class ChatRealtimeService {
   private handlers: ChatRealtimeHandlers | null = null;
   private activeChatId: string | null = null;
   private sockJsFactory: SockJsFactory | null = null;
+  private readonly connectionReadyResolvers: Array<() => void> = [];
 
   isConnected(): boolean {
     return this.client?.connected ?? false;
   }
 
+  whenConnected(): Promise<void> {
+    if (this.client?.connected) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => this.connectionReadyResolvers.push(resolve));
+  }
+
   async connect(token: string, handlers: ChatRealtimeHandlers): Promise<void> {
     this.handlers = handlers;
-    this.disconnect();
+    this.deactivateClient();
 
     try {
       const SockJS = await this.loadSockJsFactory();
       this.client = new Client({
-        webSocketFactory: () => new SockJS(this.resolveWsUrl(), null, { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }),
+        webSocketFactory: () =>
+          new SockJS(this.resolveWsUrl(), null, { transports: ['xhr-streaming', 'xhr-polling'] }),
         connectHeaders: {
           Authorization: `Bearer ${token}`,
         },
@@ -50,6 +60,7 @@ export class ChatRealtimeService {
             message => this.handleChatSummary(message),
           ) ?? null;
           this.subscribeToActiveChat();
+          this.resolveConnectionWaiters();
         },
         onStompError: () => {
           // Keep the app usable when the socket is unavailable.
@@ -76,16 +87,31 @@ export class ChatRealtimeService {
 
   disconnect(): void {
     this.activeChatId = null;
+    this.handlers = null;
+    this.clearConnectionWaiters();
+    this.deactivateClient();
+  }
+
+  private deactivateClient(): void {
     this.chatTopicSubscription?.unsubscribe();
     this.chatTopicSubscription = null;
     this.chatQueueSubscription?.unsubscribe();
     this.chatQueueSubscription = null;
-    this.handlers = null;
 
     if (this.client) {
       this.client.deactivate();
       this.client = null;
     }
+  }
+
+  private resolveConnectionWaiters(): void {
+    while (this.connectionReadyResolvers.length > 0) {
+      this.connectionReadyResolvers.shift()?.();
+    }
+  }
+
+  private clearConnectionWaiters(): void {
+    this.connectionReadyResolvers.length = 0;
   }
 
   private async loadSockJsFactory(): Promise<SockJsFactory> {

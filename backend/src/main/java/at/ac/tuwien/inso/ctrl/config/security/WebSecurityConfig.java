@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -36,11 +35,6 @@ public class WebSecurityConfig {
   private final CustomUserDetailsService userDetailsService;
 
   @Bean
-  public WebSecurityCustomizer webSecurityCustomizer() {
-    return web -> web.ignoring().requestMatchers("/ws/**");
-  }
-
-  @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
@@ -55,11 +49,13 @@ public class WebSecurityConfig {
                         "/actuator/health",
                         "/api/feed/**",
                         "/api/files/media",
-                        "/api/files/media-url",
-                        "/ws/**")
+                        "/api/files/media-url")
                     .permitAll()
+                    .requestMatchers("/api/**")
+                    .authenticated()
+                    // SockJS/WebSocket paths are not MVC handlers; keep non-API traffic public.
                     .anyRequest()
-                    .authenticated())
+                    .permitAll())
         .exceptionHandling( // auth endpoints that reach an exception should return 401
             exceptions ->
                 exceptions

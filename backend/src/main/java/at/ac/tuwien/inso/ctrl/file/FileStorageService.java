@@ -49,9 +49,7 @@ public class FileStorageService {
       Set.of("video/quicktime", "video/x-quicktime");
   private static final long MAX_FILE_SIZE_BYTES = 100L * 1024L * 1024L;
   private static final String MP4_MEDIA_TYPE = "video/mp4";
-  private static final String JPEG_MEDIA_TYPE = "image/jpeg";
   private static final String POST_MEDIA_PREFIX = "posts/media/";
-  private static final String POST_MEDIA_THUMBNAIL_PREFIX = "posts/media/thumbnails/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
   private static final String CHAT_GROUP_IMAGE_PREFIX = "chats/group-images/";
   private static final int MAX_VIDEO_SIDE = 1920;
@@ -198,7 +196,6 @@ public class FileStorageService {
     }
 
     deleteObject(privateBucketName, mediaRef);
-    deleteThumbnailIfPresent(mediaRef, privateBucketName);
   }
 
   public void deletePublicPostMedia(String mediaRef) {
@@ -207,7 +204,6 @@ public class FileStorageService {
     }
 
     deleteObject(publicBucketName, mediaRef);
-    deleteThumbnailIfPresent(mediaRef, publicBucketName);
   }
 
   public void movePostMediaToPublicBucket(String mediaRef) {
@@ -222,42 +218,6 @@ public class FileStorageService {
 
     copyObject(privateBucketName, mediaRef, publicBucketName, mediaRef);
     deleteObject(privateBucketName, mediaRef);
-
-    String thumbnailRef = resolveThumbnailRef(mediaRef);
-    if (thumbnailRef != null) {
-      copyObject(privateBucketName, thumbnailRef, publicBucketName, thumbnailRef);
-      deleteObject(privateBucketName, thumbnailRef);
-    }
-  }
-
-  public String resolveThumbnailRef(String mediaRef) {
-    if (mediaRef == null
-        || mediaRef.isBlank()
-        || !mediaRef.startsWith(POST_MEDIA_PREFIX)
-        || mediaRef.startsWith(POST_MEDIA_THUMBNAIL_PREFIX)) {
-      return null;
-    }
-
-    String mediaUuid = extractMediaUuid(mediaRef);
-    if (mediaUuid == null) {
-      return null;
-    }
-
-    return POST_MEDIA_THUMBNAIL_PREFIX + mediaUuid + ".jpeg";
-  }
-
-  public String extractMediaUuid(String mediaRef) {
-    if (mediaRef == null || mediaRef.isBlank()) {
-      return null;
-    }
-
-    String fileName = mediaRef.substring(mediaRef.lastIndexOf('/') + 1);
-    int extensionSeparator = fileName.lastIndexOf('.');
-    if (extensionSeparator <= 0) {
-      return fileName.isBlank() ? null : fileName;
-    }
-
-    return fileName.substring(0, extensionSeparator);
   }
 
   public List<String> listPostMediaRefsOlderThan(Duration minimumAge) {
@@ -478,12 +438,8 @@ public class FileStorageService {
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
 
-      if (videoTranscodingService.shouldScaleVideo(inputFile, MAX_VIDEO_SIDE)) {
-        videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
-        return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
-      }
-
-      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+      videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
+      return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
@@ -503,15 +459,6 @@ public class FileStorageService {
 
     s3Client.putObject(putObjectRequest, RequestBody.fromBytes(data));
     return new UploadedFile(uniqueFileName, contentType, data.length);
-  }
-
-  private void deleteThumbnailIfPresent(String mediaRef, String bucketName) {
-    String thumbnailRef = resolveThumbnailRef(mediaRef);
-    if (thumbnailRef == null) {
-      return;
-    }
-
-    deleteObject(bucketName, thumbnailRef);
   }
 
   private void deleteObject(String bucketName, String objectKey) {

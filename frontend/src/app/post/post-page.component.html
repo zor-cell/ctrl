@@ -88,25 +88,27 @@
             <button
               type="button"
               class="post-card"
-              [class.post-card--text-only]="!postThumbnailUrl(post)"
+              [class.post-card--text-only]="!postCardMediaUrl(post)"
               (click)="openPost(post)"
             >
-              @if (postThumbnailUrl(post)) {
+              @if (postCardMediaUrl(post)) {
                 @if (postMediaKind(post) === 'video') {
                   <video
-                    [src]="postThumbnailUrl(post)!"
+                    [src]="postCardVideoUrl(post)!"
                     class="post-card__media"
                     muted
                     playsinline
-                    preload="metadata"
-                    (error)="onPostThumbnailError(post)"
+                    preload="auto"
+                    (loadedmetadata)="primePostCardVideo($event)"
+                    (loadeddata)="primePostCardVideo($event)"
+                    (error)="onPostCardMediaError(post)"
                   ></video>
                 } @else {
                   <img
-                    [src]="postThumbnailUrl(post)!"
+                    [src]="postCardMediaUrl(post)!"
                     alt=""
                     class="post-card__media"
-                    (error)="onPostThumbnailError(post)"
+                    (error)="onPostCardMediaError(post)"
                   />
                 }
               }

@@ -37,7 +37,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class FileController {
   private static final String POST_MEDIA_PREFIX = "posts/media/";
-  private static final String POST_MEDIA_THUMBNAIL_PREFIX = "posts/media/thumbnails/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
   private static final String CHAT_GROUP_IMAGE_PREFIX = "chats/group-images/";
 
@@ -166,15 +165,6 @@ public class FileController {
   }
 
   private List<Post> resolvePostsForMediaRef(String ref) {
-    if (ref.startsWith(POST_MEDIA_THUMBNAIL_PREFIX)) {
-      String mediaUuid = fileStorageService.extractMediaUuid(ref);
-      if (mediaUuid == null) {
-        return List.of();
-      }
-
-      return postRepository.findAllByMediaUuidWithUser(mediaUuid);
-    }
-
     return postRepository.findAllByMediaRefReferenceWithUser(ref);
   }
 }

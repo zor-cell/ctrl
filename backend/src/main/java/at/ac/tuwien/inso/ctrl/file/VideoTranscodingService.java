@@ -69,16 +69,18 @@ public class VideoTranscodingService {
   }
 
   public boolean shouldScaleVideo(Path inputFile, int maxVideoSide) {
+    boolean fileExceedsCompressionThreshold;
+    try {
+      fileExceedsCompressionThreshold = Files.size(inputFile) > VIDEO_SCALE_FALLBACK_SIZE_BYTES;
+    } catch (IOException e) {
+      fileExceedsCompressionThreshold = true;
+    }
+
+    final boolean shouldCompressBySize = fileExceedsCompressionThreshold;
     return readVideoDimensions(inputFile)
         .map(dimensions -> Math.max(dimensions.width(), dimensions.height()) > maxVideoSide)
-        .orElseGet(
-            () -> {
-              try {
-                return Files.size(inputFile) > VIDEO_SCALE_FALLBACK_SIZE_BYTES;
-              } catch (IOException e) {
-                return true;
-              }
-            });
+        .map(shouldScaleByDimensions -> shouldScaleByDimensions || shouldCompressBySize)
+        .orElse(shouldCompressBySize);
   }
 
   public Optional<VideoDimensions> readVideoDimensions(Path inputFile) {

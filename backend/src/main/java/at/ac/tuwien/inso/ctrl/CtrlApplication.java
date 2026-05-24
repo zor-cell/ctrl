@@ -2,12 +2,13 @@ package at.ac.tuwien.inso.ctrl;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @EnableAsync
-@SpringBootApplication
+@SpringBootApplication(exclude = OAuth2ResourceServerAutoConfiguration.class)
 public class CtrlApplication {
 
   public static void main(String[] args) {

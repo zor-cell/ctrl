@@ -169,6 +169,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.loadChats();
     this.chatRealtimeBridge.setMessageHandler(payload => this.handleRealtimeMessage(payload));
     this.chatRealtimeBridge.setChatListHandler(chat => this.handleRealtimeChatSummary(chat));
+    this.chatRealtimeBridge.ensureConnected();
+    void this.syncRealtimeSubscription();
+  }
+
+  private async syncRealtimeSubscription(): Promise<void> {
+    await this.chatRealtimeBridge.whenConnected();
+    const selected = this.selectedChat();
+    if (selected) {
+      this.chatRealtimeBridge.resyncWatchedChat(selected.chatId);
+    }
   }
 
   ngOnDestroy(): void {
