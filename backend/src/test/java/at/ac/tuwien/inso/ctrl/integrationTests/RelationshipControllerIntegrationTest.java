@@ -8,10 +8,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
@@ -140,9 +140,11 @@ public class RelationshipControllerIntegrationTest {
     List<FriendResponse> friends =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertTrue(friends.stream().anyMatch(f -> f.username().equals("regularuser")),
+    assertTrue(
+        friends.stream().anyMatch(f -> f.username().equals("regularuser")),
         "Regular user should appear in friends list");
-    assertFalse(friends.stream().anyMatch(f -> f.username().equals("suspendeduser")),
+    assertFalse(
+        friends.stream().anyMatch(f -> f.username().equals("suspendeduser")),
         "Suspended user should be excluded from friends list");
   }
 
@@ -163,9 +165,11 @@ public class RelationshipControllerIntegrationTest {
     List<FollowedResponse> followed =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertTrue(followed.stream().anyMatch(f -> f.username().equals("regularuser")),
+    assertTrue(
+        followed.stream().anyMatch(f -> f.username().equals("regularuser")),
         "Regular user should appear in followed list");
-    assertFalse(followed.stream().anyMatch(f -> f.username().equals("suspendeduser")),
+    assertFalse(
+        followed.stream().anyMatch(f -> f.username().equals("suspendeduser")),
         "Suspended user should be excluded from followed list");
   }
 
@@ -213,9 +217,11 @@ public class RelationshipControllerIntegrationTest {
     List<FriendRequestResponse> requests =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertTrue(requests.stream().anyMatch(r -> r.username().equals("regularuser")),
+    assertTrue(
+        requests.stream().anyMatch(r -> r.username().equals("regularuser")),
         "Request to regular user should appear");
-    assertFalse(requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
+    assertFalse(
+        requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
         "Request to suspended user should be excluded");
   }
 
@@ -236,9 +242,11 @@ public class RelationshipControllerIntegrationTest {
     List<FriendRequestResponse> requests =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertTrue(requests.stream().anyMatch(r -> r.username().equals("regularuser")),
+    assertTrue(
+        requests.stream().anyMatch(r -> r.username().equals("regularuser")),
         "Request from regular user should appear");
-    assertFalse(requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
+    assertFalse(
+        requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
         "Request from suspended user should be excluded");
   }
 

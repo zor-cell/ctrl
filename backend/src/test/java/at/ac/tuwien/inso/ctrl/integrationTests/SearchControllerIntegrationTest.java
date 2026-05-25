@@ -166,15 +166,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_basicSearch_shouldReturnMatching() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
@@ -187,15 +190,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_caseInsensitive_shouldWork() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"BERT\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"BERT\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
@@ -208,15 +214,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_shouldExcludeSelf() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"current\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"current\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertFalse(responses.stream().anyMatch(r -> r.username().equals("currentuser")));
     }
@@ -224,10 +233,12 @@ public class SearchControllerIntegrationTest {
     @Test
     public void searchUsers_emptyQuery_shouldReturnBadRequest() throws Exception {
       mockMvc
-          .perform(post("/api/search/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"query\":\"\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-              .with(user(currentUser)))
+          .perform(
+              post("/api/search/users")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"query\":\"\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                  .with(user(currentUser)))
           .andExpect(status().isBadRequest());
     }
 
@@ -235,15 +246,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_noMatches_shouldReturnEmptyList() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"ghost123\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"ghost123\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertTrue(responses.isEmpty());
     }
@@ -254,15 +268,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertFalse(responses.stream().anyMatch(r -> r.username().equals("bert")));
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
@@ -276,15 +293,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":true,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":true,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
       assertFalse(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
@@ -296,15 +316,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_verifiedOnly_shouldFilterUnverified() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":true}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":true}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(2, responses.size());
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
@@ -320,15 +343,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":true,\"verifiedOnly\":true}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":true,\"verifiedOnly\":true}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
@@ -343,15 +369,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"dago\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"dago\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertTrue(hasStatus(responses.get(0), RelationshipStatusItem.RelationshipStatus.FRIEND));
@@ -363,15 +392,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"ram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"ram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertTrue(hasStatus(responses.get(0), RelationshipStatusItem.RelationshipStatus.FOLLOWED));
@@ -383,15 +415,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertTrue(
@@ -405,35 +440,42 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"dag\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"dag\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertTrue(
           hasStatus(
-              responses.get(0), RelationshipStatusItem.RelationshipStatus.PENDING_REQUEST_INCOMING));
+              responses.get(0),
+              RelationshipStatusItem.RelationshipStatus.PENDING_REQUEST_INCOMING));
     }
 
     @Test
     public void searchUsers_statusNone_shouldBeCorrect() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(3, responses.size());
       assertTrue(responses.stream().allMatch(r -> r.relationshipStatuses().isEmpty()));
@@ -445,15 +487,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"dagobert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"dagobert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertEquals("Dagobert Duck", responses.get(0).name());
@@ -463,15 +508,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_displayName_unverifiedNonFriend_shouldBeNull() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bertram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bertram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertNull(responses.get(0).name());
@@ -483,15 +531,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"obert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"obert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertEquals("Dagobert Duck", responses.get(0).name());
@@ -503,15 +554,18 @@ public class SearchControllerIntegrationTest {
 
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bertr\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bertr\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       assertEquals("Bertram", responses.get(0).name());
@@ -521,15 +575,18 @@ public class SearchControllerIntegrationTest {
     public void searchUsers_returnsCorrectFields() throws Exception {
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(1, responses.size());
       UserSearchResponse response = responses.get(0);
@@ -560,20 +617,25 @@ public class SearchControllerIntegrationTest {
       // When: Searching with query that would match the suspended user
       MvcResult result =
           mockMvc
-              .perform(post("/api/search/users")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
-                  .with(user(currentUser)))
+              .perform(
+                  post("/api/search/users")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          "{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                      .with(user(currentUser)))
               .andExpect(status().isOk())
               .andReturn();
 
       // Then: Suspended user should NOT appear in results
       List<UserSearchResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-      assertFalse(responses.stream().anyMatch(r -> r.username().equals("suspendedbert")),
+      assertFalse(
+          responses.stream().anyMatch(r -> r.username().equals("suspendedbert")),
           "Suspended users should be excluded from search results");
-      assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")),
+      assertTrue(
+          responses.stream().anyMatch(r -> r.username().equals("bert")),
           "Non-suspended users with matching username should still appear");
     }
 
@@ -663,16 +725,28 @@ public class SearchControllerIntegrationTest {
       foodTopic = createTopic("food", "🍕");
       techTopic = createTopic("tech", "💻");
 
-      post1 = createPost("Beach vacation in Hawaii with sunny weather", true, generateEmbedding(0.9f), otherUser);
+      post1 =
+          createPost(
+              "Beach vacation in Hawaii with sunny weather",
+              true,
+              generateEmbedding(0.9f),
+              otherUser);
       assignTopic(post1, travelTopic);
 
-      post2 = createPost("Summer beach party with friends", true, generateEmbedding(0.8f), otherUser);
+      post2 =
+          createPost("Summer beach party with friends", true, generateEmbedding(0.8f), otherUser);
       assignTopic(post2, travelTopic);
 
-      post3 = createPost("Italian pasta and pizza dinner", true, generateEmbedding(0.3f), otherUser);
+      post3 =
+          createPost("Italian pasta and pizza dinner", true, generateEmbedding(0.3f), otherUser);
       assignTopic(post3, foodTopic);
 
-      post4 = createPost("Latest programming languages and frameworks", true, generateEmbedding(0.1f), otherUser);
+      post4 =
+          createPost(
+              "Latest programming languages and frameworks",
+              true,
+              generateEmbedding(0.1f),
+              otherUser);
       assignTopic(post4, techTopic);
     }
 
@@ -693,6 +767,7 @@ public class SearchControllerIntegrationTest {
               .user(user)
               .caption(caption)
               .isPublic(isPublic)
+              .isRemoved(false)
               .embedding(embedding)
               .createdAt(LocalDateTime.now())
               .upvotes(0)
@@ -706,12 +781,7 @@ public class SearchControllerIntegrationTest {
 
     private void assignTopic(Post post, Topic topic) {
       PostTopicId id = new PostTopicId(post.getPostId(), topic.getTopicId());
-      PostTopic postTopic =
-          PostTopic.builder()
-              .id(id)
-              .post(post)
-              .topic(topic)
-              .build();
+      PostTopic postTopic = PostTopic.builder().id(id).post(post).topic(topic).build();
       entityManager.persist(postTopic);
       post.getPostTopics().add(postTopic);
     }
@@ -722,7 +792,8 @@ public class SearchControllerIntegrationTest {
       return embedding;
     }
 
-    private String buildSearchJson(String query, List<String> topicIds, int page, int postsPerPage) {
+    private String buildSearchJson(
+        String query, List<String> topicIds, int page, int postsPerPage) {
       StringBuilder json = new StringBuilder();
       json.append("{");
       if (query != null) {
@@ -761,7 +832,8 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertFalse(responses.isEmpty());
       assertTrue(
@@ -787,7 +859,8 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertFalse(responses.isEmpty());
       assertTrue(
@@ -801,8 +874,7 @@ public class SearchControllerIntegrationTest {
     @Test
     public void testSearchEndpoint_withValidQueryAndTopics_returns200AndRankedFilteredResults()
         throws Exception {
-      String requestJson =
-          buildSearchJson("beach", List.of(travelTopic.getTopicId()), 0, 10);
+      String requestJson = buildSearchJson("beach", List.of(travelTopic.getTopicId()), 0, 10);
 
       MvcResult result =
           mockMvc
@@ -815,12 +887,17 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertFalse(responses.isEmpty());
       assertTrue(
-          responses.stream().allMatch(r -> 
-              r.caption().contains("Beach") || r.caption().contains("vacation") || r.caption().contains("beach")),
+          responses.stream()
+              .allMatch(
+                  r ->
+                      r.caption().contains("Beach")
+                          || r.caption().contains("vacation")
+                          || r.caption().contains("beach")),
           "All results should contain beach-related terms");
     }
 
@@ -839,7 +916,8 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertNotNull(responses, "Should return a valid list");
     }
@@ -885,11 +963,13 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       if (responses.size() >= 2) {
         assertTrue(
-            responses.get(0).caption().contains("vacation") || responses.get(0).caption().contains("Beach vacation"),
+            responses.get(0).caption().contains("vacation")
+                || responses.get(0).caption().contains("Beach vacation"),
             "First result should have better word match");
       }
     }
@@ -909,13 +989,17 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-      assertFalse(responses.stream().anyMatch(r -> r.caption().contains("Beach")),
+      assertFalse(
+          responses.stream().anyMatch(r -> r.caption().contains("Beach")),
           "Should not contain beach posts without food topic");
-      assertFalse(responses.stream().anyMatch(r -> r.caption().contains("programming")),
+      assertFalse(
+          responses.stream().anyMatch(r -> r.caption().contains("programming")),
           "Should not contain tech posts without food topic");
-      assertTrue(responses.stream().anyMatch(r -> r.caption().contains("Italian")),
+      assertTrue(
+          responses.stream().anyMatch(r -> r.caption().contains("Italian")),
           "Should contain food post");
     }
 
@@ -936,13 +1020,49 @@ public class SearchControllerIntegrationTest {
               .andReturn();
 
       List<PostPreviewResponse> responses =
-          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
 
       assertEquals(2, responses.size(), "Should find 2 posts with food topic");
-      assertTrue(responses.stream().anyMatch(r -> r.caption().contains("Italian pasta")),
+      assertTrue(
+          responses.stream().anyMatch(r -> r.caption().contains("Italian pasta")),
           "Should find post3");
-      assertTrue(responses.stream().anyMatch(r -> r.caption().contains("Beach vacation")),
+      assertTrue(
+          responses.stream().anyMatch(r -> r.caption().contains("Beach vacation")),
           "Should find post1 which has both topics");
+    }
+
+    @Test
+    public void testSearchEndpoint_excludesRemovedPosts_fromResults() throws Exception {
+      // Given: Create a removed post that would match the search
+      Post removedPost = createPost("Removed beach post", true, generateEmbedding(0.9f), otherUser);
+      removedPost.setIsRemoved(true);
+      postRepository.save(removedPost);
+
+      // When: Searching for "beach"
+      String requestJson = buildSearchJson("beach", null, 0, 10);
+
+      MvcResult result =
+          mockMvc
+              .perform(
+                  post("/api/search/posts")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(requestJson)
+                      .with(user(currentUser)))
+              .andExpect(status().isOk())
+              .andReturn();
+
+      // Then: Removed post should NOT appear in results
+      List<PostPreviewResponse> responses =
+          objectMapper.readValue(
+              result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+      assertFalse(
+          responses.stream().anyMatch(r -> r.caption().equals("Removed beach post")),
+          "Removed posts should be excluded from search results");
+      assertTrue(
+          responses.stream().anyMatch(r -> r.caption().contains("Beach vacation")),
+          "Non-removed posts should still appear");
     }
   }
 }

@@ -241,6 +241,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
               FROM posts p
               JOIN post_topics pt ON pt.post_id = p.post_id
               WHERE p.is_public = true
+                AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
@@ -264,7 +265,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
           """
           SELECT p.* from posts p
           JOIN post_topics pt ON pt.post_id = p.post_id
-            WHERE p.is_public = true
+          WHERE p.is_removed = false
+            AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
             AND pt.topic_id = ANY(ARRAY[:topicList])
           ORDER BY p.created_at DESC
@@ -294,6 +296,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   0.3 * (1 - (p.embedding <=> CAST(:queryEmbedding AS real[])::vector)) AS totalScore
               FROM posts p
               WHERE p.is_public = true
+                AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
               ORDER BY totalScore DESC
               LIMIT 200

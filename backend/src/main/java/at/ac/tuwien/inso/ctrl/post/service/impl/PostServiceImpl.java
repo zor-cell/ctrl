@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
@@ -267,6 +268,10 @@ public class PostServiceImpl implements PostService {
   public DetailedPostResponse getPostById(String postId, String username) {
     Post post = this.fetchPost(postId);
     User user = this.fetchUser(username);
+
+    if (post.getIsRemoved()) {
+      throw new NotFoundException("Post", postId);
+    }
 
     if (!post.isPublic()) {
       if (post.getUser() != null
