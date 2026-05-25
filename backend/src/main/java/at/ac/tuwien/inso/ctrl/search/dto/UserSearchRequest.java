@@ -6,5 +6,4 @@ public record UserSearchRequest(
     @NotBlank String query,
     boolean excludeFriends,
     boolean excludeFollowed,
-    boolean verifiedOnly) {
-}
+    boolean verifiedOnly) {}

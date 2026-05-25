@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, merge, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
+import { tap, switchMap, takeUntil, Subject, merge, forkJoin, of, catchError, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
 import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
@@ -12,7 +12,6 @@ import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
 })
 export class RelationshipService implements OnDestroy {
   private readonly baseUri: string = environment.apiUrl + '/users/me';
-  private readonly searchUri: string = environment.apiUrl + '/users';
   private http = inject(HttpClient);
   private eventBus = inject(FriendRequestEventBusService);
   private mediaCacheService = inject(MediaCacheService);

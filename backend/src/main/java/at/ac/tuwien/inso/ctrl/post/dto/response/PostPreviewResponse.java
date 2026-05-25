@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.post.dto.response;
 
-
 public record PostPreviewResponse(
     String postId,
     String caption,
