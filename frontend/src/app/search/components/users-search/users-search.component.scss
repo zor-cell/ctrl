@@ -1,3 +1,4 @@
+$text-muted: #888;
 .users-search {
   display: flex;
   flex-direction: column;
@@ -49,14 +50,32 @@
 
   .results-section {
     .empty-state {
-      text-align: center;
-      padding: 2rem;
-      color: var(--p-text-color-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 60px 20px;
+      color: $text-muted;
 
       i {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-        display: block;
+        font-size: 2.5rem;
+        opacity: 0.4;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        margin: 0;
+        color: var(--p-text-color);
+      }
+
+      p {
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        opacity: 0.8;
       }
     }
 

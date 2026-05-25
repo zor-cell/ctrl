@@ -245,7 +245,9 @@ public class PostControllerDatabaseIntegrationTest {
   @Test
   void getPostById_withRemovedPost_returnsNotFound() throws Exception {
     // Given: A post that has been marked as removed
-    Post removedPost = savePost("removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+    Post removedPost =
+        savePost(
+            "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
     removedPost.setIsRemoved(true);
     postRepository.save(removedPost);
 

@@ -14,13 +14,12 @@ $radius-sm: 10px;
 .search-controls {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   margin-bottom: 24px;
   position: sticky;
   top: 0;
   z-index: 100;
   background: var(--p-content-background);
-  padding: 1rem 1.5rem;
+  padding-bottom: 1rem;
   margin-left: -1.5rem;
   margin-right: -1.5rem;
   border-bottom: 1px solid $border;
@@ -132,12 +131,6 @@ $radius-sm: 10px;
   .hint {
     font-size: 0.85rem;
     opacity: 0.8;
-  }
-
-  &.initial {
-    background: var(--p-surface-50);
-    border-radius: $radius;
-    border: 1px dashed $border;
   }
 }
 

@@ -23,6 +23,7 @@
     </p-iconField>
     <p-button
       icon="pi pi-search"
+      [disabled]="!canSearch()"
       (onClick)="onSearch()"
       label="Search"
       [loading]="isSearching()" />
@@ -31,25 +32,25 @@
   <!-- Filter Toggles -->
   <div class="filter-section">
     <p-button
-      [label]="excludeFriends() ? 'Hide Friends' : 'Show Friends'"
-      [icon]="excludeFriends() ? 'pi pi-check' : 'pi pi-times'"
+      [label]="'Hide Friends'"
+      [icon]="excludeFriends() ? 'pi pi-check-circle' : 'pi pi-circle'"
       [severity]="excludeFriends() ? 'secondary' : 'primary'"
       (onClick)="toggleFilter('friends')"
       size="small"
       [text]="!excludeFriends()" />
 
     <p-button
-      [label]="excludeFollowed() ? 'Hide Followed' : 'Show Followed'"
-      [icon]="excludeFollowed() ? 'pi pi-check' : 'pi pi-times'"
+      [label]="'Hide Followed'"
+      [icon]="excludeFollowed() ? 'pi pi-check-circle' : 'pi pi-circle'"
       [severity]="excludeFollowed() ? 'secondary' : 'primary'"
       (onClick)="toggleFilter('followed')"
       size="small"
       [text]="!excludeFollowed()" />
 
     <p-button
-      [label]="verifiedOnly() ? 'Verified Only' : 'All Users'"
+      [label]="'Verified Users only'"
       [icon]="verifiedOnly() ? 'pi pi-check-circle' : 'pi pi-circle'"
-      [severity]="verifiedOnly() ? 'success' : 'primary'"
+      [severity]="verifiedOnly() ? 'secondary' : 'primary'"
       (onClick)="toggleFilter('verified')"
       size="small"
       [text]="!verifiedOnly()" />
@@ -58,8 +59,10 @@
   <!-- Results -->
   <div class="results-section">
     @if (searchQuery().trim().length < 2 && searchResults().length === 0) {
-      <div class="empty-state">
-        <p>Enter at least 2 characters to search</p>
+      <div class="empty-state initial">
+        <i class="pi pi-search"></i>
+        <h3>Search for Users</h3>
+        <p>Enter 2 or more characters to search</p>
       </div>
     } @else if (isSearching()) {
       <div class="empty-state">

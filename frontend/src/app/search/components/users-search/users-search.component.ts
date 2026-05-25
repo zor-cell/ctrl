@@ -167,6 +167,10 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
     this.searchInput$.next(query.trim());
   }
 
+  canSearch(): boolean {
+    return this.searchQuery().trim().length >= 2;
+  }
+
   clearSearch(): void {
     this.searchQuery.set('');
     this.searchResults.set([]);
