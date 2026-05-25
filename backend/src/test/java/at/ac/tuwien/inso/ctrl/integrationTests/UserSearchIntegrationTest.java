@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -149,7 +151,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_basicSearch_shouldReturnMatching() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bert").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -167,7 +172,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_caseInsensitive_shouldWork() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "BERT").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"BERT\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -185,7 +193,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_shouldExcludeSelf() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "current").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"current\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -196,28 +207,23 @@ public class UserSearchIntegrationTest {
   }
 
   @Test
-  public void searchUsers_emptyQuery_shouldReturnAllOthers() throws Exception {
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/search").param("q", "").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    List<UserSearchResponse> responses =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bertram")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bart")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("currentuser")));
+  public void searchUsers_emptyQuery_shouldReturnBadRequest() throws Exception {
+    mockMvc
+        .perform(post("/api/search/users")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"query\":\"\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+            .with(user(currentUser)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   public void searchUsers_noMatches_shouldReturnEmptyList() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "ghost123").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"ghost123\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -235,11 +241,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(
-                get("/api/users/search")
-                    .param("q", "")
-                    .param("excludeFriends", "true")
-                    .with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -248,9 +253,11 @@ public class UserSearchIntegrationTest {
 
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("bert")));
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bart")));
+    assertFalse(responses.stream().anyMatch(r -> r.username().equals("bart")));
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("bertram")));
   }
+
+  // Filter tests
 
   @Test
   public void searchUsers_excludeFollowed_shouldFilterFollowed() throws Exception {
@@ -258,11 +265,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(
-                get("/api/users/search")
-                    .param("q", "")
-                    .param("excludeFollowed", "true")
-                    .with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":true,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -271,7 +277,7 @@ public class UserSearchIntegrationTest {
 
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bart")));
+    assertFalse(responses.stream().anyMatch(r -> r.username().equals("bart")));
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("bertram")));
   }
 
@@ -279,21 +285,20 @@ public class UserSearchIntegrationTest {
   public void searchUsers_verifiedOnly_shouldFilterUnverified() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(
-                get("/api/users/search")
-                    .param("q", "")
-                    .param("verifiedOnly", "true")
-                    .with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":true}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
     List<UserSearchResponse> responses =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(3, responses.size());
+    assertEquals(2, responses.size());
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")));
     assertTrue(responses.stream().anyMatch(r -> r.username().equals("dagobert")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("bart")));
+    assertFalse(responses.stream().anyMatch(r -> r.username().equals("bart")));
     assertFalse(responses.stream().anyMatch(r -> r.username().equals("bertram")));
   }
 
@@ -304,13 +309,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(
-                get("/api/users/search")
-                    .param("q", "")
-                    .param("excludeFriends", "true")
-                    .param("excludeFollowed", "true")
-                    .param("verifiedOnly", "true")
-                    .with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":true,\"excludeFollowed\":true,\"verifiedOnly\":true}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -332,7 +334,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "dago").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"dago\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -349,7 +354,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "ram").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"ram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -366,7 +374,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bart").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -385,7 +396,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "dag").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"dag\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -402,7 +416,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_statusNone_shouldBeCorrect() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bert").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -421,7 +438,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "dagobert").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"dagobert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -436,7 +456,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_displayName_unverifiedNonFriend_shouldBeNull() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bertram").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bertram\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -453,7 +476,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "obert").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"obert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -470,7 +496,10 @@ public class UserSearchIntegrationTest {
 
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bertr").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bertr\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -485,7 +514,10 @@ public class UserSearchIntegrationTest {
   public void searchUsers_returnsCorrectFields() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/api/users/search").param("q", "bart").with(user(currentUser)))
+            .perform(post("/api/search/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"bart\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                .with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
