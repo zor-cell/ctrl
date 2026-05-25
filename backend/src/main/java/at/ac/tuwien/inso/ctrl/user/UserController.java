@@ -6,6 +6,7 @@ import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.VerificationStatusResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
@@ -18,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -81,5 +83,16 @@ public class UserController {
       @AuthenticationPrincipal User currentUser,
       @Valid @RequestBody VerifyIdentityRequest request) {
     return userService.verifyUser(currentUser, request);
+  }
+
+  @PostMapping("/me/verify/business")
+  public void submitBusinessVerification(@AuthenticationPrincipal User currentUser) {
+    businessVerificationService.submitBusinessVerification(currentUser);
+  }
+
+  @GetMapping("/me/verify")
+  public VerificationStatusResponse getVerificationStatus(
+      @AuthenticationPrincipal User currentUser) {
+    return businessVerificationService.getVerificationStatus(currentUser);
   }
 }
