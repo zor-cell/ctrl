@@ -9,6 +9,7 @@ import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
+import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -263,7 +264,7 @@ public class PostServiceImpl implements PostService {
   }
 
   @Override
-  public PostResponse getPostById(String postId, String username) {
+  public DetailedPostResponse getPostById(String postId, String username) {
     Post post = this.fetchPost(postId);
     User user = this.fetchUser(username);
 
@@ -275,6 +276,12 @@ public class PostServiceImpl implements PostService {
       }
     }
 
-    return this.postMapper.toResponse(post);
+    List<PostVote> userVote =
+        this.postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            user.getId().toString(), List.of(postId.toString()));
+
+    PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
+
+    return this.postMapper.toDetailedPostResponse(post, toMap);
   }
 }

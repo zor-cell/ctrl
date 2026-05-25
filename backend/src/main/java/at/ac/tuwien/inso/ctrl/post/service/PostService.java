@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.service;
 
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
+import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
 import java.util.List;
@@ -24,7 +25,7 @@ public interface PostService {
    * @param username the username of the authenticated user
    * @return the post as response DTO
    */
-  PostResponse getPostById(String postId, String username);
+  DetailedPostResponse getPostById(String postId, String username);
 
   /**
    * Processes an upvote or downvote for a post. Submitting the same vote again toggles (removes)

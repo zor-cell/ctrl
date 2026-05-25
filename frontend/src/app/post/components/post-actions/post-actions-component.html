@@ -1,0 +1,59 @@
+<div class="post-actions">
+  <div class="post-actions-left">
+
+    <!-- PRIVATE: Likes only -->
+    @if (!this.post().isPublic) {
+      <button class="action-btn heart"
+              [class.active]="this.userVote() === 'up'"
+              (click)="votePost('up')"
+              [attr.aria-label]="'Upvote – ' + this.post().upvotes"
+              [attr.aria-pressed]="this.userVote() === 'up'">
+        <i class="pi pi-heart"></i>
+      </button>
+    }
+
+    <!-- PUBLIC: Up/Downvotes -->
+    @if (this.post().isPublic) {
+      <button
+        class="action-btn upvote"
+        [class.active]="this.userVote() === 'up'"
+        (click)="votePost('up')"
+        [attr.aria-label]="'Upvote – ' + this.upvotes()"
+        [attr.aria-pressed]="this.userVote() === 'up'"
+      >
+        <i class="pi pi-thumbs-up"></i>
+      </button>
+      <button
+        class="action-btn downvote"
+        [class.active]="this.userVote() === 'down'"
+        (click)="votePost('down')"
+        [attr.aria-label]="'Downvote – ' + this.downvotes()"
+        [attr.aria-pressed]="this.userVote() === 'down'"
+      >
+        <i class="pi pi-thumbs-down"></i>
+      </button>
+    }
+
+    <!-- Comments -->
+    <button class="action-btn" (click)="this.openComments.emit()">
+      <i class="pi pi-comment"></i>
+      <span>{{ this.post().comments.length }}</span>
+    </button>
+  </div>
+
+  <button class="action-btn flag-btn" (click)="this.reportDialogVisible.set(true)" pTooltip="Report Post" tooltipPosition="top">
+    <i class="pi pi-flag"></i>
+  </button>
+</div>
+
+<app-report
+  [contentType]="ContentTypeEnum.POST"
+  [contentId]="this.post().postId"
+  [contentTitle]="this.post().caption"
+  [userProfilePic]="this.post().userProfilePicture"
+  [username]="this.post().username"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)">
+</app-report>
+
+

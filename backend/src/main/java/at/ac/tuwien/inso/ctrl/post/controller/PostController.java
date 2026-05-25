@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.post.controller;
 
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
+import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
@@ -40,7 +41,7 @@ public class PostController {
   }
 
   @GetMapping("/{postId}")
-  public PostResponse getPostById(
+  public DetailedPostResponse getPostById(
       @PathVariable String postId, @AuthenticationPrincipal UserDetails userDetails) {
     return postService.getPostById(postId, userDetails.getUsername());
   }
