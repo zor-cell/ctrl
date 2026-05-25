@@ -23,6 +23,7 @@ public class Source implements Votable {
 
   private Integer downvotes;
 
+  @Builder.Default
   @Column(name = "is_removed")
   private Boolean isRemoved = false;
 
