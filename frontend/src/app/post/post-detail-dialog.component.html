@@ -1,5 +1,5 @@
 <p-dialog
-  [visible]="visible"
+  [visible]="post !== null"
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
@@ -50,18 +50,22 @@
       </header>
 
       <div class="post-detail__body">
-        @if (displayMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
-          <img
-            [src]="displayMediaUrl(currentPost)!"
-            alt=""
-            class="post-detail__media"
-          />
-        } @else if (displayMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
-          <video
-            [src]="displayMediaUrl(currentPost)!"
-            controls
-            class="post-detail__media"
-          ></video>
+        @if (postMediaUrl() && postMediaKind(currentPost) === 'image') {
+          <div class="post-detail__media-wrapper">
+            <img
+              [src]="postMediaUrl()!"
+              alt=""
+              class="post-detail__media"
+            />
+          </div>
+        } @else if (postMediaUrl() && postMediaKind(currentPost) === 'video') {
+          <div class="post-detail__media-wrapper">
+            <video
+              [src]="postMediaUrl()!"
+              controls
+              class="post-detail__media"
+            ></video>
+          </div>
         }
 
         <div
