@@ -242,7 +242,6 @@ public class ReportServiceImp implements ReportService {
         ExternalAuthor postUser = post.getExternalAuthor();
         postUser.setSuspended(true);
         externalAuthorRepository.save(postUser);
-
       } else if (type == ContentTypeEnum.SOURCE) {
         Source source =
             sourceRepository
@@ -250,7 +249,6 @@ public class ReportServiceImp implements ReportService {
                 .orElseThrow(
                     () ->
                         new EntityNotFoundException("Source not found: " + report.getContentId()));
-
         Post post =
             postRepository
                 .findBySource(source)
