@@ -101,7 +101,8 @@ public class SearchService {
         friendRequestRepository.findSenderIdsByReceiver(currentUser);
 
     // Find users matching the search term
-    List<User> allUsers = userRepository.findByUsernameContainingIgnoreCase(searchTerm);
+    List<User> allUsers =
+        userRepository.findByUsernameContainingIgnoreCaseAndFilterSuspended(searchTerm);
 
     return allUsers.stream()
         .filter(user -> !user.getId().equals(currentUser.getId()))

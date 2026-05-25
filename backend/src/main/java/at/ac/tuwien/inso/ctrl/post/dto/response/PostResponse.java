@@ -2,10 +2,11 @@ package at.ac.tuwien.inso.ctrl.post.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record PostResponse(
     String postId,
-    String userId,
+    UUID userId,
     String username,
     String sourceId,
     SourceResponse source,

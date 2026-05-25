@@ -15,10 +15,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, FriendRequestId> {
 
-  @Query("SELECT fr FROM FriendRequest fr WHERE fr.receiver = :receiver")
+  @Query(
+      """
+        SELECT fr FROM FriendRequest fr WHERE fr.receiver = :receiver AND fr.sender.isSuspended = false
+      """)
   List<FriendRequest> findAllIncomingRequests(@Param("receiver") User receiver);
 
-  @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender")
+  @Query(
+      """
+      SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender AND fr.receiver.isSuspended = false
+      """)
   List<FriendRequest> findAllSentRequests(@Param("sender") User sender);
 
   @Query("SELECT fr FROM FriendRequest fr WHERE fr.sender = :sender AND fr.receiver = :receiver")
@@ -27,9 +33,15 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Fr
 
   boolean existsBySenderAndReceiver(User sender, User receiver);
 
-  @Query("SELECT fr.sender.id FROM FriendRequest fr WHERE fr.receiver = :receiver")
+  @Query(
+      """
+      SELECT fr.sender.id FROM FriendRequest fr WHERE fr.receiver = :receiver AND fr.sender.isSuspended = false
+      """)
   Set<UUID> findSenderIdsByReceiver(@Param("receiver") User receiver);
 
-  @Query("SELECT fr.receiver.id FROM FriendRequest fr WHERE fr.sender = :sender")
+  @Query(
+      """
+      SELECT fr.receiver.id FROM FriendRequest fr WHERE fr.sender = :sender AND fr.receiver.isSuspended = false
+      """)
   Set<UUID> findReceiverIdsBySender(@Param("sender") User sender);
 }

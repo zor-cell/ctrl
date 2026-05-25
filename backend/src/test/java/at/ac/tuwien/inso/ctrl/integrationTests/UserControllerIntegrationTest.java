@@ -152,12 +152,11 @@ public class UserControllerIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/users/search")
+            post("/api/search/users")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
-                .param("q", "mar")
-                .param("excludeFriends", "false")
-                .param("excludeFollowed", "false")
-                .param("verifiedOnly", "false"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"query\":\"mar\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].username").value("marlene"))
         .andExpect(jsonPath("$[0].profilePicture").value("users/profile-pictures/marlene.png"));

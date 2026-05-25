@@ -39,8 +39,8 @@ public class PostMapper {
 
     return new PostResponse(
         post.getPostId(),
-        post.getExternalAuthor().getExternalAuthorId(),
-        post.getExternalAuthor().getDisplayName(),
+        post.getUser().getId(),
+        post.getUser().getUsername(),
         sourceId,
         toSourceResponse(post.getSource()),
         post.getCaption(),

@@ -96,6 +96,10 @@ public class FriendshipService {
             .findByUsername(targetUsername)
             .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
+    if (target.isSuspended()) {
+      throw new NotFoundException("User", targetUsername);
+    }
+
     if (friendRelationRepository.existsByUsers(currentUser, target)) {
       throw new InvalidRequestException("You are already friends with this user");
     }
@@ -141,6 +145,10 @@ public class FriendshipService {
         userRepository
             .findByUsername(senderUsername)
             .orElseThrow(() -> new NotFoundException("User", senderUsername));
+
+    if (sender.isSuspended()) {
+      throw new NotFoundException("User", senderUsername);
+    }
 
     FriendRequest request =
         friendRequestRepository

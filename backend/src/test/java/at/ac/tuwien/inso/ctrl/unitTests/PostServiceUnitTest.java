@@ -413,7 +413,7 @@ public class PostServiceUnitTest {
       String caption, boolean isPublic, boolean isAiGenerated, String mediaRef) {
     return new PostResponse(
         "post-1",
-        verifiedUser.getId().toString(),
+        verifiedUser.getId(),
         verifiedUser.getUsername(),
         source.getSourceId(),
         null,

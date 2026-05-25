@@ -245,7 +245,7 @@ public class PostControllerIntegrationTest {
   private PostResponse createPostResponse(User user, String postId, String caption) {
     return new PostResponse(
         postId,
-        user.getId().toString(),
+        user.getId(),
         user.getUsername(),
         null,
         null,

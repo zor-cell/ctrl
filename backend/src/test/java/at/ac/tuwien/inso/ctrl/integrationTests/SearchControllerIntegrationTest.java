@@ -541,6 +541,42 @@ public class SearchControllerIntegrationTest {
       assertTrue(response.relationshipStatuses().isEmpty());
     }
 
+    @Test
+    public void searchUsers_excludesSuspendedUsers_fromResults() throws Exception {
+      // Given: A suspended user with a username that would match the search
+      User suspendedUser =
+          User.builder()
+              .username("suspendedbert")
+              .email("suspended@test.com")
+              .password("password123")
+              .name("Suspended Bert")
+              .isVerified(true)
+              .emailVerified(true)
+              .isSuspended(true)
+              .birthdate(LocalDate.of(2000, 1, 1))
+              .build();
+      userRepository.save(suspendedUser);
+
+      // When: Searching with query that would match the suspended user
+      MvcResult result =
+          mockMvc
+              .perform(post("/api/search/users")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"query\":\"bert\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}")
+                  .with(user(currentUser)))
+              .andExpect(status().isOk())
+              .andReturn();
+
+      // Then: Suspended user should NOT appear in results
+      List<UserSearchResponse> responses =
+          objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+      assertFalse(responses.stream().anyMatch(r -> r.username().equals("suspendedbert")),
+          "Suspended users should be excluded from search results");
+      assertTrue(responses.stream().anyMatch(r -> r.username().equals("bert")),
+          "Non-suspended users with matching username should still appear");
+    }
+
     private void createFollow(User follower, User followed) {
       FollowRelation relation =
           FollowRelation.builder()
