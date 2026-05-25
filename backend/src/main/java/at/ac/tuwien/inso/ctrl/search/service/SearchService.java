@@ -46,7 +46,7 @@ public class SearchService {
       queryEmbedding = embeddingService.embedText(request.query().trim());
     }
 
-    String[] queryWords = request.query().trim().split(" ");
+    String[] queryWords = hasQuery ? request.query().trim().split(" ") : new String[0];
 
     String[] topicIdsArray = hasTopics ? request.topicIds().toArray(new String[0]) : new String[0];
 

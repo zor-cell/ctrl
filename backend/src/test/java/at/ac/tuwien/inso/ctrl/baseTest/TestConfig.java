@@ -1,7 +1,10 @@
 package at.ac.tuwien.inso.ctrl.baseTest;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.when;
 
+import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import com.google.api.services.gmail.Gmail;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -20,5 +23,13 @@ public class TestConfig {
   @Bean
   public TaskExecutor taskExecutor() {
     return new SyncTaskExecutor();
+  }
+
+  @Bean
+  public EmbeddingService embeddingService() {
+    EmbeddingService mockService = Mockito.mock(EmbeddingService.class);
+    // Return a simple embedding vector for any text
+    when(mockService.embedText(any(String.class))).thenReturn(new float[768]);
+    return mockService;
   }
 }
