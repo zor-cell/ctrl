@@ -45,7 +45,6 @@ public class PostMapper {
         toSourceResponse(post.getSource()),
         post.getCaption(),
         post.getMediaRef(),
-        fileStorageService.resolveFileUrl(post.getMediaRef()),
         post.isPublic(),
         post.isAiGenerated(),
         labelIds,
@@ -95,7 +94,7 @@ public class PostMapper {
         sourceId,
         toSourceResponse(post.getSource()),
         post.getCaption(),
-        fileStorageService.resolveFileUrl(post.getMediaRef()),
+        post.getMediaRef(),
         post.isPublic(),
         post.isAiGenerated(),
         labelIds,
@@ -123,10 +122,10 @@ public class PostMapper {
     return new PostPreviewResponse(
         post.getPostId(),
         post.getCaption(),
-        fileStorageService.resolveFileUrl(post.getMediaRef()),
+        post.getMediaRef(),
         userId,
         username,
-        fileStorageService.resolveFileUrl(avatarUrl),
+        avatarUrl,
         post.isPublic());
   }
 
