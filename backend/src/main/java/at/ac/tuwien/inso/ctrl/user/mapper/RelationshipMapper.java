@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.user.mapper;
 
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
@@ -19,18 +18,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RelationshipMapper {
 
-  private final FileStorageService fileStorageService;
-
   public FriendResponse toFriendResponse(User user) {
     if (user == null) {
       return null;
     }
 
     return new FriendResponse(
-        user.getId(),
-        user.getUsername(),
-        user.getName(),
-        fileStorageService.resolveFileUrl(user.getProfilePicture()));
+        user.getId(), user.getUsername(), user.getName(), user.getProfilePicture());
   }
 
   public FollowedResponse toFollowedResponse(User user) {
@@ -38,10 +32,7 @@ public class RelationshipMapper {
       return null;
     }
 
-    return new FollowedResponse(
-        user.getId(),
-        user.getUsername(),
-        fileStorageService.resolveFileUrl(user.getProfilePicture()));
+    return new FollowedResponse(user.getId(), user.getUsername(), user.getProfilePicture());
   }
 
   public FriendRequestResponse toIncomingFriendRequestResponse(FriendRequest request) {
@@ -52,7 +43,7 @@ public class RelationshipMapper {
     User sender = request.getSender();
     return new FriendRequestResponse(
         sender == null ? null : sender.getUsername(),
-        sender == null ? null : fileStorageService.resolveFileUrl(sender.getProfilePicture()),
+        sender == null ? null : sender.getProfilePicture(),
         true,
         request.getCreatedAt());
   }
@@ -65,7 +56,7 @@ public class RelationshipMapper {
     User receiver = request.getReceiver();
     return new FriendRequestResponse(
         receiver == null ? null : receiver.getUsername(),
-        receiver == null ? null : fileStorageService.resolveFileUrl(receiver.getProfilePicture()),
+        receiver == null ? null : receiver.getProfilePicture(),
         false,
         request.getCreatedAt());
   }
@@ -80,7 +71,7 @@ public class RelationshipMapper {
         user.getId(),
         user.getUsername(),
         displayName,
-        fileStorageService.resolveFileUrl(user.getProfilePicture()),
+        user.getProfilePicture(),
         user.isVerified(),
         relationshipStatuses);
   }

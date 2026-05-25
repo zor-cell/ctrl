@@ -419,7 +419,6 @@ public class PostServiceUnitTest {
         null,
         caption,
         mediaRef,
-        mediaRef == null ? null : "http://localhost:3900/ctrl-dev-media/" + mediaRef,
         isPublic,
         isAiGenerated,
         List.of(),

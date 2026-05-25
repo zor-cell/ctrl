@@ -96,6 +96,8 @@ export class PostComposerComponent implements OnDestroy {
   private readonly notificationService = inject(NotificationService);
   private readonly mediaInput =
     viewChild<ElementRef<HTMLInputElement>>('mediaInput');
+  private readonly captionTextarea =
+    viewChild<ElementRef<HTMLTextAreaElement>>('captionTextarea');
 
   protected readonly currentStep = signal(1);
   protected readonly previewUrl = signal<string | null>(null);
@@ -240,6 +242,14 @@ export class PostComposerComponent implements OnDestroy {
     );
   }
 
+  protected insertHeading() {
+    this.insertCaptionLinePrefix('# ');
+  }
+
+  protected insertBulletList() {
+    this.insertCaptionLinePrefix('- ');
+  }
+
   protected submitPost() {
     this.submitAttempted.set(true);
 
@@ -274,6 +284,37 @@ export class PostComposerComponent implements OnDestroy {
       error: () => {
         this.submitting.set(false);
       },
+    });
+  }
+
+  private insertCaptionLinePrefix(prefix: string): void {
+    const textarea = this.captionTextarea()?.nativeElement;
+    const control = this.postForm.controls.caption;
+    const value = control.value;
+
+    if (!textarea) {
+      control.setValue(`${prefix}${value}`);
+      control.markAsDirty();
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    const selectedText = value.slice(lineStart, selectionEnd);
+    const prefixedText = selectedText
+      .split('\n')
+      .map(line => line.startsWith(prefix) ? line : `${prefix}${line}`)
+      .join('\n');
+    const nextValue = `${value.slice(0, lineStart)}${prefixedText}${value.slice(selectionEnd)}`;
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+
+    queueMicrotask(() => {
+      textarea.focus();
+      textarea.setSelectionRange(selectionStart + prefix.length, selectionEnd + prefix.length);
     });
   }
 

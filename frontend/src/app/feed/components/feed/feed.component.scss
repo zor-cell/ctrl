@@ -151,7 +151,7 @@ $radius-sm:    10px;
   height: 100%;
   object-fit: contain;
   display: block;
-
+  background: var(--p-content-hover-background);
 }
 
 // ─── Caption ──────────────────────────────────────────

@@ -7,7 +7,7 @@ import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {Dialog} from "primeng/dialog";
-import {passwordMatchValidator} from "../../validators";
+import {passwordMatchValidator, usernameValidator, USERNAME_VALIDATION_MESSAGE} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
@@ -42,6 +42,8 @@ export class ProfileComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
 
+  protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
+
   protected isLoading = signal(true);
   protected currentUser = this.userService.user;
   protected isPasswordDialogOpen = signal(false);
@@ -74,7 +76,7 @@ export class ProfileComponent implements OnInit {
   );
 
   protected usernameForm = this.fb.group({
-    newUsername: ['', Validators.required],
+    newUsername: ['', [Validators.required, usernameValidator]],
   });
 
   constructor() {

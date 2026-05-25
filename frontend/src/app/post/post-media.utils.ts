@@ -51,12 +51,12 @@ export function resolvePreviewKind(file: File): PreviewKind {
   return mediaKindFromExtension(extension);
 }
 
-export function postMediaKind(mediaUrl: string | null | undefined): PreviewKind {
-  if (!mediaUrl) {
+export function postMediaKind(mediaRef: string | null | undefined): PreviewKind {
+  if (!mediaRef) {
     return null;
   }
 
-  return /\.(mp4|webm|mov)$/i.test(mediaUrl) ? 'video' : 'image';
+  return /\.(mp4|webm|mov)$/i.test(mediaRef) ? 'video' : 'image';
 }
 
 export function postMediaValidationMessage(file: File): string | null {

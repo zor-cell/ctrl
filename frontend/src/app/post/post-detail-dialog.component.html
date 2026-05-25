@@ -50,21 +50,29 @@
       </header>
 
       <div class="post-detail__body">
-        @if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
-          <img
-            [src]="postMediaUrl(currentPost)!"
-            alt=""
-            class="post-detail__media"
-          />
-        } @else if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
-          <video
-            [src]="postMediaUrl(currentPost)!"
-            controls
-            class="post-detail__media"
-          ></video>
+        @if (postMediaUrl() && postMediaKind(currentPost) === 'image') {
+          <div class="post-detail__media-wrapper">
+            <img
+              [src]="postMediaUrl()!"
+              alt=""
+              class="post-detail__media"
+            />
+          </div>
+        } @else if (postMediaUrl() && postMediaKind(currentPost) === 'video') {
+          <div class="post-detail__media-wrapper">
+            <video
+              [src]="postMediaUrl()!"
+              controls
+              class="post-detail__media"
+            ></video>
+          </div>
         }
 
-        <p class="post-detail__caption">{{ currentPost.caption }}</p>
+        <div
+          class="post-detail__caption"
+          [class.post-detail__caption--text-only]="!postMediaUrl()"
+          [innerHTML]="currentPost.caption | postCaptionFormat"
+        ></div>
 
         <section class="post-detail__sources-panel">
           <p-button

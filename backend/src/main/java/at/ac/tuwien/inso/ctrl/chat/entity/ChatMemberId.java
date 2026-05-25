@@ -18,7 +18,7 @@ import lombok.Setter;
 @Embeddable
 public class ChatMemberId implements Serializable {
   @Column(name = "chat_id")
-  private String chatId;
+  private UUID chatId;
 
   @Column(name = "user_id")
   private UUID userId;

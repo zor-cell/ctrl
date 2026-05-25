@@ -12,7 +12,6 @@ public record PostResponse(
     SourceResponse source,
     String caption,
     String mediaRef,
-    String mediaUrl,
     boolean isPublic,
     boolean isAiGenerated,
     List<String> labelIds,

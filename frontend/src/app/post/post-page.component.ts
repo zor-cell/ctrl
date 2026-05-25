@@ -14,13 +14,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
+import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
+import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from './dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
 import { PostDetailDialogComponent } from './post-detail-dialog.component';
@@ -35,6 +38,7 @@ import { PostService } from './post.service';
     Button,
     Dialog,
     TooltipModule,
+    PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
   ],
@@ -52,10 +56,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
+  protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
+  protected readonly postCardMediaUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
   protected readonly selectedPost = signal<PostResponse | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
@@ -67,6 +73,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly profileBioDraft = signal('');
   protected readonly profileUsernameDraft = signal('');
   protected readonly selectedProfilePicture = signal<File | null>(null);
+  protected readonly removeProfilePicture = signal(false);
   protected readonly usernameAvailable = signal<boolean | null>(null);
   protected readonly checkingUsername = signal(false);
   protected readonly deletingPost = signal(false);
@@ -80,11 +87,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
       ?? this.userService.user()?.username
       ?? 'Unknown user',
   );
-  protected readonly avatarInitial = computed(
-    () => this.username().trim().charAt(0).toUpperCase() || '?',
-  );
+  protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
   protected readonly currentProfilePicture = computed(
-    () => this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
+    () =>
+      this.removeProfilePicture()
+        ? null
+        : this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
@@ -101,11 +109,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     () => this.usernameDraftTrimmed() !== this.userService.user()?.username,
   );
   protected readonly usernameEmpty = computed(() => this.usernameDraftTrimmed().length === 0);
+  protected readonly usernameInvalid = computed(
+    () => !this.usernameEmpty()
+      && (this.usernameDraftTrimmed().length < 3
+        || !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
+  );
   protected readonly canSaveProfile = computed(
     () =>
       !this.updatingProfile()
       && !this.bioTooLong()
       && !this.usernameEmpty()
+      && !this.usernameInvalid()
       && !this.checkingUsername()
       && this.usernameAvailable() !== false,
   );
@@ -163,6 +177,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.revokeAvatarPreview();
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
+    this.revokePostCardMediaUrls();
   }
 
   protected openCreateDialog() {
@@ -200,6 +215,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.profileBioDraft.set(user.bio ?? '');
     this.usernameAvailable.set(null);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.editingProfile.set(true);
   }
 
@@ -213,6 +229,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.profileUsernameDraft.set('');
     this.usernameAvailable.set(null);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.revokeAvatarPreview();
   }
 
@@ -230,7 +247,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       clearTimeout(this.usernameCheckTimeout);
     }
 
-    if (this.usernameEmpty() || !this.usernameChanged()) {
+    if (this.usernameEmpty() || this.usernameInvalid() || !this.usernameChanged()) {
       this.checkingUsername.set(false);
       return;
     }
@@ -263,6 +280,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.notificationService.showWarning(
         `Bio must not be longer than ${this.maxBioLength} characters.`,
       );
+      return;
+    }
+
+    if (this.usernameInvalid()) {
+      this.notificationService.showWarning(USERNAME_VALIDATION_MESSAGE);
       return;
     }
 
@@ -305,6 +327,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.revokeAvatarPreview();
     this.avatarPreviewUrl.set(URL.createObjectURL(file));
     this.selectedProfilePicture.set(file);
+    this.removeProfilePicture.set(false);
+  }
+
+  protected resetProfilePicture() {
+    if (this.updatingProfile()) {
+      return;
+    }
+
+    this.revokeAvatarPreview();
+    this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(Boolean(this.userService.user()?.profilePicture));
   }
 
   protected topicLabelById(topicId: string): string {
@@ -314,7 +347,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openPost(post: PostResponse) {
-    this.selectedPost.set(this.withRenderablePostMedia(post));
+    this.selectedPost.set(post);
+    this.loadFullPostMedia(post);
   }
 
   protected closePost() {
@@ -344,6 +378,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postService.deletePost(post.postId).subscribe({
       next: () => {
         this.revokePostMediaObjectUrl(post.postId);
+        this.revokePostCardMediaUrl(post.postId);
         this.myPosts.update(posts =>
           posts.filter(currentPost => currentPost.postId !== post.postId),
         );
@@ -360,16 +395,63 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
   }
 
-  protected postMediaUrl(post: PostResponse | null): string | null {
+  protected postCardMediaUrl(post: PostResponse | null): string | null {
     if (!post) {
       return null;
     }
 
-    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaUrl);
+    return this.postCardMediaUrls()[post.postId] ?? null;
+  }
+
+  protected postCardVideoUrl(post: PostResponse): string | null {
+    const url = this.postCardMediaUrl(post);
+    if (!url) {
+      return null;
+    }
+
+    return this.withVideoStartFragment(url);
+  }
+
+  protected selectedPostMediaUrl(): string | null {
+    const post = this.selectedPost();
+    if (!post) {
+      return null;
+    }
+
+    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaRef);
+  }
+
+  protected selectedPostMediaKind(): PreviewKind {
+    const post = this.selectedPost();
+    if (!post) {
+      return null;
+    }
+
+    return postMediaKind(post.mediaRef);
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
-    return postMediaKind(post.mediaRef ?? post.mediaUrl);
+    return postMediaKind(post.mediaRef);
+  }
+
+  protected onPostCardMediaError(post: PostResponse): void {
+    this.revokePostCardMediaUrl(post.postId);
+  }
+
+  protected primePostCardVideo(event: Event): void {
+    const video = event.target as HTMLVideoElement | null;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) {
+      return;
+    }
+
+    try {
+      if (video.currentTime < 0.05) {
+        video.currentTime = Math.min(0.1, video.duration);
+      }
+      video.pause();
+    } catch {
+      // Some browsers do not allow programmatic seeking before enough data is available.
+    }
   }
 
   private loadMyPosts() {
@@ -399,6 +481,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.myPosts.set([]);
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
+    this.revokePostCardMediaUrls();
 
     if (this.publicProfileMode()) {
       this.loadPublicProfile();
@@ -491,51 +574,120 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private saveProfilePictureIfNeeded() {
     const profilePicture = this.selectedProfilePicture();
-    if (!profilePicture) {
-      this.finishProfileSave();
+
+    if (profilePicture) {
+      this.userService.updateProfilePicture(profilePicture, false).subscribe({
+        next: () => this.finishProfileSave(),
+        error: () => this.updatingProfile.set(false),
+      });
       return;
     }
 
-    this.userService.updateProfilePicture(profilePicture, false).subscribe({
-      next: () => this.finishProfileSave(),
-      error: () => this.updatingProfile.set(false),
-    });
+    if (this.removeProfilePicture()) {
+      this.userService.deleteProfilePicture(false).subscribe({
+        next: () => this.finishProfileSave(),
+        error: () => this.updatingProfile.set(false),
+      });
+      return;
+    }
+
+    this.finishProfileSave();
   }
 
   private finishProfileSave() {
     this.updatingProfile.set(false);
     this.editingProfile.set(false);
     this.selectedProfilePicture.set(null);
+    this.removeProfilePicture.set(false);
     this.revokeAvatarPreview();
     this.loadProfilePicture(this.userService.user()?.profilePicture);
     this.notificationService.showSuccess('Updated profile');
   }
 
   private loadPostMedia(posts: PostResponse[]): void {
-    this.revokePostMediaObjectUrls();
-    posts.forEach(post => {
-      const mediaUrl = post.mediaUrl;
+    this.revokePostCardMediaUrls();
+    posts.forEach(post => this.loadPostCardMedia(post));
+  }
 
-      if (!mediaUrl) {
-        return;
+  private loadPostCardMedia(post: PostResponse): void {
+    const mediaRef = post.mediaRef;
+    if (!mediaRef) {
+      return;
+    }
+
+    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
+      if (url) {
+        this.setPostCardMediaUrl(post.postId, url);
       }
+    });
+  }
 
-      this.mediaCacheService.resolveMediaUrl(
-        mediaUrl,
-        postMediaKind(post.mediaRef ?? mediaUrl),
-        'high',
-      ).subscribe({
-        next: objectUrl => {
-          if (objectUrl) {
-            this.setPostMediaObjectUrl(post.postId, objectUrl);
-          }
-        },
-      });
+  private resolveVerifiedMediaUrl(
+    mediaRef: string,
+    kind: PreviewKind,
+  ): Observable<string | null> {
+    return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', 'normal').pipe(
+      switchMap(url => {
+        if (!url) {
+          return of(null);
+        }
+
+        if (kind === 'video') {
+          return of(url);
+        }
+
+        return this.verifyImageLoads(url);
+      }),
+      catchError(() => of(null)),
+    );
+  }
+
+  private verifyImageLoads(url: string): Observable<string | null> {
+    return new Observable(observer => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        observer.next(url);
+        observer.complete();
+      };
+      image.onerror = () => {
+        observer.next(null);
+        observer.complete();
+      };
+      image.src = url;
+    });
+  }
+
+  private loadFullPostMedia(post: PostResponse): void {
+    if (!post.mediaRef) {
+      return;
+    }
+
+    if (this.postMediaObjectUrls()[post.postId]) {
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(
+      post.mediaRef,
+      postMediaKind(post.mediaRef),
+      'high',
+    ).subscribe({
+      next: objectUrl => {
+        if (objectUrl) {
+          this.setPostMediaObjectUrl(post.postId, objectUrl);
+        }
+      },
     });
   }
 
   private loadProfilePicture(url: string | null | undefined): void {
     this.revokeProfilePictureObjectUrl();
+
+    const directUrl = this.directMediaUrl(url);
+    if (directUrl) {
+      this.replaceProfilePictureObjectUrl(directUrl);
+      return;
+    }
 
     if (!url) {
       return;
@@ -563,17 +715,15 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return url;
   }
 
-  private withRenderablePostMedia(post: PostResponse): PostResponse {
-    const mediaUrl = this.postMediaUrl(post);
-    return mediaUrl ? { ...post, mediaUrl } : post;
+  private withVideoStartFragment(url: string): string {
+    const fragmentIndex = url.indexOf('#');
+    const baseUrl = fragmentIndex >= 0 ? url.slice(0, fragmentIndex) : url;
+    return `${baseUrl}#t=0.1`;
   }
 
   private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
     this.revokePostMediaObjectUrl(postId);
     this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
-    this.selectedPost.update(post =>
-      post?.postId === postId ? { ...post, mediaUrl: objectUrl } : post,
-    );
   }
 
   private revokePostMediaObjectUrl(postId: string): void {
@@ -586,6 +736,23 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private revokePostMediaObjectUrls(): void {
     this.postMediaObjectUrls.set({});
+  }
+
+  private setPostCardMediaUrl(postId: string, objectUrl: string): void {
+    this.revokePostCardMediaUrl(postId);
+    this.postCardMediaUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+  }
+
+  private revokePostCardMediaUrl(postId: string): void {
+    this.postCardMediaUrls.update(urls => {
+      const remaining = { ...urls };
+      delete remaining[postId];
+      return remaining;
+    });
+  }
+
+  private revokePostCardMediaUrls(): void {
+    this.postCardMediaUrls.set({});
   }
 
   private replaceProfilePictureObjectUrl(objectUrl: string): void {

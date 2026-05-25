@@ -1,28 +1,30 @@
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
-    <div class="profile-avatar profile-avatar--display" aria-hidden="true">
-      @if (currentProfilePicture()) {
-        <img
-          [src]="currentProfilePicture()!"
-          alt=""
-          class="profile-avatar__image"
-        />
-      } @else {
-        <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+    <div class="post-profile-card__avatar">
+      <div class="profile-avatar profile-avatar--display" aria-hidden="true">
+        @if (currentProfilePicture()) {
+          <img
+            [src]="currentProfilePicture()!"
+            alt=""
+            class="profile-avatar__image"
+          />
+        } @else {
+          <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+        }
+      </div>
+      @if (updatingAvatar()) {
+        <span class="profile-avatar-status" aria-live="polite">Saving...</span>
       }
-    </div>
-    @if (updatingAvatar()) {
-      <span class="profile-avatar-status" aria-live="polite">Saving...</span>
-    }
 
-    <input
-      #avatarInput
-      type="file"
-      accept="image/*"
-      class="sr-only"
-      (change)="onAvatarSelected($event)"
-    />
+      <input
+        #avatarInput
+        type="file"
+        accept="image/*"
+        class="sr-only"
+        (change)="onAvatarSelected($event)"
+      />
+    </div>
 
     <div class="post-profile-card__copy">
       <h1>{{ username() }}</h1>
@@ -86,20 +88,29 @@
             <button
               type="button"
               class="post-card"
+              [class.post-card--text-only]="!postCardMediaUrl(post)"
               (click)="openPost(post)"
             >
-              @if (postMediaUrl(post) && postMediaKind(post) === 'image') {
-                <img
-                  [src]="postMediaUrl(post)!"
-                  alt=""
-                  class="post-card__media"
-                />
-              } @else if (postMediaUrl(post) && postMediaKind(post) === 'video') {
-                <video
-                  [src]="postMediaUrl(post)!"
-                  muted
-                  class="post-card__media"
-                ></video>
+              @if (postCardMediaUrl(post)) {
+                @if (postMediaKind(post) === 'video') {
+                  <video
+                    [src]="postCardVideoUrl(post)!"
+                    class="post-card__media"
+                    muted
+                    playsinline
+                    preload="auto"
+                    (loadedmetadata)="primePostCardVideo($event)"
+                    (loadeddata)="primePostCardVideo($event)"
+                    (error)="onPostCardMediaError(post)"
+                  ></video>
+                } @else {
+                  <img
+                    [src]="postCardMediaUrl(post)!"
+                    alt=""
+                    class="post-card__media"
+                    (error)="onPostCardMediaError(post)"
+                  />
+                }
               }
 
               <div class="post-card__body">
@@ -116,7 +127,10 @@
                   </span>
                 </div>
 
-                <p class="post-card__caption">{{ post.caption }}</p>
+                <div
+                  class="post-card__caption"
+                  [innerHTML]="post.caption | postCaptionFormat"
+                ></div>
 
               </div>
             </button>
@@ -164,6 +178,16 @@
         [disabled]="updatingProfile()"
         (onClick)="openAvatarPicker()"
       />
+      @if (currentProfilePicture() || userService.user()?.profilePicture) {
+        <p-button
+          icon="pi pi-trash"
+          ariaLabel="Remove profile picture"
+          severity="secondary"
+          [text]="true"
+          [disabled]="updatingProfile()"
+          (onClick)="resetProfilePicture()"
+        />
+      }
     </div>
 
     <label class="profile-edit-field">
@@ -180,6 +204,8 @@
           Checking username...
         } @else if (usernameEmpty()) {
           Username is required.
+        } @else if (usernameInvalid()) {
+          {{ USERNAME_VALIDATION_MESSAGE }}
         } @else if (usernameAvailable() === false) {
           This username is already taken.
         } @else if (usernameChanged() && usernameAvailable() === true) {
@@ -230,6 +256,7 @@
 
 <app-post-detail-dialog
   [post]="selectedPost()"
+  [resolvedMediaUrl]="selectedPostMediaUrl()"
   [topicOptions]="topicOptions()"
   [currentProfilePicture]="currentProfilePicture()"
   [avatarInitial]="avatarInitial()"

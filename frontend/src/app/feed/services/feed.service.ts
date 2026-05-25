@@ -109,21 +109,14 @@ export class FeedService {
   }
 
   private resolveVideoImageRef(item: any): string[] {
-    // Case 1: The Feed API already provides ready-made URLs in videoImageRef
     if (item.videoImageRef?.length > 0) {
       return item.videoImageRef;
     }
-    // Case 2: mediaUrl is present
-    if (item.mediaUrl) {
-      return [item.mediaUrl];
-    }
-    // Case 3: mediaRef – either a complete URL or a raw path
+
     if (item.mediaRef) {
-      if (item.mediaRef.startsWith('http')) {
-        return [item.mediaRef]; // Already done → use straight away
-      }
-      return [`${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(item.mediaRef)}`];
+      return [item.mediaRef];
     }
+
     return [];
   }
 

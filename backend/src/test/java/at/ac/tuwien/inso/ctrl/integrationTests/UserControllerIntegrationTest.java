@@ -122,10 +122,7 @@ public class UserControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.username").value("integrationUser"))
         .andExpect(jsonPath("$.bio").value("Hello profile"))
-        .andExpect(
-            jsonPath("$.profilePicture")
-                .value(
-                    "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Favatar.png"));
+        .andExpect(jsonPath("$.profilePicture").value("users/profile-pictures/avatar.png"));
   }
 
   @Test
@@ -163,10 +160,7 @@ public class UserControllerIntegrationTest {
                 .param("verifiedOnly", "false"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].username").value("marlene"))
-        .andExpect(
-            jsonPath("$[0].profilePicture")
-                .value(
-                    "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Fmarlene.png"));
+        .andExpect(jsonPath("$[0].profilePicture").value("users/profile-pictures/marlene.png"));
   }
 
   @Test

@@ -126,17 +126,40 @@
 
       <div class="composer-form__grid">
         <div class="field">
-          <p-floatlabel variant="on">
-            <textarea
-              pTextarea
-              inputId="caption"
-              formControlName="caption"
-              rows="5"
-              [maxlength]="maxCaptionLength"
-              class="field__textarea"
-            ></textarea>
-            <label for="caption">Caption *</label>
-          </p-floatlabel>
+          <div class="caption-editor">
+            <div class="caption-toolbar" aria-label="Caption formatting">
+              <button
+                type="button"
+                class="caption-toolbar__button"
+                title="Heading"
+                aria-label="Add heading"
+                (click)="insertHeading()"
+              >
+                H
+              </button>
+              <button
+                type="button"
+                class="caption-toolbar__button"
+                title="Bullet list"
+                aria-label="Add bullet list"
+                (click)="insertBulletList()"
+              >
+                <i class="pi pi-list"></i>
+              </button>
+            </div>
+            <p-floatlabel variant="on">
+              <textarea
+                #captionTextarea
+                pTextarea
+                inputId="caption"
+                formControlName="caption"
+                rows="8"
+                [maxlength]="maxCaptionLength"
+                class="field__textarea"
+              ></textarea>
+              <label for="caption">Caption *</label>
+            </p-floatlabel>
+          </div>
           <p class="field__hint">
             Required · {{ captionLength() }} / {{ maxCaptionLength }} characters
           </p>

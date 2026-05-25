@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.exception.GlobalExceptionHandler;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileController;
@@ -33,6 +35,10 @@ public class FileControllerIntegrationTest {
 
   @Mock private PostRepository postRepository;
 
+  @Mock private ChatRepository chatRepository;
+
+  @Mock private ChatMemberRepository chatMemberRepository;
+
   @Mock private UserRepository userRepository;
 
   @Mock private FriendRelationRepository friendRelationRepository;
@@ -42,7 +48,12 @@ public class FileControllerIntegrationTest {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new FileController(
-                    fileStorageService, postRepository, userRepository, friendRelationRepository))
+                    fileStorageService,
+                    postRepository,
+                    chatRepository,
+                    chatMemberRepository,
+                    userRepository,
+                    friendRelationRepository))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
   }
@@ -55,21 +66,15 @@ public class FileControllerIntegrationTest {
         new FileStorageService.UploadedFile("posts/media/file.png", "image/png", 3L);
 
     when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/file.png"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/file.png");
 
     mockMvc
         .perform(multipart("/files/post-media").file(file))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:3900/ctrl-dev-media/posts/media/file.png"))
         .andExpect(jsonPath("$.contentType").value("image/png"))
         .andExpect(jsonPath("$.size").value(3));
 
     verify(fileStorageService).uploadPostMedia(any());
-    verify(fileStorageService).resolveFileUrl("posts/media/file.png");
   }
 
   @Test
@@ -80,21 +85,15 @@ public class FileControllerIntegrationTest {
         new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 3L);
 
     when(fileStorageService.uploadPostMedia(any())).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
 
     mockMvc
         .perform(multipart("/files/post-media").file(file))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.mediaRef").value("posts/media/video.mp4"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4"))
         .andExpect(jsonPath("$.contentType").value("video/mp4"))
         .andExpect(jsonPath("$.size").value(3));
 
     verify(fileStorageService).uploadPostMedia(any());
-    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
   }
 
   @Test

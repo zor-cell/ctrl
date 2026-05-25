@@ -63,7 +63,7 @@ public class VideoTranscodingServiceUnitTest {
           assertThrows(
               InvalidRequestException.class, () -> service.transcodeToMp4(inputFile, outputFile));
 
-      assertEquals("Video conversion is currently unavailable", exception.getMessage());
+      assertEquals("Video processing is currently unavailable", exception.getMessage());
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
