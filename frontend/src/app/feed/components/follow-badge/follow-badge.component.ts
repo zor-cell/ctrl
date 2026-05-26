@@ -1,5 +1,5 @@
 import {ButtonModule} from 'primeng/button';
-import {Component, computed, inject, input, Input, signal} from '@angular/core';
+import {Component, computed, inject, input, signal} from '@angular/core';
 import {RelationshipService} from '../../../user/relationship.service';
 import {UserService} from '../../../user/user.service';
 import {firstValueFrom} from 'rxjs';
