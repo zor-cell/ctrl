@@ -271,43 +271,6 @@ $radius-sm:    10px;
   p  { font-size: 0.9rem; margin: 0; }
 }
 
-// ─── Why Dialog ───────────────────────────────────────
-:host ::ng-deep .why-dialog {
-  border: 1px solid $border !important;
-  border-radius: $radius !important;
-
-  .p-dialog-header {
-    border-bottom: 1px solid $border !important;
-    border-radius: $radius $radius 0 0 !important;
-  }
-
-  .p-dialog-footer {
-    border-top: 1px solid $border !important;
-    border-radius: 0 0 $radius $radius !important;
-    padding: 12px 16px !important;
-  }
-}
-
-.why-dialog-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 4px 0;
-
-  .why-icon {
-    font-size: 1.4rem;
-    color: #f0c040;
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-
-  p {
-    white-space: pre-line;
-    font-size: 0.93rem;
-    margin: 0;
-  }
-}
-
 // ─── Algorithm Config Dialog ──────────────────────────
 :host ::ng-deep .algorithm-config-dialog {
   border: 1px solid $border !important;
@@ -322,9 +285,6 @@ $radius-sm:    10px;
     padding: 0 !important;
   }
 }
-
-
-
 
 .dialog-grid {
   display: flex;

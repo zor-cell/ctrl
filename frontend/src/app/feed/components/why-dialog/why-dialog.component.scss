@@ -1,0 +1,120 @@
+// ─── Tokens ───────────────────────────────────────────
+$border:    var(--border);
+$radius:    16px;
+$green:     #2DD4A0;
+$orange:    #F97341;
+$track-bg:  rgba(255, 255, 255, 0.07);
+
+// ─── Dialog Shell ─────────────────────────────────────
+:host ::ng-deep .why-dialog {
+  border: 1px solid $border !important;
+  border-radius: $radius !important;
+
+  .p-dialog-header {
+    border-bottom: 1px solid $border !important;
+    border-radius: $radius $radius 0 0 !important;
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid $border !important;
+    border-radius: 0 0 $radius $radius !important;
+    padding: 12px 16px !important;
+  }
+}
+
+// ─── Layout ───────────────────────────────────────────
+.dialog-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 1.5rem 1.5rem 0.75rem;
+}
+
+.score-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.score-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+// ─── Row Header ───────────────────────────────────────
+.score-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.label-text {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}
+
+.value-pos  { color: $green;  font-weight: 600; font-variant-numeric: tabular-nums; }
+.value-neg  { color: $orange; font-weight: 600; font-variant-numeric: tabular-nums; }
+.value-zero { color: var(--text-color-secondary, #9ca3af); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+// ─── Hint Icon ────────────────────────────────────────
+.hint-icon {
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+// ─── Bar ──────────────────────────────────────────────
+.bar-track {
+  position: relative;
+  height: 10px;
+  background: $track-bg;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  min-width: 6px;
+
+  &.bar-pos  { background: $green; }
+  &.bar-neg  { background: $orange; }
+  &.bar-zero { background: var(--text-color-secondary, #9ca3af); opacity: 0.4; }
+}
+
+// ─── Total Row ────────────────────────────────────────
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid $border;
+  font-size: 0.95rem;
+}
+
+.total-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}
+
+.total-value {
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .total-denom {
+    font-size: 0.9rem;
+  }
+}

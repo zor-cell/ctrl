@@ -1,0 +1,63 @@
+<p-dialog
+  header="Why am I seeing this post?"
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '580px' }"
+  styleClass="why-dialog"
+>
+  @if (post()) {
+    <div class="dialog-grid">
+
+      <div class="score-grid">
+        @for (row of scoreRows(); track row.label) {
+          <div class="score-row">
+            <div class="score-label">
+              <span class="label-text">
+                {{ row.label }}
+                <i class="pi pi-info-circle hint-icon"
+                   [pTooltip]="row.description"
+                   tooltipPosition="right"></i>
+              </span>
+              <span
+                [class.value-pos]="row.score > 0"
+                [class.value-neg]="row.score < 0"
+                [class.value-zero]="row.score === 0">
+                {{ row.score >= 0 ? '+' : '' }}{{ row.score.toFixed(2) }}
+              </span>
+            </div>
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [class.bar-pos]="row.score > 0"
+                [class.bar-neg]="row.score < 0"
+                [class.bar-zero]="row.score === 0"
+                [style.width.%]="row.score === 0 ? 0.5 : row.barWidth"
+              ></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="total-row">
+        <span class="total-label">
+          Score
+          <i class="pi pi-info-circle hint-icon"
+             pTooltip="This total is calculated by summing the weighted impact of your feed configuration. All posts are ranked according to this value."
+             tooltipPosition="right"></i>
+        </span>
+        <span class="total-value">
+          <strong>{{ totalScore() }}</strong>
+          <span class="total-denom"> / {{ maxAchievableScore() }}</span>
+        </span>
+      </div>
+
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <p-button label="Got it" (onClick)="close()" [fluid]="true" />
+  </ng-template>
+</p-dialog>

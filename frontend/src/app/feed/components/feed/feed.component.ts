@@ -6,6 +6,7 @@ import { Post } from '../../dto/Post';
 import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
 import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
+import { AlgorithmService } from '../../../algorithm/algorithm.service';
 
 import { TabsModule } from 'primeng/tabs';
 import { ReportComponent } from '../../../report/components/report/report.component';
@@ -24,6 +25,7 @@ import {ReactiveFormsModule} from "@angular/forms";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {RelationshipService} from '../../../user/relationship.service';
 import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
+import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 
 @Component({
   selector: 'app-feed',
@@ -44,6 +46,7 @@ import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
     RouterLink,
     ReportComponent,
     FollowBadgeComponent,
+    WhyDialogComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -79,6 +82,7 @@ export class FeedComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   private readonly rel = inject(RelationshipService);
+  private readonly algorithmService = inject(AlgorithmService);
 
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
@@ -125,7 +129,6 @@ export class FeedComponent implements OnInit {
       },
     });
   }
-
 
   openAlgorithmConfig(): void {
     this.algorithmConfigVisible.set(true);
