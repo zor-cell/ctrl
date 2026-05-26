@@ -179,7 +179,6 @@
         [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
       >
         <i class="pi pi-check"></i>
-        <!--<span>{{ post.sourceIds[0].upvotes }}</span>-->
       </button>
       <button
         class="action-btn downvote"
@@ -189,7 +188,6 @@
         [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
       >
         <i class="pi pi-times"></i>
-        <!--<span>{{ post.sourceIds[0].downvotes }}</span>-->
       </button>
         </div>
       <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
@@ -366,7 +364,7 @@
 <app-comments
   [post]="selectedPostForComments()"
   [visible]="commentsDialogVisible()"
-  (visibleChange)="commentsDialogVisible.set($event)"
+  (visibleChange)="onCommentsVisibleChange($event)"
 />
 
 <!-- ─── Report Dialog ─── -->

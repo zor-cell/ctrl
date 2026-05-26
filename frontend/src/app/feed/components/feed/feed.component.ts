@@ -21,7 +21,7 @@ import {ContentTypeEnum} from '../../../report/dto/report';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
 import {ReactiveFormsModule} from "@angular/forms";
-import {RouterLink} from "@angular/router";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-feed',
@@ -72,6 +72,9 @@ export class FeedComponent implements OnInit {
   protected isRefreshing = signal(false);
   protected isSpinning = signal(false);
 
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
   );
@@ -95,8 +98,27 @@ export class FeedComponent implements OnInit {
   ngOnInit(): void {
     this.userService.loadUser();
     this.viewTracking.startTracking();
-    this.loadFeed();
+
+    // Feed laden, dann ggf. Dialog aus URL wiederherstellen
+    forkJoin([
+      this.feedService.getFeed(true),
+      this.feedService.getFeed(false),
+    ]).subscribe({
+      next: ([publicPosts, privatePosts]) => {
+        this.publicPosts.set(publicPosts);
+        this.privatePosts.set(privatePosts);
+
+        // Query-Param prüfen und Dialog wiederherstellen
+        const postId = this.route.snapshot.queryParamMap.get('comments');
+        if (postId) {
+          const post = [...publicPosts, ...privatePosts]
+            .find(p => p.postId === postId);
+          if (post) this.openCommentsDialog(post);
+        }
+      },
+    });
   }
+
 
   //openAlgorithmConfig(): void {
   //  this.algorithmConfigVisible.set(true);
@@ -199,7 +221,22 @@ export class FeedComponent implements OnInit {
   openCommentsDialog(post: Post): void {
     this.selectedPostForComments.set(post);
     this.commentsDialogVisible.set(true);
+    this.router.navigate([], {
+      queryParams: { comments: post.postId },
+      queryParamsHandling: 'merge',
+    });
   }
+
+  onCommentsVisibleChange(visible: boolean): void {
+    this.commentsDialogVisible.set(visible);
+    if (!visible) {
+      this.router.navigate([], {
+        queryParams: { comments: null },
+        queryParamsHandling: 'merge',
+      });
+    }
+  }
+
 
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);
