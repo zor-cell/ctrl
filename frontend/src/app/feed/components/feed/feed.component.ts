@@ -127,9 +127,9 @@ export class FeedComponent implements OnInit {
   }
 
 
-  //openAlgorithmConfig(): void {
-  //  this.algorithmConfigVisible.set(true);
-  //}
+  openAlgorithmConfig(): void {
+    this.algorithmConfigVisible.set(true);
+  }
 
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
