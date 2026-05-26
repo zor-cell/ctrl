@@ -157,7 +157,8 @@
         size="small"
         [rounded]="true"
         [outlined]="true"
-        (onClick)="openAlgorithmConfig()"
+        routerLink="/settings"
+        [queryParams]="{tab: 'algorithm'}"
       />
     </div>
   </div>
