@@ -27,10 +27,6 @@
             </a>
             <span class="post-info">
               {{ timeAgo(post.createdAt) }}
-              @if (post.topicIds.length > 0) {
-                <span class="separator">·</span>
-                {{ post.topicIds[0] }}
-              }
             </span>
           </div>
         </div>
