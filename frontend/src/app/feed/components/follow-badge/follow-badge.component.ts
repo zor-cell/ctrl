@@ -62,4 +62,13 @@ export class FollowBadgeComponent {
       await firstValueFrom(this.rel.acceptFriendRequest(this.username));
     } finally { this.busy.set(false); }
   }
+
+  async unfriend() {
+    if (!confirm('Remove ' + this.username + ' as a friend?')) return;
+    this.busy.set(true);
+    try {
+      await firstValueFrom(this.rel.unfriend(this.username));
+      this.rel['eventBus'].unfriend();
+    } finally { this.busy.set(false); }
+  }
 }

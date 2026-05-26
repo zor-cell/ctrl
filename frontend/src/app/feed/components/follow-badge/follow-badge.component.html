@@ -18,7 +18,8 @@
     }
     @case ('FRIEND') {
       <p-button label="Friends" size="small" [rounded]="true"
-                severity="success" [disabled]="true" styleClass="follow-btn"  />
+                severity="success" styleClass="follow-btn"
+                [loading]="busy()" (onClick)="unfriend()" />
     }
   }
 }
