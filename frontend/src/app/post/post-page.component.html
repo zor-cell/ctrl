@@ -27,7 +27,12 @@
     </div>
 
     <div class="post-profile-card__copy">
-      <h1>{{ username() }}</h1>
+      <h1 style="display: flex; align-items: center; gap: 10px;">
+        {{ username() }}
+        @if (!canEditProfile()) {
+          <app-follow-badge [username]="username()" />
+        }
+      </h1>
       <div class="profile-bio">
         <p>{{ userBio() }}</p>
         @if (canEditProfile()) {
