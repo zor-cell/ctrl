@@ -26,6 +26,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import {ReportComponent} from '../../../report/components/report/report.component';
 import {ContentTypeEnum} from '../../../report/dto/report';
 import {RouterLink} from '@angular/router';
+import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 
 @Component({
   selector: 'app-comments',
@@ -42,6 +43,7 @@ import {RouterLink} from '@angular/router';
     ProgressSpinnerModule,
     ReportComponent,
     RouterLink,
+    FollowBadgeComponent,
   ],
   templateUrl: './comments.component.html',
   styleUrl: './comments.component.scss',

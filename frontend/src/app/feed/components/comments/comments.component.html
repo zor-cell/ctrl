@@ -29,6 +29,7 @@
               {{ timeAgo(post.createdAt) }}
             </span>
           </div>
+          <app-follow-badge [username]="post.username" />
         </div>
 
         <div class="post-header-right">

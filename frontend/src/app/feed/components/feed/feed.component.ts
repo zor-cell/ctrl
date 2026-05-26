@@ -22,6 +22,8 @@ import {ViewTrackingService} from '../../../post/services/view-tracking.service'
 import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
 import {ReactiveFormsModule} from "@angular/forms";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
+import {RelationshipService} from '../../../user/relationship.service';
+import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 
 @Component({
   selector: 'app-feed',
@@ -41,6 +43,7 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
     ReactiveFormsModule,
     RouterLink,
     ReportComponent,
+    FollowBadgeComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -75,6 +78,8 @@ export class FeedComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  private readonly rel = inject(RelationshipService);
+
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
   );
@@ -99,16 +104,18 @@ export class FeedComponent implements OnInit {
     this.userService.loadUser();
     this.viewTracking.startTracking();
 
-    // Feed laden, dann ggf. Dialog aus URL wiederherstellen
     forkJoin([
       this.feedService.getFeed(true),
       this.feedService.getFeed(false),
+      this.rel.loadFriends(),
+      this.rel.loadFollowed(),
+      this.rel.loadSentFriendRequests(),
+      this.rel.loadIncomingFriendRequests(),
     ]).subscribe({
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
 
-        // Query-Param prüfen und Dialog wiederherstellen
         const postId = this.route.snapshot.queryParamMap.get('comments');
         if (postId) {
           const post = [...publicPosts, ...privatePosts]

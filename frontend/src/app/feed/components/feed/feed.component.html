@@ -106,6 +106,7 @@
         }
         <span class="post-info">{{ timeAgo(post.createdAt) }}</span>
       </div>
+      <app-follow-badge [username]="post.username" [isExternal]="post.isExternal" />
     </div>
 
     <!-- Labels + Why Button -->
