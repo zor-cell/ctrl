@@ -17,6 +17,7 @@ import {NgStyle} from '@angular/common';
 import {VerificationStatus, VerificationStatusResponse} from '../../dto/BusinessVerification';
 import {Router} from '@angular/router';
 import {AuthService} from '../../../auth/auth.service';
+import {SettingsLogoutComponent} from '../settings-logout/settings-logout.component';
 
 @Component({
   selector: 'app-profile',
@@ -32,6 +33,7 @@ import {AuthService} from '../../../auth/auth.service';
     ProgressSpinner,
     Password,
     NgStyle,
+    SettingsLogoutComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -142,15 +144,15 @@ export class ProfileComponent implements OnInit {
       bio: formValues.bio?.trim() ?? '',
       birthdate: formattedDate
     }).subscribe({
-      next: () => {
-        if (emailChanged) {
-          if (environment.auth.requireEmailVerification) {
-            this.authService.logout();
-            this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
+        next: () => {
+          if (emailChanged) {
+            if (environment.auth.requireEmailVerification) {
+              this.authService.logout();
+              this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
+            }
           }
         }
       }
-    }
     );
   }
 

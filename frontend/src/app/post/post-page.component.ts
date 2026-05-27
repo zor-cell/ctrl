@@ -10,7 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
@@ -37,6 +37,7 @@ import {RelationshipService} from '../user/relationship.service';
   selector: 'app-post-page',
   imports: [
     CommonModule,
+    RouterModule,
     Button,
     Dialog,
     TooltipModule,
