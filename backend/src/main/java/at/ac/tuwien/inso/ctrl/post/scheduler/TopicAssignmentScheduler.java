@@ -79,28 +79,28 @@ public class TopicAssignmentScheduler {
     }
 
     log.info(
-            "TopicAssignmentScheduler finished — assigned: {}, below threshold: {}, skipped (no embedding): {}, failed: {}",
-            assigned,
-            belowThreshold,
-            skipped,
-            posts.size() - assigned - belowThreshold - skipped);
+        "TopicAssignmentScheduler finished — assigned: {}, below threshold: {}, skipped (no embedding): {}, failed: {}",
+        assigned,
+        belowThreshold,
+        skipped,
+        posts.size() - assigned - belowThreshold - skipped);
   }
 
   public AssignmentResult assignTopicsToPost(String postId) {
     try {
       Post post =
-              postRepository
-                      .findById(postId)
-                      .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+          postRepository
+              .findById(postId)
+              .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
       // Step 1: always guarantee MIN_TOPICS_PER_POST assignments (best matches, no threshold).
       List<Topic> guaranteed =
-              topicRepository.findTopNTopicsForEmbedding(post.getEmbedding(), MIN_TOPICS_PER_POST);
+          topicRepository.findTopNTopicsForEmbedding(post.getEmbedding(), MIN_TOPICS_PER_POST);
 
       // Step 2: fetch additional topics that pass the similarity threshold, up to MAX.
       List<Topic> thresholdBased =
-              topicRepository.findMatchingTopicsForEmbedding(
-                      post.getEmbedding(), MAX_TOPICS_PER_POST, SIMILARITY_THRESHOLD);
+          topicRepository.findMatchingTopicsForEmbedding(
+              post.getEmbedding(), MAX_TOPICS_PER_POST, SIMILARITY_THRESHOLD);
 
       // Merge: guaranteed first, then threshold-based extras (deduped by topicId).
       java.util.LinkedHashMap<String, Topic> merged = new java.util.LinkedHashMap<>();
@@ -116,10 +116,10 @@ public class TopicAssignmentScheduler {
 
       postRepository.save(post);
       log.debug(
-              "Post {} -> {} topic(s): {}",
-              post.getPostId(),
-              topics.size(),
-              topics.stream().map(Topic::getName).toList());
+          "Post {} -> {} topic(s): {}",
+          post.getPostId(),
+          topics.size(),
+          topics.stream().map(Topic::getName).toList());
 
       return AssignmentResult.SUCCESS;
 
