@@ -2,7 +2,7 @@
   <div class="loading-spinner">
     <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
   </div>
-} @else if(currentUser(); as user) {
+} @else if(currentUser()) {
   <div class="profile-layout">
     <div class="form-container profile-section">
       <div class="form-header">
@@ -41,8 +41,8 @@
 
         <div>
           <p-floatlabel variant="on">
-            <input pInputText type="email" id="name" formControlName="email" fluid/>
-            <label for="name">Email</label>
+            <input pInputText type="email" id="email" formControlName="email" fluid/>
+            <label for="email">Email</label>
           </p-floatlabel>
 
           @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) {
@@ -51,18 +51,17 @@
         </div>
 
         <div class="verification-box">
-          @if (user.isVerified) {
+          @if (currentUser()?.isVerified) {
             <p-message severity="success" variant="simple" size="small" [text]="getVerificationText()"></p-message>
           } @else {
-            <p-message severity="warn" variant="simple" size="small"[text]="getVerificationText()"></p-message>
+            <p-message severity="warn" variant="simple" size="small" [text]="getVerificationText()"></p-message>
             @if (currentVerificationStatus()?.status !== VerificationStatus.REJECTED && currentVerificationStatus()?.status !== VerificationStatus.PENDING) {
               <p-button
                 label="Verify Now"
                 size="small"
                 severity="secondary"
                 (onClick)="openVerifyDialog()"
-              >
-              </p-button>
+              />
             }
           }
         </div>
@@ -73,8 +72,7 @@
             label="Save Changes"
             icon="pi pi-check"
             [disabled]="profileForm.invalid || profileForm.pristine"
-          >
-          </p-button>
+          />
         </div>
       </form>
     </div>
@@ -85,20 +83,12 @@
       </div>
 
       <div class="settings-stack">
-        <!-- created at field, is not really interesting
-        <div class="account-item">
-            <div class="item-details">
-                <span class="item-label">Member since</span>
-                <span class="item-value">{{ createdAt() | date:'dd.MM.yyyy' }}</span>
-            </div>
-        </div>-->
-
         <div class="input-action-group account-item">
           <div class="item-details">
             <span class="item-label">Username</span>
-            <span class="item-value">{{ user.username }}</span>
+            <span class="item-value">{{ currentUser()?.username }}</span>
           </div>
-          <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()"></p-button>
+          <p-button label="Change" severity="secondary" (onClick)="openUsernameDialog()" />
         </div>
 
         <div class="input-action-group account-item">
@@ -106,7 +96,7 @@
             <span class="item-label">Password</span>
             <span class="item-value">********</span>
           </div>
-          <p-button label="Change" severity="secondary" (onClick)="openPasswordDialog()"></p-button>
+          <p-button label="Change" severity="secondary" (onClick)="openPasswordDialog()" />
         </div>
 
         <app-settings-logout />
@@ -121,7 +111,7 @@
   <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="dialog-form">
     <div>
       <p-floatlabel variant="on">
-        <p-password id="password"
+        <p-password id="currentPassword"
                     formControlName="currentPassword"
                     [feedback]="false"
                     [toggleMask]="true"
@@ -132,7 +122,7 @@
 
     <div>
       <p-floatlabel variant="on">
-        <p-password id="password"
+        <p-password id="newPassword"
                     formControlName="newPassword"
                     [feedback]="false"
                     [toggleMask]="true"
@@ -143,7 +133,7 @@
 
     <div>
       <p-floatlabel variant="on">
-        <p-password id="password"
+        <p-password id="confirmPassword"
                     formControlName="confirmPassword"
                     [feedback]="false"
                     [toggleMask]="true"
@@ -153,8 +143,8 @@
     </div>
 
     <div class="input-action-group">
-      <p-button label="Cancel" severity="secondary" (onClick)="isPasswordDialogOpen.set(false)"></p-button>
-      <p-button label="Update Password" type="submit" [disabled]="passwordForm.invalid"></p-button>
+      <p-button label="Cancel" severity="secondary" (onClick)="isPasswordDialogOpen.set(false)" />
+      <p-button label="Update Password" type="submit" [disabled]="passwordForm.invalid" />
     </div>
   </form>
 </p-dialog>
@@ -174,12 +164,11 @@
     </div>
 
     <div class="input-action-group">
-      <p-button label="Cancel" severity="secondary" (onClick)="isUsernameDialogOpen.set(false)"></p-button>
-      <p-button label="Update Username" type="submit" [disabled]="usernameForm.invalid"></p-button>
+      <p-button label="Cancel" severity="secondary" (onClick)="isUsernameDialogOpen.set(false)" />
+      <p-button label="Update Username" type="submit" [disabled]="usernameForm.invalid" />
     </div>
   </form>
 </p-dialog>
-
 
 <p-dialog header="Verify Account" [modal]="true" [(visible)]="isVerifyDialogOpen" [style]="{ width: '25rem' }">
   <div class="dialog-form">
@@ -188,37 +177,24 @@
       variant="simple"
       [text]="'Select your account type for verification:'"
       styleClass="w-full"
-      [ngStyle]="{ 'margin-bottom': '1.5rem'}">
+      [ngStyle]="{ 'margin-bottom': '1.5rem' }">
     </p-message>
 
-    <div style="margin: 0.5rem 0; display: flex; flex-direction: row; gap: 1rem; justify-content: center;">
+    <div class="verify-buttons">
       <p-button
         label="Personal Account"
+        icon="pi pi-user"
+        severity="secondary"
+        [outlined]="true"
         (onClick)="verifyPersonal()"
-      >
-        <ng-template pTemplate="content">
-          <div style="text-align: left;">
-            <strong>Personal Account</strong>
-            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
-              Verify via ID Austria
-            </p>
-          </div>
-        </ng-template>
-      </p-button>
-
+      />
       <p-button
         label="Business Account"
+        icon="pi pi-building"
+        severity="secondary"
+        [outlined]="true"
         (onClick)="verifyBusiness()"
-      >
-        <ng-template pTemplate="content">
-          <div style="text-align: left;">
-            <strong>Business Account</strong>
-            <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666;">
-              Submit business verification request
-            </p>
-          </div>
-        </ng-template>
-      </p-button>
+      />
     </div>
   </div>
 
@@ -227,6 +203,6 @@
       label="Cancel"
       severity="secondary"
       (onClick)="isVerifyDialogOpen.set(false)"
-    ></p-button>
+    />
   </ng-template>
 </p-dialog>
