@@ -1,4 +1,4 @@
-import {Component, computed, effect, inject, signal} from '@angular/core';
+import {Component, computed, effect, HostBinding, inject, signal} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {AuthService} from "../auth/auth.service";
 import {ThemeService} from '../core/services/theme.service';
@@ -25,6 +25,12 @@ export class NavigationComponent {
 
   protected profilePictureUrl = signal<string | null>(null);
 
+  @HostBinding('style.--nav-profile-pic-url')
+  get profilePicCssVar(): string {
+    const url = this.profilePictureUrl();
+    return url ? `url('${url}')` : 'none';
+  }
+
   constructor() {
     // Wenn sich der User ändert (Login/Logout/Profilbild-Update), URL neu auflösen
     effect(() => {
@@ -35,18 +41,18 @@ export class NavigationComponent {
 
   private resolveProfilePicture(rawUrl: string | null): void {
     if (!rawUrl) {
-      this.profilePictureUrl.set(null);
+      queueMicrotask(() => this.profilePictureUrl.set(null));
       return;
     }
 
     if (!this.mediaCacheService.isBackendManagedMediaUrl(rawUrl)) {
-      this.profilePictureUrl.set(rawUrl);
+      queueMicrotask(() => this.profilePictureUrl.set(rawUrl));
       return;
     }
 
     this.mediaCacheService.resolveMediaUrl(rawUrl, 'image', 'high').subscribe({
-      next: blobUrl => this.profilePictureUrl.set(blobUrl),
-      error: () => this.profilePictureUrl.set(null),
+      next: blobUrl => queueMicrotask(() => this.profilePictureUrl.set(blobUrl)),
+      error: () => queueMicrotask(() => this.profilePictureUrl.set(null)),
     });
   }
 

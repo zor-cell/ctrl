@@ -1,5 +1,4 @@
-<div [class.has-profile-pic]="!!profilePictureUrl()"
-     [style]="profilePictureUrl() ? 'url(' + profilePictureUrl() + ')' : null">
+<div [class.has-profile-pic]="!!profilePictureUrl()">
   <p-menubar [model]="navItems()" class="nav-bar">
     <ng-template pTemplate="start">
       <div class="logo-text">CTRL</div>
