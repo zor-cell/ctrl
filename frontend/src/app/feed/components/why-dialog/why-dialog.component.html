@@ -20,7 +20,7 @@
                 <i class="pi pi-info-circle hint-icon"
                    [pTooltip]="row.description"
                    tooltipPosition="right"></i>
-                @if (row.label === 'Topics' && post()!.topicIds?.length) {
+                @if (row.label === 'Topics' && post()!.topicIds.length) {
                   <button class="topics-toggle" (click)="topicsOpen.set(!topicsOpen())">
                     <i class="pi" [class.pi-chevron-down]="!topicsOpen()" [class.pi-chevron-up]="topicsOpen()"></i>
                   </button>
@@ -42,7 +42,7 @@
                 [style.width.%]="row.score === 0 ? 0.5 : row.barWidth"
               ></div>
             </div>
-            @if (row.label === 'Topics' && topicsOpen() && post()!.topicIds?.length) {
+            @if (row.label === 'Topics' && topicsOpen() && post()!.topicIds.length) {
               <div class="topics-list">
                 @for (topic of post()!.topicIds; track topic) {
                   <span class="topic-chip">{{ topic }}</span>
