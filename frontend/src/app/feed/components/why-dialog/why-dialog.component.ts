@@ -34,12 +34,21 @@ export class WhyDialogComponent {
     // Scale them to the same 0–max range as totalScore: multiply by (100/6).
     const scale = 100 / 6;
 
+    const cfg = this.algorithmService.config();
+    const explorationWeight = cfg?.weightExploration ?? 0.5;
+    const explorationDescription =
+      explorationWeight > 50
+        ? "Accounts you don't follow are boosted."
+        : explorationWeight < 50
+          ? 'Accounts you follow are boosted.'
+          : 'Familiar and new accounts are weighted equally. Ajust the slider to have an effect';
+
     const raw = [
       { label: 'Interests',      score: p.explanation.scoreInteraction * scale, description: 'Similar content you have liked, commented on, or spent time watching is boosted.' },
       { label: 'Recency',        score: p.explanation.scoreRecency     * scale, description: 'Newer posts get a boost.' },
       { label: 'Source Quality', score: p.explanation.scoreSource      * scale, description: 'Reliable sources are boosted.' },
       { label: 'Popularity',     score: p.explanation.scorePopularity  * scale, description: 'Posts with many upvotes and active discussions are boosted.' },
-      { label: 'Exploration',    score: p.explanation.scoreExploration * scale, description: "Accounts you don't follow are boosted." },
+      { label: 'Exploration',    score: p.explanation.scoreExploration * scale, description: explorationDescription },
       { label: 'Topics',         score: p.explanation.scoreTopic       * scale, description: 'Similar topics you have selected in your profile are boosted.' },
     ];
 
