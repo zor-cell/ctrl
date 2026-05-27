@@ -28,19 +28,23 @@ public class TopicAssignmentScheduler {
   private static final int MAX_TOPICS_PER_POST = 3;
 
   /**
+   * Minimum number of topics required to consider an assignment successful. If fewer topics than
+   * this pass the similarity threshold, the post is left untagged (BELOW_THRESHOLD). A value of 1
+   * means any single matching topic is sufficient.
+   */
+  private static final int MIN_TOPICS_PER_POST = 1;
+
+  /**
    * Cosine distance cutoff (pgvector <=> operator, range 0-2). Only topics whose distance to the
    * post embedding is strictly below this value are assigned. This prevents irrelevant topics from
-   * being force-assigned just because they are the "least bad" match. Tuning guide: 0.25 = tight,
-   * high precision, may leave some posts with 0 topics 0.35 = recommended starting point (cosine
-   * similarity >= 0.65) 0.45 = looser, higher recall, some false positives Raise if too many posts
-   * stay untagged after a scheduler run. Lower if assigned topics feel inaccurate.
+   * being force-assigned just because they are the "least bad" match.
    */
-  private static final double SIMILARITY_THRESHOLD = 0.8;
+  private static final double SIMILARITY_THRESHOLD = 0.75;
 
   private final PostRepository postRepository;
   private final TopicRepository topicRepository;
 
-  @Scheduled(fixedDelay = 300_000) // every 5 minutes
+  @Scheduled(fixedDelay = 60_000) // every minute
   @Transactional
   public void assignTopics() {
     log.info("TopicAssignmentScheduler started");
@@ -75,33 +79,34 @@ public class TopicAssignmentScheduler {
     }
 
     log.info(
-        "TopicAssignmentScheduler finished — assigned: {}, below threshold: {}, skipped (no embedding): {}, failed: {}",
-        assigned,
-        belowThreshold,
-        skipped,
-        posts.size() - assigned - belowThreshold - skipped);
+            "TopicAssignmentScheduler finished — assigned: {}, below threshold: {}, skipped (no embedding): {}, failed: {}",
+            assigned,
+            belowThreshold,
+            skipped,
+            posts.size() - assigned - belowThreshold - skipped);
   }
 
   public AssignmentResult assignTopicsToPost(String postId) {
     try {
       Post post =
-          postRepository
-              .findById(postId)
-              .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+              postRepository
+                      .findById(postId)
+                      .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
-      List<Topic> topics =
-          topicRepository.findMatchingTopicsForEmbedding(
-              post.getEmbedding(), MAX_TOPICS_PER_POST, SIMILARITY_THRESHOLD);
+      // Step 1: always guarantee MIN_TOPICS_PER_POST assignments (best matches, no threshold).
+      List<Topic> guaranteed =
+              topicRepository.findTopNTopicsForEmbedding(post.getEmbedding(), MIN_TOPICS_PER_POST);
 
-      if (topics.isEmpty()) {
-        // No topic passed the threshold — post stays untagged for now.
-        // This is intentional: a bad assignment is worse than no assignment.
-        log.debug(
-            "Post {} — no topics above similarity threshold ({}) found",
-            post.getPostId(),
-            SIMILARITY_THRESHOLD);
-        return AssignmentResult.BELOW_THRESHOLD;
-      }
+      // Step 2: fetch additional topics that pass the similarity threshold, up to MAX.
+      List<Topic> thresholdBased =
+              topicRepository.findMatchingTopicsForEmbedding(
+                      post.getEmbedding(), MAX_TOPICS_PER_POST, SIMILARITY_THRESHOLD);
+
+      // Merge: guaranteed first, then threshold-based extras (deduped by topicId).
+      java.util.LinkedHashMap<String, Topic> merged = new java.util.LinkedHashMap<>();
+      for (Topic t : guaranteed) merged.put(t.getTopicId(), t);
+      for (Topic t : thresholdBased) merged.put(t.getTopicId(), t);
+      List<Topic> topics = new java.util.ArrayList<>(merged.values());
 
       for (Topic topic : topics) {
         PostTopicId id = new PostTopicId(post.getPostId(), topic.getTopicId());
@@ -111,10 +116,10 @@ public class TopicAssignmentScheduler {
 
       postRepository.save(post);
       log.debug(
-          "Post {} -> {} topic(s): {}",
-          post.getPostId(),
-          topics.size(),
-          topics.stream().map(Topic::getName).toList());
+              "Post {} -> {} topic(s): {}",
+              post.getPostId(),
+              topics.size(),
+              topics.stream().map(Topic::getName).toList());
 
       return AssignmentResult.SUCCESS;
 

@@ -16,14 +16,14 @@ public interface TopicRepository extends JpaRepository<Topic, String> {
   Optional<Topic> findByNameIgnoreCase(String name);
 
   @Query(
-      value =
-          """
-                  SELECT UNNEST(CAST(AVG(t.embedding) AS real[]))
-                  FROM topics t
-                  WHERE t.topic_id IN (:topicIds)
-                    AND t.embedding IS NOT NULL
-                  """,
-      nativeQuery = true)
+          value =
+                  """
+                          SELECT UNNEST(CAST(AVG(t.embedding) AS real[]))
+                          FROM topics t
+                          WHERE t.topic_id IN (:topicIds)
+                            AND t.embedding IS NOT NULL
+                          """,
+          nativeQuery = true)
   List<Float> calculateTopicPreferenceVector(@Param("topicIds") List<String> topicIds);
 
   /**
@@ -46,18 +46,39 @@ public interface TopicRepository extends JpaRepository<Topic, String> {
    * callers must handle an empty list gracefully.
    */
   @Query(
-      value =
-          """
-                  SELECT t.*
-                  FROM topics t
-                  WHERE t.embedding IS NOT NULL
-                    AND (t.embedding <=> CAST(:postEmbedding AS vector)) < :threshold
-                  ORDER BY t.embedding <=> CAST(:postEmbedding AS vector)
-                  LIMIT :limit
-                  """,
-      nativeQuery = true)
+          value =
+                  """
+                          SELECT t.*
+                          FROM topics t
+                          WHERE t.embedding IS NOT NULL
+                            AND (t.embedding <=> CAST(:postEmbedding AS vector)) < :threshold
+                          ORDER BY t.embedding <=> CAST(:postEmbedding AS vector)
+                          LIMIT :limit
+                          """,
+          nativeQuery = true)
   List<Topic> findMatchingTopicsForEmbedding(
-      @Param("postEmbedding") float[] postEmbedding,
-      @Param("limit") int limit,
-      @Param("threshold") double threshold);
+          @Param("postEmbedding") float[] postEmbedding,
+          @Param("limit") int limit,
+          @Param("threshold") double threshold);
+
+  /**
+   * Returns the top {@code limit} closest topics to {@code postEmbedding} regardless of any
+   * similarity threshold, ordered by closeness (best match first).
+   *
+   * <p>Used to guarantee that at least {@code MIN_TOPICS_PER_POST} topics are always assigned,
+   * even if no topic passes the similarity threshold.
+   */
+  @Query(
+          value =
+                  """
+                          SELECT t.*
+                          FROM topics t
+                          WHERE t.embedding IS NOT NULL
+                          ORDER BY t.embedding <=> CAST(:postEmbedding AS vector)
+                          LIMIT :limit
+                          """,
+          nativeQuery = true)
+  List<Topic> findTopNTopicsForEmbedding(
+          @Param("postEmbedding") float[] postEmbedding,
+          @Param("limit") int limit);
 }
