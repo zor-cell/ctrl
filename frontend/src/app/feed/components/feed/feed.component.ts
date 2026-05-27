@@ -6,7 +6,6 @@ import { Post } from '../../dto/Post';
 import { PostSource } from '../../dto/PostSource';
 import { CommentsComponent } from '../comments/comments.component';
 import { AlgorithmConfigComponent } from '../../../algorithm/components/config/config.component';
-import { AlgorithmService } from '../../../algorithm/algorithm.service';
 
 import { TabsModule } from 'primeng/tabs';
 import { ReportComponent } from '../../../report/components/report/report.component';
@@ -16,6 +15,7 @@ import { DialogModule } from 'primeng/dialog';
 import { AvatarModule } from 'primeng/avatar';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { SkeletonModule } from 'primeng/skeleton';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
 import {ContentTypeEnum} from '../../../report/dto/report';
@@ -39,6 +39,7 @@ import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
     AvatarModule,
     TagModule,
     TooltipModule,
+    SkeletonModule,
     CommentsComponent,
     AlgorithmConfigComponent,
     PostViewDirective,
@@ -73,16 +74,15 @@ export class FeedComponent implements OnInit {
   protected selectedSourceForReport = signal<PostSource | null>(null);
   protected selectedPostForSourceReport = signal<Post | null>(null);
 
-
   protected algorithmConfigVisible = signal(false);
   protected isRefreshing = signal(false);
   protected isSpinning = signal(false);
+  protected isLoading = signal(true);
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   private readonly rel = inject(RelationshipService);
-  private readonly algorithmService = inject(AlgorithmService);
 
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
@@ -94,6 +94,7 @@ export class FeedComponent implements OnInit {
     localStorage.setItem('feed-active-tab', value);
   }
 
+  protected skeletonItems = [1, 2, 3];
 
   private readonly elRef = inject(ElementRef);
 
@@ -105,6 +106,7 @@ export class FeedComponent implements OnInit {
   protected privatePosts = signal<Post[]>([]);
 
   ngOnInit(): void {
+    this.isLoading.set(true);
     this.userService.loadUser();
     this.viewTracking.startTracking();
 
@@ -119,6 +121,7 @@ export class FeedComponent implements OnInit {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+        this.isLoading.set(false);
 
         const postId = this.route.snapshot.queryParamMap.get('comments');
         if (postId) {
@@ -126,6 +129,9 @@ export class FeedComponent implements OnInit {
             .find(p => p.postId === postId);
           if (post) this.openCommentsDialog(post);
         }
+      },
+      error: () => {
+        this.isLoading.set(false);
       },
     });
   }
@@ -223,11 +229,6 @@ export class FeedComponent implements OnInit {
     this.whyDialogVisible.set(true);
   }
 
-  closeWhyDialog(): void {
-    this.whyDialogVisible.set(false);
-    this.selectedPost.set(null);
-  }
-
   openCommentsDialog(post: Post): void {
     this.selectedPostForComments.set(post);
     this.commentsDialogVisible.set(true);
@@ -247,7 +248,6 @@ export class FeedComponent implements OnInit {
     }
   }
 
-
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);
   }
@@ -258,7 +258,7 @@ export class FeedComponent implements OnInit {
 
   /** Helpers **/
   protected loadFeed() {
-    this.isRefreshing.set(true);
+    this.isLoading.set(true);
     this.isSpinning.set(true);
     setTimeout(() => this.isSpinning.set(false), 600);
 
@@ -269,10 +269,12 @@ export class FeedComponent implements OnInit {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+        this.isLoading.set(false);
         this.isRefreshing.set(false);
         this.scrollFeedToTop();
       },
       error: () => {
+        this.isLoading.set(false);
         this.isRefreshing.set(false);
       },
     });
@@ -309,7 +311,6 @@ export class FeedComponent implements OnInit {
     this.publicPosts.update(posts =>
       posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
     );
-
     this.privatePosts.update(posts =>
       posts.map(p => (p.postId === postId ? { ...p, ...patch } : p))
     );
@@ -325,7 +326,6 @@ export class FeedComponent implements OnInit {
         return { ...p, sourceIds: updatedSources };
       })
     );
-
     this.privatePosts.update(posts =>
       posts.map(p => {
         if (p.postId !== postId || !p.sourceIds?.length) return p;
@@ -337,7 +337,6 @@ export class FeedComponent implements OnInit {
     );
   }
 
-  protected readonly Math = Math;
   reportPost(post: Post) {
     this.selectedPostForReport.set(post);
     this.reportDialogVisible.set(true);

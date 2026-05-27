@@ -75,7 +75,43 @@ $radius-sm:    10px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
+}
 
+// ─── Skeleton Card ────────────────────────────────────
+.post-card--skeleton {
+  overflow: hidden;
+  pointer-events: none;
+
+  .skeleton-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .skeleton-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  :host ::ng-deep .skeleton-image {
+    border-radius: 0 !important;
+  }
+
+  .skeleton-body {
+    padding: 14px 16px 8px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .skeleton-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid $border;
+  }
 }
 
 // ─── Post Header ──────────────────────────────────────
@@ -137,7 +173,6 @@ $radius-sm:    10px;
   padding: 0 12px !important;
   border-color: $border !important;
   color: $text-muted !important;
-
 }
 
 // ─── Post Image ───────────────────────────────────────
@@ -322,11 +357,6 @@ $radius-sm:    10px;
   &:hover {
     color: var(--primary-color, #6366f1);
   }
-}
-
-.bi-bar-container {
-  height: 8px !important;
-  border-radius: 4px;
 }
 
 /* Styles for bidirectional bar */
