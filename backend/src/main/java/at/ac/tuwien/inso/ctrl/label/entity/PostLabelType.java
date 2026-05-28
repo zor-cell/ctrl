@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.post.entity;
+package at.ac.tuwien.inso.ctrl.label.entity;
 
 import lombok.Getter;
 

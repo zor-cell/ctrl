@@ -4,7 +4,7 @@ import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostLabelType;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import java.util.List;
 import java.util.Map;

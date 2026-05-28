@@ -2,7 +2,7 @@ package at.ac.tuwien.inso.ctrl.label.service;
 
 import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostLabelType;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
