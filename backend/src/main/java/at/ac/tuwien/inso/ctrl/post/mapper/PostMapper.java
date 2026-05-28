@@ -21,11 +21,8 @@ import org.springframework.stereotype.Component;
 public class PostMapper {
   public PostResponse toResponse(Post post) {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
-    List<String> labelIds =
-        post.getPostLabels().stream()
-            .map(postLabel -> postLabel.getLabel().getLabelId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+    List<String> labelIds = List.of();
+
     List<String> topicIds =
         post.getPostTopics().stream()
             .map(postTopic -> postTopic.getTopic().getTopicId())

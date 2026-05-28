@@ -314,15 +314,14 @@ public interface PostRepository extends JpaRepository<Post, String> {
 
   @Query(
       """
-      SELECT DISTINCT p FROM Post p
-      LEFT JOIN FETCH p.user
-      LEFT JOIN FETCH p.externalAuthor
-      LEFT JOIN FETCH p.postLabels pl LEFT JOIN FETCH pl.label
-      LEFT JOIN FETCH p.postTopics pt LEFT JOIN FETCH pt.topic
-      LEFT JOIN FETCH p.source s LEFT JOIN FETCH s.singleSources
-      LEFT JOIN FETCH p.comments c LEFT JOIN FETCH c.user
-      WHERE p.postId IN :postIds
-      """)
+  SELECT DISTINCT p FROM Post p
+  LEFT JOIN FETCH p.user
+  LEFT JOIN FETCH p.externalAuthor
+  LEFT JOIN FETCH p.postTopics pt LEFT JOIN FETCH pt.topic
+  LEFT JOIN FETCH p.source s LEFT JOIN FETCH s.singleSources
+  LEFT JOIN FETCH p.comments c LEFT JOIN FETCH c.user
+  WHERE p.postId IN :postIds
+    """)
   List<Post> findAllWithAssociationsByIds(@Param("postIds") List<String> postIds);
 
   @Query(

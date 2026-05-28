@@ -71,10 +71,6 @@ public class Post implements Votable {
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
-  private Set<PostLabel> postLabels = new LinkedHashSet<>();
-
-  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
   private Set<PostTopic> postTopics = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)

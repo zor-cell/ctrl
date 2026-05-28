@@ -96,16 +96,7 @@ public class FeedMapper {
 
     String postUserVote = postVotes.get(post.getPostId());
 
-    List<LabelResponse> labels =
-        post.getPostLabels().stream()
-            .map(
-                pl ->
-                    new LabelResponse(
-                        pl.getLabel().getLabelId(),
-                        pl.getLabel().getName(),
-                        pl.getLabel().getEmoji(),
-                        pl.getLabel().getExplanation()))
-            .toList();
+    List<LabelResponse> labels = List.of();
 
     List<FeedPostResponse.SourceResponse> sources =
         post.getSource() != null
