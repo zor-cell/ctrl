@@ -8,6 +8,8 @@ import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
@@ -61,6 +63,7 @@ public class PostServiceImpl implements PostService {
   private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
+  private final LabelingService labelingService;
 
   @Override
   @Transactional
@@ -167,9 +170,11 @@ public class PostServiceImpl implements PostService {
 
   @Transactional(readOnly = true)
   public List<PostResponse> getPostsForUser(String username) {
+    User user = fetchUser(username);
+    LabelContext ctx = labelingService.buildContext(user);
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
-        .map(postMapper::toResponse)
-        .toList();
+            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+            .toList();
   }
 
   @Override
@@ -177,18 +182,20 @@ public class PostServiceImpl implements PostService {
   public List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername) {
     User profileOwner = fetchUser(profileUsername);
     User viewer = fetchUser(viewerUsername);
+    LabelContext ctx = labelingService.buildContext(viewer);
 
     boolean canSeePrivatePosts =
-        profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            profileOwner.getId().equals(viewer.getId())
+                    || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
-        canSeePrivatePosts
-            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
-            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
-                profileUsername);
+            canSeePrivatePosts
+                    ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+                    : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(profileUsername);
 
-    return posts.stream().map(postMapper::toResponse).toList();
+    return posts.stream()
+            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+            .toList();
   }
 
   @Override
