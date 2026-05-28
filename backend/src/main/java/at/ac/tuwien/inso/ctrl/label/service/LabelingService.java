@@ -48,10 +48,10 @@ public class LabelingService {
         if (post.isExternalPost())
             labels.add(PostLabelType.MASTODON);
 
-        if (post.getUpvotes() != null && post.getUpvotes() >= 5 && post.getUpvotes() >= ctx.upvoteThreshold())
+        if (post.getUpvotes() != null && post.getUpvotes() >= 5 ) //&& post.getUpvotes() >= ctx.upvoteThreshold())
             labels.add(PostLabelType.POPULAR);
 
-        if (post.getComments() != null && post.getComments().size() > 100)
+        if (post.getComments() != null && post.getComments().size() > 5)
             labels.add(PostLabelType.HIGHLY_DISCUSSED);
 
         // Source Trust via Wilson Score
@@ -59,7 +59,7 @@ public class LabelingService {
             int up = post.getSource().getUpvotes() != null ? post.getSource().getUpvotes() : 0;
             int down = post.getSource().getDownvotes() != null ? post.getSource().getDownvotes() : 0;
             int total = up + down;
-            if (total > 10) {
+            if (total > 5) {
                 double score = wilsonScore(up, total);
                 if (score > 0.7) labels.add(PostLabelType.TRUSTED_SOURCE);
                 if (score < 0.3) labels.add(PostLabelType.DISPUTED_SOURCE);
