@@ -1,6 +1,6 @@
-package at.ac.tuwien.inso.ctrl.feed.service;
+package at.ac.tuwien.inso.ctrl.label.service;
 
-import at.ac.tuwien.inso.ctrl.feed.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;

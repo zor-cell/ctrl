@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.feed.entity;
+package at.ac.tuwien.inso.ctrl.label.entity;
 
 import java.time.LocalDateTime;
 import java.util.Set;
