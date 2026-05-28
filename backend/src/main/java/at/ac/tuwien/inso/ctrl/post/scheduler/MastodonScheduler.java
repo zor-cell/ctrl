@@ -3,7 +3,6 @@ package at.ac.tuwien.inso.ctrl.post.scheduler;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
-import at.ac.tuwien.inso.ctrl.post.repository.LabelRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
@@ -290,7 +289,6 @@ public class MastodonScheduler {
 
   private final PostRepository postRepository;
   private final ExternalAuthorRepository externalAuthorRepository;
-  private final LabelRepository labelRepository;
   private final SourceRepository sourceRepository;
   private final EmbeddingService embeddingService;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -299,12 +297,10 @@ public class MastodonScheduler {
   public MastodonScheduler(
       PostRepository postRepository,
       ExternalAuthorRepository externalAuthorRepository,
-      LabelRepository labelRepository,
       SourceRepository sourceRepository,
       EmbeddingService embeddingService) {
     this.postRepository = postRepository;
     this.externalAuthorRepository = externalAuthorRepository;
-    this.labelRepository = labelRepository;
     this.sourceRepository = sourceRepository;
     this.embeddingService = embeddingService;
   }
@@ -315,30 +311,17 @@ public class MastodonScheduler {
   public void fetchMastodonPosts() {
     log.info("Mastodon scheduler started — {} account(s) configured", ACCOUNTS.size());
 
-    // The single label assigned to every post fetched here
-    Label mastodonLabel = findOrCreateMastodonLabel();
-
     for (AccountConfig account : ACCOUNTS) {
-      fetchFromAccount(account, mastodonLabel);
+      fetchFromAccount(account);
     }
 
     log.info("Mastodon scheduler finished");
   }
 
-  @Transactional
-  public Label findOrCreateMastodonLabel() {
-    return findOrCreateLabel(
-        "mastodon",
-        "Mastodon",
-        "🐘",
-        "Mastodon is a decentralized social media platform where this post was originally"
-            + " published.");
-  }
-
   // ── per-account fetch ─────────────────────────────────────────────────────
 
   @Transactional
-  public void fetchFromAccount(AccountConfig account, Label mastodonLabel) {
+  public void fetchFromAccount(AccountConfig account) {
     try {
       String accountId = lookupAccountId(account.instance(), account.acct());
       if (accountId == null) {
@@ -350,7 +333,7 @@ public class MastodonScheduler {
 
       int saved = 0;
       for (JsonNode status : statuses) {
-        if (saveStatus(status, mastodonLabel, account.sourceName())) saved++;
+        if (saveStatus(status, account.sourceName())) saved++;
       }
 
       log.info(
@@ -372,7 +355,7 @@ public class MastodonScheduler {
    * @param sourceName non-null → use source-specific caption formatting; null → strip links only
    *     (generic accounts)
    */
-  private boolean saveStatus(JsonNode status, Label mastodonLabel, String sourceName) {
+  private boolean saveStatus(JsonNode status, String sourceName) {
     if (!status.path("reblog").isNull()) return false;
 
     String externalPostId = status.path("id").asText(null);
@@ -408,8 +391,6 @@ public class MastodonScheduler {
             .createdAt(createdAt)
             .embedding(embedding)
             .build();
-
-    addLabel(post, mastodonLabel);
 
     List<String> urls = captionResult.urls();
     if (!urls.isEmpty()) {
@@ -540,12 +521,6 @@ public class MastodonScheduler {
 
   // ── helpers ───────────────────────────────────────────────────────────────
 
-  private void addLabel(Post post, Label label) {
-    PostLabelId id = new PostLabelId(post.getPostId(), label.getLabelId());
-    PostLabel postLabel = PostLabel.builder().id(id).post(post).label(label).build();
-    post.getPostLabels().add(postLabel);
-  }
-
   private Source buildSource(List<String> urls) {
     Source source =
         Source.builder()
@@ -646,19 +621,5 @@ public class MastodonScheduler {
       return null;
     }
     return objectMapper.readTree(response.body());
-  }
-
-  private Label findOrCreateLabel(String id, String name, String emoji, String explanation) {
-    return labelRepository
-        .findById(id)
-        .orElseGet(
-            () ->
-                labelRepository.save(
-                    Label.builder()
-                        .labelId(id)
-                        .name(name)
-                        .emoji(emoji)
-                        .explanation(explanation)
-                        .build()));
   }
 }

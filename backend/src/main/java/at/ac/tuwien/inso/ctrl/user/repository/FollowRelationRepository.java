@@ -52,4 +52,16 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
       SELECT fr.followed.id FROM FollowRelation fr WHERE fr.follower = :user AND fr.followed.isSuspended = false
       """)
   Set<UUID> findFollowedIdsByFollower(@Param("user") User user);
+
+  // All user IDs that the user follows directly
+  @Query("SELECT f.id.followedId FROM FollowRelation f WHERE f.id.followerId = :userId")
+  Set<UUID> findFollowedIds(UUID userId);
+
+  // IDs of the accounts that the followers follow (for Extended Network)
+  @Query("""
+      SELECT f2.id.followedId FROM FollowRelation f1
+      JOIN FollowRelation f2 ON f1.id.followedId = f2.id.followerId
+      WHERE f1.id.followerId = :userId
+      """)
+  Set<UUID> findSecondDegreeIds(UUID userId);
 }
