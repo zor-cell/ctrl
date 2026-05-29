@@ -85,6 +85,7 @@ public class PostMapper {
             .map(this::toCommentResponse)
             .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
 
     return new DetailedPostResponse(
         post.getPostId(),
@@ -96,6 +97,8 @@ public class PostMapper {
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
+        post.isExternalPost(),
+        userProfileUrl,
         post.isAiGenerated(),
         labelIds,
         topicIds,
@@ -119,6 +122,7 @@ public class PostMapper {
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
             : post.getUser().getProfilePicture();
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
     return new PostPreviewResponse(
         post.getPostId(),
         post.getCaption(),
@@ -126,7 +130,9 @@ public class PostMapper {
         userId,
         username,
         avatarUrl,
-        post.isPublic());
+        post.isPublic(),
+        post.isExternalPost(),
+        userProfileUrl);
   }
 
   private SourceResponse toSourceResponse(Source source) {

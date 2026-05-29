@@ -11,6 +11,8 @@ export interface DetailedPostResponse {
   caption: string;
   mediaUrl: string | null;
   isPublic: boolean;
+  isExternal: boolean;
+  userProfileUrl: string | null;
   isAiGenerated: boolean;
   labelIds: string[];
   topicIds: string[];

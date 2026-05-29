@@ -64,6 +64,10 @@ export class PostPreviewCardComponent {
   }
 
   goToUser(): void {
-    this.router.navigate(['/profile', this.post().username]);
+    if (this.post().isExternal) {
+      window.open(this.post().userProfileUrl!);
+    } else {
+      this.router.navigate(['/profile', this.post().username]);
+    }
   }
 }

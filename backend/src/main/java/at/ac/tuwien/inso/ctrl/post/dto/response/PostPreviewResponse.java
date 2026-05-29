@@ -7,4 +7,6 @@ public record PostPreviewResponse(
     String userId,
     String username,
     String userProfilePicture,
-    boolean isPublic) {}
+    boolean isPublic,
+    boolean isExternal,
+    String userProfileUrl) {}

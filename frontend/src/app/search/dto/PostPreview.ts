@@ -6,4 +6,6 @@ export interface PostPreview {
   username: string;
   userProfilePicture: string | null;
   isPublic: boolean;
+  isExternal: boolean;
+  userProfileUrl: string | null;
 }

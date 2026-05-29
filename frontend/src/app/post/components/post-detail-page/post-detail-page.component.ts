@@ -70,7 +70,13 @@ export class PostDetailPageComponent {
   }
 
   goToUser(): void {
-    this.router.navigate(['/profile', this.post.value()?.username])
+    if (this.post.value()?.isExternal) {
+      if (this.post.hasValue() && this.post.value()?.userProfileUrl !== null) {
+        window.open(this.post.value()?.userProfileUrl as string);
+      }
+    } else {
+      this.router.navigate(['/profile', this.post.value()?.username])
+    }
   }
 
   // Helper methods

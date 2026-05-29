@@ -59,7 +59,7 @@ public class SearchServiceUnitTest {
   }
 
   private PostPreviewResponse buildPostPreviewResponse(String postId, String caption) {
-    return new PostPreviewResponse(postId, caption, null, null, null, null, true);
+    return new PostPreviewResponse(postId, caption, null, null, null, null, true, false, null);
   }
 
   // ==================== VALID INPUT TESTS ====================

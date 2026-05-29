@@ -13,6 +13,8 @@ public record DetailedPostResponse(
     String caption,
     String mediaUrl,
     boolean isPublic,
+    boolean isExternal,
+    String userProfileUrl,
     boolean isAiGenerated,
     List<String> labelIds,
     List<String> topicIds,
