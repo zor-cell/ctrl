@@ -21,15 +21,15 @@
             [style]="{ width: '42px', height: '42px' }"
           />
           <div class="post-meta">
-            <span class="post-username">{{ post.username }}</span>
+            <a class="post-username post-username--link"
+               [routerLink]="['/profile', post.username]">
+              {{ post.username }}
+            </a>
             <span class="post-info">
               {{ timeAgo(post.createdAt) }}
-              @if (post.topicIds.length > 0) {
-                <span class="separator">·</span>
-                {{ post.topicIds[0] }}
-              }
             </span>
           </div>
+          <app-follow-badge [username]="post.username" />
         </div>
 
         <div class="post-header-right">
@@ -87,7 +87,8 @@
             />
             <div class="comment-body">
               <div class="comment-header">
-                <span class="comment-username">{{ comment.username }}</span>
+                <a class="comment-username comment-username--link"
+                   [routerLink]="['/profile', comment.username]">{{ comment.username }}</a>
                 <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
                 @if (comment.edited) {
                   <span class="comment-edited">edited</span>
@@ -146,7 +147,8 @@
                   />
                   <div class="comment-body">
                     <div class="comment-header">
-                      <span class="comment-username">{{ reply.username }}</span>
+                      <a class="comment-username comment-username--link"
+                         [routerLink]="['/profile', reply.username]">{{ reply.username }}</a>
                       <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
                       @if (reply.edited) {
                         <span class="comment-edited">edited</span>

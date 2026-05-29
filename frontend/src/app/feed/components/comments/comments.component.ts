@@ -25,6 +25,8 @@ import { TextareaModule } from 'primeng/textarea';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import {ReportComponent} from '../../../report/components/report/report.component';
 import {ContentTypeEnum} from '../../../report/dto/report';
+import {RouterLink} from '@angular/router';
+import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 
 @Component({
   selector: 'app-comments',
@@ -40,6 +42,8 @@ import {ContentTypeEnum} from '../../../report/dto/report';
     TextareaModule,
     ProgressSpinnerModule,
     ReportComponent,
+    RouterLink,
+    FollowBadgeComponent,
   ],
   templateUrl: './comments.component.html',
   styleUrl: './comments.component.scss',
@@ -64,9 +68,6 @@ export class CommentsComponent implements OnChanges {
   protected reportDialogVisible = signal(false);
   protected selectedCommentForReport = signal<PostComment | null>(null);
 
-  close(): void {
-    this.visibleChange.emit(false);
-  }
   editingCommentId = signal<string | null>(null);
   editContent = '';
 
@@ -221,7 +222,7 @@ export class CommentsComponent implements OnChanges {
   }
 
   isVideo(url: string): boolean {
-    return /\.(mp4|webm|ogg|mov)$/i.test(url);
+    return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);
   }
 
   reportComment(comment: PostComment) {

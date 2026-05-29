@@ -7,6 +7,7 @@ import {FloatLabel} from "primeng/floatlabel";
 import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {Dialog} from "primeng/dialog";
+import {SharedModule} from 'primeng/api';
 import {passwordMatchValidator, usernameValidator, USERNAME_VALIDATION_MESSAGE} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
@@ -17,6 +18,7 @@ import {NgStyle} from '@angular/common';
 import {VerificationStatus, VerificationStatusResponse} from '../../dto/BusinessVerification';
 import {Router} from '@angular/router';
 import {AuthService} from '../../../auth/auth.service';
+import {SettingsLogoutComponent} from '../settings-logout/settings-logout.component';
 
 @Component({
   selector: 'app-profile',
@@ -28,19 +30,21 @@ import {AuthService} from '../../../auth/auth.service';
     Button,
     InputText,
     Dialog,
+    SharedModule,
     FormsModule,
     ProgressSpinner,
     Password,
     NgStyle,
+    SettingsLogoutComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
-  private router = inject(Router);
-  private userService = inject(UserService);
-  private fb = inject(NonNullableFormBuilder);
-  private authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly userService = inject(UserService);
+  private readonly fb = inject(NonNullableFormBuilder);
+  private readonly authService = inject(AuthService);
 
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
 
@@ -127,7 +131,7 @@ export class ProfileComponent implements OnInit {
     if (this.profileForm.invalid) return;
 
     const formValues = this.profileForm.getRawValue();
-    const dateObj = formValues.birthdate as Date;
+    const dateObj = formValues.birthdate;
 
     const emailChanged = this.currentUser()?.email !== formValues.email;
 
@@ -137,20 +141,20 @@ export class ProfileComponent implements OnInit {
     const formattedDate = `${year}-${month}-${day}`;
 
     this.userService.updateUser({
-      name: formValues.name!,
-      email: formValues.email!,
+      name: formValues.name,
+      email: formValues.email,
       bio: formValues.bio?.trim() ?? '',
       birthdate: formattedDate
     }).subscribe({
-      next: () => {
-        if (emailChanged) {
-          if (environment.auth.requireEmailVerification) {
-            this.authService.logout();
-            this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
+        next: () => {
+          if (emailChanged) {
+            if (environment.auth.requireEmailVerification) {
+              this.authService.logout();
+              this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
+            }
           }
         }
       }
-    }
     );
   }
 
@@ -222,7 +226,7 @@ export class ProfileComponent implements OnInit {
       prompt: 'login',
     });
 
-    window.location.href = `${config.authUrl}?${params.toString()}`;
+    globalThis.location.href = `${config.authUrl}?${params.toString()}`;
   }
 
   protected getVerificationText(): string {

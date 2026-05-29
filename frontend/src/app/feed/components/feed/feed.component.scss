@@ -75,7 +75,43 @@ $radius-sm:    10px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
+}
 
+// ─── Skeleton Card ────────────────────────────────────
+.post-card--skeleton {
+  overflow: hidden;
+  pointer-events: none;
+
+  .skeleton-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .skeleton-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  :host ::ng-deep .skeleton-image {
+    border-radius: 0 !important;
+  }
+
+  .skeleton-body {
+    padding: 14px 16px 8px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .skeleton-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid $border;
+  }
 }
 
 // ─── Post Header ──────────────────────────────────────
@@ -137,7 +173,6 @@ $radius-sm:    10px;
   padding: 0 12px !important;
   border-color: $border !important;
   color: $text-muted !important;
-
 }
 
 // ─── Post Image ───────────────────────────────────────
@@ -271,43 +306,6 @@ $radius-sm:    10px;
   p  { font-size: 0.9rem; margin: 0; }
 }
 
-// ─── Why Dialog ───────────────────────────────────────
-:host ::ng-deep .why-dialog {
-  border: 1px solid $border !important;
-  border-radius: $radius !important;
-
-  .p-dialog-header {
-    border-bottom: 1px solid $border !important;
-    border-radius: $radius $radius 0 0 !important;
-  }
-
-  .p-dialog-footer {
-    border-top: 1px solid $border !important;
-    border-radius: 0 0 $radius $radius !important;
-    padding: 12px 16px !important;
-  }
-}
-
-.why-dialog-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 4px 0;
-
-  .why-icon {
-    font-size: 1.4rem;
-    color: #f0c040;
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-
-  p {
-    white-space: pre-line;
-    font-size: 0.93rem;
-    margin: 0;
-  }
-}
-
 // ─── Algorithm Config Dialog ──────────────────────────
 :host ::ng-deep .algorithm-config-dialog {
   border: 1px solid $border !important;
@@ -322,9 +320,6 @@ $radius-sm:    10px;
     padding: 0 !important;
   }
 }
-
-
-
 
 .dialog-grid {
   display: flex;
@@ -362,11 +357,6 @@ $radius-sm:    10px;
   &:hover {
     color: var(--primary-color, #6366f1);
   }
-}
-
-.bi-bar-container {
-  height: 8px !important;
-  border-radius: 4px;
 }
 
 /* Styles for bidirectional bar */

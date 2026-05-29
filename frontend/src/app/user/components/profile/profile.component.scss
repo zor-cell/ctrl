@@ -69,3 +69,10 @@
   font-size: 1rem;
   color: var(--text-color);
 }
+
+.verify-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: center;
+}

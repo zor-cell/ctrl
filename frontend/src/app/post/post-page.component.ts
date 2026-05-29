@@ -10,11 +10,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
+import {Observable, Subscription, catchError, of, switchMap, forkJoin} from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { usernameInitial } from '../core/utils/username-initial.utils';
@@ -30,17 +30,21 @@ import { PostDetailDialogComponent } from './post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
+import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
+import {RelationshipService} from '../user/relationship.service';
 
 @Component({
   selector: 'app-post-page',
   imports: [
     CommonModule,
+    RouterModule,
     Button,
     Dialog,
     TooltipModule,
     PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
+    FollowBadgeComponent,
   ],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
@@ -80,6 +84,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postPendingDeletion = signal<PostResponse | null>(null);
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
+
+  private readonly rel = inject(RelationshipService);
 
   protected readonly username = computed(
     () =>
@@ -496,13 +502,18 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPublicProfile() {
     const username = this.publicProfileUsername();
-    if (!username) {
-      return;
-    }
+    if (!username) return;
 
     this.loadingPosts.set(true);
-    this.userService.getPublicProfile(username).subscribe({
-      next: profile => {
+
+    forkJoin([
+      this.userService.getPublicProfile(username),
+      this.rel.loadFriends(),
+      this.rel.loadFollowed(),
+      this.rel.loadSentFriendRequests(),
+      this.rel.loadIncomingFriendRequests(),
+    ]).subscribe({
+      next: ([profile]) => {
         this.publicProfile.set(profile);
         this.loadProfilePicture(profile.profilePicture);
       },
