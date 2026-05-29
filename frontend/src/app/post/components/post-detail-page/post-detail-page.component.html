@@ -1,6 +1,6 @@
 <div class="post-detail-page">
   <!-- Loading State -->
-  @if (isLoading()) {
+  @if (post.isLoading()) {
     <div class="loading-state">
       <p-progressSpinner />
       <p>Loading post...</p>
@@ -8,7 +8,7 @@
   }
 
   <!-- Error State -->
-  @if (error(); as errorMessage) {
+  @if (this.post.error(); as errorMessage) {
     <div class="error-state">
       <i class="pi pi-exclamation-circle"></i>
       <p>{{ errorMessage }}</p>
@@ -21,7 +21,7 @@
   }
 
   <!-- Post Content -->
-  @if (post(); as currentPost) {
+  @if (this.post.hasValue()) {
     <!-- Back Button - positioned to the left of centered content -->
     <div class="back-button-outside">
       <p-button
@@ -38,42 +38,42 @@
         <!-- Header with Author -->
         <ng-template pTemplate="header">
           <div class="post-header">
-            <div class="post-author">
-              <p-avatar
-                [label]="currentPost.username.charAt(0).toUpperCase()"
-                shape="circle" />
+            <button class="post-author" (click)="goToUser()">
+              @if (profilePic.hasValue()) {
+                <img [src]="profilePic.value()!" style="width:40px;height:40px;border-radius:50%" [alt]="'user'"/>
+              }
               <div class="author-info">
-                <span class="username">{{ currentPost.username }}</span>
-                <span class="timestamp">{{ timeAgo(currentPost.createdAt) }}</span>
+                <span class="username">{{ post.value().username }}</span>
+                <span class="timestamp">{{ timeAgo(post.value().createdAt) }}</span>
               </div>
-            </div>
+            </button>
           </div>
         </ng-template>
 
         <!-- Media -->
-        @if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'image') {
+        @if (this.mediaRef.hasValue() && postMediaKind(this.post.value()) === 'image') {
           <img
-            [src]="postMediaUrl(currentPost)!"
+            [src]="this.mediaRef.value()"
             alt=""
             class="post-media" />
-        } @else if (postMediaUrl(currentPost) && postMediaKind(currentPost) === 'video') {
+        } @else if (this.mediaRef.hasValue() && postMediaKind(this.post.value()) === 'video') {
           <video
-            [src]="postMediaUrl(currentPost)!"
+            [src]="this.mediaRef.value()"
             controls
             class="post-media"></video>
         }
 
         <!-- Caption -->
-        <p class="post-caption">{{ currentPost.caption }}</p>
+        <p class="post-caption">{{ this.post.value().caption }}</p>
 
-        @if (currentPost.source !== null) {
-          <app-post-sources [source]="currentPost.source" [postDetails]="currentPost"/>
+        @if (this.post.value().source !== null) {
+          <app-post-sources [source]="this.post.value().source!" [username]="this.post.value().username" [profilePicture]="this.profilePic.value()!"/>
         }
 
-        <app-post-actions [post]="currentPost" [userVote] = "currentPost.userVote" (openComments)="this.commentsVisible.update(current => !current)"/>
+        <app-post-actions [post]="this.post.value()" [userVote]="this.post.value().userVote" (openComments)="this.commentsVisible.update(current => !current)"/>
 
         @if (this.commentsVisible()) {
-          <app-post-comments [comments]="currentPost.comments" [postId]="currentPost.postId"/>
+          <app-post-comments [postId]="this.post.value().postId"/>
         }
       </p-card>
     </div>

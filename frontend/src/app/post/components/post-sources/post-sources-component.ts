@@ -3,7 +3,6 @@ import { ButtonModule } from "primeng/button";
 import { SingleSourceResponse, SourceResponse } from "../../dto/PostResponse";
 import { ContentTypeEnum } from "../../../report/dto/report";
 import { ReportComponent } from "../../../report/components/report/report.component";
-import { DetailedPostResponse } from "../../dto/DetailedPostResponse";
 
 @Component({
   selector: 'app-post-sources',
@@ -18,7 +17,8 @@ import { DetailedPostResponse } from "../../dto/DetailedPostResponse";
 export class PostSources {
   protected ContentTypeEnum = ContentTypeEnum;
 
-  postDetails = input.required<DetailedPostResponse>();
+  username = input.required<string>();
+  profilePicture = input.required<string>();
   source = input.required<SourceResponse>();
   sourcesExpanded = signal<boolean>(false);
   reportDialogVisible = signal<boolean>(false);

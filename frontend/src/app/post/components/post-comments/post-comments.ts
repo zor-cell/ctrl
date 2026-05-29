@@ -1,16 +1,17 @@
-import { Component, inject, signal, input, model } from "@angular/core";
+import { Component, inject, signal, input, resource } from "@angular/core";
 import { ProgressSpinner } from "primeng/progressspinner";
 import { CommentResponse } from "../../dto/PostResponse";
 import { CommentService } from "../../../feed/services/comment.service";
 import { UserService } from "../../../user/user.service";
 import { NotificationService } from "../../../core/services/notification.service";
 import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
+import { PostComment } from "../../../feed/dto/Comment";
 
 @Component({
   selector: 'app-post-comments',
   standalone: true,
   imports: [
-    ProgressSpinner
+    ProgressSpinner,
   ],
   templateUrl: './post-comments.html',
   styleUrl: './post-comments.scss',
@@ -21,25 +22,29 @@ export class PostComments {
   private readonly notificationService = inject(NotificationService);
 
   protected formatTimeAgo = formatTimeAgo;
-
-  comments = model.required<CommentResponse[]>();
+  postId = input.required<string>();
+  comments = resource({
+    defaultValue: [],
+    loader: () => {
+      return this.commentService.getComments(this.postId());
+    }
+  })
   loadingComments = signal<boolean>(false);
   commentDraft = signal<string>('');
   editDraft = signal<string>('');
   editingCommentId = signal<string | null>(null);
   replyingTo = signal<CommentResponse | null>(null);
   submittingComment = signal<boolean>(false);
-  postId = input.required<string>();
 
 
-  topLevelComments(): CommentResponse[] {
-    return this.comments().filter(
+  topLevelComments(): PostComment[] {
+    return this.comments.value()?.filter(
       comment => comment.parentCommentId === null,
     );
   }
 
-  repliesFor(commentId: string): CommentResponse[] {
-    return this.comments().filter(comment => comment.parentCommentId === commentId);
+  repliesFor(commentId: string): PostComment[] {
+    return this.comments.value().filter(comment => comment.parentCommentId === commentId);
   }
 
   commentAvatarInitial(comment: CommentResponse): string {
@@ -137,6 +142,6 @@ export class PostComments {
   }
 
   commentCount(): number {
-    return this.comments().length;
+    return this.comments.value().length;
   }
 }

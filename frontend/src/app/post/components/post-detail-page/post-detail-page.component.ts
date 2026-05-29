@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { Component, inject, resource, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { CardModule } from 'primeng/card';
@@ -14,6 +14,8 @@ import { PostComments } from '../post-comments/post-comments';
 import { PostActions } from '../post-actions/post-actions-component';
 import { ContentTypeEnum } from '../../../report/dto/report';
 import { PostSources } from '../post-sources/post-sources-component';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 
 @Component({
@@ -34,45 +36,41 @@ import { PostSources } from '../post-sources/post-sources-component';
   templateUrl: './post-detail-page.component.html',
   styleUrl: './post-detail-page.component.scss',
 })
-export class PostDetailPageComponent implements OnInit {
+export class PostDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly postService = inject(PostService);
+  private readonly mediaService = inject(MediaCacheService);
 
   protected ContentTypeEnum = ContentTypeEnum;
 
-  // Post data
-  post = signal<DetailedPostResponse | null>(null);
-  isLoading = signal<boolean>(true);
-  error = signal<string | null>(null);
+  postId = this.route.snapshot.paramMap.get('postId');
+  post = resource({
+    loader: () => {
+      return this.postService.getPostById(this.postId!);
+    }
+  })
+  profilePic = rxResource({
+    params: () => this.post.value()?.userProfilePicture ?? undefined,
+    stream: ({ params }) => {
+      return this.mediaService.resolveMediaUrl(params)
+    }
+  });
+  mediaRef = rxResource({
+    params: () => this.post.value()?.mediaUrl,
+    stream: ({ params }) => {
+      return this.mediaService.resolveMediaUrl(params)
+    }
+  })
   commentsVisible = signal<boolean>(false);
-
-  ngOnInit(): void {
-    const postId = this.route.snapshot.paramMap.get('postId');
-    if (!postId) {
-      this.error.set('No post ID provided');
-      this.isLoading.set(false);
-      return;
-    }
-
-    this.loadPost(postId);
-  }
-
-  private async loadPost(postId: string): Promise<void> {
-    this.isLoading.set(true);
-    try {
-      const post = await this.postService.getPostById(postId);
-      this.post.set(post);
-    } catch (error) {
-      this.error.set('Failed to load post');
-      console.error('Failed to load post:', error);
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
 
   goBack(): void {
     this.location.back();
+  }
+
+  goToUser(): void {
+    this.router.navigate(['/profile', this.post.value()?.username])
   }
 
   // Helper methods
@@ -85,10 +83,6 @@ export class PostDetailPageComponent implements OnInit {
     } else {
       return 'image';
     }
-  }
-
-  postMediaUrl(post: DetailedPostResponse): string | null {
-    return post.mediaUrl;
   }
 
   timeAgo(value: string): string {

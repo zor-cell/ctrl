@@ -1,7 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
 import { PostPreview } from '../../dto/PostPreview';
+import { Router } from '@angular/router';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { tap } from 'rxjs';
 
 /**
  * Post Preview Card Component
@@ -21,8 +25,26 @@ import { PostPreview } from '../../dto/PostPreview';
   styleUrl: './post-preview-card.component.scss',
 })
 export class PostPreviewCardComponent {
+  private readonly mediaService = inject(MediaCacheService);
+  private readonly router = inject(Router);
   /** The post preview data to display */
   post = input.required<PostPreview>();
+  profilePic = rxResource({
+    params: () => {
+      const val = this.post().userProfilePicture || undefined;
+      console.log('profilePic param:', val);
+      return val;
+    },
+    stream: ({ params }) => this.mediaService.resolveMediaUrl(params).pipe(
+      tap(url => console.log('profilePic resolved:', url))
+    )
+  });
+  mediaRef = rxResource({
+    params: () => this.post().mediaUrl,
+    stream: ({ params }) => {
+      return this.mediaService.resolveMediaUrl(params)
+    }
+  })
 
   /** Event emitted when the card is clicked to open the post detail */
   open = output<void>();
@@ -39,5 +61,9 @@ export class PostPreviewCardComponent {
    */
   onClick(): void {
     this.open.emit();
+  }
+
+  goToUser(): void {
+    this.router.navigate(['/profile', this.post().username]);
   }
 }

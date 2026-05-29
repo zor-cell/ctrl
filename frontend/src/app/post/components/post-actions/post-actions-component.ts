@@ -4,6 +4,8 @@ import { DetailedPostResponse } from "../../dto/DetailedPostResponse";
 import { NotificationService } from "../../../core/services/notification.service";
 import { ReportComponent } from "../../../report/components/report/report.component";
 import { ContentTypeEnum } from "../../../report/dto/report";
+import { rxResource } from "@angular/core/rxjs-interop";
+import { MediaCacheService } from "../../../core/services/media-cache.service";
 
 @Component({
   selector: 'app-post-actions',
@@ -17,6 +19,7 @@ import { ContentTypeEnum } from "../../../report/dto/report";
 export class PostActions {
   private readonly postService = inject(PostService);
   private readonly notificationService = inject(NotificationService);
+  private readonly mediaService = inject(MediaCacheService);
   protected ContentTypeEnum = ContentTypeEnum;
 
   public votingInProgress = signal<boolean>(false);
@@ -26,6 +29,12 @@ export class PostActions {
   public reportDialogVisible = signal<boolean>(false);
 
   post = input.required<DetailedPostResponse>();
+  profilePic = rxResource({
+    params: () => this.post().userProfilePicture ?? undefined,
+    stream: ({ params }) => {
+      return this.mediaService.resolveMediaUrl(params)
+    }
+  });
   openComments = output<void>();
 
   async votePost(voteType: VoteType): Promise<void> {

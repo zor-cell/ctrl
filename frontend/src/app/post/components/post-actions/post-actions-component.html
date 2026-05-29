@@ -50,7 +50,7 @@
   [contentType]="ContentTypeEnum.POST"
   [contentId]="this.post().postId"
   [contentTitle]="this.post().caption"
-  [userProfilePic]="this.post().userProfilePicture"
+  [userProfilePic]="this.profilePic.value()!"
   [username]="this.post().username"
   [visible]="reportDialogVisible()"
   (visibleChange)="reportDialogVisible.set($event)">

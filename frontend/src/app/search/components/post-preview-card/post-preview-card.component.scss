@@ -52,9 +52,31 @@ $border: var(--border);
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
+  border: none;
   border-bottom: 1px solid var(--p-content-border-color, $border);
   flex-shrink: 0;
   min-height: 3rem;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--p-avatar-background, var(--primary-color, #6366f1));
+  color: var(--p-avatar-color, #ffffff);
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .preview-card__username {
@@ -103,7 +125,7 @@ $border: var(--border);
 
   // Always truncate to 3 lines for consistency
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

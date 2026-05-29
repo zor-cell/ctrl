@@ -278,9 +278,9 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
    * Processes videoImageRef and userProfilePic through the media cache.
    */
   private async resolveSearchMedia(post: PostPreview): Promise<PostPreview> {
-    if (post.userProfilePic) {
-      post.userProfilePic = await this.resolveMedia(
-        post.userProfilePic,
+    if (post.userProfilePicture) {
+      post.userProfilePicture = await this.resolveMedia(
+        post.userProfilePicture,
         'image',
         'normal'
       ) ?? '';

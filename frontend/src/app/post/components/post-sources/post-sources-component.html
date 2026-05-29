@@ -44,8 +44,8 @@
   [contentType]="ContentTypeEnum.SOURCE"
   [contentId]="this.source().sourceId"
   [contentTitle]="this.source().sourceId"
-  [userProfilePic]="this.postDetails().userProfilePicture"
-  [username]="this.postDetails().username"
+  [userProfilePic]="this.profilePicture()"
+  [username]="this.username()"
   [visible]="this.reportDialogVisible()"
   (visibleChange)="this.reportDialogVisible.set($event)">
 </app-report>

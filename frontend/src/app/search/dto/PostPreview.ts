@@ -4,6 +4,6 @@ export interface PostPreview {
   mediaUrl: string | null;
   userId: string;
   username: string;
-  userProfilePic: string | null;
+  userProfilePicture: string | null;
   isPublic: boolean;
 }
