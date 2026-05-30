@@ -7,6 +7,7 @@ import { isPublicAuthRoute } from './auth/auth-routes';
 import { ChatSessionService } from './chat/chat-session.service';
 import { NavigationComponent } from './navigation/navigation.component';
 import { UserService } from './user/user.service';
+import { SessionService } from './core/services/session.service';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ export class AppComponent implements OnInit {
   protected readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly chatSessionService = inject(ChatSessionService);
+  private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
 
   ngOnInit() {

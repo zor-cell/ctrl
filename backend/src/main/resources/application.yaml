@@ -72,6 +72,8 @@ application:
     admin:
       username: ${ADMIN_USERNAME}
       password: ${ADMIN_PASSWORD}
+  heartbeat:
+    max-time-between-heartbeats: 3 #in minutes
 
 management:
   health:

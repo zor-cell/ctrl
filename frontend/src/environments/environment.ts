@@ -10,5 +10,8 @@ export const environment = {
   },
   auth: {
     requireEmailVerification: true
+  },
+  heartbeat: {
+    interval: 60000 // 1 min in ms
   }
 };
