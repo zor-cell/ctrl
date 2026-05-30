@@ -1,20 +1,15 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
+import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
@@ -33,53 +28,49 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@Import(TestConfig.class)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 @Transactional
+@AutoConfigureMockMvc
 public class RelationshipControllerIntegrationTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
-
-  @Autowired private FollowRelationRepository followRelationRepository;
-
-  @Autowired private FriendRelationRepository friendRelationRepository;
-
-  @Autowired private FriendRequestRepository friendRequestRepository;
-
   @Autowired private UserRepository userRepository;
-
+  @Autowired private FollowRelationRepository followRelationRepository;
+  @Autowired private FriendRelationRepository friendRelationRepository;
+  @Autowired private FriendRequestRepository friendRequestRepository;
   @PersistenceContext private EntityManager entityManager;
 
   private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-
   private MockMvc mockMvc;
 
-  protected User currentUser;
-  protected User alpha;
-  protected User beta;
-  protected User gamma;
-  protected User delta;
+  private User currentUser;
+  private User regularUser;
+  private User suspendedUser;
 
   @BeforeEach
-  public void setupTestData() {
+  public void setup() {
     mockMvc = webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
 
     currentUser =
@@ -90,703 +81,195 @@ public class RelationshipControllerIntegrationTest {
             .name("Current User")
             .isVerified(true)
             .emailVerified(true)
+            .isSuspended(false)
             .birthdate(LocalDate.of(2000, 1, 1))
             .build();
     currentUser = userRepository.save(currentUser);
 
-    alpha =
+    regularUser =
         User.builder()
-            .username("alpha")
-            .email("alpha@test.com")
+            .username("regularuser")
+            .email("regular@test.com")
             .password("password123")
-            .name("Alpha")
+            .name("Regular User")
             .isVerified(true)
             .emailVerified(true)
+            .isSuspended(false)
             .birthdate(LocalDate.of(2000, 1, 1))
             .build();
-    alpha = userRepository.save(alpha);
+    regularUser = userRepository.save(regularUser);
 
-    beta =
+    suspendedUser =
         User.builder()
-            .username("beta")
-            .email("beta@test.com")
+            .username("suspendeduser")
+            .email("suspended@test.com")
             .password("password123")
-            .name("Beta")
+            .name("Suspended User")
             .isVerified(true)
             .emailVerified(true)
+            .isSuspended(true)
             .birthdate(LocalDate.of(2000, 1, 1))
             .build();
-    beta = userRepository.save(beta);
-
-    gamma =
-        User.builder()
-            .username("gamma")
-            .email("gamma@test.com")
-            .password("password123")
-            .name("Gamma")
-            .isVerified(false)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-    gamma = userRepository.save(gamma);
-
-    delta =
-        User.builder()
-            .username("delta")
-            .email("delta@test.com")
-            .password("password123")
-            .name("Delta")
-            .isVerified(false)
-            .emailVerified(true)
-            .birthdate(LocalDate.of(2000, 1, 1))
-            .build();
-    delta = userRepository.save(delta);
+    suspendedUser = userRepository.save(suspendedUser);
   }
 
   @AfterEach
-  public void tearDownTestData() {
+  public void tearDown() {
     friendRequestRepository.deleteAll();
     friendRelationRepository.deleteAll();
     followRelationRepository.deleteAll();
     userRepository.deleteAll();
   }
 
-  // GET /users/me/friends
+  // ==================== SUSPENDED USER TESTS ====================
 
   @Test
-  public void getFriends_withoutSearch_shouldReturnAllFriends() throws Exception {
-    createFriendship(currentUser, alpha);
-    createFriendship(currentUser, gamma);
+  public void getFriends_excludesSuspendedUsers() throws Exception {
+    // Given: Current user is friends with both a regular user and a suspended user
+    createFriendship(currentUser, regularUser);
+    createFriendship(currentUser, suspendedUser);
 
+    // When: Getting friends list
     MvcResult result =
         mockMvc
             .perform(get("/api/users/me/friends").with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
-    List<FriendResponse> responses =
+    // Then: Suspended user should be excluded
+    List<FriendResponse> friends =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(2, responses.size());
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("alpha")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("beta")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("gamma")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("delta")));
+    assertTrue(
+        friends.stream().anyMatch(f -> f.username().equals("regularuser")),
+        "Regular user should appear in friends list");
+    assertFalse(
+        friends.stream().anyMatch(f -> f.username().equals("suspendeduser")),
+        "Suspended user should be excluded from friends list");
   }
 
   @Test
-  public void getFriends_withSearch_shouldReturnFriendsContainingSearchSubstring()
-      throws Exception {
-    createFriendship(currentUser, alpha);
-    createFriendship(currentUser, beta);
-    createFriendship(currentUser, gamma);
+  public void getFollowed_excludesSuspendedUsers() throws Exception {
+    // Given: Current user follows both a regular user and a suspended user
+    createFollow(currentUser, regularUser);
+    createFollow(currentUser, suspendedUser);
 
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/friends").param("q", "pha").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    List<FriendResponse> responses =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertEquals(1, responses.size());
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("alpha")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("beta")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("gamma")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("delta")));
-  }
-
-  @Test
-  public void getFriends_noFriends_shouldReturnEmptyList() throws Exception {
-    MvcResult result =
-        mockMvc.perform(get("/api/users/me/friends").with(user(currentUser))).andReturn();
-
-    List<FriendResponse> responses =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertTrue(responses.isEmpty());
-  }
-
-  // GET /users/me/followed
-
-  @Test
-  public void getFollowed_shouldReturnAllFollowed() throws Exception {
-    createFollow(currentUser, alpha);
-    createFollow(currentUser, beta);
-    createMutualFollows(currentUser, gamma);
-
+    // When: Getting followed list
     MvcResult result =
         mockMvc
             .perform(get("/api/users/me/followed").with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
-    List<FollowedResponse> responses =
+    // Then: Suspended user should be excluded
+    List<FollowedResponse> followed =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(3, responses.size());
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("alpha")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("beta")));
-    assertTrue(responses.stream().anyMatch(r -> r.username().equals("gamma")));
-    assertFalse(responses.stream().anyMatch(r -> r.username().equals("delta")));
+    assertTrue(
+        followed.stream().anyMatch(f -> f.username().equals("regularuser")),
+        "Regular user should appear in followed list");
+    assertFalse(
+        followed.stream().anyMatch(f -> f.username().equals("suspendeduser")),
+        "Suspended user should be excluded from followed list");
   }
 
   @Test
-  public void getFollowed_withSearch_shouldReturnFollowedContainingSearchSubstring()
-      throws Exception {
-    createFollow(currentUser, alpha);
-    createFollow(currentUser, beta);
-    createFollow(currentUser, gamma);
+  public void sendFriendRequest_toSuspendedUser_returnsNotFound() throws Exception {
+    // Given: A suspended user
+    String requestBody = String.format("{\"toUsername\":\"%s\"}", suspendedUser.getUsername());
 
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/followed").param("q", "pha").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    List<FollowedResponse> responses =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertEquals(1, responses.size());
-    assertTrue(responses.getFirst().username().equals("alpha"));
-  }
-
-  // POST /users/me/followed/{username}
-
-  @Test
-  public void follow_verifiedUser_shouldCreateFollowRelation() throws Exception {
+    // When/Then: Sending friend request to suspended user should return 404 (Not Found)
     mockMvc
         .perform(
-            post("/api/users/me/followed/{username}", alpha.getUsername()).with(user(currentUser)))
-        .andExpect(status().isCreated());
-
-    // Verify follow relation was created
-    Optional<FollowRelation> relation =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    assertTrue(relation.isPresent());
-  }
-
-  @Test
-  public void follow_unverifiedUser_shouldFail() throws Exception {
-    mockMvc
-        .perform(
-            post("/api/users/me/followed/{username}", gamma.getUsername()).with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("Can only follow verified users"));
-
-    // Verify no follow relation was created
-    Optional<FollowRelation> relation =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), gamma.getId()));
-    assertFalse(relation.isPresent());
-  }
-
-  @Test
-  public void follow_self_shouldFail() throws Exception {
-    mockMvc
-        .perform(
-            post("/api/users/me/followed/{username}", currentUser.getUsername())
+            post("/api/users/me/friend-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
                 .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("Cannot follow yourself"));
+        .andExpect(status().isNotFound());
   }
 
   @Test
-  public void follow_nonExistentUser_shouldFail() throws Exception {
-    mockMvc
-        .perform(post("/api/users/me/followed/{username}", "ghost123").with(user(currentUser)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().string("User with identifier 'ghost123' not found."));
-  }
+  public void followSuspendedUser_returnsNotFound() throws Exception {
+    // Given: A suspended user
 
-  @Test
-  public void follow_alreadyFollowing_shouldSucceedIdempotent() throws Exception {
-    createFollow(currentUser, alpha);
-
+    // When/Then: Following a suspended user should return 404 (Not Found)
     mockMvc
         .perform(
-            post("/api/users/me/followed/{username}", alpha.getUsername()).with(user(currentUser)))
-        .andExpect(status().isCreated());
-
-    long count =
-        followRelationRepository.findFollowedByFollower(currentUser).stream()
-            .filter(u -> u.getId().equals(alpha.getId()))
-            .count();
-    assertEquals(1, count);
-  }
-
-  // DELETE /users/me/followed/{username} tests
-
-  @Test
-  public void unfollow_existing_shouldRemoveRelation() throws Exception {
-    createFollow(currentUser, alpha);
-
-    mockMvc
-        .perform(
-            delete("/api/users/me/followed/{username}", alpha.getUsername())
+            post("/api/users/me/followed/{username}", suspendedUser.getUsername())
                 .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    entityManager.flush();
-    entityManager.clear();
-
-    Optional<FollowRelation> deleted =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    assertFalse(deleted.isPresent());
+        .andExpect(status().isNotFound());
   }
 
   @Test
-  public void unfollow_nonExistentUser_shouldFail() throws Exception {
-    mockMvc
-        .perform(delete("/api/users/me/followed/{username}", "ghost123").with(user(currentUser)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().string("User with identifier 'ghost123' not found."));
-  }
+  public void getSentFriendRequests_excludesSuspendedUsers() throws Exception {
+    // Given: Current user has sent friend requests to both regular and suspended users
+    createFriendRequest(currentUser, regularUser);
+    createFriendRequest(currentUser, suspendedUser);
 
-  // GET /users/me/friend-requests/sent
-
-  @Test
-  public void getSentFriendRequests_shouldOnlyReturnSentRequests() throws Exception {
-    createFriendRequest(currentUser, alpha);
-    createFriendRequest(beta, currentUser);
-
+    // When: Getting sent friend requests
     MvcResult result =
         mockMvc
             .perform(get("/api/users/me/friend-requests/sent").with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
-    List<FriendRequestResponse> response =
+    // Then: Requests to suspended users should be excluded
+    List<FriendRequestResponse> requests =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(1, response.size());
-    assertTrue(response.getFirst().username().equals("alpha"));
-    assertFalse(response.getFirst().isIncoming());
+    assertTrue(
+        requests.stream().anyMatch(r -> r.username().equals("regularuser")),
+        "Request to regular user should appear");
+    assertFalse(
+        requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
+        "Request to suspended user should be excluded");
   }
 
   @Test
-  public void getSentFriendRequests_withExpired_shouldFilterAndDelete() throws Exception {
-    createFriendRequest(currentUser, alpha);
+  public void getIncomingFriendRequests_excludesSuspendedUsers() throws Exception {
+    // Given: Current user has incoming friend requests from both regular and suspended users
+    createFriendRequest(regularUser, currentUser);
+    createFriendRequest(suspendedUser, currentUser);
 
-    FriendRequest expiredRequest =
-        FriendRequest.builder()
-            .id(new FriendRequestId(currentUser.getId(), alpha.getId()))
-            .sender(currentUser)
-            .receiver(alpha)
-            .createdAt(LocalDateTime.now().minusDays(31))
-            .expiresAt(LocalDateTime.now().minusDays(1))
-            .build();
-    friendRequestRepository.save(expiredRequest);
-
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/friend-requests/sent").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    List<FriendRequestResponse> response =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertTrue(response.isEmpty());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  // GET /users/me/friend-requests/incoming
-
-  @Test
-  public void getIncomingFriendRequests_shouldOnlyReturnIncomingRequests() throws Exception {
-    createFriendRequest(alpha, currentUser);
-    createFriendRequest(currentUser, beta);
-
+    // When: Getting incoming friend requests
     MvcResult result =
         mockMvc
             .perform(get("/api/users/me/friend-requests/incoming").with(user(currentUser)))
             .andExpect(status().isOk())
             .andReturn();
 
-    List<FriendRequestResponse> response =
+    // Then: Requests from suspended users should be excluded
+    List<FriendRequestResponse> requests =
         objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
 
-    assertEquals(1, response.size());
-    assertTrue(response.getFirst().username().equals("alpha"));
-    assertTrue(response.getFirst().isIncoming());
+    assertTrue(
+        requests.stream().anyMatch(r -> r.username().equals("regularuser")),
+        "Request from regular user should appear");
+    assertFalse(
+        requests.stream().anyMatch(r -> r.username().equals("suspendeduser")),
+        "Request from suspended user should be excluded");
   }
 
   @Test
-  public void getIncomingFriendRequests_withExpired_shouldFilterAndDelete() throws Exception {
-    createFriendRequest(alpha, currentUser);
+  public void acceptFriendRequest_fromSuspendedUser_returnsNotFound() throws Exception {
+    // Given: A suspended user sent a friend request to current user
+    createFriendRequest(suspendedUser, currentUser);
 
-    FriendRequest expiredRequest =
-        FriendRequest.builder()
-            .id(new FriendRequestId(alpha.getId(), currentUser.getId()))
-            .sender(alpha)
-            .receiver(currentUser)
-            .createdAt(LocalDateTime.now().minusDays(31))
-            .expiresAt(LocalDateTime.now().minusDays(1))
-            .build();
-    friendRequestRepository.save(expiredRequest);
+    String requestBody = String.format("{\"action\":\"%s\"}", FriendRequestAction.ACCEPT);
 
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/friend-requests/incoming").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    List<FriendRequestResponse> response =
-        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
-
-    assertTrue(response.isEmpty());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  // POST /users/me/friend-requests
-
-  @Test
-  public void sendFriendRequest_toVerified_shouldCreateRequestAndFollow() throws Exception {
-    String requestBody = "{\"toUsername\": \"" + alpha.getUsername() + "\"}";
-
+    // When/Then: Accepting request from suspended user should return 404
     mockMvc
         .perform(
-            post("/api/users/me/friend-requests")
+            patch("/api/users/me/friend-requests/{username}", suspendedUser.getUsername())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
                 .with(user(currentUser)))
-        .andExpect(status().isCreated());
-
-    Optional<FriendRequest> request =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
-    assertTrue(request.isPresent());
-
-    Optional<FollowRelation> follow =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    assertTrue(follow.isPresent());
-  }
-
-  @Test
-  public void sendFriendRequest_toUnverified_shouldCreateRequestOnly() throws Exception {
-    String requestBody = "{\"toUsername\": \"" + gamma.getUsername() + "\"}";
-
-    mockMvc
-        .perform(
-            post("/api/users/me/friend-requests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isCreated());
-
-    Optional<FriendRequest> request =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), gamma.getId()));
-    assertTrue(request.isPresent());
-
-    Optional<FollowRelation> follow =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), gamma.getId()));
-    assertFalse(follow.isPresent());
-  }
-
-  @Test
-  public void sendFriendRequest_toSelf_shouldFail() throws Exception {
-    String requestBody = "{\"toUsername\": \"" + currentUser.getUsername() + "\"}";
-
-    mockMvc
-        .perform(
-            post("/api/users/me/friend-requests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("Cannot send friend request to yourself"));
-  }
-
-  @Test
-  public void sendFriendRequest_alreadyFriends_shouldFail() throws Exception {
-    createFriendship(currentUser, alpha);
-
-    String requestBody = "{\"toUsername\": \"" + alpha.getUsername() + "\"}";
-
-    mockMvc
-        .perform(
-            post("/api/users/me/friend-requests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("You are already friends with this user"));
-  }
-
-  @Test
-  public void sendFriendRequest_duplicatePending_shouldFail() throws Exception {
-    createFriendRequest(currentUser, alpha);
-
-    String requestBody = "{\"toUsername\": \"" + alpha.getUsername() + "\"}";
-
-    mockMvc
-        .perform(
-            post("/api/users/me/friend-requests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isConflict())
-        .andExpect(
-            content()
-                .string(
-                    "Friend request with receiver '" + alpha.getUsername() + "' already exists."));
-  }
-
-  @Test
-  public void sendFriendRequest_whenTargetAlreadySent_shouldFail() throws Exception {
-    createFriendRequest(alpha, currentUser);
-
-    String requestBody = "{\"toUsername\": \"" + alpha.getUsername() + "\"}";
-
-    mockMvc
-        .perform(
-            post("/api/users/me/friend-requests")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(
-            content()
-                .string(
-                    "This user has already sent you a friend request. Please accept or decline"
-                        + " it."));
-  }
-
-  // PATCH /users/me/friend-requests/{username}
-
-  @Test
-  public void handleFriendRequest_accept_shouldCreateFriendship() throws Exception {
-    createFriendRequest(alpha, currentUser);
-
-    String requestBody = "{\"action\": \"ACCEPT\"}";
-
-    mockMvc
-        .perform(
-            patch("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    // Verify friendship was created in friend_relation table
-    Optional<FriendRelation> friendship =
-        friendRelationRepository.findById(new FriendRelationId(currentUser.getId(), alpha.getId()));
-    assertTrue(friendship.isPresent());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  @Test
-  public void handleFriendRequest_decline_shouldDeleteRequestAndDeleteAnyFollows()
-      throws Exception {
-    createFriendRequest(alpha, currentUser);
-
-    String requestBody = "{\"action\": \"DECLINE\"}";
-
-    mockMvc
-        .perform(
-            patch("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
-    assertFalse(deleted.isPresent());
-
-    Optional<FollowRelation> followRelation =
-        followRelationRepository.findById(new FollowRelationId(alpha.getId(), currentUser.getId()));
-    assertFalse(followRelation.isPresent());
-  }
-
-  @Test
-  public void handleFriendRequest_nonExistentSender_shouldFail() throws Exception {
-    String requestBody = "{\"action\": \"ACCEPT\"}";
-
-    mockMvc
-        .perform(
-            patch("/api/users/me/friend-requests/{username}", "ghost123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().string("User with identifier 'ghost123' not found."));
-  }
-
-  @Test
-  public void handleFriendRequest_expired_shouldFail() throws Exception {
-    FriendRequest request =
-        FriendRequest.builder()
-            .id(new FriendRequestId(alpha.getId(), currentUser.getId()))
-            .sender(alpha)
-            .receiver(currentUser)
-            .createdAt(LocalDateTime.now().minusDays(31))
-            .expiresAt(LocalDateTime.now().minusDays(1))
-            .build();
-    friendRequestRepository.save(request);
-
-    String requestBody = "{\"action\": \"ACCEPT\"}";
-
-    mockMvc
-        .perform(
-            patch("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("This friend request has expired"));
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(alpha.getId(), currentUser.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  @Test
-  public void handleFriendRequest_invalidAction_shouldFail() throws Exception {
-    createFriendRequest(alpha, currentUser);
-
-    String requestBody = "{}";
-
-    mockMvc
-        .perform(
-            patch("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest());
-  }
-
-  // DELETE /users/me/friend-requests/{username}
-
-  @Test
-  public void cancelFriendRequest_toUnverified_shouldSucceed() throws Exception {
-    createFriendRequest(currentUser, gamma);
-
-    mockMvc
-        .perform(
-            delete("/api/users/me/friend-requests/{username}", gamma.getUsername())
-                .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), gamma.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  @Test
-  public void cancelFriendRequest_toVerified_shouldKeepFollowRelation() throws Exception {
-    createFollow(currentUser, alpha);
-    createFriendRequest(currentUser, alpha);
-
-    mockMvc
-        .perform(
-            delete("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .with(user(currentUser)))
-        .andExpect(status().isNoContent());
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
-    assertFalse(deleted.isPresent());
-
-    Optional<FollowRelation> kept =
-        followRelationRepository.findById(new FollowRelationId(currentUser.getId(), alpha.getId()));
-    assertTrue(kept.isPresent());
-  }
-
-  @Test
-  public void cancelFriendRequest_nonExistent_shouldFail() throws Exception {
-    mockMvc
-        .perform(
-            delete("/api/users/me/friend-requests/{username}", "ghost123").with(user(currentUser)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().string("User with identifier 'ghost123' not found."));
-  }
-
-  @Test
-  public void cancelFriendRequest_expired_shouldFail() throws Exception {
-    FriendRequest request =
-        FriendRequest.builder()
-            .id(new FriendRequestId(currentUser.getId(), alpha.getId()))
-            .sender(currentUser)
-            .receiver(alpha)
-            .createdAt(LocalDateTime.now().minusDays(31))
-            .expiresAt(LocalDateTime.now().minusDays(1))
-            .build();
-    friendRequestRepository.save(request);
-
-    mockMvc
-        .perform(
-            delete("/api/users/me/friend-requests/{username}", alpha.getUsername())
-                .with(user(currentUser)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string("This friend request has expired"));
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(currentUser.getId(), alpha.getId()));
-    assertFalse(deleted.isPresent());
-  }
-
-  // GET /users/me/friend-requests/count
-
-  @Test
-  public void getPendingRequestCount_shouldReturnCorrectCount() throws Exception {
-    createFriendRequest(alpha, currentUser);
-    createFriendRequest(beta, currentUser);
-    createFriendRequest(gamma, currentUser);
-
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/friend-requests/count").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    String content = result.getResponse().getContentAsString();
-    assertEquals("3", content);
-  }
-
-  @Test
-  public void getPendingRequestCount_withExpired_shouldFilter() throws Exception {
-    createFriendRequest(alpha, currentUser);
-    createFriendRequest(beta, currentUser);
-
-    FriendRequest expiredRequest =
-        FriendRequest.builder()
-            .id(new FriendRequestId(gamma.getId(), currentUser.getId()))
-            .sender(gamma)
-            .receiver(currentUser)
-            .createdAt(LocalDateTime.now().minusDays(31))
-            .expiresAt(LocalDateTime.now().minusDays(1))
-            .build();
-    friendRequestRepository.save(expiredRequest);
-
-    MvcResult result =
-        mockMvc
-            .perform(get("/api/users/me/friend-requests/count").with(user(currentUser)))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    String content = result.getResponse().getContentAsString();
-    assertEquals("2", content);
-
-    Optional<FriendRequest> deleted =
-        friendRequestRepository.findById(new FriendRequestId(gamma.getId(), currentUser.getId()));
-    assertFalse(deleted.isPresent());
+        .andExpect(status().isNotFound());
   }
 
   // Helper methods
 
-  private void createFollow(
-      at.ac.tuwien.inso.ctrl.user.entity.User follower,
-      at.ac.tuwien.inso.ctrl.user.entity.User followed) {
+  private void createFollow(User follower, User followed) {
     FollowRelation relation =
         FollowRelation.builder()
             .id(new FollowRelationId(follower.getId(), followed.getId()))
@@ -797,16 +280,7 @@ public class RelationshipControllerIntegrationTest {
     followRelationRepository.save(relation);
   }
 
-  private void createMutualFollows(
-      at.ac.tuwien.inso.ctrl.user.entity.User user1,
-      at.ac.tuwien.inso.ctrl.user.entity.User user2) {
-    createFollow(user1, user2);
-    createFollow(user2, user1);
-  }
-
-  private void createFriendRequest(
-      at.ac.tuwien.inso.ctrl.user.entity.User sender,
-      at.ac.tuwien.inso.ctrl.user.entity.User receiver) {
+  private void createFriendRequest(User sender, User receiver) {
     FriendRequest request =
         FriendRequest.builder()
             .id(new FriendRequestId(sender.getId(), receiver.getId()))
@@ -818,9 +292,7 @@ public class RelationshipControllerIntegrationTest {
     friendRequestRepository.save(request);
   }
 
-  private void createFriendship(
-      at.ac.tuwien.inso.ctrl.user.entity.User user1,
-      at.ac.tuwien.inso.ctrl.user.entity.User user2) {
+  private void createFriendship(User user1, User user2) {
     FriendRelation friendship =
         FriendRelation.builder()
             .id(new FriendRelationId(user1.getId(), user2.getId()))

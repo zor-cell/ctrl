@@ -1,0 +1,48 @@
+<button
+  type="button"
+  class="preview-card"
+  (click)="onClick()"
+  [class.has-media]="post().mediaUrl"
+  [class.no-media]="!post().mediaUrl"
+>
+  <!-- User info header -->
+  <button class="preview-card__user" (click)="goToUser()">
+    @if (profilePic.hasValue()) {
+      <img [src]="profilePic.value()!" [alt]="post().username" class="avatar" />
+    } @else {
+      <span class="avatar avatar-fallback">
+        {{ post().username.charAt(0).toUpperCase() }}
+      </span>
+    }
+    <span class="preview-card__username">{{ post().username }}</span>
+  </button>
+
+  <!-- Media (if available) -->
+  @if (this.mediaRef.hasValue()) {
+    <div class="preview-card__media-wrapper">
+      @if (isVideo(post().mediaUrl!)) {
+        <video
+          [src]="this.mediaRef.value()"
+          class="preview-card__media"
+          muted
+          playsinline
+          preload="metadata"
+        ></video>
+      } @else {
+        <img
+          [src]="this.mediaRef.value()"
+          alt=""
+          class="preview-card__media"
+          loading="lazy"
+        />
+      }
+    </div>
+  }
+
+  <!-- Caption -->
+  <div class="preview-card__caption-wrapper">
+    <p class="preview-card__caption" [class.truncated]="this.mediaRef.hasValue()">
+      {{ post().caption }}
+    </p>
+  </div>
+</button>

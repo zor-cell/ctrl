@@ -16,7 +16,7 @@ import { FriendRequestEventBusService } from '../../friend-request-event-bus.ser
 import { FriendListComponent } from '../friend-list/friend-list.component';
 import { FollowedListComponent } from '../followed-list/followed-list.component';
 import { FriendRequestsDialogComponent } from '../friend-requests-dialog/friend-requests-dialog.component';
-import { UserSearchComponent } from '../user-search/user-search.component';
+import { UsersSearchComponent } from '../../../search/components/users-search/users-search.component';
 
 /**
  * Followed Page Component
@@ -43,7 +43,7 @@ import { UserSearchComponent } from '../user-search/user-search.component';
     FriendListComponent,
     FollowedListComponent,
     FriendRequestsDialogComponent,
-    UserSearchComponent,
+    UsersSearchComponent,
   ],
   templateUrl: './followed-page.component.html',
   styleUrl: './followed-page.component.scss',

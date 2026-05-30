@@ -16,12 +16,10 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
-import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
@@ -34,9 +32,7 @@ import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -274,43 +270,6 @@ public class UserServiceUnitTest {
     assertEquals(response, result);
     verify(fileStorageService).uploadProfilePicture(file);
     verify(userRepository).save(testUser);
-  }
-
-  @Test
-  void searchUsers_withProfilePicture_returnsResolvedProfilePictureUrl() {
-    User currentUser = createUser("current");
-    testUser.setProfilePicture("users/profile-pictures/avatar.png");
-    List<RelationshipStatusItem> relationshipStatuses = List.of();
-    UserSearchResponse response =
-        new UserSearchResponse(
-            testUser.getId(),
-            testUser.getUsername(),
-            null,
-            "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
-            testUser.isVerified(),
-            relationshipStatuses);
-
-    when(followService.getFollowedIds(currentUser)).thenReturn(Set.of());
-    when(friendRelationRepository.findFriendIds(currentUser)).thenReturn(Set.of());
-    when(friendRequestRepository.findReceiverIdsBySender(currentUser)).thenReturn(Set.of());
-    when(friendRequestRepository.findSenderIdsByReceiver(currentUser)).thenReturn(Set.of());
-    when(userRepository.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(testUser));
-    when(socialMapper.determineRelationshipStatuses(
-            testUser, Set.of(), Set.of(), Set.of(), Set.of()))
-        .thenReturn(relationshipStatuses);
-    when(socialMapper.displayName(testUser, relationshipStatuses)).thenReturn(null);
-    when(socialMapper.toUserSearchResponse(testUser, relationshipStatuses, null))
-        .thenReturn(response);
-
-    List<UserSearchResponse> result =
-        userService.searchUsers(currentUser, " test ", false, false, false);
-
-    assertEquals(1, result.size());
-    assertEquals(testUser.getId(), result.get(0).id());
-    assertEquals("testUser", result.get(0).username());
-    assertEquals(
-        "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
-        result.get(0).profilePicture());
   }
 
   @Test

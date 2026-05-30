@@ -14,7 +14,11 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, UUID> {
   Optional<User> findByUsername(String username);
 
-  List<User> findByUsernameContainingIgnoreCase(String search);
+  @Query(
+      """
+      SELECT u FROM User u WHERE u.isSuspended = false AND LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+      """)
+  List<User> findByUsernameContainingIgnoreCaseAndFilterSuspended(String search);
 
   boolean existsByUsername(String username);
 

@@ -242,6 +242,23 @@ public class PostControllerDatabaseIntegrationTest {
     assertTrue(postRepository.findById("post-1").isPresent());
   }
 
+  @Test
+  void getPostById_withRemovedPost_returnsNotFound() throws Exception {
+    // Given: A post that has been marked as removed
+    Post removedPost =
+        savePost(
+            "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+    removedPost.setIsRemoved(true);
+    postRepository.save(removedPost);
+
+    // When/Then: Getting the removed post by ID should return 404
+    mockMvc
+        .perform(
+            get("/api/posts/removed-post")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
+        .andExpect(status().isNotFound());
+  }
+
   private User saveUser(String username, boolean verified) {
     return userRepository.save(
         User.builder()

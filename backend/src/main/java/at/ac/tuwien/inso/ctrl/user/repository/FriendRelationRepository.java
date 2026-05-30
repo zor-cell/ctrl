@@ -18,20 +18,28 @@ public interface FriendRelationRepository extends JpaRepository<FriendRelation, 
   @Query(
       """
       SELECT u FROM User u
-      JOIN FriendRelation fr ON
-        (fr.friend1 = :user AND fr.friend2 = u)
-        OR (fr.friend2 = :user AND fr.friend1 = u)
+      WHERE u.isSuspended = false
+      AND (
+          EXISTS (SELECT fr1 FROM FriendRelation fr1 WHERE fr1.friend1 = :user AND fr1.friend2 = u)
+          OR
+          EXISTS (SELECT fr2 FROM FriendRelation fr2 WHERE fr2.friend2 = :user AND fr2.friend1 = u)
+      )
       """)
   List<User> findFriends(@Param("user") User user);
 
   @Query(
       """
-      SELECT u FROM User u
-      JOIN FriendRelation fr ON
-        (fr.friend1 = :user AND fr.friend2 = u)
-        OR (fr.friend2 = :user AND fr.friend1 = u)
-      WHERE u.username LIKE CONCAT('%', :search, '%')
-         OR u.name LIKE CONCAT('%', :search, '%')
+          SELECT u FROM User u
+          WHERE u.isSuspended = false
+          AND (
+              EXISTS (SELECT fr1 FROM FriendRelation fr1 WHERE fr1.friend1 = :user AND fr1.friend2 = u)
+              OR
+              EXISTS (SELECT fr2 FROM FriendRelation fr2 WHERE fr2.friend2 = :user AND fr2.friend1 = u)
+          )
+          AND (
+              u.username LIKE CONCAT('%', :search, '%')
+              OR u.name LIKE CONCAT('%', :search, '%')
+          )
       """)
   List<User> findFriendsBySearch(@Param("user") User user, @Param("search") String search);
 

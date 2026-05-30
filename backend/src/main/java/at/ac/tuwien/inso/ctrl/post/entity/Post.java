@@ -53,6 +53,7 @@ public class Post implements Votable {
   @Column(name = "is_ai_generated")
   private Boolean isAiGenerated = false;
 
+  @Builder.Default
   @Column(name = "is_removed")
   private Boolean isRemoved = false;
 
