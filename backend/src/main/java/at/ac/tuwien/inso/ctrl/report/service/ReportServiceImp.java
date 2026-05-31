@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -480,8 +479,7 @@ public class ReportServiceImp implements ReportService {
           postRepository
               .getPostByPostId(contentId)
               .map(Post::getUser)
-              .orElseThrow(
-                  () -> new EntityNotFoundException("Post not found: " + contentId));
+              .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId));
       case SOURCE -> {
         Source source =
             sourceRepository
@@ -494,13 +492,11 @@ public class ReportServiceImp implements ReportService {
                     () -> new EntityNotFoundException("Post not found for source: " + contentId));
         yield post.getUser();
       }
-      case COMMENT ->
-          commentRepository.findById(contentId).map(Comment::getUser).orElse(null);
+      case COMMENT -> commentRepository.findById(contentId).map(Comment::getUser).orElse(null);
       case ACCOUNT ->
           userRepository
               .findByUsername(contentId)
-              .orElseThrow(
-                  () -> new EntityNotFoundException("User not found: " + contentId));
+              .orElseThrow(() -> new EntityNotFoundException("User not found: " + contentId));
     };
   }
 
@@ -511,8 +507,7 @@ public class ReportServiceImp implements ReportService {
           postRepository
               .getPostByPostId(contentId)
               .map(Post::getExternalAuthor)
-              .orElseThrow(
-                  () -> new EntityNotFoundException("Post not found: " + contentId));
+              .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId));
       case SOURCE -> {
         Source source =
             sourceRepository
