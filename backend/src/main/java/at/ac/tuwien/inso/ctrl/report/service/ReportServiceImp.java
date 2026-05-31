@@ -123,7 +123,6 @@ public class ReportServiceImp implements ReportService {
   }
 
   @Override
-  @Transactional(readOnly = true)
   public List<ReportedCommentResponse> getReportedComments(
       ReportStatus reportStatus, int page, int postsPerPage) {
     var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
@@ -301,8 +300,7 @@ public class ReportServiceImp implements ReportService {
                 return null;
               }
 
-              String reportedByUsername =
-                  report.getFromUser() != null ? report.getFromUser().getUsername() : null;
+              String reportedByUsername = report.getFromUser().getUsername();
               String reportedUsername = reportedUser.getUsername();
 
               return new ReportedAccountResponse(
@@ -375,9 +373,6 @@ public class ReportServiceImp implements ReportService {
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
-
-    } else {
-      throw new IllegalArgumentException("Invalid content type: " + report.getContentType());
     }
 
     dealWithOtherReportsOfItem(report.getContentType(), report.getContentId());

@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,6 +12,8 @@ import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
@@ -62,6 +65,7 @@ public class ReportServiceIntegrationTest {
   @Autowired private SourceRepository sourceRepository;
   @Autowired private ExternalAuthorRepository externalAuthorRepository;
   @Autowired private UserRepository userRepository;
+  @Autowired private CommentRepository commentRepository;
 
   @MockitoBean private GmailEmailService gmailEmailService;
   @MockitoBean private FileStorageService fileStorageService;
@@ -75,6 +79,7 @@ public class ReportServiceIntegrationTest {
   @AfterEach
   void tearDown() {
     reportRepository.deleteAll();
+    commentRepository.deleteAll();
     postRepository.deleteAll();
     sourceRepository.deleteAll();
     externalAuthorRepository.deleteAll();
@@ -226,6 +231,348 @@ public class ReportServiceIntegrationTest {
 
     Source updatedSource = sourceRepository.findById(source.getSourceId()).orElseThrow();
     assertTrue(updatedSource.getIsRemoved());
+  }
+
+  @Test
+  void updateReportStatus_dismiss_marksReportAsDismissed() {
+    User reporter = createUser("reporter");
+    User contentUser = createUser("contentUser");
+    Source source = createSource("source-3");
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.DECLINED, ReportAction.DELETE_ITEM),
+        report.getReportId());
+
+    Report r = reportRepository.findById(report.getReportId()).orElseThrow();
+    assertEquals(ReportStatus.DECLINED, r.getStatus());
+  }
+
+  @Test
+  void updateReportStatus_deleteItemSource_marksSourceRemovedAndOtherSourceAsOtherReport() {
+    User reporter = createUser("reporter");
+    User contentUser = createUser("contentUser");
+    Source source = createSource("source-3");
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    Report report2 =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        report.getReportId());
+
+    Source updatedSource = sourceRepository.findById(source.getSourceId()).orElseThrow();
+    assertTrue(updatedSource.getIsRemoved());
+
+    Report report1FromRepo = reportRepository.findById(report.getReportId()).orElseThrow();
+    Report report2FromRepo = reportRepository.findById(report2.getReportId()).orElseThrow();
+
+    assertEquals(ReportStatus.VALIDATED, report1FromRepo.getStatus());
+    assertEquals(ReportStatus.OTHER_REPORT, report2FromRepo.getStatus());
+  }
+
+  @Test
+  void updateReportStatus_suspendAccountOfComment_marksUserAsSuspended() {
+    User reporter = createUser("comment-account-reporter");
+    User commentUser = createUser("comment-account-user");
+    Post post = createPost("post-comment-account-1", commentUser, null, null);
+    Comment comment = createComment("comment-account-1", post, commentUser);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            null,
+            ContentTypeEnum.COMMENT,
+            comment.getCommentId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    User updatedUser = userRepository.findById(commentUser.getId()).orElseThrow();
+    assertTrue(updatedUser.isSuspended());
+  }
+
+  @Test
+  void updateReportStatus_suspendAccountOfCommentWithInvalidId_shouldThrowException() {
+    User reporter = createUser("comment-account-reporter");
+    User commentUser = createUser("comment-account-user");
+    Post post = createPost("post-comment-account-1", commentUser, null, null);
+    Comment comment = createComment("comment-account-1", post, commentUser);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            null,
+            ContentTypeEnum.COMMENT,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+
+    assertThrows(EntityNotFoundException.class,
+        () -> reportService.updateReportStatus(
+            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+            report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_suspendAccountOfUser_throwException() {
+    User reporter = createUser("comment-account-reporter");
+    User commentUser = createUser("comment-account-user");
+    Post post = createPost("post-comment-account-1", commentUser, null, null);
+    Comment comment = createComment("comment-account-1", post, commentUser);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            null,
+            ContentTypeEnum.COMMENT,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class,
+        () ->     reportService.updateReportStatus(
+            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+            report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_deleteItemComment_marksSourceRemoved() {
+    User reporter = createUser("comment-reporter");
+    User commentUser = createUser("comment-user");
+    Post post = createPost("post-comment-1", commentUser, null, null);
+    Comment comment = createComment("comment-1", post, commentUser);
+
+    Report report =
+        createReport(
+            reporter,
+            commentUser,
+            null,
+            ContentTypeEnum.COMMENT,
+            comment.getCommentId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        report.getReportId());
+
+    Comment updatedComment = commentRepository.findById(comment.getCommentId()).orElseThrow();
+    assertTrue(updatedComment.getIsRemoved());
+  }
+
+  @Test
+  void updateReportStatus_deleteItemAccount_marksAccountSuspended() {
+    User reporter = createUser("comment-reporter");
+    User accountUser = createUser("comment-user");
+
+    Report report =
+        createReport(
+            reporter,
+            accountUser,
+            null,
+            ContentTypeEnum.ACCOUNT,
+            String.valueOf(accountUser.getId()),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        report.getReportId());
+
+    User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
+    assertTrue(updatedUser.isSuspended());
+  }
+  @Test
+  void updateReportStatus_deleteItemAccountWithInvalidPostId_throwsException() {
+    User reporter = createUser("comment-reporter");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.POST,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class,
+        () -> reportService.updateReportStatus(
+            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+            report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_deleteItemAccountWithInvalidSourceId_throwsException() {
+    User reporter = createUser("comment-reporter");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class,
+        () -> reportService.updateReportStatus(
+            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+            report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_deleteItemAccountWithInvalidCommentId_throwsException() {
+    User reporter = createUser("comment-reporter");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.COMMENT,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(EntityNotFoundException.class,
+        () -> reportService.updateReportStatus(
+            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+            report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_deleteItemAccountWithExternalAuthor_throwsException() {
+    User reporter = createUser("comment-reporter");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.ACCOUNT,
+            "id",
+            ReportStatus.CREATED,
+            null);
+
+    assertThrows(IllegalArgumentException.class,
+        () -> reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        report.getReportId()));
+  }
+
+  @Test
+  void updateReportStatus_SuspendSourceWithExternalAuthor_marksSourceRemovedAndOtherSourceAsOtherReport() {
+    User reporter = createUser("reporter");
+    ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
+    Source source = createSource("source-3");
+    Post post = createPost("post-ext-2", null, externalAuthor, source);
+
+    Report report =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    Report report2 =
+        createReport(
+            reporter,
+            null,
+            externalAuthor,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    Report report1FromRepo = reportRepository.findById(report.getReportId()).orElseThrow();
+    Report report2FromRepo = reportRepository.findById(report2.getReportId()).orElseThrow();
+
+    assertEquals(ReportStatus.VALIDATED, report1FromRepo.getStatus());
+    assertEquals(ReportStatus.OTHER_REPORT, report2FromRepo.getStatus());
+  }
+
+  @Test
+  void updateReportStatus_SuspendSource_marksSourceRemovedAndOtherSourceAsOtherReport() {
+    User reporter = createUser("reporter");
+    User contentUser = createUser("contentUser");
+    Source source = createSource("source-3");
+
+    Report report =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    Report report2 =
+        createReport(
+            reporter,
+            contentUser,
+            null,
+            ContentTypeEnum.SOURCE,
+            source.getSourceId(),
+            ReportStatus.CREATED,
+            null);
+
+    reportService.updateReportStatus(
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        report.getReportId());
+
+    Report report1FromRepo = reportRepository.findById(report.getReportId()).orElseThrow();
+    Report report2FromRepo = reportRepository.findById(report2.getReportId()).orElseThrow();
+
+    assertEquals(ReportStatus.VALIDATED, report1FromRepo.getStatus());
+    assertEquals(ReportStatus.OTHER_REPORT, report2FromRepo.getStatus());
   }
 
   @Test
@@ -396,8 +743,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-post");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Post post = createPost("post-ext-1", null, externalAuthor, null);
@@ -422,8 +768,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthorAndNotSendEmail() {
+  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthorAndNotSendEmail() {
     User reporter = createUser("reporter-external-post");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Post post = createPost("post-ext-1", null, externalAuthor, null);
@@ -451,8 +796,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -478,8 +822,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -504,8 +847,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -530,8 +872,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void
-      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
+  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -669,6 +1010,52 @@ public class ReportServiceIntegrationTest {
         () -> reportService.getReportedSources(ReportStatus.CREATED, 0, 10));
   }
 
+  @Test
+  void getAccountReports_returnsReportedAccountWithReporterAndUser() {
+    User reporter = createUser("account-reporter");
+    User reportedUser = createUser("account-reported");
+
+    Report report =
+        createReport(
+            reporter,
+            reportedUser,
+            null,
+            ContentTypeEnum.ACCOUNT,
+            reportedUser.getUsername(),
+            ReportStatus.CREATED,
+            LocalDateTime.now());
+
+    var responses = reportService.getAccountReports(ReportStatus.CREATED, 0, 10);
+
+    assertEquals(1, responses.size());
+    var response = responses.get(0);
+    assertEquals(report.getReportId(), response.reportId());
+    assertEquals("spam", response.reportReason());
+    assertEquals("description", response.reportDescription());
+    assertEquals(reporter.getUsername(), response.reportedByUsername());
+    assertEquals(reportedUser.getUsername(), response.reportedUsername());
+    assertEquals(ContentTypeEnum.ACCOUNT, response.contentType());
+    assertEquals(ReportStatus.CREATED, response.status());
+    assertNotNull(response.profileResponse());
+    assertEquals(reportedUser.getUsername(), response.profileResponse().username());
+  }
+
+  @Test
+  void getAccountReports_filtersOutReportsWithMissingReportedUser() {
+    createReport(
+        createUser("account-reporter-null-user"),
+        null,
+        null,
+        ContentTypeEnum.ACCOUNT,
+        "missing-user",
+        ReportStatus.CREATED,
+        LocalDateTime.now());
+
+    var responses = reportService.getAccountReports(ReportStatus.CREATED, 0, 10);
+
+    assertTrue(responses.isEmpty());
+  }
+
   private User createUser(String username) {
     User user = new User();
     user.setUsername(username);
@@ -730,6 +1117,19 @@ public class ReportServiceIntegrationTest {
             .createdAt(LocalDateTime.now())
             .build();
     return postRepository.save(post);
+  }
+
+  private Comment createComment(String id, Post post, User user) {
+    Comment comment =
+        Comment.builder()
+            .commentId(id)
+            .post(post)
+            .user(user)
+            .content("comment content")
+            .createdAt(LocalDateTime.now())
+            .isRemoved(false)
+            .build();
+    return commentRepository.save(comment);
   }
 
   private Report createReport(
