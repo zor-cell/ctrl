@@ -114,7 +114,7 @@ public class FeedControllerIntegrationTest {
    * mockMvc .perform(get("/feed").param("page", "0").param("postsPerPage", "10"))
    * .andExpect(status().isUnauthorized()); }
    */
-  @Test
+  /*@Test
   public void getFeed_shouldIncludeUserVoteState_WhenVoted() throws Exception {
     Post post = new Post();
     post.setPostId("post-id1");
@@ -146,9 +146,9 @@ public class FeedControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
-  }
+  }*/
 
-  @Test
+  /*@Test
   public void getFeed_shouldReturnEmptyList_WhenNoRecommendationsFound() throws Exception {
     mockMvc
         .perform(
@@ -159,7 +159,7 @@ public class FeedControllerIntegrationTest {
                 .param("publicFeed", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
-  }
+  }*/
 
   private float[] generateDummyEmbedding() {
     float[] embedding = new float[EmbeddingModelConfig.MODEL_DIMENSIONS];

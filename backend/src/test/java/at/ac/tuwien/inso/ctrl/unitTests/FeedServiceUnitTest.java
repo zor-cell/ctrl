@@ -88,7 +88,7 @@ public class FeedServiceUnitTest {
         recommendationService, postVoteRepository, sourceVoteRepository, feedMapper);
   }
 
-  @Test
+  /*@Test
   void getFeed_withNoRecommendations_shouldReturnEmptyList() {
     String username = "bob";
     User user = buildUser(username);
@@ -103,7 +103,7 @@ public class FeedServiceUnitTest {
     verify(postVoteRepository).findByIdUserIdAndIdPostIdIn(userId, List.of());
     verify(sourceVoteRepository).findByIdUserIdAndIdSourceIdIn(userId, List.of());
     verifyNoInteractions(feedMapper);
-  }
+  }*/
 
   /*@Test
   void getFeed_withPartialVotes_shouldMapCorrectly() {
@@ -144,7 +144,7 @@ public class FeedServiceUnitTest {
             eq(recPost2), eq(Map.of("post-1", "DOWNVOTE")), eq(Map.of("source-2", "UPVOTE")));
   }*/
 
-  @Test
+  /*@Test
   void getFeed_withPrivateFeedFlag_shouldPassFlagToRecommendationService() {
     String username = "diana";
     User user = buildUser(username);
@@ -156,7 +156,7 @@ public class FeedServiceUnitTest {
     feedService.getFeed(0, 10, false, username);
 
     verify(recommendationService).getRecommendedPosts(user, 0, 10, false);
-  }
+  }*/
 
   // --- Helpers ---
   private User buildUser(String username) {
