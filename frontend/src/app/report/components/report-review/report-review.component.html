@@ -373,22 +373,6 @@
           <i class="pi pi-external-link"></i>
           {{ getDomain(report.sources[0].url) }}
         </a>
-        <button
-          class="action-btn upvote"
-          [class.active]="report.sources[0].userVote === 'up'"
-          [attr.aria-label]="'Source upvote – ' + report.sources[0].upvotes"
-        >
-          <i class="pi pi-thumbs-up"></i>
-          <span>{{ report.sources[0].upvotes }}</span>
-        </button>
-        <button
-          class="action-btn downvote"
-          [class.active]="report.sources[0].userVote === 'down'"
-          [attr.aria-label]="'Source downvote – ' + report.sources[0].downvotes"
-        >
-          <i class="pi pi-thumbs-down"></i>
-          <span>{{ report.sources[0].downvotes }}</span>
-        </button>
       </div>
     </div>
   }
@@ -544,6 +528,7 @@
   [modal]="true"
   [style]="{width: '50vw'}"
   [breakpoints]="{'960px': '75vw', '640px': '90vw'}"
+  [contentStyle]="{ 'max-height': '50vh', 'overflow-y': 'auto' }"
 >
   @if (reportSummaryData().length > 0) {
     <p-table [value]="reportSummaryData()" [tableStyle]="{ 'min-width': '100%' }">
