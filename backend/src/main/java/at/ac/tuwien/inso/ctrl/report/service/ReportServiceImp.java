@@ -474,55 +474,56 @@ public class ReportServiceImp implements ReportService {
 
   private User getUserFromContent(CreateReportRequest createReportRequest) {
     String contentId = createReportRequest.contentId();
-    return switch (createReportRequest.contentType()) {
-      case POST ->
+    if (createReportRequest.contentType() == ContentTypeEnum.POST) {
+      return postRepository
+          .getPostByPostId(contentId)
+          .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId))
+          .getUser();
+    } else if (createReportRequest.contentType() == ContentTypeEnum.SOURCE) {
+      Source source =
+          sourceRepository
+              .findById(contentId)
+              .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
+      Post post =
           postRepository
-              .getPostByPostId(contentId)
-              .map(Post::getUser)
-              .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId));
-      case SOURCE -> {
-        Source source =
-            sourceRepository
-                .findById(contentId)
-                .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
-        Post post =
-            postRepository
-                .findBySource(source)
-                .orElseThrow(
-                    () -> new EntityNotFoundException("Post not found for source: " + contentId));
-        yield post.getUser();
-      }
-      case COMMENT -> commentRepository.findById(contentId).map(Comment::getUser).orElse(null);
-      case ACCOUNT ->
-          userRepository
-              .findByUsername(contentId)
-              .orElseThrow(() -> new EntityNotFoundException("User not found: " + contentId));
-    };
+              .findBySource(source)
+              .orElseThrow(
+                  () -> new EntityNotFoundException("Post not found for source: " + contentId));
+      return post.getUser();
+
+    } else if (createReportRequest.contentType() == ContentTypeEnum.COMMENT) {
+      return commentRepository.findById(contentId).map(Comment::getUser).orElse(null);
+
+    } else {
+
+      return userRepository
+          .findByUsername(contentId)
+          .orElseThrow(() -> new EntityNotFoundException("User not found: " + contentId));
+    }
   }
 
   private ExternalAuthor getExternalAuthorFromContent(CreateReportRequest createReportRequest) {
     String contentId = createReportRequest.contentId();
-    return switch (createReportRequest.contentType()) {
-      case POST ->
+    if (createReportRequest.contentType() == ContentTypeEnum.POST) {
+      return postRepository
+          .getPostByPostId(contentId)
+          .map(Post::getExternalAuthor)
+          .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId));
+    } else if (createReportRequest.contentType() == ContentTypeEnum.SOURCE) {
+      Source source =
+          sourceRepository
+              .findById(contentId)
+              .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
+      Post post =
           postRepository
-              .getPostByPostId(contentId)
-              .map(Post::getExternalAuthor)
-              .orElseThrow(() -> new EntityNotFoundException("Post not found: " + contentId));
-      case SOURCE -> {
-        Source source =
-            sourceRepository
-                .findById(contentId)
-                .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
-        Post post =
-            postRepository
-                .findBySource(source)
-                .orElseThrow(
-                    () -> new EntityNotFoundException("Post not found for source: " + contentId));
-        yield post.getExternalAuthor();
-      }
-      default ->
-          throw new IllegalArgumentException(
-              "Invalid content type: " + createReportRequest.contentType());
-    };
+              .findBySource(source)
+              .orElseThrow(
+                  () -> new EntityNotFoundException("Post not found for source: " + contentId));
+      return post.getExternalAuthor();
+
+    } else {
+      throw new IllegalArgumentException(
+          "Invalid content type: " + createReportRequest.contentType());
+    }
   }
 }
