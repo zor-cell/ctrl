@@ -54,7 +54,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import javax.swing.text.AbstractDocument;
 
 @Service
 @RequiredArgsConstructor
@@ -227,6 +226,35 @@ public class ReportServiceImp implements ReportService {
     }
   }
 
+  private void sendEmailToReported(Report report, ReportAction action) {
+    if (!requireEmailVerification) {
+      return;
+    }
+
+    if (report.getUsernameReported() == null) {
+      return;
+    }
+    try {
+
+      Context context = new Context();
+      if (action == ReportAction.DELETE_ACCOUNT) {
+        context.setVariable("type", ContentTypeEnum.ACCOUNT.name());
+      } else {
+        context.setVariable("type", report.getContentType().name());
+      }
+
+      String htmlContent = templateEngine.process("actionNotificationTemplate", context);
+      gmailEmailService.sendHtmlEmail(
+          report.getUsernameReported().getEmail(), "An action has been taken against you", htmlContent);
+    } catch (MailException e) {
+      throw new CommunicationException("Failed to send email.");
+    } catch (MessagingException me) {
+      throw new CommunicationException("Failed to create email.");
+    } catch (IOException e) {
+      throw new CommunicationException("Failed to send or create email.");
+    }
+  }
+
   private String formatReportTime(LocalDateTime reportTime) {
     if (reportTime == null) {
       return "";
@@ -317,6 +345,8 @@ public class ReportServiceImp implements ReportService {
       post.setIsRemoved(true);
       postRepository.save(post);
 
+      sendEmailToReported(report, ReportAction.DELETE_ITEM);
+
     } else if (report.getContentType() == ContentTypeEnum.SOURCE) {
       Source source =
           sourceRepository
@@ -325,11 +355,15 @@ public class ReportServiceImp implements ReportService {
                   () -> new EntityNotFoundException("Source not found: " + report.getContentId()));
       source.setIsRemoved(true);
       sourceRepository.save(source);
+      sendEmailToReported(report, ReportAction.DELETE_ITEM);
+
     } else if (report.getContentType() == ContentTypeEnum.COMMENT) {
       Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
           () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
       comment.setIsRemoved(true);
       commentRepository.save(comment);
+      sendEmailToReported(report, ReportAction.DELETE_ITEM);
+
     } else if (report.getContentType() == ContentTypeEnum.ACCOUNT) {
       User user = report.getUsernameReported();
       
@@ -337,6 +371,8 @@ public class ReportServiceImp implements ReportService {
         user.setSuspended(true);
         userRepository.save(user);
         dealWithOtherReportsOfUser(user);
+        sendEmailToReported(report, ReportAction.DELETE_ITEM);
+
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
@@ -354,6 +390,7 @@ public class ReportServiceImp implements ReportService {
       user.setSuspended(true);
       userRepository.save(user);
       dealWithOtherReportsOfUser(user);
+      sendEmailToReported(report, ReportAction.DELETE_ACCOUNT);
     } else {
       ContentTypeEnum type = report.getContentType();
       if (type == ContentTypeEnum.POST) {
