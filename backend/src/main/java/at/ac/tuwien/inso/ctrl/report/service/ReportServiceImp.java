@@ -5,10 +5,6 @@ import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.comments.mapper.CommentMapper;
 import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
-import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
-import at.ac.tuwien.inso.ctrl.post.dto.response.SingleSourceResponse;
-import at.ac.tuwien.inso.ctrl.post.dto.response.SourceResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -25,8 +21,8 @@ import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
+import at.ac.tuwien.inso.ctrl.report.mapper.ReportMapper;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
-import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -37,12 +33,11 @@ import jakarta.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -54,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImp implements ReportService {
@@ -62,7 +56,6 @@ public class ReportServiceImp implements ReportService {
   private final PostRepository postRepository;
   private final SourceRepository sourceRepository;
   private final UserRepository userRepository;
-  private final FeedMapper feedMapper;
   private final ExternalAuthorRepository externalAuthorRepository;
   private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
@@ -70,6 +63,7 @@ public class ReportServiceImp implements ReportService {
   private final CommentMapper commentMapper;
   private final UserMapper userMapper;
   private final ReportReasonLabelResolver reportReasonLabelResolver;
+  private final ReportMapper reportMapper;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -113,12 +107,6 @@ public class ReportServiceImp implements ReportService {
     Map<String, Post> postMap =
         posts.stream().collect(Collectors.toMap(Post::getPostId, post -> post));
 
-    List<String> sourceIds =
-        posts.stream()
-            .filter(p -> p.getSource() != null)
-            .map(p -> p.getSource().getSourceId())
-            .toList();
-
     Map<String, String> postVotes = Map.of();
     Map<String, String> sourceVotes = Map.of();
 
@@ -127,7 +115,7 @@ public class ReportServiceImp implements ReportService {
             report -> {
               Post post = postMap.get(report.getContentId());
               if (post != null) {
-                return toReportedPostResponse(report, post, postVotes, sourceVotes);
+                return reportMapper.toReportedPostResponse(report, post, postVotes, sourceVotes);
               }
               return null;
             })
@@ -142,7 +130,8 @@ public class ReportServiceImp implements ReportService {
     var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
 
     List<Report> reports =
-        reportRepository.findByContentTypeAndStatus(ContentTypeEnum.COMMENT, reportStatus, pageable);
+        reportRepository.findByContentTypeAndStatus(
+            ContentTypeEnum.COMMENT, reportStatus, pageable);
 
     List<String> commentIds = reports.stream().map(Report::getContentId).distinct().toList();
     List<Comment> comments = commentRepository.findAllById(commentIds);
@@ -248,7 +237,9 @@ public class ReportServiceImp implements ReportService {
 
       String htmlContent = templateEngine.process("actionNotificationTemplate", context);
       gmailEmailService.sendHtmlEmail(
-          report.getUsernameReported().getEmail(), "An action has been taken against you", htmlContent);
+          report.getUsernameReported().getEmail(),
+          "An action has been taken against you",
+          htmlContent);
     } catch (MailException e) {
       throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {
@@ -295,34 +286,37 @@ public class ReportServiceImp implements ReportService {
   }
 
   @Override
-  public List<ReportedAccountResponse> getAccountReports(ReportStatus reportStatus, int page, int postsPerPage) {
+  public List<ReportedAccountResponse> getAccountReports(
+      ReportStatus reportStatus, int page, int postsPerPage) {
     var pageable = PageRequest.of(page, postsPerPage, Sort.by("createdAt").ascending());
 
     List<Report> reports =
-        reportRepository.findByContentTypeAndStatus(ContentTypeEnum.ACCOUNT, reportStatus, pageable);
+        reportRepository.findByContentTypeAndStatus(
+            ContentTypeEnum.ACCOUNT, reportStatus, pageable);
 
     return reports.stream()
-        .map(report -> {
-          User reportedUser = report.getUsernameReported();
-          if (reportedUser == null) {
-            return null;
-          }
+        .map(
+            report -> {
+              User reportedUser = report.getUsernameReported();
+              if (reportedUser == null) {
+                return null;
+              }
 
-          String reportedByUsername =
-              report.getFromUser() != null ? report.getFromUser().getUsername() : null;
-          String reportedUsername = reportedUser.getUsername();
+              String reportedByUsername =
+                  report.getFromUser() != null ? report.getFromUser().getUsername() : null;
+              String reportedUsername = reportedUser.getUsername();
 
-          return new ReportedAccountResponse(
-              userMapper.toPublicUserProfileResponse(reportedUser, true),
-              report.getReportId(),
-              report.getReason(),
-              report.getDescription(),
-              reportedByUsername,
-              reportedUsername,
-              report.getContentType(),
-              report.getStatus(),
-              report.getCreatedAt());
-        })
+              return new ReportedAccountResponse(
+                  userMapper.toPublicUserProfileResponse(reportedUser, true),
+                  report.getReportId(),
+                  report.getReason(),
+                  report.getDescription(),
+                  reportedByUsername,
+                  reportedUsername,
+                  report.getContentType(),
+                  report.getStatus(),
+                  report.getCreatedAt());
+            })
         .filter(Objects::nonNull)
         .toList();
   }
@@ -361,8 +355,11 @@ public class ReportServiceImp implements ReportService {
       sendEmailToReported(report, ReportAction.DELETE_ITEM);
 
     } else if (report.getContentType() == ContentTypeEnum.COMMENT) {
-      Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
-          () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
+      Comment comment =
+          commentRepository
+              .findById(report.getContentId())
+              .orElseThrow(
+                  () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
       comment.setIsRemoved(true);
       commentRepository.save(comment);
       sendEmailToReported(report, ReportAction.DELETE_ITEM);
@@ -426,8 +423,12 @@ public class ReportServiceImp implements ReportService {
         externalAuthorRepository.save(author);
         dealWithOtherReportsOfExternalAuthor(author);
       } else if (type == ContentTypeEnum.COMMENT) {
-        Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
-            () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
+        Comment comment =
+            commentRepository
+                .findById(report.getContentId())
+                .orElseThrow(
+                    () ->
+                        new EntityNotFoundException("Comment not found: " + report.getContentId()));
         User commentUser = comment.getUser();
         commentUser.setSuspended(true);
         userRepository.save(commentUser);
@@ -435,12 +436,12 @@ public class ReportServiceImp implements ReportService {
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
-
     }
   }
 
   private void dealWithOtherReportsOfUser(User user) {
-    List<Report> reports = reportRepository.findAllByUsernameReportedAndStatus(user, ReportStatus.CREATED);
+    List<Report> reports =
+        reportRepository.findAllByUsernameReportedAndStatus(user, ReportStatus.CREATED);
     for (Report report : reports) {
       if (report.getStatus() == ReportStatus.CREATED) {
         report.setStatus(ReportStatus.OTHER_REPORT);
@@ -450,7 +451,9 @@ public class ReportServiceImp implements ReportService {
   }
 
   private void dealWithOtherReportsOfExternalAuthor(ExternalAuthor externalAuthor) {
-    List<Report> reports = reportRepository.findAllByExternalAuthorReportedAndStatus(externalAuthor, ReportStatus.CREATED);
+    List<Report> reports =
+        reportRepository.findAllByExternalAuthorReportedAndStatus(
+            externalAuthor, ReportStatus.CREATED);
     for (Report report : reports) {
       if (report.getStatus() == ReportStatus.CREATED) {
         report.setStatus(ReportStatus.OTHER_REPORT);
@@ -467,187 +470,64 @@ public class ReportServiceImp implements ReportService {
 
     reports = reportRepository.findByContentTypeAndStatus(ContentTypeEnum.SOURCE, status, pageable);
 
-    return reports.stream().map(this::toReportedSourceResponse).toList();
-  }
-
-  private ReportedSourceResponse toReportedSourceResponse(Report report) {
-    Source source =
-        sourceRepository
-            .findById(report.getContentId())
-            .orElseThrow(
-                () -> new EntityNotFoundException("Source not found: " + report.getContentId()));
-
-    SourceResponse sourceResponse = toSourceResponse(source);
-
-    return new ReportedSourceResponse(
-        // Report Info
-        report.getReportId(),
-        report.getReason(),
-        report.getDescription(),
-        report.getFromUser().getUsername(),
-        report.getUsernameReported() != null
-            ? report.getUsernameReported().getUsername()
-            : getUserBySource(source),
-        report.getContentType(),
-        report.getStatus(),
-        report.getCreatedAt(),
-        sourceResponse);
-  }
-
-  private String getUserBySource(Source source) {
-    Post post =
-        postRepository
-            .findBySource(source)
-            .orElseThrow(
-                () ->
-                    new EntityNotFoundException(
-                        "Post not found for source: " + source.getSourceId()));
-    return post.getExternalAuthor().getDisplayName();
-  }
-
-  private SourceResponse toSourceResponse(Source source) {
-    if (source == null) {
-      throw new EntityNotFoundException("Source not found");
-    }
-
-    List<SingleSourceResponse> singleSourceResponses =
-        source.getSingleSources().stream()
-            .sorted(Comparator.comparing(SingleSource::getTitle).reversed())
-            .map(this::toSingleSourceResponse)
-            .toList();
-
-    return new SourceResponse(
-        source.getSourceId(),
-        source.getUpvotes(),
-        source.getDownvotes(),
-        source.getCreatedAt(),
-        singleSourceResponses);
-  }
-
-  private SingleSourceResponse toSingleSourceResponse(SingleSource source) {
-    return new SingleSourceResponse(
-        source.getSingleSourceId(),
-        source.getJournal(),
-        source.getAuthor(),
-        source.getTitle(),
-        source.getUrl(),
-        source.getDate());
-  }
-
-  private ReportedPostResponse toReportedPostResponse(
-      Report report, Post post, Map<String, String> postVotes, Map<String, String> sourceVotes) {
-
-    // Use the same mapping logic as FeedService
-    FeedPostResponse feedPostResponse = feedMapper.toFeedPostResponse(post, postVotes, sourceVotes);
-
-    return new ReportedPostResponse(
-        // Report Info
-        report.getReportId(),
-        report.getReason(),
-        report.getDescription(),
-        report.getFromUser().getUsername(),
-        report.getUsernameReported() != null
-            ? report.getUsernameReported().getUsername()
-            : feedPostResponse.username(),
-        report.getContentType(),
-        report.getStatus(),
-        report.getCreatedAt(),
-
-        // Post Info
-        feedPostResponse.postId(),
-        feedPostResponse.userId(),
-        feedPostResponse.username(),
-        feedPostResponse.userProfilePic(),
-        feedPostResponse.caption(),
-        feedPostResponse.mediaRef(),
-        feedPostResponse.isPublic(),
-        feedPostResponse.upvotes(),
-        feedPostResponse.downvotes(),
-        feedPostResponse.userVote(),
-        feedPostResponse.createdAt(),
-        feedPostResponse.topicIds(),
-        feedPostResponse.labelIds(),
-        feedPostResponse.sourceIds(),
-        feedPostResponse.comments());
-  }
-
-  private ExternalAuthor getExternalAuthorFromContent(CreateReportRequest createReportRequest) {
-    if (createReportRequest.contentType().equals(ContentTypeEnum.POST)) {
-      Post post =
-          postRepository
-              .findById(createReportRequest.contentId())
-              .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Post not found: " + createReportRequest.contentId()));
-      return post.getExternalAuthor();
-
-    } else if (createReportRequest.contentType().equals(ContentTypeEnum.SOURCE)) {
-
-      Source source =
-          sourceRepository
-              .findById(createReportRequest.contentId())
-              .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Source not found: " + createReportRequest.contentId()));
-      Post post =
-          postRepository
-              .findBySource(source)
-              .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Post not found for source: " + createReportRequest.contentId()));
-      return post.getExternalAuthor();
-
-    } else {
-      throw new IllegalArgumentException(
-          "Invalid content type: " + createReportRequest.contentType());
-    }
+    return reports.stream().map(reportMapper::toReportedSourceResponse).toList();
   }
 
   private User getUserFromContent(CreateReportRequest createReportRequest) {
-    if (createReportRequest.contentType().equals(ContentTypeEnum.POST)) {
-      Post post =
+    String contentId = createReportRequest.contentId();
+    return switch (createReportRequest.contentType()) {
+      case POST ->
           postRepository
-              .findById(createReportRequest.contentId())
+              .getPostByPostId(contentId)
+              .map(Post::getUser)
               .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Post not found: " + createReportRequest.contentId()));
-
-      return post.getUser();
-
-    } else if (createReportRequest.contentType().equals(ContentTypeEnum.SOURCE)) {
-
-      Source source =
-          sourceRepository
-              .findById(createReportRequest.contentId())
+                  () -> new EntityNotFoundException("Post not found: " + contentId));
+      case SOURCE -> {
+        Source source =
+            sourceRepository
+                .findById(contentId)
+                .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
+        Post post =
+            postRepository
+                .findBySource(source)
+                .orElseThrow(
+                    () -> new EntityNotFoundException("Post not found for source: " + contentId));
+        yield post.getUser();
+      }
+      case COMMENT ->
+          commentRepository.findById(contentId).map(Comment::getUser).orElse(null);
+      case ACCOUNT ->
+          userRepository
+              .findByUsername(contentId)
               .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Source not found: " + createReportRequest.contentId()));
-      Post post =
+                  () -> new EntityNotFoundException("User not found: " + contentId));
+    };
+  }
+
+  private ExternalAuthor getExternalAuthorFromContent(CreateReportRequest createReportRequest) {
+    String contentId = createReportRequest.contentId();
+    return switch (createReportRequest.contentType()) {
+      case POST ->
           postRepository
-              .findBySource(source)
+              .getPostByPostId(contentId)
+              .map(Post::getExternalAuthor)
               .orElseThrow(
-                  () ->
-                      new EntityNotFoundException(
-                          "Post not found for source: " + createReportRequest.contentId()));
-      return post.getUser();
-
-    } else if (createReportRequest.contentType().equals(ContentTypeEnum.COMMENT)) {
-      Comment comment = commentRepository.findById(createReportRequest.contentId()).orElseThrow(
-          () -> new EntityNotFoundException("Comment not found: " + createReportRequest.contentId()));
-      return comment.getUser();
-
-    } else if (createReportRequest.contentType().equals(ContentTypeEnum.ACCOUNT)) {
-      return userRepository.findById(UUID.fromString(createReportRequest.contentId())).orElseThrow(
-          () -> new EntityNotFoundException("User not found: " + createReportRequest.contentId()));
-
-    } else {
-      throw new IllegalArgumentException(
-          "Invalid content type: " + createReportRequest.contentType());
-    }
+                  () -> new EntityNotFoundException("Post not found: " + contentId));
+      case SOURCE -> {
+        Source source =
+            sourceRepository
+                .findById(contentId)
+                .orElseThrow(() -> new EntityNotFoundException("Source not found: " + contentId));
+        Post post =
+            postRepository
+                .findBySource(source)
+                .orElseThrow(
+                    () -> new EntityNotFoundException("Post not found for source: " + contentId));
+        yield post.getExternalAuthor();
+      }
+      default ->
+          throw new IllegalArgumentException(
+              "Invalid content type: " + createReportRequest.contentType());
+    };
   }
 }

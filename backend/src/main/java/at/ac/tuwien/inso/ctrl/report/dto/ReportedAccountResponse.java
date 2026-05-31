@@ -3,7 +3,6 @@ package at.ac.tuwien.inso.ctrl.report.dto;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.user.dto.PublicUserProfileResponse;
-
 import java.time.LocalDateTime;
 
 public record ReportedAccountResponse(
@@ -15,6 +14,4 @@ public record ReportedAccountResponse(
     String reportedUsername,
     ContentTypeEnum contentType,
     ReportStatus status,
-    LocalDateTime reportedAt
-) {
-}
+    LocalDateTime reportedAt) {}

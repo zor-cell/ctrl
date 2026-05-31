@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.report.mapper.ReportMapper;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.report.service.ReportServiceImp;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
@@ -37,6 +38,7 @@ public class ReportServiceUnitTest {
   @Mock private TemplateEngine templateEngine;
 
   @InjectMocks private ReportServiceImp reportService;
+  @InjectMocks private ReportMapper reportMapper;
 
   @Test
   void formatTime_WithReportWithNoTime_shouldReturnEmptyString()
@@ -52,13 +54,13 @@ public class ReportServiceUnitTest {
 
   @Test
   void toSourceResponse_withNullSource_shouldThrowException() throws NoSuchMethodException {
-    Method method = ReportServiceImp.class.getDeclaredMethod("toSourceResponse", Source.class);
+    Method method = ReportMapper.class.getDeclaredMethod("toSourceResponse", Source.class);
     method.setAccessible(true);
 
     InvocationTargetException thrown =
         Assertions.assertThrows(
             InvocationTargetException.class,
-            () -> method.invoke(reportService, new Object[] {null}));
+            () -> method.invoke(reportMapper, new Object[] {null}));
 
     Assertions.assertInstanceOf(EntityNotFoundException.class, thrown.getCause());
   }

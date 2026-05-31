@@ -17,9 +17,14 @@ public interface ReportService {
   List<ReportedPostResponse> getReportedPosts(ReportStatus reportStatus, int page, int postPerPage);
 
   void updateReportStatus(UpdateReportRequest request, String id);
-  List<ReportedCommentResponse> getReportedComments(ReportStatus reportStatus, int page, int postsPerPage);
+
+  List<ReportedCommentResponse> getReportedComments(
+      ReportStatus reportStatus, int page, int postsPerPage);
+
   List<ReportSummaryResponse> getAccountReportSummary(String reportId);
 
-  List<ReportedAccountResponse> getAccountReports(ReportStatus reportStatus, int page, int postsPerPage);
+  List<ReportedAccountResponse> getAccountReports(
+      ReportStatus reportStatus, int page, int postsPerPage);
+
   List<ReportedSourceResponse> getReportedSources(ReportStatus status, int page, int postsPerPage);
 }

@@ -28,4 +28,3 @@ public class ReportReasonLabelResolver {
     return REASON_LABELS.getOrDefault(reason, reason);
   }
 }
-
