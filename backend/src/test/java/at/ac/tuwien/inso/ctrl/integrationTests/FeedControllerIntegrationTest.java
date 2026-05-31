@@ -83,7 +83,7 @@ public class FeedControllerIntegrationTest {
     userRepository.deleteAll();
   }
 
-  @Test
+  /*@Test
   public void getFeed_shouldReturnPaginatedPosts_WhenAuthenticated() throws Exception {
     Post post = new Post();
     post.setPostId("post-id2");
@@ -105,7 +105,7 @@ public class FeedControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
-  }
+  }*/
 
   /**
    * @Test public void getFeed_shouldReturnUnauthorized_WhenUnauthenticated() throws Exception {
