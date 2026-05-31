@@ -69,6 +69,7 @@ public class ReportServiceImp implements ReportService {
   private final CommentRepository commentRepository;
   private final CommentMapper commentMapper;
   private final UserMapper userMapper;
+  private final ReportReasonLabelResolver reportReasonLabelResolver;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -242,6 +243,8 @@ public class ReportServiceImp implements ReportService {
       } else {
         context.setVariable("type", report.getContentType().name());
       }
+
+      context.setVariable("reasonLabel", reportReasonLabelResolver.resolve(report.getReason()));
 
       String htmlContent = templateEngine.process("actionNotificationTemplate", context);
       gmailEmailService.sendHtmlEmail(
