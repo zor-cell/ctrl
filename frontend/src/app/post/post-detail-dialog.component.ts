@@ -21,10 +21,12 @@ import { CommentResponse, PostResponse, SingleSourceResponse } from './dto/PostR
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
+import { ReportComponent } from '../report/components/report/report.component';
+import { ContentTypeEnum } from '../report/dto/report';
 
 @Component({
   selector: 'app-post-detail-dialog',
-  imports: [CommonModule, Button, Dialog, PostCaptionFormatPipe],
+  imports: [CommonModule, Button, Dialog, PostCaptionFormatPipe, ReportComponent],
   templateUrl: './post-detail-dialog.component.html',
   styleUrl: './post-detail-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +53,14 @@ export class PostDetailDialogComponent implements OnChanges {
   protected readonly editingCommentId = signal<string | null>(null);
   protected readonly editDraft = signal('');
   protected readonly sourcesExpanded = signal(false);
+  // Report dialog
+  protected reportDialogVisible = signal(false);
+  //Report source
+  protected reportSourceDialogVisible = signal(false);
+  // Report dialog
+  protected reportCommentDialogVisible = signal(false);
+  protected selectedCommentForReport = signal<CommentResponse | null>(null);
+
 
   ngOnChanges(changes: SimpleChanges): void {
     const postChange = changes['post'];
@@ -89,6 +99,10 @@ export class PostDetailDialogComponent implements OnChanges {
     this.commentDraft.set(input.value);
   }
 
+  protected isNotOwnContent(): boolean {
+    return this.userService.user()?.username != this.post?.username;
+  }
+
   protected canSubmitComment(): boolean {
     return this.commentDraft().trim().length > 0;
   }
@@ -102,8 +116,12 @@ export class PostDetailDialogComponent implements OnChanges {
     const parentCommentId = this.replyingTo()?.commentId ?? null;
     this.submittingComment.set(true);
     try {
-      const created = await this.commentService.addComment(this.post.postId, content, parentCommentId);
-      this.localComments.update(comments => [...comments, created]);
+      const created = await this.commentService.addComment(
+        this.post.postId,
+        content,
+        parentCommentId,
+      );
+      this.localComments.update((comments) => [...comments, created]);
       this.commentDraft.set('');
       this.replyingTo.set(null);
     } catch (error) {
@@ -129,20 +147,22 @@ export class PostDetailDialogComponent implements OnChanges {
     return post.source?.singleSources ?? [];
   }
 
+  protected sourceUrl(post: PostResponse): string | undefined {
+    return post.source?.singleSources?.[0]?.url ?? undefined;
+  }
+
   protected toggleSources() {
-    this.sourcesExpanded.update(expanded => !expanded);
+    this.sourcesExpanded.update((expanded) => !expanded);
   }
 
   protected sourcesButtonLabel(post: PostResponse): string {
     const sourceCount = this.postSources(post).length;
     const sourceLabel = sourceCount === 1 ? 'source' : 'sources';
-    return this.sourcesExpanded()
-      ? 'Hide sources'
-      : `Sources (${sourceCount} ${sourceLabel})`;
+    return this.sourcesExpanded() ? 'Hide sources' : `Sources (${sourceCount} ${sourceLabel})`;
   }
 
   protected topicLabelById(topicId: string): string {
-    return this.topicOptions.find(option => option.value === topicId)?.label ?? topicId;
+    return this.topicOptions.find((option) => option.value === topicId)?.label ?? topicId;
   }
 
   protected displaySourceUrl(url: string): string {
@@ -167,13 +187,11 @@ export class PostDetailDialogComponent implements OnChanges {
   }
 
   protected topLevelComments(): CommentResponse[] {
-    return this.localComments().filter(
-      comment => comment.parentCommentId === null,
-    );
+    return this.localComments().filter((comment) => comment.parentCommentId === null);
   }
 
   protected repliesFor(commentId: string): CommentResponse[] {
-    return this.localComments().filter(comment => comment.parentCommentId === commentId);
+    return this.localComments().filter((comment) => comment.parentCommentId === commentId);
   }
 
   protected commentAvatarInitial(comment: CommentResponse): string {
@@ -217,8 +235,8 @@ export class PostDetailDialogComponent implements OnChanges {
 
     try {
       const updated = await this.commentService.updateComment(commentId, content);
-      this.localComments.update(comments =>
-        comments.map(comment => comment.commentId === commentId ? updated : comment),
+      this.localComments.update((comments) =>
+        comments.map((comment) => (comment.commentId === commentId ? updated : comment)),
       );
       this.cancelEdit();
     } catch (error) {
@@ -229,9 +247,9 @@ export class PostDetailDialogComponent implements OnChanges {
   protected async deleteComment(commentId: string): Promise<void> {
     try {
       await this.commentService.deleteComment(commentId);
-      this.localComments.update(comments =>
+      this.localComments.update((comments) =>
         comments.filter(
-          comment => comment.commentId !== commentId && comment.parentCommentId !== commentId,
+          (comment) => comment.commentId !== commentId && comment.parentCommentId !== commentId,
         ),
       );
     } catch (error) {
@@ -250,5 +268,20 @@ export class PostDetailDialogComponent implements OnChanges {
     } finally {
       this.loadingComments.set(false);
     }
+  }
+
+  protected readonly ContentTypeEnum = ContentTypeEnum;
+
+  reportPost() {
+    this.reportDialogVisible.set(true);
+  }
+
+  reportSource() {
+    this.reportSourceDialogVisible.set(true);
+  }
+
+  reportComment(comment: CommentResponse) {
+    this.selectedCommentForReport.set(comment);
+    this.reportCommentDialogVisible.set(true);
   }
 }

@@ -37,6 +37,17 @@
               (onClick)="requestDeletion()"
             />
           }
+          @if (isNotOwnContent()) {
+            <p-button
+              icon="pi pi-flag"
+              ariaLabel="Report post"
+              severity="danger"
+              [rounded]="true"
+              [text]="true"
+              styleClass="action-btn flag-btn"
+              (onClick)="reportPost()"
+            />
+          }
           <p-button
             icon="pi pi-times"
             ariaLabel="Close post detail"
@@ -85,6 +96,17 @@
           />
 
           @if (sourcesExpanded()) {
+            @if (isNotOwnContent()) {
+              <p-button
+                icon="pi pi-flag"
+                ariaLabel="Report post"
+                severity="danger"
+                [rounded]="true"
+                [text]="true"
+                styleClass="action-btn flag-btn"
+                (onClick)="reportSource()"
+              />
+            }
             @if (postSources(currentPost).length > 0) {
               <div class="post-detail__sources">
                 @for (source of postSources(currentPost); track source.singleSourceId) {
@@ -169,6 +191,10 @@
                         <button type="button" class="comment-action-btn delete-btn" aria-label="Delete comment" (click)="deleteComment(comment.commentId)">
                           <i class="pi pi-trash"></i>
                         </button>
+                      } @else {
+                        <button class="comment-action-btn reply-btn" (click)="reportComment(comment)">
+                          <i class="pi pi-flag"></i> Report
+                        </button>
                       }
                     </div>
                   }
@@ -217,6 +243,12 @@
                               <button type="button" class="comment-action-btn delete-btn" aria-label="Delete reply" (click)="deleteComment(reply.commentId)">
                                 <i class="pi pi-trash"></i>
                               </button>
+                            </div>
+                          } @else {
+                            <div class="comment-actions">
+                            <button class="comment-action-btn reply-btn" (click)="reportComment(reply)">
+                              <i class="pi pi-flag"></i> Report
+                            </button>
                             </div>
                           }
                         }
@@ -268,3 +300,33 @@
     </article>
   }
 </p-dialog>
+
+<app-report
+  [contentType]="ContentTypeEnum.POST"
+  [contentId]="post?.postId"
+  [contentTitle]="post?.caption"
+  [userProfilePic]="currentProfilePicture || undefined"
+  [username]="post?.username"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)">
+</app-report>
+
+<app-report
+  [contentType]="ContentTypeEnum.SOURCE"
+  [contentId]="post?.sourceId || undefined"
+  [contentTitle]="post ? sourceUrl(post) : undefined"
+  [userProfilePic]="currentProfilePicture || undefined"
+  [username]="post?.username"
+  [visible]="reportSourceDialogVisible()"
+  (visibleChange)="reportSourceDialogVisible.set($event)">
+</app-report>
+
+<app-report
+  [contentType]="ContentTypeEnum.COMMENT"
+  [contentId]="selectedCommentForReport()?.commentId"
+  [contentTitle]="selectedCommentForReport()?.content"
+  [userProfilePic]="selectedCommentForReport()?.userProfilePic"
+  [username]="selectedCommentForReport()?.username"
+  [visible]="reportCommentDialogVisible()"
+  (visibleChange)="reportCommentDialogVisible.set($event)">
+</app-report>
