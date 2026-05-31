@@ -773,7 +773,7 @@ public class SearchControllerIntegrationTest {
               .upvotes(0)
               .downvotes(0)
               .postTopics(new LinkedHashSet<>())
-              //.postLabels(new LinkedHashSet<>())
+              // .postLabels(new LinkedHashSet<>())
               .comments(new LinkedHashSet<>())
               .build();
       return postRepository.save(post);

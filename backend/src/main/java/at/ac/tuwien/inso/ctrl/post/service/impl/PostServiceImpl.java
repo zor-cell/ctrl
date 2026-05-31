@@ -173,8 +173,8 @@ public class PostServiceImpl implements PostService {
     User user = fetchUser(username);
     LabelContext ctx = labelingService.buildContext(user);
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
-            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
-            .toList();
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .toList();
   }
 
   @Override
@@ -185,17 +185,18 @@ public class PostServiceImpl implements PostService {
     LabelContext ctx = labelingService.buildContext(viewer);
 
     boolean canSeePrivatePosts =
-            profileOwner.getId().equals(viewer.getId())
-                    || friendRelationRepository.existsByUsers(profileOwner, viewer);
+        profileOwner.getId().equals(viewer.getId())
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
-            canSeePrivatePosts
-                    ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
-                    : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(profileUsername);
+        canSeePrivatePosts
+            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+                profileUsername);
 
     return posts.stream()
-            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
-            .toList();
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .toList();
   }
 
   @Override

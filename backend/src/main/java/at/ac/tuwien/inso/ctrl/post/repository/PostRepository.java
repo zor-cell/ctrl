@@ -355,9 +355,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
   Optional<Post> getPostByPostId(String contentId);
 
   // for the label "POPULAR"
-  @Query(value = """
+  @Query(
+      value =
+          """
     SELECT CAST(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY upvotes) AS int)
     FROM posts WHERE upvotes IS NOT NULL
-    """, nativeQuery = true)
+    """,
+      nativeQuery = true)
   int findUpvotePercentile95();
 }
