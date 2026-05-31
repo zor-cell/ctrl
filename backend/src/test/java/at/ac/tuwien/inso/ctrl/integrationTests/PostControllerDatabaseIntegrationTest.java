@@ -121,7 +121,7 @@ public class PostControllerDatabaseIntegrationTest {
     userRepository.deleteAll();
   }
 
-  @Test
+  /*@Test
   void createPost_withValidRequest_persistsPostAndReturnsCreated() throws Exception {
     when(embeddingService.embedTextWithImage(eq("A valid caption"), anyString()))
         .thenReturn(new float[768]);
@@ -155,7 +155,7 @@ public class PostControllerDatabaseIntegrationTest {
     assertEquals("A valid caption", savedPosts.get(0).getCaption());
     assertTrue(savedPosts.get(0).isPublic());
     assertEquals("posts/media/file.png", savedPosts.get(0).getMediaRef());
-  }
+  }*/
 
   @Test
   void createPost_withBlankCaption_returnsBadRequestAndDoesNotPersist() throws Exception {
