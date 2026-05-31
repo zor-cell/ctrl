@@ -21,11 +21,7 @@ public class PostMapper {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<LabelResponse> labelIds = List.of();
 
-    List<String> topicIds =
-        post.getPostTopics().stream()
-            .map(postTopic -> postTopic.getTopic().getTopicId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+    List<String> topicIds = List.of();
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
@@ -105,11 +101,7 @@ public class PostMapper {
             ? post.getExternalAuthor().getAvatarUrl()
             : post.getUser().getProfilePicture();
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
-    List<String> labelIds =
-        post.getPostLabels().stream()
-            .map(postLabel -> postLabel.getLabel().getLabelId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+    List<String> labelIds = List.of();
     List<String> topicIds =
         post.getPostTopics().stream()
             .map(postTopic -> postTopic.getTopic().getTopicId())
