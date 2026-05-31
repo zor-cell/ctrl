@@ -2,18 +2,17 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
-import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
@@ -331,19 +330,14 @@ public class ReportServiceIntegrationTest {
 
     Report report =
         createReport(
-            reporter,
-            null,
-            null,
-            ContentTypeEnum.COMMENT,
-            "id",
-            ReportStatus.CREATED,
-            null);
+            reporter, null, null, ContentTypeEnum.COMMENT, "id", ReportStatus.CREATED, null);
 
-
-    assertThrows(EntityNotFoundException.class,
-        () -> reportService.updateReportStatus(
-            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
-            report.getReportId()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                report.getReportId()));
   }
 
   @Test
@@ -355,18 +349,14 @@ public class ReportServiceIntegrationTest {
 
     Report report =
         createReport(
-            reporter,
-            null,
-            null,
-            ContentTypeEnum.COMMENT,
-            "id",
-            ReportStatus.CREATED,
-            null);
+            reporter, null, null, ContentTypeEnum.COMMENT, "id", ReportStatus.CREATED, null);
 
-    assertThrows(EntityNotFoundException.class,
-        () ->     reportService.updateReportStatus(
-            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
-            report.getReportId()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                report.getReportId()));
   }
 
   @Test
@@ -416,6 +406,7 @@ public class ReportServiceIntegrationTest {
     User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
   }
+
   @Test
   void updateReportStatus_deleteItemAccountWithInvalidPostId_throwsException() {
     User reporter = createUser("comment-reporter");
@@ -423,18 +414,14 @@ public class ReportServiceIntegrationTest {
 
     Report report =
         createReport(
-            reporter,
-            null,
-            externalAuthor,
-            ContentTypeEnum.POST,
-            "id",
-            ReportStatus.CREATED,
-            null);
+            reporter, null, externalAuthor, ContentTypeEnum.POST, "id", ReportStatus.CREATED, null);
 
-    assertThrows(EntityNotFoundException.class,
-        () -> reportService.updateReportStatus(
-            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
-            report.getReportId()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
   }
 
   @Test
@@ -452,10 +439,12 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(EntityNotFoundException.class,
-        () -> reportService.updateReportStatus(
-            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
-            report.getReportId()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
   }
 
   @Test
@@ -473,10 +462,12 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(EntityNotFoundException.class,
-        () -> reportService.updateReportStatus(
-            new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
-            report.getReportId()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
   }
 
   @Test
@@ -494,14 +485,17 @@ public class ReportServiceIntegrationTest {
             ReportStatus.CREATED,
             null);
 
-    assertThrows(IllegalArgumentException.class,
-        () -> reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
-        report.getReportId()));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            reportService.updateReportStatus(
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                report.getReportId()));
   }
 
   @Test
-  void updateReportStatus_SuspendSourceWithExternalAuthor_marksSourceRemovedAndOtherSourceAsOtherReport() {
+  void
+      updateReportStatus_SuspendSourceWithExternalAuthor_marksSourceRemovedAndOtherSourceAsOtherReport() {
     User reporter = createUser("reporter");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Source source = createSource("source-3");
@@ -743,7 +737,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void
+      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-post");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Post post = createPost("post-ext-1", null, externalAuthor, null);
@@ -768,7 +763,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthorAndNotSendEmail() {
+  void
+      updateReportStatus_withReportedPostWithExternalAuthorAndNoUser_shouldSuspendExternalAuthorAndNotSendEmail() {
     User reporter = createUser("reporter-external-post");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-post-1");
     Post post = createPost("post-ext-1", null, externalAuthor, null);
@@ -796,7 +792,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUser_shouldSuspendExternalAuthor() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -822,7 +819,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidPostID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -847,7 +845,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserInvalidSourceID_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");
@@ -872,7 +871,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
+  void
+      updateReportStatus_withReportedSourceWithExternalAuthorAndNoUserSourceWithNoPost_shouldThrowException() {
     User reporter = createUser("reporter-external-source");
     ExternalAuthor externalAuthor = createExternalAuthor("ext-source-1");
     Source source = createSource("source-ext-1");

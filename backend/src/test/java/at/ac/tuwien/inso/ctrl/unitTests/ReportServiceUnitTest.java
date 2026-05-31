@@ -1,5 +1,7 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.comments.mapper.CommentMapper;
@@ -36,10 +38,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.thymeleaf.TemplateEngine;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(MockitoExtension.class)
 public class ReportServiceUnitTest {
   @Mock private ReportRepository reportRepository;
@@ -58,7 +56,8 @@ public class ReportServiceUnitTest {
   @InjectMocks private ReportServiceImp reportService;
   @InjectMocks private ReportMapper reportMapper;
 
-  private final ReportReasonLabelResolver reportReasonLabelResolver= new ReportReasonLabelResolver();
+  private final ReportReasonLabelResolver reportReasonLabelResolver =
+      new ReportReasonLabelResolver();
 
   @Test
   void formatTime_WithReportWithNoTime_shouldReturnEmptyString()
@@ -88,13 +87,13 @@ public class ReportServiceUnitTest {
   @Test
   void resolveReason_WithNullReason_shouldReturnNull() {
     String reason = reportReasonLabelResolver.resolve(null);
-    assertEquals("",reason);
+    assertEquals("", reason);
   }
 
   @Test
   void resolveReason_WithBlankReason_shouldReturnNull() {
     String reason = reportReasonLabelResolver.resolve("");
-    assertEquals("",reason);
+    assertEquals("", reason);
   }
 
   @Test
@@ -131,24 +130,17 @@ public class ReportServiceUnitTest {
             .status(ReportStatus.CREATED)
             .build();
 
-    Mockito.when(reportRepository.findByContentTypeAndStatus(
-            Mockito.eq(ContentTypeEnum.COMMENT),
-            Mockito.eq(ReportStatus.CREATED),
-            Mockito.any()))
+    Mockito.when(
+            reportRepository.findByContentTypeAndStatus(
+                Mockito.eq(ContentTypeEnum.COMMENT),
+                Mockito.eq(ReportStatus.CREATED),
+                Mockito.any()))
         .thenReturn(List.of(validReport, missingReport));
     Mockito.when(commentRepository.findAllById(Mockito.anyList())).thenReturn(List.of(comment));
     Mockito.when(commentMapper.toResponse(Mockito.eq(comment), Mockito.anyMap()))
         .thenReturn(
             new CommentResponse(
-                "comment-1",
-                null,
-                "commentUser",
-                null,
-                null,
-                "content",
-                null,
-                false,
-                List.of()));
+                "comment-1", null, "commentUser", null, null, "content", null, false, List.of()));
 
     List<ReportedCommentResponse> responses =
         reportService.getReportedComments(ReportStatus.CREATED, 0, 10);
@@ -197,37 +189,22 @@ public class ReportServiceUnitTest {
             .status(ReportStatus.CREATED)
             .build();
 
-    Mockito.when(reportRepository.findByContentTypeAndStatus(
-            Mockito.eq(ContentTypeEnum.COMMENT),
-            Mockito.eq(ReportStatus.CREATED),
-            Mockito.any()))
+    Mockito.when(
+            reportRepository.findByContentTypeAndStatus(
+                Mockito.eq(ContentTypeEnum.COMMENT),
+                Mockito.eq(ReportStatus.CREATED),
+                Mockito.any()))
         .thenReturn(List.of(reportWithReportedUser, reportWithFallbackUser));
     Mockito.when(commentRepository.findAllById(Mockito.anyList()))
         .thenReturn(List.of(commentWithReportedUser, commentWithFallbackUser));
     Mockito.when(commentMapper.toResponse(Mockito.eq(commentWithReportedUser), Mockito.anyMap()))
         .thenReturn(
             new CommentResponse(
-                "comment-2",
-                null,
-                "commentUser",
-                null,
-                null,
-                "content",
-                null,
-                false,
-                List.of()));
+                "comment-2", null, "commentUser", null, null, "content", null, false, List.of()));
     Mockito.when(commentMapper.toResponse(Mockito.eq(commentWithFallbackUser), Mockito.anyMap()))
         .thenReturn(
             new CommentResponse(
-                "comment-3",
-                null,
-                "commentUser",
-                null,
-                null,
-                "content",
-                null,
-                false,
-                List.of()));
+                "comment-3", null, "commentUser", null, null, "content", null, false, List.of()));
 
     List<ReportedCommentResponse> responses =
         reportService.getReportedComments(ReportStatus.CREATED, 0, 10);
