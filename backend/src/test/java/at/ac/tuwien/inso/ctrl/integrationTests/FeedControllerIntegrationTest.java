@@ -9,8 +9,6 @@ import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
-import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;

@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
-import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -19,7 +18,6 @@ import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
