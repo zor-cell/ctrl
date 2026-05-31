@@ -14,7 +14,6 @@ import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.ExternalAuthorRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
-import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportSummaryResponse;
@@ -30,7 +29,6 @@ import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
-import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -49,14 +47,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+
+import javax.swing.text.AbstractDocument;
 
 @Service
 @RequiredArgsConstructor
@@ -64,8 +62,6 @@ public class ReportServiceImp implements ReportService {
   private final ReportRepository reportRepository;
   private final PostRepository postRepository;
   private final SourceRepository sourceRepository;
-  private final PostVoteRepository postVoteRepository;
-  private final SourceVoteRepository sourceVoteRepository;
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
   private final ExternalAuthorRepository externalAuthorRepository;
@@ -300,6 +296,17 @@ public class ReportServiceImp implements ReportService {
         .toList();
   }
 
+  private void dealWithOtherReportsOfItem(ContentTypeEnum type, String id) {
+
+    List<Report> reports = reportRepository.findAllByContentIdAndContentType(id, type);
+    for (Report report : reports) {
+      if (report.getStatus() == ReportStatus.CREATED) {
+        report.setStatus(ReportStatus.OTHER_REPORT);
+        reportRepository.save(report);
+      }
+    }
+  }
+
   private void deleteReportedItem(Report report) {
     if (report.getContentType() == ContentTypeEnum.POST) {
       Post post =
@@ -329,6 +336,7 @@ public class ReportServiceImp implements ReportService {
       if (user != null) {
         user.setSuspended(true);
         userRepository.save(user);
+        dealWithOtherReportsOfUser(user);
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
@@ -336,6 +344,8 @@ public class ReportServiceImp implements ReportService {
     } else {
       throw new IllegalArgumentException("Invalid content type: " + report.getContentType());
     }
+
+    dealWithOtherReportsOfItem(report.getContentType(), report.getContentId());
   }
 
   private void suspendAccount(Report report) {
@@ -343,6 +353,7 @@ public class ReportServiceImp implements ReportService {
     if (user != null) {
       user.setSuspended(true);
       userRepository.save(user);
+      dealWithOtherReportsOfUser(user);
     } else {
       ContentTypeEnum type = report.getContentType();
       if (type == ContentTypeEnum.POST) {
@@ -354,6 +365,7 @@ public class ReportServiceImp implements ReportService {
         ExternalAuthor postUser = post.getExternalAuthor();
         postUser.setSuspended(true);
         externalAuthorRepository.save(postUser);
+        dealWithOtherReportsOfExternalAuthor(postUser);
 
       } else if (type == ContentTypeEnum.SOURCE) {
         Source source =
@@ -373,16 +385,38 @@ public class ReportServiceImp implements ReportService {
         ExternalAuthor author = post.getExternalAuthor();
         author.setSuspended(true);
         externalAuthorRepository.save(author);
+        dealWithOtherReportsOfExternalAuthor(author);
       } else if (type == ContentTypeEnum.COMMENT) {
         Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
             () -> new EntityNotFoundException("Comment not found: " + report.getContentId()));
         User commentUser = comment.getUser();
         commentUser.setSuspended(true);
         userRepository.save(commentUser);
+        dealWithOtherReportsOfUser(commentUser);
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
       
+    }
+  }
+
+  private void dealWithOtherReportsOfUser(User user) {
+    List<Report> reports = reportRepository.findAllByUsernameReportedAndStatus(user, ReportStatus.CREATED);
+    for (Report report : reports) {
+      if (report.getStatus() == ReportStatus.CREATED) {
+        report.setStatus(ReportStatus.OTHER_REPORT);
+        reportRepository.save(report);
+      }
+    }
+  }
+
+  private void dealWithOtherReportsOfExternalAuthor(ExternalAuthor externalAuthor) {
+    List<Report> reports = reportRepository.findAllByExternalAuthorReportedAndStatus(externalAuthor, ReportStatus.CREATED);
+    for (Report report : reports) {
+      if (report.getStatus() == ReportStatus.CREATED) {
+        report.setStatus(ReportStatus.OTHER_REPORT);
+        reportRepository.save(report);
+      }
     }
   }
 

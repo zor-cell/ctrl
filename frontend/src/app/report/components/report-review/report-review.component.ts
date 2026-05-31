@@ -158,7 +158,7 @@ export class ReportReviewComponent implements OnInit {
         this.reportService
           .updateStatus(ReportStatus.DECLINED, ReportAction.NONE, reportId)
           .subscribe(() => {
-            this.update_reports(reportId);
+            this.update_reports();
           });
       },
       reject: () => {
@@ -167,24 +167,8 @@ export class ReportReviewComponent implements OnInit {
     });
   }
 
-  private update_reports(reportId: string) {
-    if (this.currentTab() === ContentTypeEnum.POST) {
-      this.reportedPosts.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    } else if (this.currentTab() === ContentTypeEnum.SOURCE) {
-      this.reportedSources.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    } else if (this.currentTab() === ContentTypeEnum.COMMENT) {
-      this.reportedComments.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    } else if (this.currentTab() === ContentTypeEnum.ACCOUNT) {
-      this.reportedAccounts.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    }
+  private update_reports() {
+    void this.refreshCurrentTab();
   }
 
   getReason(reason: string) {
@@ -221,7 +205,7 @@ export class ReportReviewComponent implements OnInit {
       accept: () => {
         console.log(`Marking action taken for report with ID: ${reportId}`);
         this.reportService.updateStatus(ReportStatus.VALIDATED, action, reportId).subscribe(() => {
-          this.update_reports(reportId);
+          this.update_reports();
         });
       },
       reject: () => {
@@ -316,5 +300,17 @@ export class ReportReviewComponent implements OnInit {
 
   private mediaKind(url: string): MediaCacheKind {
     return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url) ? 'video' : 'image';
+  }
+
+  private async refreshCurrentTab(): Promise<void> {
+    if (this.currentTab() === ContentTypeEnum.POST) {
+      await this.changeToPosts();
+    } else if (this.currentTab() === ContentTypeEnum.SOURCE) {
+      await this.changeToSources();
+    } else if (this.currentTab() === ContentTypeEnum.COMMENT) {
+      await this.changeToComments();
+    } else if (this.currentTab() === ContentTypeEnum.ACCOUNT) {
+      await this.changeToAccounts();
+    }
   }
 }
