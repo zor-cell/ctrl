@@ -51,11 +51,14 @@ public class FileStorageService {
   private static final String MP4_MEDIA_TYPE = "video/mp4";
   private static final String POST_MEDIA_PREFIX = "posts/media/";
   private static final String PROFILE_PICTURE_PREFIX = "users/profile-pictures/";
+  private static final String CHAT_GROUP_IMAGE_PREFIX = "chats/group-images/";
+  private static final int MAX_VIDEO_SIDE = 1920;
 
   private final S3Client s3Client;
   private final S3Presigner s3Presigner;
   private final S3Presigner internalS3Presigner;
   private final VideoTranscodingService videoTranscodingService;
+  private final ImageProcessingService imageProcessingService;
 
   @Value("${garage.bucket-name}")
   private String bucketName;
@@ -69,18 +72,20 @@ public class FileStorageService {
   @Value("${garage.public-url}")
   private String publicUrl;
 
-  @Value("${garage.presigned-url-duration:PT2M}")
+  @Value("${garage.presigned-url-duration:PT30M}")
   private Duration presignedUrlDuration;
 
   public FileStorageService(
       S3Client s3Client,
       @Qualifier("s3Presigner") S3Presigner s3Presigner,
       @Qualifier("internalS3Presigner") S3Presigner internalS3Presigner,
-      VideoTranscodingService videoTranscodingService) {
+      VideoTranscodingService videoTranscodingService,
+      ImageProcessingService imageProcessingService) {
     this.s3Client = s3Client;
     this.s3Presigner = s3Presigner;
     this.internalS3Presigner = internalS3Presigner;
     this.videoTranscodingService = videoTranscodingService;
+    this.imageProcessingService = imageProcessingService;
   }
 
   /**
@@ -97,6 +102,12 @@ public class FileStorageService {
       if (isQuickTimeVideo(file)) {
         return transcodeAndUploadQuickTimeVideo(file);
       }
+      if (isImageMedia(file)) {
+        return uploadProcessedPostImage(file);
+      }
+      if (isVideoMedia(file)) {
+        return uploadPostVideo(file);
+      }
       return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to upload file", e);
@@ -106,10 +117,77 @@ public class FileStorageService {
   public String uploadProfilePicture(MultipartFile file) {
     try {
       validateProfilePicture(file);
-      return uploadFile(file, PROFILE_PICTURE_PREFIX, publicBucketName).mediaRef();
+      try (InputStream inputStream = file.getInputStream()) {
+        ImageProcessingService.ProcessedImage processedImage =
+            imageProcessingService.processProfilePicture(inputStream);
+        return uploadBytes(
+                processedImage.data(),
+                PROFILE_PICTURE_PREFIX,
+                processedImage.contentType(),
+                processedImage.extension(),
+                publicBucketName)
+            .mediaRef();
+      }
     } catch (IOException e) {
-      throw new UncheckedIOException("Failed to upload profile picture", e);
+      try {
+        return uploadFile(file, PROFILE_PICTURE_PREFIX, publicBucketName).mediaRef();
+      } catch (IOException uploadException) {
+        throw new UncheckedIOException("Failed to upload profile picture", uploadException);
+      }
     }
+  }
+
+  public void deleteProfilePicture(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return;
+    }
+
+    if (!mediaRef.startsWith(PROFILE_PICTURE_PREFIX)) {
+      throw new InvalidRequestException("Invalid profile picture reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
+  public String uploadGroupImage(MultipartFile file) {
+    try {
+      validateProfilePicture(file);
+      try (InputStream inputStream = file.getInputStream()) {
+        ImageProcessingService.ProcessedImage processedImage =
+            imageProcessingService.processProfilePicture(inputStream);
+        return uploadBytes(
+                processedImage.data(),
+                CHAT_GROUP_IMAGE_PREFIX,
+                processedImage.contentType(),
+                processedImage.extension(),
+                publicBucketName)
+            .mediaRef();
+      }
+    } catch (IOException e) {
+      try {
+        return uploadFile(file, CHAT_GROUP_IMAGE_PREFIX, publicBucketName).mediaRef();
+      } catch (IOException uploadException) {
+        throw new UncheckedIOException("Failed to upload group image", uploadException);
+      }
+    }
+  }
+
+  public void deleteGroupImage(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return;
+    }
+
+    if (!mediaRef.startsWith(CHAT_GROUP_IMAGE_PREFIX)) {
+      throw new InvalidRequestException("Invalid group image reference");
+    }
+
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
+
+    s3Client.deleteObject(deleteObjectRequest);
   }
 
   public void deletePostMedia(String mediaRef) {
@@ -117,10 +195,7 @@ public class FileStorageService {
       throw new InvalidRequestException("Invalid post media reference");
     }
 
-    DeleteObjectRequest deleteObjectRequest =
-        DeleteObjectRequest.builder().bucket(privateBucketName).key(mediaRef).build();
-
-    s3Client.deleteObject(deleteObjectRequest);
+    deleteObject(privateBucketName, mediaRef);
   }
 
   public void deletePublicPostMedia(String mediaRef) {
@@ -128,10 +203,7 @@ public class FileStorageService {
       throw new InvalidRequestException("Invalid post media reference");
     }
 
-    DeleteObjectRequest deleteObjectRequest =
-        DeleteObjectRequest.builder().bucket(publicBucketName).key(mediaRef).build();
-
-    s3Client.deleteObject(deleteObjectRequest);
+    deleteObject(publicBucketName, mediaRef);
   }
 
   public void movePostMediaToPublicBucket(String mediaRef) {
@@ -144,16 +216,8 @@ public class FileStorageService {
       return;
     }
 
-    CopyObjectRequest copyObjectRequest =
-        CopyObjectRequest.builder()
-            .sourceBucket(privateBucketName)
-            .sourceKey(mediaRef)
-            .destinationBucket(publicBucketName)
-            .destinationKey(mediaRef)
-            .build();
-
-    s3Client.copyObject(copyObjectRequest);
-    deletePostMedia(mediaRef);
+    copyObject(privateBucketName, mediaRef, publicBucketName, mediaRef);
+    deleteObject(privateBucketName, mediaRef);
   }
 
   public List<String> listPostMediaRefsOlderThan(Duration minimumAge) {
@@ -328,18 +392,101 @@ public class FileStorageService {
     return QUICKTIME_MEDIA_TYPES.contains(file.getContentType());
   }
 
+  private UploadedFile uploadProcessedPostImage(MultipartFile file) throws IOException {
+    try (InputStream inputStream = file.getInputStream()) {
+      ImageProcessingService.ProcessedImage processedImage =
+          imageProcessingService.processPostImage(inputStream, file.getSize());
+
+      if (processedImage != null) {
+        return uploadBytes(
+            processedImage.data(),
+            POST_MEDIA_PREFIX,
+            processedImage.contentType(),
+            processedImage.extension(),
+            privateBucketName);
+      }
+
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+    } catch (IOException processingException) {
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+    }
+  }
+
+  private UploadedFile uploadPostVideo(MultipartFile file) throws IOException {
+    Path inputFile = Files.createTempFile("post-media-", resolveExtension(file));
+    Path outputFile = Files.createTempFile("post-media-", ".mp4");
+
+    try (InputStream inputStream = file.getInputStream()) {
+      Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
+
+      if (videoTranscodingService.shouldScaleVideo(inputFile, MAX_VIDEO_SIDE)) {
+        videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
+        return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
+      }
+
+      return uploadFile(file, POST_MEDIA_PREFIX, privateBucketName);
+    } finally {
+      Files.deleteIfExists(inputFile);
+      Files.deleteIfExists(outputFile);
+    }
+  }
+
   private UploadedFile transcodeAndUploadQuickTimeVideo(MultipartFile file) throws IOException {
     Path inputFile = Files.createTempFile("post-media-", resolveExtension(file));
     Path outputFile = Files.createTempFile("post-media-", ".mp4");
 
     try (InputStream inputStream = file.getInputStream()) {
       Files.copy(inputStream, inputFile, StandardCopyOption.REPLACE_EXISTING);
-      videoTranscodingService.transcodeToMp4(inputFile, outputFile);
+
+      videoTranscodingService.transcodeToMp4(inputFile, outputFile, MAX_VIDEO_SIDE);
       return uploadFile(outputFile, POST_MEDIA_PREFIX, MP4_MEDIA_TYPE, ".mp4", privateBucketName);
     } finally {
       Files.deleteIfExists(inputFile);
       Files.deleteIfExists(outputFile);
     }
+  }
+
+  private UploadedFile uploadBytes(
+      byte[] data, String prefix, String contentType, String extension, String bucketName) {
+    String uniqueFileName = prefix + UUID.randomUUID() + extension;
+
+    PutObjectRequest putObjectRequest =
+        PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(uniqueFileName)
+            .contentType(contentType)
+            .build();
+
+    s3Client.putObject(putObjectRequest, RequestBody.fromBytes(data));
+    return new UploadedFile(uniqueFileName, contentType, data.length);
+  }
+
+  private void deleteObject(String bucketName, String objectKey) {
+    DeleteObjectRequest deleteObjectRequest =
+        DeleteObjectRequest.builder().bucket(bucketName).key(objectKey).build();
+    s3Client.deleteObject(deleteObjectRequest);
+  }
+
+  private void copyObject(
+      String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) {
+    CopyObjectRequest copyObjectRequest =
+        CopyObjectRequest.builder()
+            .sourceBucket(sourceBucket)
+            .sourceKey(sourceKey)
+            .destinationBucket(destinationBucket)
+            .destinationKey(destinationKey)
+            .build();
+    s3Client.copyObject(copyObjectRequest);
+  }
+
+  private boolean isImageMedia(MultipartFile file) {
+    String contentType = file.getContentType();
+    return contentType != null && contentType.startsWith("image/");
+  }
+
+  private boolean isVideoMedia(MultipartFile file) {
+    String contentType = file.getContentType();
+    return contentType != null && contentType.startsWith("video/");
   }
 
   private void validateProfilePicture(MultipartFile file) {

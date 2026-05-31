@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.file.ImageProcessingService;
 import at.ac.tuwien.inso.ctrl.file.VideoTranscodingService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,12 +46,19 @@ public class FileStorageServiceUnitTest {
 
   @Mock private VideoTranscodingService videoTranscodingService;
 
+  private final ImageProcessingService imageProcessingService = new ImageProcessingService();
+
   private FileStorageService fileStorageService;
 
   @BeforeEach
   void setUp() {
     fileStorageService =
-        new FileStorageService(s3Client, s3Presigner, internalS3Presigner, videoTranscodingService);
+        new FileStorageService(
+            s3Client,
+            s3Presigner,
+            internalS3Presigner,
+            videoTranscodingService,
+            imageProcessingService);
     ReflectionTestUtils.setField(fileStorageService, "bucketName", "ctrl-test-media");
     ReflectionTestUtils.setField(fileStorageService, "privateBucketName", "ctrl-test-private");
     ReflectionTestUtils.setField(fileStorageService, "publicBucketName", "ctrl-test-public");
@@ -86,13 +95,14 @@ public class FileStorageServiceUnitTest {
               return null;
             })
         .when(videoTranscodingService)
-        .transcodeToMp4(any(Path.class), any(Path.class));
+        .transcodeToMp4(any(Path.class), any(Path.class), anyInt());
 
     FileStorageService.UploadedFile uploadedFile = fileStorageService.uploadPostMedia(file);
 
     ArgumentCaptor<Path> inputCaptor = ArgumentCaptor.forClass(Path.class);
     ArgumentCaptor<Path> outputCaptor = ArgumentCaptor.forClass(Path.class);
-    verify(videoTranscodingService).transcodeToMp4(inputCaptor.capture(), outputCaptor.capture());
+    verify(videoTranscodingService)
+        .transcodeToMp4(inputCaptor.capture(), outputCaptor.capture(), anyInt());
     PutObjectRequest request = capturePutObjectRequest();
     assertTrue(uploadedFile.mediaRef().startsWith("posts/media/"));
     assertTrue(uploadedFile.mediaRef().endsWith(".mp4"));
@@ -158,21 +168,25 @@ public class FileStorageServiceUnitTest {
 
   @Test
   void movePostMediaToPublicBucket_withPostMediaRef_copiesToPublicAndDeletesPrivate() {
-    fileStorageService.movePostMediaToPublicBucket("posts/media/file.png");
+    fileStorageService.movePostMediaToPublicBucket(
+        "posts/media/11111111-1111-1111-1111-111111111111.png");
 
     ArgumentCaptor<CopyObjectRequest> copyCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
     verify(s3Client).copyObject(copyCaptor.capture());
-    CopyObjectRequest copyRequest = copyCaptor.getValue();
-    assertEquals("ctrl-test-private", copyRequest.sourceBucket());
-    assertEquals("posts/media/file.png", copyRequest.sourceKey());
-    assertEquals("ctrl-test-public", copyRequest.destinationBucket());
-    assertEquals("posts/media/file.png", copyRequest.destinationKey());
+    CopyObjectRequest mediaCopyRequest = copyCaptor.getValue();
+    assertEquals("ctrl-test-private", mediaCopyRequest.sourceBucket());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.sourceKey());
+    assertEquals("ctrl-test-public", mediaCopyRequest.destinationBucket());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png", mediaCopyRequest.destinationKey());
 
     ArgumentCaptor<DeleteObjectRequest> deleteCaptor =
         ArgumentCaptor.forClass(DeleteObjectRequest.class);
     verify(s3Client).deleteObject(deleteCaptor.capture());
     assertEquals("ctrl-test-private", deleteCaptor.getValue().bucket());
-    assertEquals("posts/media/file.png", deleteCaptor.getValue().key());
+    assertEquals(
+        "posts/media/11111111-1111-1111-1111-111111111111.png", deleteCaptor.getValue().key());
   }
 
   @Test

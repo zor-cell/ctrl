@@ -4,6 +4,8 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -13,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,17 +32,28 @@ import lombok.Setter;
 public class Message {
   @Id
   @Column(name = "message_id", nullable = false, unique = true)
-  private String messageId;
+  private UUID messageId;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 4000)
   private String content;
 
   @Column(name = "date")
   private LocalDateTime date;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean system = false;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "system_event")
+  private SystemEventType systemEvent;
+
+  @Column(name = "system_target_user_ids")
+  private String systemTargetUserIds;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "chat_id", referencedColumnName = "chat_id", nullable = false)

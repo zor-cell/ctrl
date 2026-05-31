@@ -106,11 +106,6 @@ public class PostControllerDatabaseIntegrationTest {
     generatedTopicId = savedTopic.getTopicId();
     verifiedUserToken = jwtService.generateToken(verifiedUser);
     otherUserToken = jwtService.generateToken(otherUser);
-    when(fileStorageService.resolveFileUrl(anyString()))
-        .thenAnswer(
-            invocation ->
-                "http://localhost:8080/api/files/media-url?ref="
-                    + invocation.getArgument(0, String.class).replace("/", "%2F"));
     when(fileStorageService.resolveInternalPostMediaUrl(anyString()))
         .thenAnswer(
             invocation ->
@@ -152,9 +147,6 @@ public class PostControllerDatabaseIntegrationTest {
         .andExpect(jsonPath("$.username").value("marlene"))
         .andExpect(jsonPath("$.caption").value("A valid caption"))
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:8080/api/files/media-url?ref=posts%2Fmedia%2Ffile.png"))
         .andExpect(jsonPath("$.isPublic").value(true))
         .andExpect(jsonPath("$.topicIds[0]").value(generatedTopicId));
 
@@ -248,6 +240,23 @@ public class PostControllerDatabaseIntegrationTest {
         .andExpect(content().string("Post not found"));
 
     assertTrue(postRepository.findById("post-1").isPresent());
+  }
+
+  @Test
+  void getPostById_withRemovedPost_returnsNotFound() throws Exception {
+    // Given: A post that has been marked as removed
+    Post removedPost =
+        savePost(
+            "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+    removedPost.setIsRemoved(true);
+    postRepository.save(removedPost);
+
+    // When/Then: Getting the removed post by ID should return 404
+    mockMvc
+        .perform(
+            get("/api/posts/removed-post")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
+        .andExpect(status().isNotFound());
   }
 
   private User saveUser(String username, boolean verified) {

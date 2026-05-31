@@ -4,6 +4,7 @@ import { AdminService } from '../../admin.service';
 import { BusinessVerification, VerificationStatus } from '../../dto/BusinessVerification';
 import { Router } from '@angular/router';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 
 @Component({
   selector: 'app-business-verification',
@@ -84,7 +85,7 @@ export class BusinessVerificationComponent implements OnInit {
 
   getInitial(verification: BusinessVerification): string {
     const user = verification.user;
-    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
+    return usernameInitial(user.username);
   }
 
   private loadProfilePictures(verifications: BusinessVerification[]): void {

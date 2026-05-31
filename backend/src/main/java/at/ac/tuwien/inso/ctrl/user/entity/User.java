@@ -56,6 +56,7 @@ public class User implements UserDetails {
   @Column(name = "is_email_verified", nullable = false)
   private boolean emailVerified = false;
 
+  @Builder.Default
   @Column(name = "is_suspended", nullable = false)
   private boolean isSuspended = false;
 

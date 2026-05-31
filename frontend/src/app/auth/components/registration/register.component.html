@@ -13,7 +13,9 @@
                 </p-floatlabel>
 
                 @if (registerForm.controls.username.invalid && registerForm.controls.username.touched && registerForm.controls.username.dirty) {
-                    <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
+                    <p-message severity="error" size="small" variant="simple">
+                        {{ USERNAME_VALIDATION_MESSAGE }}
+                    </p-message>
                 }
             </div>
 

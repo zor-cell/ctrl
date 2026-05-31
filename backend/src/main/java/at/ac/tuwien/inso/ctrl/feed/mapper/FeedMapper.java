@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.feed.mapper;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -14,8 +13,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class FeedMapper {
-
-  private final FileStorageService fileStorageService;
 
   public FeedPostResponse toFeedPostResponse(
       RecommendedPost recommendedPost,
@@ -66,20 +63,13 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
-    String mediaRef = post.getMediaRef();
-
-    // Only internal posts receive presigned URLs
-    if (!post.isExternalPost() && mediaRef != null) {
-      mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
-    }
-
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
         username,
         profilePic,
         post.getCaption(),
-        mediaRef,
+        post.getMediaRef(),
         post.isPublic(),
         post.getUpvotes(),
         post.getDownvotes(),
@@ -137,20 +127,13 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
-    String mediaRef = post.getMediaRef();
-
-    // Only internal posts receive presigned URLs
-    if (!post.isExternalPost() && mediaRef != null) {
-      mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
-    }
-
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
         username,
         profilePic,
         post.getCaption(),
-        mediaRef,
+        post.getMediaRef(),
         post.isPublic(),
         post.getUpvotes(),
         post.getDownvotes(),
@@ -168,7 +151,7 @@ public class FeedMapper {
         comment.getCommentId(),
         comment.getUser().getId().toString(),
         comment.getUser().getUsername(),
-        fileStorageService.resolveFileUrl(comment.getUser().getProfilePicture()),
+        comment.getUser().getProfilePicture(),
         comment.getContent(),
         comment.getCreatedAt(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);

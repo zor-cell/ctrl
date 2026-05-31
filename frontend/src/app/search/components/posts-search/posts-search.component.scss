@@ -1,0 +1,239 @@
+$border: var(--border);
+$text-muted: #888;
+$radius: 16px;
+$radius-sm: 10px;
+
+// ─── Posts Search Container ───────────────────────────────
+.posts-search {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+// ─── Search Controls ───────────────────────────────────────
+.search-controls {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--p-content-background);
+  padding-bottom: 1rem;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  border-bottom: 1px solid $border;
+}
+
+.search-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input-wrapper {
+  flex: 2;
+  min-width: 200px;
+
+  p-iconField {
+    width: 100%;
+    position: relative;
+    display: block;
+
+    .search-input {
+      width: 100%;
+      padding-right: 2rem;
+    }
+  }
+
+  .clear-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: $text-muted;
+    transition: color 0.2s;
+    z-index: 1;
+
+    &:hover {
+      color: var(--p-text-color);
+    }
+  }
+}
+
+.topic-filter-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-button-wrapper {
+  flex-shrink: 0;
+}
+
+// ─── Loading States ──────────────────────────────────────
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: $text-muted;
+
+  p {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  color: $text-muted;
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+// ─── Empty State ─────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: $text-muted;
+
+  i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    margin: 0;
+    color: var(--p-text-color);
+  }
+
+  p {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+}
+
+// ─── Results Container ──────────────────────────────────
+.results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// ─── Posts Grid ─────────────────────────────────────────
+.posts-preview-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  // Ensure all grid items have the same height
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+
+  // Make all cards stretch to fill the grid cell
+  > * {
+    height: 100%;
+  }
+}
+
+// ─── Load More Button ────────────────────────────────────
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+// ─── Topic Dropdown Styling ───────────────────────────────
+::ng-deep .topic-multiselect {
+  width: 100%;
+}
+
+::ng-deep .p-multiselect-panel {
+  .topic-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 0;
+
+    &.selected-topic {
+      background: var(--p-primary-color-soft, rgba(99, 102, 241, 0.1));
+    }
+
+    .topic-name {
+      flex: 1;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// ─── Selected Topics Display ──────────────────────────────
+.single-topic,
+.two-topics,
+.multiple-topics {
+  font-size: 0.875rem;
+  color: var(--p-text-color);
+}
+
+.multiple-topics {
+  color: $text-muted;
+  font-style: italic;
+}
+
+// ─── Responsive Adjustments ─────────────────────────────
+@media (max-width: 900px) {
+  .posts-search {
+    padding: 1rem;
+  }
+
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-wrapper,
+  .topic-filter-wrapper,
+  .search-button-wrapper {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+  }
+
+  .posts-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .posts-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}

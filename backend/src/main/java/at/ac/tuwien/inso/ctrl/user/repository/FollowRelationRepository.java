@@ -15,7 +15,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FollowRelationRepository extends JpaRepository<FollowRelation, FollowRelationId> {
 
-  @Query("SELECT fr.followed FROM FollowRelation fr WHERE fr.follower = :follower")
+  @Query(
+      """
+        SELECT fr.followed FROM FollowRelation fr WHERE fr.follower = :follower AND fr.followed.isSuspended = false
+      """)
   List<User> findFollowedByFollower(@Param("follower") User follower);
 
   // potential performance bottleneck: search via LIKE
@@ -23,6 +26,7 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
       """
       SELECT fr.followed FROM FollowRelation fr
       WHERE fr.follower = :follower
+      AND fr.followed.isSuspended = false
       AND fr.followed.username LIKE CONCAT('%', :search, '%')
       """)
   List<User> findFollowedBySearch(@Param("follower") User follower, @Param("search") String search);
@@ -43,6 +47,9 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
       """)
   void deleteBidirectional(@Param("user1") User user1, @Param("user2") User user2);
 
-  @Query("SELECT fr.followed.id FROM FollowRelation fr WHERE fr.follower = :user")
+  @Query(
+      """
+      SELECT fr.followed.id FROM FollowRelation fr WHERE fr.follower = :user AND fr.followed.isSuspended = false
+      """)
   Set<UUID> findFollowedIdsByFollower(@Param("user") User user);
 }

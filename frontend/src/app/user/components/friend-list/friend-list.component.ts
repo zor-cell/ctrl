@@ -8,6 +8,7 @@ import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { Friend } from '../../dto/Relationship';
 
 @Component({
@@ -89,7 +90,7 @@ export class FriendListComponent {
   }
 
   getInitial(friend: Friend): string {
-    return (friend.name?.charAt(0) || friend.username.charAt(0)).toUpperCase();
+    return usernameInitial(friend.username);
   }
 
   private loadProfilePictures(friends: Friend[]): void {

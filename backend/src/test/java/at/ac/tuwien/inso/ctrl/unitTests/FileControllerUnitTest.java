@@ -38,17 +38,13 @@ public class FileControllerUnitTest {
         new FileStorageService.UploadedFile("posts/media/file.png", "image/png", 1234L);
 
     when(fileStorageService.uploadPostMedia(file)).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/file.png"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/file.png");
 
     FileUploadResponse response = fileController.uploadPostMedia(file);
 
     assertEquals("posts/media/file.png", response.mediaRef());
-    assertEquals("http://localhost:3900/ctrl-dev-media/posts/media/file.png", response.mediaUrl());
     assertEquals("image/png", response.contentType());
     assertEquals(1234L, response.size());
     verify(fileStorageService).uploadPostMedia(file);
-    verify(fileStorageService).resolveFileUrl("posts/media/file.png");
   }
 
   @Test
@@ -57,16 +53,12 @@ public class FileControllerUnitTest {
         new FileStorageService.UploadedFile("posts/media/video.mp4", "video/mp4", 9876L);
 
     when(fileStorageService.uploadPostMedia(file)).thenReturn(uploadedFile);
-    when(fileStorageService.resolveFileUrl("posts/media/video.mp4"))
-        .thenReturn("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4");
 
     FileUploadResponse response = fileController.uploadPostMedia(file);
 
     assertEquals("posts/media/video.mp4", response.mediaRef());
-    assertEquals("http://localhost:3900/ctrl-dev-media/posts/media/video.mp4", response.mediaUrl());
     assertEquals("video/mp4", response.contentType());
     assertEquals(9876L, response.size());
     verify(fileStorageService).uploadPostMedia(file);
-    verify(fileStorageService).resolveFileUrl("posts/media/video.mp4");
   }
 }

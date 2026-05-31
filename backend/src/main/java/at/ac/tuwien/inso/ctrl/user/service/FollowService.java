@@ -46,6 +46,10 @@ public class FollowService {
             .findByUsername(targetUsername)
             .orElseThrow(() -> new NotFoundException("User", targetUsername));
 
+    if (target.isSuspended()) {
+      throw new NotFoundException("User", targetUsername);
+    }
+
     if (!target.isVerified()) {
       throw new InvalidRequestException("Can only follow verified users");
     }

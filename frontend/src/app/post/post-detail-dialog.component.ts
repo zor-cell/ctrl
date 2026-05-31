@@ -14,15 +14,17 @@ import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 
 import { timeAgo as formatTimeAgo } from '../core/utils/date-time.utils';
+import { usernameInitial } from '../core/utils/username-initial.utils';
 import { CommentService } from '../feed/services/comment.service';
 import { UserService } from '../user/user.service';
 import { CommentResponse, PostResponse, SingleSourceResponse } from './dto/PostResponse';
+import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 
 @Component({
   selector: 'app-post-detail-dialog',
-  imports: [CommonModule, Button, Dialog],
+  imports: [CommonModule, Button, Dialog, PostCaptionFormatPipe],
   templateUrl: './post-detail-dialog.component.html',
   styleUrl: './post-detail-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +38,7 @@ export class PostDetailDialogComponent implements OnChanges {
   @Input() currentProfilePicture: string | null = null;
   @Input() avatarInitial = '?';
   @Input() canDelete = true;
+  @Input() resolvedMediaUrl: string | null = null;
 
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();
@@ -115,11 +118,11 @@ export class PostDetailDialogComponent implements OnChanges {
   }
 
   protected postMediaKind(post: PostResponse): PreviewKind {
-    return postMediaKind(post.mediaRef ?? post.mediaUrl);
+    return postMediaKind(post.mediaRef);
   }
 
-  protected postMediaUrl(post: PostResponse): string | null {
-    return post.mediaUrl;
+  protected postMediaUrl(): string | null {
+    return this.resolvedMediaUrl;
   }
 
   protected postSources(post: PostResponse): SingleSourceResponse[] {
@@ -174,7 +177,7 @@ export class PostDetailDialogComponent implements OnChanges {
   }
 
   protected commentAvatarInitial(comment: CommentResponse): string {
-    return comment.username.trim().charAt(0).toUpperCase() || '?';
+    return usernameInitial(comment.username);
   }
 
   protected isOwnComment(comment: CommentResponse): boolean {

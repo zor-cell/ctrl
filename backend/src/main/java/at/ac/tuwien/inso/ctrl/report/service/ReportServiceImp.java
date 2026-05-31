@@ -369,7 +369,7 @@ public class ReportServiceImp implements ReportService {
 
     } else if (report.getContentType() == ContentTypeEnum.ACCOUNT) {
       User user = report.getUsernameReported();
-      
+
       if (user != null) {
         user.setSuspended(true);
         userRepository.save(user);
@@ -379,7 +379,7 @@ public class ReportServiceImp implements ReportService {
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
-      
+
     } else {
       throw new IllegalArgumentException("Invalid content type: " + report.getContentType());
     }
@@ -414,7 +414,6 @@ public class ReportServiceImp implements ReportService {
                 .orElseThrow(
                     () ->
                         new EntityNotFoundException("Source not found: " + report.getContentId()));
-
         Post post =
             postRepository
                 .findBySource(source)
@@ -436,7 +435,7 @@ public class ReportServiceImp implements ReportService {
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
-      
+
     }
   }
 
@@ -561,7 +560,6 @@ public class ReportServiceImp implements ReportService {
         feedPostResponse.userProfilePic(),
         feedPostResponse.caption(),
         feedPostResponse.mediaRef(),
-        feedPostResponse.mediaRef(),
         feedPostResponse.isPublic(),
         feedPostResponse.upvotes(),
         feedPostResponse.downvotes(),
@@ -642,11 +640,11 @@ public class ReportServiceImp implements ReportService {
       Comment comment = commentRepository.findById(createReportRequest.contentId()).orElseThrow(
           () -> new EntityNotFoundException("Comment not found: " + createReportRequest.contentId()));
       return comment.getUser();
-      
+
     } else if (createReportRequest.contentType().equals(ContentTypeEnum.ACCOUNT)) {
       return userRepository.findById(UUID.fromString(createReportRequest.contentId())).orElseThrow(
           () -> new EntityNotFoundException("User not found: " + createReportRequest.contentId()));
-      
+
     } else {
       throw new IllegalArgumentException(
           "Invalid content type: " + createReportRequest.contentType());

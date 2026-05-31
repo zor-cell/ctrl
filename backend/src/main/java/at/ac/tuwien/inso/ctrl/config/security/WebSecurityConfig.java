@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -39,14 +40,20 @@ public class WebSecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                // allows all public api endpoints
-                auth.requestMatchers(
-                        "/api/auth/**", "/api/labels", "/api/feed/**", "/api/topics/**")
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
-                    // requires auth for all remaining private api endpoints
+                    .requestMatchers(
+                        "/api/auth/**",
+                        "/api/labels",
+                        "/api/topics/**",
+                        "/actuator/health",
+                        "/api/feed/**",
+                        "/api/files/media",
+                        "/api/files/media-url")
+                    .permitAll()
                     .requestMatchers("/api/**")
                     .authenticated()
-                    // allows all other traffic (frontend)
+                    // SockJS/WebSocket paths are not MVC handlers; keep non-API traffic public.
                     .anyRequest()
                     .permitAll())
         .exceptionHandling( // auth endpoints that reach an exception should return 401
@@ -68,18 +75,12 @@ public class WebSecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    configuration.setAllowedOrigins(
-        List.of(
-            "http://localhost:4200",
-            "http://localhost",
-            "http://127.0.0.1",
-            "https://www.ctrl-ase.dev"));
+    configuration.setAllowedOriginPatterns(
+        List.of("http://localhost:*", "http://127.0.0.1:*", "https://www.ctrl-ase.dev"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowCredentials(true);
 
-    // header for jwt auth
-    configuration.setAllowedHeaders(
-        List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+    configuration.setAllowedHeaders(List.of("*"));
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

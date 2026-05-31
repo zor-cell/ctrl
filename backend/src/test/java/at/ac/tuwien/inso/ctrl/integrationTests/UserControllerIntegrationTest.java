@@ -1,10 +1,12 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,7 +17,10 @@ import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
+import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerification;
+import at.ac.tuwien.inso.ctrl.user.entity.BusinessVerificationStatus;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +55,7 @@ public class UserControllerIntegrationTest {
   @Autowired private MockMvc mockMvc;
 
   @Autowired private UserRepository userRepository;
+  @Autowired private BusinessVerificationRepository businessVerificationRepository;
 
   @Autowired private PasswordEncoder passwordEncoder;
 
@@ -85,6 +91,7 @@ public class UserControllerIntegrationTest {
 
   @AfterEach
   public void tearDown() {
+    businessVerificationRepository.deleteAll();
     userRepository.deleteAll();
   }
 
@@ -115,10 +122,7 @@ public class UserControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.username").value("integrationUser"))
         .andExpect(jsonPath("$.bio").value("Hello profile"))
-        .andExpect(
-            jsonPath("$.profilePicture")
-                .value(
-                    "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Favatar.png"));
+        .andExpect(jsonPath("$.profilePicture").value("users/profile-pictures/avatar.png"));
   }
 
   @Test
@@ -148,18 +152,14 @@ public class UserControllerIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/users/search")
+            post("/api/search/users")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
-                .param("q", "mar")
-                .param("excludeFriends", "false")
-                .param("excludeFollowed", "false")
-                .param("verifiedOnly", "false"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"query\":\"mar\",\"excludeFriends\":false,\"excludeFollowed\":false,\"verifiedOnly\":false}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].username").value("marlene"))
-        .andExpect(
-            jsonPath("$[0].profilePicture")
-                .value(
-                    "http://localhost:8080/api/files/media-url?ref=users%2Fprofile-pictures%2Fmarlene.png"));
+        .andExpect(jsonPath("$[0].profilePicture").value("users/profile-pictures/marlene.png"));
   }
 
   @Test
@@ -267,5 +267,83 @@ public class UserControllerIntegrationTest {
     User dbUser = userRepository.findById(existingUser.getId()).orElseThrow();
     assertTrue(dbUser.isVerified());
     assertEquals("Official Person", dbUser.getName());
+  }
+
+  @Test
+  public void submitBusinessVerification_shouldCreatePendingVerification_WhenCalled()
+      throws Exception {
+    mockMvc
+        .perform(
+            post(meEndpoint + "/verify/business")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk());
+    BusinessVerification verification =
+        businessVerificationRepository.findByBusinessUser(existingUser);
+
+    assertNotNull(verification);
+    assertEquals(verification.getBusinessUser(), existingUser);
+    assertEquals(BusinessVerificationStatus.PENDING, verification.getStatus());
+  }
+
+  @Test
+  public void getVerificationStatus_shouldReturnPendingVerification_WhenCalled() throws Exception {
+    BusinessVerification verification =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.PENDING)
+            .businessUser(existingUser)
+            .build();
+    businessVerificationRepository.save(verification);
+
+    mockMvc
+        .perform(
+            get(meEndpoint + "/verify")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.type").value("BUSINESS"))
+        .andExpect(jsonPath("$.status").value("PENDING"));
+  }
+
+  @Test
+  public void getVerificationStatus_shouldReturnApprovedVerification_WhenCalled() throws Exception {
+    BusinessVerification verification =
+        BusinessVerification.builder()
+            .status(BusinessVerificationStatus.APPROVED)
+            .businessUser(existingUser)
+            .build();
+    businessVerificationRepository.save(verification);
+
+    mockMvc
+        .perform(
+            get(meEndpoint + "/verify")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.type").value("BUSINESS"))
+        .andExpect(jsonPath("$.status").value("APPROVED"));
+  }
+
+  @Test
+  public void getVerificationStatus_shouldReturnNotVerified_WhenCalled() throws Exception {
+
+    mockMvc
+        .perform(
+            get(meEndpoint + "/verify")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.type").value("PERSONAL"))
+        .andExpect(jsonPath("$.status").value("NOT_VERIFIED"));
+  }
+
+  @Test
+  public void getVerificationStatus_shouldReturnVerified_WhenCalled() throws Exception {
+    existingUser.setVerified(true);
+
+    userRepository.save(existingUser);
+    mockMvc
+        .perform(
+            get(meEndpoint + "/verify")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.type").value("PERSONAL"))
+        .andExpect(jsonPath("$.status").value("APPROVED"));
   }
 }

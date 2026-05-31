@@ -4,10 +4,13 @@ import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
+import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -259,5 +262,31 @@ public class PostServiceImpl implements PostService {
     return userRepository
         .findByUsername(username)
         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+  }
+
+  @Override
+  public DetailedPostResponse getPostById(String postId, String username) {
+    Post post = this.fetchPost(postId);
+    User user = this.fetchUser(username);
+
+    if (post.getIsRemoved()) {
+      throw new NotFoundException("Post", postId);
+    }
+
+    if (!post.isPublic()) {
+      if (post.getUser() != null
+          && !post.getUser().getUsername().equals(username)
+          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+        throw new UnauthorizedException("post with Id " + postId);
+      }
+    }
+
+    List<PostVote> userVote =
+        this.postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            user.getId().toString(), List.of(postId.toString()));
+
+    PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
+
+    return this.postMapper.toDetailedPostResponse(post, toMap);
   }
 }

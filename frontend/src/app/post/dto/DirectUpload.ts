@@ -7,7 +7,6 @@ export interface DirectUploadInitRequest {
 export interface DirectUploadInitResponse {
   strategy: string;
   mediaRef: string;
-  mediaUrl: string;
   contentType: string | null;
   size: number;
   uploadUrl: string;

@@ -93,6 +93,17 @@ export class UserService {
     );
   }
 
+  public deleteProfilePicture(showSuccess = true) {
+    return this.httpClient.delete<UserDetails>(this.baseUri + '/me/profile-picture').pipe(
+      tap(user => {
+        this._user.set(user);
+        if (showSuccess) {
+          this.notificationService.showSuccess('Removed profile picture');
+        }
+      })
+    );
+  }
+
   public updatePassword(updateRequest: UpdatePasswordRequest) {
     return this.httpClient.put<void>(this.baseUri + '/me/password', updateRequest).pipe(
       tap(() => {

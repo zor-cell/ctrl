@@ -12,9 +12,7 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
-import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
@@ -25,7 +23,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -42,7 +39,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserService {
   private final UserMapper userMapper;
-  private final RelationshipMapper socialMapper;
   private final UserRepository userRepository;
   private final FriendRequestRepository friendRequestRepository;
   private final FriendRelationRepository friendRelationRepository;
@@ -128,10 +124,23 @@ public class UserService {
   @Transactional
   public UserDetailsResponse updateProfilePicture(User currentUser, MultipartFile file) {
     User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
     String profilePictureRef = fileStorageService.uploadProfilePicture(file);
     user.setProfilePicture(profilePictureRef);
 
     User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
+    return userMapper.toUserDetailsResponse(updatedUser);
+  }
+
+  @Transactional
+  public UserDetailsResponse deleteProfilePicture(User currentUser) {
+    User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
+    user.setProfilePicture(null);
+
+    User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 
@@ -202,43 +211,6 @@ public class UserService {
 
     User updatedUser = userRepository.save(user);
     return userMapper.toUserDetailsResponse(updatedUser);
-  }
-
-  public List<UserSearchResponse> searchUsers(
-      User currentUser,
-      String query,
-      boolean excludeFriends,
-      boolean excludeFollowed,
-      boolean verifiedOnly) {
-
-    String searchTerm = query != null ? query.trim().toLowerCase() : "";
-
-    Set<UUID> followedIds = followService.getFollowedIds(currentUser);
-    Set<UUID> friendIds = friendRelationRepository.findFriendIds(currentUser);
-    Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
-    Set<UUID> pendingRequestIncomingIds =
-        friendRequestRepository.findSenderIdsByReceiver(currentUser);
-
-    List<User> allUsers = userRepository.findByUsernameContainingIgnoreCase(searchTerm);
-
-    return allUsers.stream()
-        .filter(user -> !user.getId().equals(currentUser.getId()))
-        .filter(user -> !excludeFriends || !friendIds.contains(user.getId()))
-        .filter(user -> !excludeFollowed || !followedIds.contains(user.getId()))
-        .filter(user -> !verifiedOnly || user.isVerified())
-        .map(
-            user -> {
-              List<RelationshipStatusItem> statuses =
-                  socialMapper.determineRelationshipStatuses(
-                      user,
-                      followedIds,
-                      friendIds,
-                      pendingRequestSentIds,
-                      pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, statuses);
-              return socialMapper.toUserSearchResponse(user, statuses, displayName);
-            })
-        .toList();
   }
 
   private User getUserInternal(UUID userId) {
