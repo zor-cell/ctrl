@@ -21,10 +21,11 @@ public class LabelingService {
   private final FollowRelationRepository followRelationRepository;
 
   public LabelContext buildContext(User user) {
+    Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
         followRelationRepository.findFollowedIds(user.getId()),
         followRelationRepository.findSecondDegreeIds(user.getId()),
-        postRepository.findUpvotePercentile95(),
+        p95 != null ? p95 : 0,
         LocalDateTime.now());
   }
 
