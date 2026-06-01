@@ -58,20 +58,20 @@ public class FeedControllerIntegrationTest {
 
     float[] embedding = generateDummyEmbedding();
     existingUser =
-            User.builder()
-                    .username("feedTester")
-                    .password("securePass123!")
-                    .email("tester@test.com")
-                    .interactionPreferenceEmbedding(embedding)
-                    .build();
+        User.builder()
+            .username("feedTester")
+            .password("securePass123!")
+            .email("tester@test.com")
+            .interactionPreferenceEmbedding(embedding)
+            .build();
 
     otherUser =
-            User.builder()
-                    .username("feedTester2")
-                    .password("securePass123!")
-                    .email("tester@testddd.com")
-                    .interactionPreferenceEmbedding(embedding)
-                    .build();
+        User.builder()
+            .username("feedTester2")
+            .password("securePass123!")
+            .email("tester@testddd.com")
+            .interactionPreferenceEmbedding(embedding)
+            .build();
 
     userRepository.save(existingUser);
     userRepository.save(otherUser);
@@ -98,15 +98,15 @@ public class FeedControllerIntegrationTest {
     post = postRepository.save(post);
 
     mockMvc
-            .perform(
-                    get(feedEndpoint)
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
-                            .param("page", "0")
-                            .param("postsPerPage", "10")
-                            .param("publicFeed", "true"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
-            .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
+        .perform(
+            get(feedEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("page", "0")
+                .param("postsPerPage", "10")
+                .param("publicFeed", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
   }
 
   /**
@@ -137,28 +137,28 @@ public class FeedControllerIntegrationTest {
     postVoteRepository.save(vote);
 
     mockMvc
-            .perform(
-                    get(feedEndpoint)
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
-                            .param("page", "0")
-                            .param("postsPerPage", "5")
-                            .param("publicFeed", "true"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(1)))
-            .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
+        .perform(
+            get(feedEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("page", "0")
+                .param("postsPerPage", "5")
+                .param("publicFeed", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
   }
 
   @Test
   public void getFeed_shouldReturnEmptyList_WhenNoRecommendationsFound() throws Exception {
     mockMvc
-            .perform(
-                    get(feedEndpoint)
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
-                            .param("page", "0")
-                            .param("postsPerPage", "10")
-                            .param("publicFeed", "true"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(0)));
+        .perform(
+            get(feedEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("page", "0")
+                .param("postsPerPage", "10")
+                .param("publicFeed", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
   }
 
   private float[] generateDummyEmbedding() {
