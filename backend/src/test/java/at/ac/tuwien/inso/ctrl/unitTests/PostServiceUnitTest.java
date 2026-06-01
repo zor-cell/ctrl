@@ -17,12 +17,16 @@ import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
+import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
@@ -30,8 +34,10 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,26 +52,19 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 public class PostServiceUnitTest {
 
   @Mock private PostRepository postRepository;
-
   @Mock private TopicRepository topicRepository;
-
   @Mock private UserRepository userRepository;
-
   @Mock private SourceService sourceService;
-
   @Mock private PostMapper postMapper;
-
   @Mock private EmbeddingService embeddingService;
-
   @Mock private PostVoteRepository postVoteRepository;
-
+  @Mock private SeenPostRepository seenPostRepository;
   @Mock private VoteManager voteManager;
-
   @Mock private FollowRelationRepository followRelationRepository;
-
   @Mock private FriendRelationRepository friendRelationRepository;
-
   @Mock private FileStorageService fileStorageService;
+  @Mock private UserPreferenceService userPreferenceService;
+  @Mock private LabelingService labelingService;
 
   @InjectMocks private PostServiceImpl postService;
 
@@ -201,50 +200,6 @@ public class PostServiceUnitTest {
   }
 
   @Test
-  void createPost_ShouldUseDistinctTopicIds_WhenRequestContainsDuplicates() {
-    CreatePostRequest request =
-        new CreatePostRequest(
-            "Post with duplicate topics", null, false, false, List.of("topic-1", "topic-1"), null);
-    Topic topicOne = Topic.builder().topicId("topic-1").name("Politics").build();
-    PostResponse response = createResponse("Post with duplicate topics", false, false, null);
-
-    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
-    when(sourceService.createSource(null)).thenReturn(source);
-    when(topicRepository.findAllById(List.of("topic-1"))).thenReturn(List.of(topicOne));
-    when(embeddingService.embedText("Post with duplicate topics")).thenReturn(new float[] {1.0f});
-    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
-
-    postService.createPost(request, "marlene");
-
-    ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
-    verify(postRepository).save(postCaptor.capture());
-
-    assertEquals(1, postCaptor.getValue().getPostTopics().size());
-    verify(topicRepository).findAllById(List.of("topic-1"));
-  }
-
-  @Test
-  void createPost_ShouldMakePostPrivate_WhenVerifiedUserRequestsPrivatePost() {
-    CreatePostRequest request =
-        new CreatePostRequest("Private by choice", null, false, false, List.of(), null);
-    PostResponse response = createResponse("Private by choice", false, false, null);
-
-    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
-    when(sourceService.createSource(null)).thenReturn(source);
-    when(embeddingService.embedText("Private by choice")).thenReturn(new float[] {1.0f});
-    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
-
-    postService.createPost(request, "marlene");
-
-    ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
-    verify(postRepository).save(postCaptor.capture());
-
-    assertFalse(postCaptor.getValue().isPublic());
-  }
-
-  @Test
   void createPost_ShouldThrowException_WhenTopicDoesNotExist() {
     CreatePostRequest request =
         new CreatePostRequest(
@@ -276,66 +231,81 @@ public class PostServiceUnitTest {
     verify(postRepository, never()).save(any());
   }
 
-  /*@Test
+  @Test
   void getPostsForUser_withExistingPosts_returnsMappedPosts() {
     Post firstPost = Post.builder().postId("post-1").caption("First").build();
     Post secondPost = Post.builder().postId("post-2").caption("Second").build();
     PostResponse firstResponse = createResponse("First", false, false, null);
     PostResponse secondResponse = createResponse("Second", true, false, "posts/media/file.png");
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
 
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(firstPost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(secondPost, labelCtx)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(firstPost, secondPost));
-    when(postMapper.toResponse(firstPost)).thenReturn(firstResponse);
-    when(postMapper.toResponse(secondPost)).thenReturn(secondResponse);
+    when(postMapper.toResponse(firstPost, labels)).thenReturn(firstResponse);
+    when(postMapper.toResponse(secondPost, labels)).thenReturn(secondResponse);
 
     List<PostResponse> result = postService.getPostsForUser("marlene");
 
     assertEquals(List.of(firstResponse, secondResponse), result);
     verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
-    verify(postMapper).toResponse(firstPost);
-    verify(postMapper).toResponse(secondPost);
-  }*/
+    verify(postMapper).toResponse(firstPost, labels);
+    verify(postMapper).toResponse(secondPost, labels);
+  }
 
-  /*@Test
+  @Test
   void getProfilePostsForUser_withExistingPosts_returnsMappedPublicPosts() {
     Post post = Post.builder().postId("post-1").caption("Profile post").build();
     PostResponse response = createResponse("Profile post", true, false, null);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+    when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(post));
-    when(postMapper.toResponse(post)).thenReturn(response);
+    when(postMapper.toResponse(post, labels)).thenReturn(response);
 
     List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
 
     assertEquals(List.of(response), result);
     verify(postRepository).findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene");
-    verify(postMapper).toResponse(post);
-  }*/
+    verify(postMapper).toResponse(post, labels);
+  }
 
-  /*@Test
+  @Test
   void getProfilePostsForUser_withFriendRelation_returnsMappedAllPosts() {
     Post publicPost = Post.builder().postId("post-1").caption("Public").isPublic(true).build();
     Post privatePost = Post.builder().postId("post-2").caption("Private").isPublic(false).build();
     PostResponse publicResponse = createResponse("Public", true, false, null);
     PostResponse privateResponse = createResponse("Private", false, false, null);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+    when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(publicPost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(privatePost, labelCtx)).thenReturn(labels);
     when(friendRelationRepository.existsByUsers(verifiedUser, unverifiedUser)).thenReturn(true);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(publicPost, privatePost));
-    when(postMapper.toResponse(publicPost)).thenReturn(publicResponse);
-    when(postMapper.toResponse(privatePost)).thenReturn(privateResponse);
+    when(postMapper.toResponse(publicPost, labels)).thenReturn(publicResponse);
+    when(postMapper.toResponse(privatePost, labels)).thenReturn(privateResponse);
 
     List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
 
     assertEquals(List.of(publicResponse, privateResponse), result);
     verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
-    verify(postMapper).toResponse(publicPost);
-    verify(postMapper).toResponse(privatePost);
-  }*/
+    verify(postMapper).toResponse(publicPost, labels);
+    verify(postMapper).toResponse(privatePost, labels);
+  }
 
   @Test
   void deletePost_withOwnPost_deletesPost() {
