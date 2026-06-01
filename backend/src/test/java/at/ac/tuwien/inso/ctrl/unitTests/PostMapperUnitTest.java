@@ -1,11 +1,14 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
-// import at.ac.tuwien.inso.ctrl.post.entity.Label;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
+import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -14,10 +17,11 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 public class PostMapperUnitTest {
 
-  /*@Test
+  @Test
   void toResponse_withPostContent_resolvesMediaUrlAndSortsNestedValues() {
     PostMapper postMapper = new PostMapper();
     User user = createUser("marlene");
@@ -35,7 +39,6 @@ public class PostMapperUnitTest {
             .downvotes(1)
             .createdAt(LocalDateTime.of(2026, 4, 25, 12, 0))
             .build();
-    post.setPostLabels(createPostLabels(post));
     post.setPostTopics(createPostTopics(post));
     post.setComments(createComments(post, user));
     PostResponse response = postMapper.toResponse(post);
@@ -46,13 +49,13 @@ public class PostMapperUnitTest {
     assertEquals("source-1", response.sourceId());
     assertEquals("Caption", response.caption());
     assertEquals("posts/media/file.png", response.mediaRef());
-    assertEquals(List.of("alpha", "zulu"), response.labelIds());
+    assertEquals(List.of(), response.labelIds());
     assertEquals(List.of("topic-a", "topic-z"), response.topicIds());
     assertEquals("older comment", response.comments().get(0).content());
     assertEquals("newer comment", response.comments().get(1).content());
     assertEquals("Alpha source", response.source().singleSources().get(0).title());
     assertEquals("Zulu source", response.source().singleSources().get(1).title());
-  }*/
+  }
 
   private User createUser(String username) {
     User user = new User();
@@ -89,23 +92,6 @@ public class PostMapperUnitTest {
                 .build()));
     return source;
   }
-
-  /*private LinkedHashSet<PostLabel> createPostLabels(Post post) {
-    Label zulu = Label.builder().labelId("zulu").name("Zulu").emoji("Z").build();
-    Label alpha = Label.builder().labelId("alpha").name("Alpha").emoji("A").build();
-    return new LinkedHashSet<>(
-        List.of(
-            PostLabel.builder()
-                .id(new PostLabelId("post-1", "zulu"))
-                .post(post)
-                .label(zulu)
-                .build(),
-            PostLabel.builder()
-                .id(new PostLabelId("post-1", "alpha"))
-                .post(post)
-                .label(alpha)
-                .build()));
-  }*/
 
   private LinkedHashSet<PostTopic> createPostTopics(Post post) {
     Topic topicZ = Topic.builder().topicId("topic-z").name("Zulu").build();
