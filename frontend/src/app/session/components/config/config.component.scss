@@ -1,0 +1,17 @@
+.form-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-field p-floatlabel {
+  flex: 1;
+}
+
+.hint-icon {
+  font-size: 1.1rem;
+  color: var(--text-color-secondary, #6c757d);
+  cursor: help;
+  flex-shrink: 0;
+}

@@ -11,12 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@RestController()
+@RequestMapping("/session")
 @RequiredArgsConstructor
 public class SessionController {
   private final SessionService sessionService;
 
-  @PostMapping("/sessions/heartbeat")
+  @PostMapping("/heartbeat")
   public void handleHeartbeat(@AuthenticationPrincipal User user) {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways

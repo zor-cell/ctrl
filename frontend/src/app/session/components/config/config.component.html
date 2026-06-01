@@ -1,0 +1,56 @@
+<div class="wrapper">
+    <div class="form-container">
+        @if (isLoading()) {
+            <div class="loading-spinner">
+                <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
+            </div>
+        } @else {
+            <div class="form-header">
+                <h2>Session Limits</h2>
+            </div>
+
+            <div>
+                Your session limit will reset each day at 00:00.
+            </div>
+
+            <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
+                <div class="form-field">
+                    <p-floatlabel variant="on">
+                        <input pInputText id="timeLimit" type="number" formControlName="timeLimitMinutes" fluid/>
+                        <label for="timeLimit">Time Limit (Minutes)</label>
+                    </p-floatlabel>
+                    <i class="pi pi-info-circle hint-icon"
+                       pTooltip="The maximum time in minutes you will be able to spend daily on CTRL."
+                       tooltipPosition="right"></i>
+                </div>
+
+                <div class="form-field">
+                    <p-floatlabel variant="on">
+                        <input pInputText id="postLimit" type="number" formControlName="postLimit" fluid/>
+                        <label for="postLimit">Post Limit</label>
+                    </p-floatlabel>
+                    <i class="pi pi-info-circle hint-icon"
+                       pTooltip="The maximum amount of posts you will be able to see daily on CTRL."
+                       tooltipPosition="right"></i>
+                </div>
+
+                <div class="form-field">
+                    <label for="isForcedCutoff">
+                        Force cutoff <i class="pi pi-info-circle hint-icon"
+                                        pTooltip="Denotes whether you will be forced to exit CTRL after your limit was reached, or your will receive a popup."
+                                        tooltipPosition="right"></i>
+                    </label>
+                    <p-toggle-switch formControlName="isForcedCutoff" inputId="isForcedCutoff">></p-toggle-switch>
+                </div>
+
+                <p-button
+                        type="submit"
+                        [label]="'Save Configuration'"
+                        fluid>
+                </p-button>
+
+            </form>
+        }
+    </div>
+</div>
+

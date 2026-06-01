@@ -5,6 +5,7 @@ import {AlgorithmConfigComponent} from "../../../algorithm/components/config/con
 import {toSignal} from "@angular/core/rxjs-interop";
 import {map} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
+import {SessionConfigComponent} from "../../../session/components/config/config.component";
 
 @Component({
   selector: 'app-settings',
@@ -15,7 +16,8 @@ import {ActivatedRoute} from "@angular/router";
     TabPanels,
     TabPanel,
     ProfileComponent,
-    AlgorithmConfigComponent
+    AlgorithmConfigComponent,
+    SessionConfigComponent
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',

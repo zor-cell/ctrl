@@ -6,6 +6,10 @@
                 <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
             </div>
         } @else {
+            <div class="form-header">
+                <h2>Algorithm Configuration</h2>
+            </div>
+
             <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
 
                 <!-- Interaction -->

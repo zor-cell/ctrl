@@ -52,6 +52,6 @@ export class SessionService {
   }
 
   private sendHeartbeat(): Observable<void> {
-    return this.httpClient.post<void>(environment.apiUrl + '/sessions/heartbeat', {});
+    return this.httpClient.post<void>(environment.apiUrl + '/session/heartbeat', {});
   }
 }
