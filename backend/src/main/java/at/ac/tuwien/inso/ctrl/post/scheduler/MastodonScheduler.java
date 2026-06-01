@@ -404,6 +404,7 @@ public class MastodonScheduler {
             .caption(captionResult.caption())
             .mediaRef(mediaRef)
             .isPublic(true)
+            .isRemoved(false)
             .isAiGenerated(false)
             .upvotes(0)
             .downvotes(0)

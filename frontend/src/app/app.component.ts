@@ -8,10 +8,11 @@ import { ChatSessionService } from './chat/chat-session.service';
 import { NavigationComponent } from './navigation/navigation.component';
 import { UserService } from './user/user.service';
 import { SessionService } from './core/services/session.service';
+import {LimitPopupComponent} from "./session/components/limit-popup/limit-popup.component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Toast, NavigationComponent],
+  imports: [RouterOutlet, Toast, NavigationComponent, LimitPopupComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

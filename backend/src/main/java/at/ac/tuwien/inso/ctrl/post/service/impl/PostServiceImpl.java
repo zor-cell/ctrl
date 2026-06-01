@@ -77,6 +77,7 @@ public class PostServiceImpl implements PostService {
             .caption(request.caption())
             .mediaRef(request.mediaRef())
             .isPublic(resolveIsPublic(request, user.isVerified()))
+            .isRemoved(false)
             .isAiGenerated(Boolean.TRUE.equals(request.isAiGenerated()))
             .upvotes(INITIAL_VOTE_COUNT)
             .downvotes(INITIAL_VOTE_COUNT)

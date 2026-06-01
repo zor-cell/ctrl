@@ -1,6 +1,5 @@
 package at.ac.tuwien.inso.ctrl.session;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -21,7 +20,7 @@ public class SessionController {
   public void handleHeartbeat(@AuthenticationPrincipal User user) {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways
-    sessionService.handleHeatbeat(LocalDateTime.now(), user);
+    sessionService.handleHeartbeat(LocalDateTime.now(), user);
   }
 
   @GetMapping("/config")

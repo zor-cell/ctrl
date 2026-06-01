@@ -1,21 +1,15 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.embedding.VectorUtils;
-import at.ac.tuwien.inso.ctrl.session.SessionMapper;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
+import at.ac.tuwien.inso.ctrl.session.mapper.SessionMapper;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionConfigRepository;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,16 +26,9 @@ public class SessionService {
   private long MAX_TIME_BETWEEN_HEARTBEATS;
 
   @Transactional
-  public void handleHeatbeat(LocalDateTime timestamp, User user) {
-    Optional<SessionHistory> latest = sessionRepository.findTopByUserOrderByStartDesc(user);
-    if (latest.isEmpty()) {
-      SessionHistory newSession =
-          SessionHistory.builder().start(timestamp).minutes(0L).user(user).postsViewed(0).build();
-      sessionRepository.save(newSession);
-      return;
-    }
+  public void handleHeartbeat(LocalDateTime timestamp, User user) {
+    SessionHistory session = getOrCreateLastSession(user);
 
-    SessionHistory session = latest.get();
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
     // otherwise compute and save the new duration
     if (session
@@ -76,20 +63,37 @@ public class SessionService {
     return sessionMapper.toConfig(sessionConfigRepository.save(config));
   }
 
+  public SessionHistory getOrCreateLastSession(User user) {
+    Optional<SessionHistory> latest = sessionRepository.findTopByUserOrderByStartDesc(user);
+    if (latest.isEmpty()) {
+      SessionHistory newSession =
+          SessionHistory.builder()
+              .start(LocalDateTime.now())
+              .minutes(0L)
+              .user(user)
+              .postsViewed(0)
+              .build();
+      sessionRepository.save(newSession);
+      return newSession;
+    }
+
+    return latest.get();
+  }
+
   public SessionConfig getOrCreateConfig(User user) {
     return sessionConfigRepository
-            .findByUserId(user.getId())
-            .orElseGet(
-                    () -> {
-                      SessionConfig defaultConfig =
-                              SessionConfig.builder()
-                                      .user(user)
-                                      .timeLimitMinutes(30)
-                                      .postLimit(100)
-                                      .isForcedCutoff(true)
-                                      .build();
+        .findByUserId(user.getId())
+        .orElseGet(
+            () -> {
+              SessionConfig defaultConfig =
+                  SessionConfig.builder()
+                      .user(user)
+                      .timeLimitMinutes(30)
+                      .postLimit(100)
+                      .isForcedCutoff(true)
+                      .build();
 
-                      return sessionConfigRepository.save(defaultConfig);
-                    });
+              return sessionConfigRepository.save(defaultConfig);
+            });
   }
 }

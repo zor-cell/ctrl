@@ -3,6 +3,7 @@ import {inject} from "@angular/core";
 import {catchError, throwError} from "rxjs";
 import {NotificationService} from "./services/notification.service";
 import {AuthService} from "../auth/auth.service";
+import {SessionStateService} from "../session/session-state.service";
 
 /**
  * Intercepts all HTTP requests and appends the JWT authentication if user is authenticated
@@ -43,11 +44,18 @@ export const SILENT_ERROR_CONTEXT = new HttpContext().set(SILENT_ERROR_HANDLER, 
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const notification = inject(NotificationService);
+  const sessionState = inject(SessionStateService);
 
   const silentErrorHandling = req.context.get(SILENT_ERROR_HANDLER);
 
   return next(req).pipe(
     catchError(err => {
+      console.log(err)
+      if(err.status === 429 && err.error?.errorCode === 'SESSION_LIMIT_EXCEEDED') {
+        sessionState.triggerLimitModal(err.error.message);
+        return throwError(() => err);
+      }
+
       if(!silentErrorHandling) {
         notification.showError(err);
       }

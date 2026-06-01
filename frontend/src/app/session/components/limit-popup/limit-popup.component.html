@@ -1,0 +1,22 @@
+<p-dialog
+        header="Session Limit Reached"
+        [visible]="sessionState.isLimitReached()"
+        [modal]="true"
+        [closable]="false"
+        [closeOnEscape]="false"
+        [style]="{ width: '25rem' }">
+
+    <div class="flex flex-column align-items-center gap-4 py-3">
+        <i class="pi pi-stopwatch text-6xl text-primary"></i>
+
+        <p class="m-0 text-center text-lg font-medium">
+            {{ sessionState.limitMessage() }}
+        </p>
+
+        <p-button
+                label="I understand"
+                (onClick)="sessionState.closeModal()"
+                fluid>
+        </p-button>
+    </div>
+</p-dialog>
