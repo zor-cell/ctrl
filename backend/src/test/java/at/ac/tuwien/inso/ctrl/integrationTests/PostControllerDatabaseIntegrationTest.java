@@ -133,15 +133,15 @@ public class PostControllerDatabaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {
-                      "caption": "A valid caption",
-                      "mediaRef": "posts/media/file.png",
-                      "isPublic": true,
-                      "isAiGenerated": false,
-                      "topicIds": ["%s"],
-                      "source": null
-                    }
-                    """
+                                    {
+                                      "caption": "A valid caption",
+                                      "mediaRef": "posts/media/file.png",
+                                      "isPublic": true,
+                                      "isAiGenerated": false,
+                                      "topicIds": ["%s"],
+                                      "source": null
+                                    }
+                                    """
                         .formatted(generatedTopicId)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.username").value("marlene"))
@@ -166,15 +166,15 @@ public class PostControllerDatabaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {
-                      "caption": "   ",
-                      "mediaRef": null,
-                      "isPublic": false,
-                      "isAiGenerated": false,
-                      "topicIds": [],
-                      "source": null
-                    }
-                    """))
+                                    {
+                                      "caption": "   ",
+                                      "mediaRef": null,
+                                      "isPublic": false,
+                                      "isAiGenerated": false,
+                                      "topicIds": [],
+                                      "source": null
+                                    }
+                                    """))
         .andExpect(status().isBadRequest())
         .andExpect(content().string(containsString("caption must not be blank")));
 
