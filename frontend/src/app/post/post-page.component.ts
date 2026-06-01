@@ -474,6 +474,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
       next: posts => {
+        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -538,6 +539,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.postService.getProfilePostsForUser(username).subscribe({
       next: posts => {
+        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);

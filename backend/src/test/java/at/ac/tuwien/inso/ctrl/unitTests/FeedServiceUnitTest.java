@@ -8,6 +8,9 @@ import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
+import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
@@ -23,6 +26,7 @@ import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +44,7 @@ public class FeedServiceUnitTest {
   @Mock private UserRepository userRepository;
   @Mock private FeedMapper feedMapper;
   @Mock private RecommendationService recommendationService;
+  @Mock private LabelingService labelingService;
 
   @InjectMocks private FeedService feedService;
 
@@ -50,12 +55,13 @@ public class FeedServiceUnitTest {
     String userId = user.getId().toString();
 
     Post post = buildPost("post-1", "source-1");
-    RecommendedPost recommendedPost = new RecommendedPost();
-    recommendedPost.setPost(post);
+    RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     PostVote postVote = buildPostVote("post-1", "UPVOTE");
     SourceVote sourceVote = buildSourceVote("source-1", "DOWNVOTE");
     FeedPostResponse expectedResponse = mock(FeedPostResponse.class);
+    LabelContext labelCtx = mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, true))
@@ -64,10 +70,13 @@ public class FeedServiceUnitTest {
         .thenReturn(List.of(postVote));
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-1")))
         .thenReturn(List.of(sourceVote));
+    when(labelingService.buildContext(user)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
     when(feedMapper.toFeedPostResponse(
             eq(recommendedPost),
             eq(Map.of("post-1", "UPVOTE")),
-            eq(Map.of("source-1", "DOWNVOTE"))))
+            eq(Map.of("source-1", "DOWNVOTE")),
+            eq(labels)))
         .thenReturn(expectedResponse);
 
     List<FeedPostResponse> result = feedService.getFeed(0, 10, true, username);
@@ -86,7 +95,11 @@ public class FeedServiceUnitTest {
 
     assertThrows(UsernameNotFoundException.class, () -> feedService.getFeed(0, 10, true, username));
     verifyNoInteractions(
-        recommendationService, postVoteRepository, sourceVoteRepository, feedMapper);
+        recommendationService,
+        postVoteRepository,
+        sourceVoteRepository,
+        feedMapper,
+        labelingService);
   }
 
   @Test
@@ -94,9 +107,11 @@ public class FeedServiceUnitTest {
     String username = "bob";
     User user = buildUser(username);
     String userId = user.getId().toString();
+    LabelContext labelCtx = mock(LabelContext.class);
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, true)).thenReturn(List.of());
+    when(labelingService.buildContext(user)).thenReturn(labelCtx);
 
     List<FeedPostResponse> result = feedService.getFeed(0, 10, true, username);
 
@@ -108,51 +123,58 @@ public class FeedServiceUnitTest {
 
   @Test
   void getFeed_withPartialVotes_shouldMapCorrectly() {
-    // Arrange
     String username = "charlie";
     User user = buildUser(username);
     String userId = user.getId().toString();
 
     Post post1 = buildPost("post-1", null);
-    RecommendedPost recPost1 = new RecommendedPost();
-    recPost1.setPost(post1);
+    RecommendedPost recPost1 = new RecommendedPost(post1, null);
 
     Post post2 = buildPost("post-2", "source-2");
-    RecommendedPost recPost2 = new RecommendedPost();
-    recPost2.setPost(post2);
+    RecommendedPost recPost2 = new RecommendedPost(post2, null);
 
     PostVote mockedPostVote = buildPostVote("post-1", "DOWNVOTE");
     SourceVote mockedSourceVote = buildSourceVote("source-2", "UPVOTE");
+    LabelContext labelCtx = mock(LabelContext.class);
+    Set<PostLabelType> labels1 = Set.of();
+    Set<PostLabelType> labels2 = Set.of();
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
     when(recommendationService.getRecommendedPosts(user, 0, 10, true))
         .thenReturn(List.of(recPost1, recPost2));
-
     when(postVoteRepository.findByIdUserIdAndIdPostIdIn(userId, List.of("post-1", "post-2")))
         .thenReturn(List.of(mockedPostVote));
-
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-2")))
         .thenReturn(List.of(mockedSourceVote));
+    when(labelingService.buildContext(user)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post1, labelCtx)).thenReturn(labels1);
+    when(labelingService.computeLabels(post2, labelCtx)).thenReturn(labels2);
 
     feedService.getFeed(0, 10, true, username);
 
     verify(feedMapper)
         .toFeedPostResponse(
-            eq(recPost1), eq(Map.of("post-1", "DOWNVOTE")), eq(Map.of("source-2", "UPVOTE")));
-
+            eq(recPost1),
+            eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("source-2", "UPVOTE")),
+            eq(labels1));
     verify(feedMapper)
         .toFeedPostResponse(
-            eq(recPost2), eq(Map.of("post-1", "DOWNVOTE")), eq(Map.of("source-2", "UPVOTE")));
+            eq(recPost2),
+            eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("source-2", "UPVOTE")),
+            eq(labels2));
   }
 
   @Test
   void getFeed_withPrivateFeedFlag_shouldPassFlagToRecommendationService() {
     String username = "diana";
     User user = buildUser(username);
+    LabelContext labelCtx = mock(LabelContext.class);
 
     when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-    when(recommendationService.getRecommendedPosts(user, 0, 10, false)) // publicFeed = false
-        .thenReturn(List.of());
+    when(recommendationService.getRecommendedPosts(user, 0, 10, false)).thenReturn(List.of());
+    when(labelingService.buildContext(user)).thenReturn(labelCtx);
 
     feedService.getFeed(0, 10, false, username);
 
