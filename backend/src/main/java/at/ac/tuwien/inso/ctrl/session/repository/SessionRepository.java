@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.session.repository;
 
+import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.Optional;
