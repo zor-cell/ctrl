@@ -20,7 +20,10 @@ public class PostMapper {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<LabelResponse> labelIds = List.of();
 
-    List<String> topicIds = List.of();
+    List<String> topicIds = post.getPostTopics().stream()
+            .map(postTopic -> postTopic.getTopic().getTopicId())
+            .sorted(Comparator.naturalOrder())
+            .toList();
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))

@@ -2,9 +2,11 @@ package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,8 +54,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-    properties = "spring.task.scheduling.enabled=false")
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        properties = "spring.task.scheduling.enabled=false")
 @ActiveProfiles("test")
 @Import(TestConfig.class)
 @Transactional
@@ -105,9 +107,9 @@ public class PostControllerDatabaseIntegrationTest {
     verifiedUserToken = jwtService.generateToken(verifiedUser);
     otherUserToken = jwtService.generateToken(otherUser);
     when(fileStorageService.resolveInternalPostMediaUrl(anyString()))
-        .thenAnswer(
-            invocation ->
-                "http://garage:3900/ctrl-test-private/" + invocation.getArgument(0, String.class));
+            .thenAnswer(
+                    invocation ->
+                            "http://garage:3900/ctrl-test-private/" + invocation.getArgument(0, String.class));
   }
 
   @AfterEach
@@ -119,62 +121,62 @@ public class PostControllerDatabaseIntegrationTest {
     userRepository.deleteAll();
   }
 
-  /*@Test
+  @Test
   void createPost_withValidRequest_persistsPostAndReturnsCreated() throws Exception {
     when(embeddingService.embedTextWithImage(eq("A valid caption"), anyString()))
-        .thenReturn(new float[768]);
+            .thenReturn(new float[768]);
 
     mockMvc
-        .perform(
-            post("/api/posts")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "caption": "A valid caption",
-                      "mediaRef": "posts/media/file.png",
-                      "isPublic": true,
-                      "isAiGenerated": false,
-                      "topicIds": ["%s"],
-                      "source": null
-                    }
-                    """
-                        .formatted(generatedTopicId)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.username").value("marlene"))
-        .andExpect(jsonPath("$.caption").value("A valid caption"))
-        .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
-        .andExpect(jsonPath("$.isPublic").value(true))
-        .andExpect(jsonPath("$.topicIds[0]").value(generatedTopicId));
+            .perform(
+                    post("/api/posts")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(
+                                    """
+                                    {
+                                      "caption": "A valid caption",
+                                      "mediaRef": "posts/media/file.png",
+                                      "isPublic": true,
+                                      "isAiGenerated": false,
+                                      "topicIds": ["%s"],
+                                      "source": null
+                                    }
+                                    """
+                                            .formatted(generatedTopicId)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.username").value("marlene"))
+            .andExpect(jsonPath("$.caption").value("A valid caption"))
+            .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
+            .andExpect(jsonPath("$.isPublic").value(true))
+            .andExpect(jsonPath("$.topicIds[0]").value(generatedTopicId));
 
     var savedPosts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene");
     assertEquals(1, savedPosts.size());
     assertEquals("A valid caption", savedPosts.get(0).getCaption());
     assertTrue(savedPosts.get(0).isPublic());
     assertEquals("posts/media/file.png", savedPosts.get(0).getMediaRef());
-  }*/
+  }
 
   @Test
   void createPost_withBlankCaption_returnsBadRequestAndDoesNotPersist() throws Exception {
     mockMvc
-        .perform(
-            post("/api/posts")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "caption": "   ",
-                      "mediaRef": null,
-                      "isPublic": false,
-                      "isAiGenerated": false,
-                      "topicIds": [],
-                      "source": null
-                    }
-                    """))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string(containsString("caption must not be blank")));
+            .perform(
+                    post("/api/posts")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(
+                                    """
+                                    {
+                                      "caption": "   ",
+                                      "mediaRef": null,
+                                      "isPublic": false,
+                                      "isAiGenerated": false,
+                                      "topicIds": [],
+                                      "source": null
+                                    }
+                                    """))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string(containsString("caption must not be blank")));
 
     assertTrue(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene").isEmpty());
   }
@@ -186,16 +188,16 @@ public class PostControllerDatabaseIntegrationTest {
     savePost("newer-post", "Newer", true, LocalDateTime.of(2026, 4, 25, 12, 0));
 
     mockMvc
-        .perform(
-            get("/api/posts/user/marlene")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].postId").value("newer-post"))
-        .andExpect(jsonPath("$[0].caption").value("Newer"))
-        .andExpect(jsonPath("$[0].isPublic").value(true))
-        .andExpect(jsonPath("$[1].postId").value("older-post"))
-        .andExpect(jsonPath("$[1].isPublic").value(true))
-        .andExpect(jsonPath("$.length()").value(2));
+            .perform(
+                    get("/api/posts/user/marlene")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].postId").value("newer-post"))
+            .andExpect(jsonPath("$[0].caption").value("Newer"))
+            .andExpect(jsonPath("$[0].isPublic").value(true))
+            .andExpect(jsonPath("$[1].postId").value("older-post"))
+            .andExpect(jsonPath("$[1].isPublic").value(true))
+            .andExpect(jsonPath("$.length()").value(2));
   }
 
   @Test
@@ -205,12 +207,12 @@ public class PostControllerDatabaseIntegrationTest {
     savePost("public-post", "Public", true, LocalDateTime.of(2026, 4, 25, 12, 0));
 
     mockMvc
-        .perform(
-            get("/api/posts/user/marlene")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[*].postId", containsInAnyOrder("private-post", "public-post")))
-        .andExpect(jsonPath("$.length()").value(2));
+            .perform(
+                    get("/api/posts/user/marlene")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[*].postId", containsInAnyOrder("private-post", "public-post")))
+            .andExpect(jsonPath("$.length()").value(2));
   }
 
   @Test
@@ -218,10 +220,10 @@ public class PostControllerDatabaseIntegrationTest {
     savePost("post-1", "Delete me", false, LocalDateTime.of(2026, 4, 25, 12, 0));
 
     mockMvc
-        .perform(
-            delete("/api/posts/post-1")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
-        .andExpect(status().isNoContent());
+            .perform(
+                    delete("/api/posts/post-1")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
+            .andExpect(status().isNoContent());
 
     assertFalse(postRepository.findById("post-1").isPresent());
   }
@@ -231,11 +233,11 @@ public class PostControllerDatabaseIntegrationTest {
     savePost("post-1", "Do not delete me", false, LocalDateTime.of(2026, 4, 25, 12, 0));
 
     mockMvc
-        .perform(
-            delete("/api/posts/post-1")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
-        .andExpect(status().isNotFound())
-        .andExpect(content().string("Post not found"));
+            .perform(
+                    delete("/api/posts/post-1")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken))
+            .andExpect(status().isNotFound())
+            .andExpect(content().string("Post not found"));
 
     assertTrue(postRepository.findById("post-1").isPresent());
   }
@@ -244,65 +246,65 @@ public class PostControllerDatabaseIntegrationTest {
   void getPostById_withRemovedPost_returnsNotFound() throws Exception {
     // Given: A post that has been marked as removed
     Post removedPost =
-        savePost(
-            "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+            savePost(
+                    "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
     removedPost.setIsRemoved(true);
     postRepository.save(removedPost);
 
     // When/Then: Getting the removed post by ID should return 404
     mockMvc
-        .perform(
-            get("/api/posts/removed-post")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
-        .andExpect(status().isNotFound());
+            .perform(
+                    get("/api/posts/removed-post")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
+            .andExpect(status().isNotFound());
   }
 
   private User saveUser(String username, boolean verified) {
     return userRepository.save(
-        User.builder()
-            .username(username)
-            .password(passwordEncoder.encode("securePass123!"))
-            .name(username)
-            .email(username + "@test.com")
-            .birthdate(LocalDate.of(1995, 5, 5))
-            .emailVerified(true)
-            .isVerified(verified)
-            .build());
+            User.builder()
+                    .username(username)
+                    .password(passwordEncoder.encode("securePass123!"))
+                    .name(username)
+                    .email(username + "@test.com")
+                    .birthdate(LocalDate.of(1995, 5, 5))
+                    .emailVerified(true)
+                    .isVerified(verified)
+                    .build());
   }
 
   private Post savePost(String postId, String caption, boolean isPublic, LocalDateTime createdAt) {
     return postRepository.save(
-        Post.builder()
-            .postId(postId)
-            .user(verifiedUser)
-            .caption(caption)
-            .mediaRef("posts/media/" + postId + ".png")
-            .isPublic(isPublic)
-            .isAiGenerated(false)
-            .upvotes(0)
-            .downvotes(0)
-            .createdAt(createdAt)
-            .embedding(new float[768])
-            .build());
+            Post.builder()
+                    .postId(postId)
+                    .user(verifiedUser)
+                    .caption(caption)
+                    .mediaRef("posts/media/" + postId + ".png")
+                    .isPublic(isPublic)
+                    .isAiGenerated(false)
+                    .upvotes(0)
+                    .downvotes(0)
+                    .createdAt(createdAt)
+                    .embedding(new float[768])
+                    .build());
   }
 
   private void saveFollowRelation(User follower, User followed) {
     followRelationRepository.save(
-        FollowRelation.builder()
-            .id(new FollowRelationId(follower.getId(), followed.getId()))
-            .follower(follower)
-            .followed(followed)
-            .since(LocalDateTime.now())
-            .build());
+            FollowRelation.builder()
+                    .id(new FollowRelationId(follower.getId(), followed.getId()))
+                    .follower(follower)
+                    .followed(followed)
+                    .since(LocalDateTime.now())
+                    .build());
   }
 
   private void saveFriendRelation(User firstUser, User secondUser) {
     friendRelationRepository.save(
-        FriendRelation.builder()
-            .id(new FriendRelationId(firstUser.getId(), secondUser.getId()))
-            .friend1(firstUser)
-            .friend2(secondUser)
-            .since(LocalDateTime.now())
-            .build());
+            FriendRelation.builder()
+                    .id(new FriendRelationId(firstUser.getId(), secondUser.getId()))
+                    .friend1(firstUser)
+                    .friend2(secondUser)
+                    .since(LocalDateTime.now())
+                    .build());
   }
 }
