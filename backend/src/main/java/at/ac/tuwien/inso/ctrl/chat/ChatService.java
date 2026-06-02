@@ -9,20 +9,25 @@ import at.ac.tuwien.inso.ctrl.chat.dto.ChatResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.CreateChatRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.MessageReactionResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.SendMessageRequest;
+import at.ac.tuwien.inso.ctrl.chat.dto.SharedPostResponse;
 import at.ac.tuwien.inso.ctrl.chat.entity.Chat;
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMemberId;
 import at.ac.tuwien.inso.ctrl.chat.entity.Message;
 import at.ac.tuwien.inso.ctrl.chat.entity.Reaction;
 import at.ac.tuwien.inso.ctrl.chat.entity.ReactionId;
+import at.ac.tuwien.inso.ctrl.chat.entity.Shared;
 import at.ac.tuwien.inso.ctrl.chat.entity.SystemEventType;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.SharedRepository;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -60,6 +65,8 @@ public class ChatService {
   private final ChatMemberRepository chatMemberRepository;
   private final MessageRepository messageRepository;
   private final ReactionRepository reactionRepository;
+  private final SharedRepository sharedRepository;
+  private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
@@ -164,21 +171,25 @@ public class ChatService {
       User currentUser, UUID chatId, SendMessageRequest request) {
     Chat chat = requireChatMember(currentUser, chatId);
     String content = trimToNull(request.content());
-    if (content == null) {
-      throw new InvalidRequestException("Message content must not be blank");
+    String postIdToShare = trimToNull(request.postIdToShare());
+    if (content == null && postIdToShare == null) {
+      throw new InvalidRequestException("Message content or shared post must be present");
     }
 
+    Shared shared = postIdToShare == null ? null : createSharedPost(currentUser, postIdToShare);
     Message message =
         Message.builder()
             .messageId(UUID.randomUUID())
             .chat(chat)
             .fromUser(currentUser)
-            .content(content)
+            .content(content == null ? "" : content)
             .date(LocalDateTime.now())
+            .shared(shared)
             .build();
 
-    ChatMessageResponse response = toMessageResponse(messageRepository.save(message), currentUser);
-    broadcastChatEvents(chat, response, "MESSAGE");
+    Message savedMessage = messageRepository.save(message);
+    ChatMessageResponse response = toMessageResponse(savedMessage, currentUser);
+    broadcastChatEvents(chat, savedMessage, currentUser, "MESSAGE");
     return response;
   }
 
@@ -285,9 +296,9 @@ public class ChatService {
               .build());
     }
 
-    ChatMessageResponse response =
-        toMessageResponse(requireMessageWithReactions(messageId), currentUser);
-    broadcastChatEvents(chat, response, "MESSAGE_UPDATE");
+    Message updatedMessage = requireMessageWithReactions(messageId);
+    ChatMessageResponse response = toMessageResponse(updatedMessage, currentUser);
+    broadcastChatEvents(chat, updatedMessage, currentUser, "MESSAGE_UPDATE");
     return response;
   }
 
@@ -460,9 +471,12 @@ public class ChatService {
     return chat;
   }
 
-  private void broadcastChatEvents(Chat chat, ChatMessageResponse message, String eventType) {
-    chatMessageBroadcaster.publishMessageEvent(
-        chat.getChatId(), new ChatRealtimePayload(eventType, chat.getChatId(), message));
+  private void broadcastChatEvents(Chat chat, Message message, User currentUser, String eventType) {
+    if (canPublishToSharedTopic(message)) {
+      ChatMessageResponse topicMessage = toMessageResponse(message, currentUser);
+      chatMessageBroadcaster.publishMessageEvent(
+          chat.getChatId(), new ChatRealtimePayload(eventType, chat.getChatId(), topicMessage));
+    }
 
     Chat chatWithMembers =
         chatRepository
@@ -600,7 +614,83 @@ public class ChatService {
         message.isSystem(),
         message.getSystemEvent() != null ? message.getSystemEvent().name() : null,
         systemTargets,
-        toReactionResponses(message, currentUser));
+        toReactionResponses(message, currentUser),
+        toSharedPostResponse(message.getShared(), currentUser));
+  }
+
+  private Shared createSharedPost(User currentUser, String postId) {
+    Post post =
+        postRepository.findById(postId).orElseThrow(() -> new NotFoundException("Post", postId));
+    if (!canViewPost(post, currentUser)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot share this post");
+    }
+
+    return sharedRepository.save(
+        Shared.builder()
+            .sharedId(UUID.randomUUID())
+            .post(post)
+            .sharedBy(currentUser)
+            .createdAt(LocalDateTime.now())
+            .build());
+  }
+
+  private SharedPostResponse toSharedPostResponse(Shared shared, User currentUser) {
+    if (shared == null) {
+      return null;
+    }
+
+    Post post = shared.getPost();
+    boolean externalPost = post.isExternalPost();
+    String username =
+        externalPost ? post.getExternalAuthor().getDisplayName() : post.getUser().getUsername();
+    String profileUsername = externalPost ? null : post.getUser().getUsername();
+    boolean publicPost = externalPost || post.isPublic();
+    boolean canView = canViewPost(post, currentUser);
+    String mediaRef = canView ? post.getMediaRef() : null;
+
+    return new SharedPostResponse(
+        shared.getSharedId(),
+        post.getPostId(),
+        username,
+        canView ? post.getCaption() : null,
+        mediaRef,
+        canView ? mediaKind(mediaRef) : null,
+        shared.getCreatedAt(),
+        canView,
+        publicPost,
+        profileUsername);
+  }
+
+  private boolean canViewPost(Post post, User currentUser) {
+    if (post.isExternalPost() || post.isPublic()) {
+      return true;
+    }
+
+    User owner = post.getUser();
+    if (owner == null || currentUser == null) {
+      return false;
+    }
+
+    return owner.getId().equals(currentUser.getId())
+        || friendRelationRepository.existsByUsers(owner, currentUser);
+  }
+
+  private boolean canPublishToSharedTopic(Message message) {
+    Shared shared = message.getShared();
+    if (shared == null) {
+      return true;
+    }
+
+    Post post = shared.getPost();
+    return post.isExternalPost() || post.isPublic();
+  }
+
+  private String mediaKind(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return null;
+    }
+
+    return mediaRef.toLowerCase().matches(".*\\.(mp4|webm|ogg|mov)(\\?.*)?$") ? "video" : "image";
   }
 
   private void createGroupSystemMessage(
@@ -626,7 +716,7 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     Chat reloadedChat = reloadChatDetails(chat.getChatId());
-    broadcastChatEvents(reloadedChat, toMessageResponse(savedMessage, actor), "MESSAGE");
+    broadcastChatEvents(reloadedChat, savedMessage, actor, "MESSAGE");
   }
 
   private List<ChatParticipantResponse> resolveSystemTargets(Message message) {

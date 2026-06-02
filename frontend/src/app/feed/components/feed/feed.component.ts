@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal, ElementRef} from '@angular/core';
+import {Component, computed, effect, inject, OnInit, signal, ElementRef} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -24,8 +24,20 @@ import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/po
 import {ReactiveFormsModule} from "@angular/forms";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {RelationshipService} from '../../../user/relationship.service';
+import {Friend} from '../../../user/dto/Relationship';
 import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
+import {MediaCacheService} from '../../../core/services/media-cache.service';
+import {usernameInitial} from '../../../core/utils/username-initial.utils';
+
+interface SharedPostPayload {
+  postId: string;
+  username: string;
+  caption: string;
+  url: string;
+  mediaUrl: string | null;
+  mediaKind: 'image' | 'video' | null;
+}
 
 @Component({
   selector: 'app-feed',
@@ -73,6 +85,9 @@ export class FeedComponent implements OnInit {
   protected reportSourceDialogVisible = signal(false);
   protected selectedSourceForReport = signal<PostSource | null>(null);
   protected selectedPostForSourceReport = signal<Post | null>(null);
+  protected shareDialogVisible = signal(false);
+  protected selectedPostForShare = signal<Post | null>(null);
+  protected shareFriendQuery = signal('');
 
   protected algorithmConfigVisible = signal(false);
   protected isRefreshing = signal(false);
@@ -83,6 +98,23 @@ export class FeedComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   private readonly rel = inject(RelationshipService);
+  private readonly mediaCacheService = inject(MediaCacheService);
+  protected readonly friends = this.rel.friends;
+  protected readonly shareFriendAvatarUrls = signal<Record<string, string>>({});
+  protected readonly failedShareFriendAvatars = signal<Set<string>>(new Set());
+  protected readonly filteredShareFriends = computed(() => {
+    const query = this.shareFriendQuery().trim().toLowerCase();
+    return this.friends().filter(friend =>
+      !query
+      || friend.username.toLowerCase().includes(query)
+      || friend.name.toLowerCase().includes(query)
+    );
+  });
+  constructor() {
+    effect(() => {
+      this.loadShareFriendAvatars(this.friends());
+    });
+  }
 
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
@@ -348,5 +380,88 @@ export class FeedComponent implements OnInit {
     this.selectedSourceForReport.set(postSource);
     this.reportSourceDialogVisible.set(true);
     this.selectedPostForSourceReport.set(post);
+  }
+
+  protected openShareDialog(post: Post): void {
+    this.selectedPostForShare.set(post);
+    this.shareFriendQuery.set('');
+    this.shareDialogVisible.set(true);
+  }
+
+  protected sharePostWithFriend(friend: Friend): void {
+    const post = this.selectedPostForShare();
+    if (!post) {
+      return;
+    }
+
+    this.shareDialogVisible.set(false);
+    this.router.navigate(['/chat'], {
+      queryParams: {
+        user: friend.username,
+      },
+      state: {
+        sharedPost: this.sharedPostPayload(post),
+      },
+    });
+  }
+
+  protected onShareDialogVisibleChange(visible: boolean): void {
+    this.shareDialogVisible.set(visible);
+    if (!visible) {
+      this.selectedPostForShare.set(null);
+      this.shareFriendQuery.set('');
+    }
+  }
+
+  protected shareFriendAvatarUrl(friend: Friend): string | null {
+    return this.shareFriendAvatarUrls()[friend.id] ?? null;
+  }
+
+  protected shareFriendInitial(friend: Friend): string {
+    return usernameInitial(friend.username);
+  }
+
+  protected shareFriendAvatarFailed(friend: Friend): boolean {
+    return this.failedShareFriendAvatars().has(friend.id);
+  }
+
+  protected markShareFriendAvatarFailed(friend: Friend): void {
+    this.failedShareFriendAvatars.update(failed => {
+      const next = new Set(failed);
+      next.add(friend.id);
+      return next;
+    });
+  }
+
+  private loadShareFriendAvatars(friends: Friend[]): void {
+    friends.forEach(friend => {
+      if (!friend.profilePicture || this.shareFriendAvatarUrls()[friend.id]) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(friend.profilePicture, 'image', 'high')
+        .subscribe(url => {
+          if (!url) {
+            return;
+          }
+          this.shareFriendAvatarUrls.update(urls => ({ ...urls, [friend.id]: url }));
+        });
+    });
+  }
+
+  private sharedPostPayload(post: Post): SharedPostPayload {
+    const caption = post.caption.length > 220
+      ? `${post.caption.slice(0, 217)}...`
+      : post.caption;
+    const postUrl = `${window.location.origin}/feed?comments=${encodeURIComponent(post.postId)}`;
+    const mediaUrl = post.videoImageRef?.[0] ?? null;
+    return {
+      postId: post.postId,
+      username: post.username,
+      caption,
+      url: postUrl,
+      mediaUrl,
+      mediaKind: mediaUrl ? (this.isVideo(mediaUrl) ? 'video' : 'image') : null,
+    };
   }
 }

@@ -2,7 +2,7 @@ package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

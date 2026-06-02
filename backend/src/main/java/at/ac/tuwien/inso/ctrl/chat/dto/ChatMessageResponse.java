@@ -14,4 +14,5 @@ public record ChatMessageResponse(
     boolean system,
     String systemEvent,
     List<ChatParticipantResponse> systemTargets,
-    List<MessageReactionResponse> reactions) {}
+    List<MessageReactionResponse> reactions,
+    SharedPostResponse sharedPost) {}

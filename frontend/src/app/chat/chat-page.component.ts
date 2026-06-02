@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { IconField } from 'primeng/iconfield';
@@ -26,22 +27,53 @@ import { jwtDecode } from 'jwt-decode';
 import { AuthService } from '../auth/auth.service';
 import { CustomJwtPayload } from '../auth/dto/CustomJwtPayload';
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { parseBackendDate } from '../core/utils/date-time.utils';
 import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { Friend } from '../user/dto/Relationship';
 import { RelationshipService } from '../user/relationship.service';
 import { UserService } from '../user/user.service';
-import { Chat, ChatMessage, ChatParticipant } from './chat.models';
+import { Chat, ChatMessage, ChatParticipant, SharedPost } from './chat.models';
 import { ChatRealtimePayload } from './chat-realtime.service';
 import { ChatRealtimeBridgeService } from './chat-realtime-bridge.service';
 import { ChatUnreadService } from './chat-unread.service';
 import { ChatService } from './chat.service';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
+const SHARED_POST_PREFIX = '[[CTRL_SHARED_POST:';
+const SHARED_POST_SUFFIX = ']]';
+
+interface SharedPostPayload {
+  postId: string;
+  username: string;
+  caption: string;
+  url: string;
+  mediaUrl: string | null;
+  mediaKind: 'image' | 'video' | null;
+  canView?: boolean;
+  publicPost?: boolean;
+  profileUsername?: string | null;
+}
+
+interface ParsedSharedPost {
+  post: SharedPostPayload;
+  note: string;
+}
 
 @Component({
   selector: 'app-chat-page',
-  imports: [CommonModule, FormsModule, Button, Dialog, IconField, InputIcon, InputText, Textarea, TooltipModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    Button,
+    Dialog,
+    IconField,
+    InputIcon,
+    InputText,
+    Textarea,
+    TooltipModule,
+  ],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.scss',
 })
@@ -54,6 +86,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private readonly chatUnreadService = inject(ChatUnreadService);
   private readonly chatRealtimeBridge = inject(ChatRealtimeBridgeService);
   private readonly userService = inject(UserService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly destroy$ = new Subject<void>();
   private readonly messageListRef = viewChild<ElementRef<HTMLElement>>('messageList');
@@ -76,6 +110,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly reactionPickerMessageId = signal<string | null>(null);
   protected readonly hoveredMessageId = signal<string | null>(null);
   protected readonly loadingMembersDialog = signal(false);
+  protected readonly sharedPostDraft = signal<SharedPostPayload | null>(null);
 
   protected readonly reactionEmojis = REACTION_EMOJIS;
   protected readonly groupName = signal('');
@@ -85,6 +120,13 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly groupImagePreview = signal<string | null>(null);
   protected readonly avatarUrls = signal<Record<string, string>>({});
   protected readonly groupImageUrls = signal<Record<string, string>>({});
+  protected readonly sharedPostMediaUrls = signal<Record<string, string>>({});
+  private pendingSharedPost:
+    | {
+        username: string;
+        post: SharedPostPayload;
+      }
+    | null = null;
 
   protected readonly friends = this.relationshipService.friends;
   protected readonly currentUsername = computed(() => {
@@ -165,6 +207,21 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.route.queryParamMap
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        const username = params.get('user');
+        const post = this.readSharedPostFromHistory();
+        if (!username || !post) {
+          return;
+        }
+
+        this.pendingSharedPost = { username, post };
+        if (this.chats().length > 0) {
+          this.openPendingSharedPostChat();
+        }
+      });
+
     this.loadFriends();
     this.loadChats();
     this.chatRealtimeBridge.setMessageHandler(payload => this.handleRealtimeMessage(payload));
@@ -238,12 +295,13 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectChat(chat: Chat): void {
+    const normalizedChat = this.normalizeChat(chat);
     this.friendDropdownOpen.set(false);
     this.reactionPickerMessageId.set(null);
     this.messages.set([]);
-    this.selectedChat.set(chat);
-    this.chatRealtimeBridge.watchChat(chat.chatId);
-    this.loadMessages(chat.chatId);
+    this.selectedChat.set(normalizedChat);
+    this.chatRealtimeBridge.watchChat(normalizedChat.chatId);
+    this.loadMessages(normalizedChat.chatId);
   }
 
   protected openGroupDialog(): void {
@@ -322,15 +380,33 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const previousChat = chat;
+    const optimisticChat = this.upsertChat({
+      ...chat,
+      participants: chat.participants.filter(
+        member => this.normalizeId(member.id) !== this.normalizeId(participant.id)
+      ),
+    });
+    this.selectedChat.set(optimisticChat);
+
     this.chatService.removeMember(chat.chatId, participant.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.refreshSelectedGroupChat(chat.chatId);
-          this.loadMessages(chat.chatId);
+        next: updatedChat => {
+          const normalizedChat = this.upsertChat(updatedChat);
+          if (this.selectedChat()?.chatId === normalizedChat.chatId) {
+            this.selectedChat.set(normalizedChat);
+          }
+          this.loadMessages(normalizedChat.chatId);
           this.notificationService.showSuccess('Member removed');
         },
-        error: () => this.notificationService.showError('Failed to remove member'),
+        error: () => {
+          const restoredChat = this.upsertChat(previousChat);
+          if (this.selectedChat()?.chatId === restoredChat.chatId) {
+            this.selectedChat.set(restoredChat);
+          }
+          this.notificationService.showError('Failed to remove member');
+        },
       });
   }
 
@@ -374,9 +450,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       .subscribe({
         next: updatedChat => {
           this.resetAddMemberSelection();
-          this.upsertChat(updatedChat);
-          this.selectedChat.set(updatedChat);
-          this.loadMessages(updatedChat.chatId);
+          const normalizedChat = this.upsertChat(updatedChat);
+          this.selectedChat.set(normalizedChat);
+          this.loadMessages(normalizedChat.chatId);
         },
         error: () => this.notificationService.showError('Failed to add members'),
       });
@@ -645,15 +721,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected sendMessage(): void {
     const chat = this.selectedChat();
-    const content = this.messageText().trim();
-    if (!chat || !content || this.sendingMessage()) {
+    const note = this.messageText().trim();
+    const sharedPost = this.sharedPostDraft();
+    if (!chat || (!note && !sharedPost) || this.sendingMessage()) {
       return;
     }
 
     this.sendingMessage.set(true);
     this.messageText.set('');
+    this.sharedPostDraft.set(null);
 
-    this.chatService.sendMessage(chat.chatId, { content })
+    this.chatService.sendMessage(chat.chatId, {
+      content: note,
+      postIdToShare: sharedPost?.postId ?? null,
+    })
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.sendingMessage.set(false))
@@ -661,14 +742,67 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       .subscribe({
         next: message => {
           const normalizedMessage = this.normalizeMessage(message);
+          this.loadSharedPostMedia(normalizedMessage.sharedPost);
           this.appendMessageIfMissing(normalizedMessage);
           this.patchChatLastMessage(chat, normalizedMessage);
         },
         error: () => {
-          this.messageText.set(content);
+          this.messageText.set(note);
+          this.sharedPostDraft.set(sharedPost);
           this.notificationService.showError('Failed to send message');
         },
       });
+  }
+
+  protected clearSharedPostDraft(): void {
+    this.sharedPostDraft.set(null);
+  }
+
+  protected sharedPostFromMessage(message: ChatMessage): ParsedSharedPost | null {
+    if (message.sharedPost) {
+      return {
+        post: this.sharedPostPayloadFromResponse(message.sharedPost),
+        note: message.content,
+      };
+    }
+
+    return this.parseSharedPostContent(message.content);
+  }
+
+  protected hasSharedPost(message: ChatMessage): boolean {
+    return message.sharedPost !== null || message.content.startsWith(SHARED_POST_PREFIX);
+  }
+
+  protected canViewSharedPost(sharedPost: ParsedSharedPost): boolean {
+    return sharedPost.post.canView !== false;
+  }
+
+  protected sharedPostProfileRoute(sharedPost: ParsedSharedPost): string[] | null {
+    const profileUsername = sharedPost.post.profileUsername;
+    return profileUsername ? ['/profile', profileUsername] : null;
+  }
+
+  protected messagePreview(content: string): string {
+    return this.messagePreviewForContent(content);
+  }
+
+  protected messagePreviewForMessage(message: ChatMessage): string {
+    if (message.sharedPost) {
+      return message.content || `Shared post from @${message.sharedPost.username}`;
+    }
+
+    return this.messagePreviewForContent(message.content);
+  }
+
+  private messagePreviewForContent(content: string): string {
+    const sharedPost = this.parseSharedPostContent(content);
+    if (!sharedPost) {
+      return content;
+    }
+
+    return sharedPost.note
+      ? sharedPost.note
+      : `Shared post from @${sharedPost.post.username}`;
   }
 
   protected avatarUrl(id: string): string | null {
@@ -711,10 +845,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: chats => {
-          const dedupedChats = this.applyChatListDedupe(chats);
+          const normalizedChats = chats.map(chat => this.normalizeChat(chat));
+          const dedupedChats = this.applyChatListDedupe(normalizedChats);
           this.chats.set(dedupedChats);
           this.chatUnreadService.syncFromChats(dedupedChats);
-          chats.forEach(chat => {
+          dedupedChats.forEach(chat => {
             chat.participants.forEach(participant =>
               this.loadAvatar(participant.id, participant.profilePicture)
             );
@@ -726,14 +861,71 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
           const selectedChat = this.selectedChat();
           if (selectedChat) {
-            const refreshedChat = chats.find(chat => chat.chatId === selectedChat.chatId);
+            const refreshedChat = dedupedChats.find(chat => chat.chatId === selectedChat.chatId);
             if (refreshedChat) {
               this.selectedChat.set(refreshedChat);
             }
           }
+
+          this.openPendingSharedPostChat();
         },
         error: () => this.notificationService.showError('Failed to load chats'),
       });
+  }
+
+  private openPendingSharedPostChat(): void {
+    const pending = this.pendingSharedPost;
+    if (!pending) {
+      return;
+    }
+
+    const existingChat = this.directChatForUsername(pending.username);
+    if (existingChat) {
+      this.pendingSharedPost = null;
+      this.selectChat(existingChat);
+      this.sharedPostDraft.set(pending.post);
+      this.messageText.set('');
+      this.clearShareQueryParams();
+      return;
+    }
+
+    this.pendingSharedPost = null;
+    this.chatService.createChat({ usernames: [pending.username] })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: chat => {
+          this.upsertChat(chat);
+          this.selectChat(chat);
+          this.sharedPostDraft.set(pending.post);
+          this.messageText.set('');
+          this.clearShareQueryParams();
+        },
+        error: () => {
+          this.notificationService.showError('Failed to open chat');
+          this.clearShareQueryParams();
+        },
+      });
+  }
+
+  private directChatForUsername(username: string): Chat | null {
+    const normalizedUsername = username.toLowerCase();
+    const matches = this.chats().filter(chat =>
+      !chat.groupChat
+      && chat.participants.some(
+        participant => participant.username.toLowerCase() === normalizedUsername
+      )
+    );
+
+    return this.pickLatestDirectChat(matches);
+  }
+
+  private clearShareQueryParams(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { user: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private loadMessages(chatId: string): void {
@@ -745,10 +937,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: messages => {
-          this.messages.set(messages.map(message => this.normalizeMessage(message)));
-          messages.forEach(message =>
-            this.loadAvatar(message.sender.id, message.sender.profilePicture)
+          if (this.selectedChat()?.chatId !== chatId) {
+            return;
+          }
+
+          const normalizedMessages = messages.map(message => this.normalizeMessage(message));
+          this.messages.update(existingMessages =>
+            this.mergeMessages(normalizedMessages, existingMessages)
           );
+          normalizedMessages.forEach(normalizedMessage => {
+            this.loadAvatar(normalizedMessage.sender.id, normalizedMessage.sender.profilePicture);
+            this.loadSharedPostMedia(normalizedMessage.sharedPost);
+          });
           this.markChatReadInState(chatId);
           this.scrollToLatestMessage();
         },
@@ -756,19 +956,22 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  private upsertChat(nextChat: Chat): void {
+  private upsertChat(nextChat: Chat): Chat {
+    const normalizedChat = this.normalizeChat(nextChat);
     this.chats.update(chats => {
-      const otherChats = chats.filter(chat => chat.chatId !== nextChat.chatId);
-      return this.applyChatListDedupe([nextChat, ...otherChats]);
+      const otherChats = chats.filter(chat => chat.chatId !== normalizedChat.chatId);
+      return this.applyChatListDedupe([normalizedChat, ...otherChats]);
     });
 
-    nextChat.participants.forEach(participant =>
+    normalizedChat.participants.forEach(participant =>
       this.loadAvatar(participant.id, participant.profilePicture)
     );
-    if (nextChat.groupOwner) {
-      this.loadAvatar(nextChat.groupOwner.id, nextChat.groupOwner.profilePicture);
+    if (normalizedChat.groupOwner) {
+      this.loadAvatar(normalizedChat.groupOwner.id, normalizedChat.groupOwner.profilePicture);
     }
-    this.loadGroupImage(nextChat);
+    this.loadGroupImage(normalizedChat);
+    this.loadSharedPostMedia(normalizedChat.lastMessage?.sharedPost ?? null);
+    return normalizedChat;
   }
 
   private loadGroupImage(chat: Chat): void {
@@ -879,6 +1082,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private mergeMessages(
+    loadedMessages: ChatMessage[],
+    existingMessages: ChatMessage[],
+  ): ChatMessage[] {
+    const messagesById = new Map<string, ChatMessage>();
+
+    loadedMessages.forEach(message => messagesById.set(message.messageId, message));
+    existingMessages.forEach(message => messagesById.set(message.messageId, message));
+
+    return Array.from(messagesById.values()).sort(
+      (left, right) => parseBackendDate(left.date).getTime() - parseBackendDate(right.date).getTime(),
+    );
+  }
+
   private scrollToLatestMessage(): void {
     afterNextRender(
       () => {
@@ -904,10 +1121,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       unreadCount: 0,
     };
 
-    this.upsertChat(updatedChat);
+    const normalizedChat = this.upsertChat(updatedChat);
 
     if (this.selectedChat()?.chatId === chat.chatId) {
-      this.selectedChat.set(updatedChat);
+      this.selectedChat.set(normalizedChat);
     }
   }
 
@@ -958,7 +1175,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private chatActivityTime(chat: Chat): number {
     const date = chat.lastMessage?.date ?? chat.createdAt;
-    return new Date(date).getTime();
+    return parseBackendDate(date).getTime();
   }
 
   private handleRealtimeMessage(payload: ChatRealtimePayload): void {
@@ -982,15 +1199,26 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private handleRealtimeChatSummary(chat: Chat): void {
-    this.upsertChat(chat);
-
     const selected = this.selectedChat();
     if (selected?.chatId === chat.chatId) {
-      this.selectedChat.set(chat);
-      if (chat.unreadCount === 0) {
-        this.markChatReadInState(chat.chatId);
+      const visibleChat = { ...chat, unreadCount: 0 };
+      this.upsertChat(visibleChat);
+      this.selectedChat.set(visibleChat);
+
+      if (chat.lastMessage) {
+        const normalizedMessage = this.normalizeMessage(chat.lastMessage);
+        this.loadSharedPostMedia(normalizedMessage.sharedPost);
+        this.appendMessageIfMissing(normalizedMessage);
+        this.loadAvatar(
+          normalizedMessage.sender.id,
+          normalizedMessage.sender.profilePicture,
+        );
       }
+      this.markChatReadInState(chat.chatId);
+      return;
     }
+
+    this.upsertChat(chat);
   }
 
   private refreshSelectedGroupChat(chatId: string): void {
@@ -1002,9 +1230,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: chat => {
-          this.upsertChat(chat);
+          const normalizedChat = this.upsertChat(chat);
           if (this.selectedChat()?.chatId === chat.chatId) {
-            this.selectedChat.set(chat);
+            this.selectedChat.set(normalizedChat);
           }
         },
         error: () => this.notificationService.showError('Failed to load group members'),
@@ -1014,11 +1242,25 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private normalizeMessage(message: ChatMessage): ChatMessage {
     return {
       ...message,
+      date: this.normalizeBackendDate(message.date),
       system: message.system ?? false,
       systemEvent: message.systemEvent ?? null,
       systemTargets: message.systemTargets ?? [],
       reactions: message.reactions ?? [],
+      sharedPost: message.sharedPost ?? null,
     };
+  }
+
+  private normalizeChat(chat: Chat): Chat {
+    return {
+      ...chat,
+      createdAt: this.normalizeBackendDate(chat.createdAt),
+      lastMessage: chat.lastMessage ? this.normalizeMessage(chat.lastMessage) : null,
+    };
+  }
+
+  private normalizeBackendDate(value: string): string {
+    return parseBackendDate(value).toISOString();
   }
 
   private updateMessageInState(updatedMessage: ChatMessage): void {
@@ -1045,5 +1287,97 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         participant.username.toLowerCase().includes(query)
         || (participant.name ?? '').toLowerCase().includes(query)
       );
+  }
+
+  private readSharedPostFromHistory(): SharedPostPayload | null {
+    const state = history.state as { sharedPost?: unknown };
+    if (!state?.sharedPost || !this.isSharedPostPayload(state.sharedPost)) {
+      return null;
+    }
+
+    return state.sharedPost;
+  }
+
+  private isSharedPostPayload(value: unknown): value is SharedPostPayload {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const candidate = value as Partial<SharedPostPayload>;
+    return typeof candidate.postId === 'string'
+      && typeof candidate.username === 'string'
+      && typeof candidate.caption === 'string'
+      && typeof candidate.url === 'string'
+      && (candidate.mediaUrl === null || typeof candidate.mediaUrl === 'string')
+      && (candidate.mediaKind === null || candidate.mediaKind === 'image' || candidate.mediaKind === 'video')
+      && (candidate.canView === undefined || typeof candidate.canView === 'boolean')
+      && (candidate.publicPost === undefined || typeof candidate.publicPost === 'boolean')
+      && (
+        candidate.profileUsername === undefined
+        || candidate.profileUsername === null
+        || typeof candidate.profileUsername === 'string'
+      );
+  }
+
+  private parseSharedPostContent(content: string): ParsedSharedPost | null {
+    if (!content.startsWith(SHARED_POST_PREFIX)) {
+      return null;
+    }
+
+    const markerEnd = content.indexOf(SHARED_POST_SUFFIX);
+    if (markerEnd < 0) {
+      return null;
+    }
+
+    const encodedPost = content.slice(SHARED_POST_PREFIX.length, markerEnd);
+    const note = content.slice(markerEnd + SHARED_POST_SUFFIX.length).trimStart();
+
+    try {
+      const payload = JSON.parse(decodeURIComponent(encodedPost)) as unknown;
+      if (!this.isSharedPostPayload(payload)) {
+        return null;
+      }
+
+      return { post: payload, note };
+    } catch {
+      return null;
+    }
+  }
+
+  private sharedPostPayloadFromResponse(sharedPost: SharedPost): SharedPostPayload {
+    const resolvedMediaUrl = this.sharedPostMediaUrls()[sharedPost.sharedId] ?? null;
+    const canView = sharedPost.canView ?? true;
+    const mediaUrl = canView && sharedPost.mediaRef?.startsWith('http')
+      ? sharedPost.mediaRef
+      : canView
+        ? resolvedMediaUrl
+        : null;
+
+    return {
+      postId: sharedPost.postId,
+      username: sharedPost.username,
+      caption: sharedPost.caption ?? '',
+      url: `${window.location.origin}/feed?comments=${encodeURIComponent(sharedPost.postId)}`,
+      mediaUrl,
+      mediaKind: sharedPost.mediaKind,
+      canView,
+      publicPost: sharedPost.publicPost ?? true,
+      profileUsername: sharedPost.profileUsername,
+    };
+  }
+
+  private loadSharedPostMedia(sharedPost: SharedPost | null): void {
+    if (!sharedPost?.mediaRef || this.sharedPostMediaUrls()[sharedPost.sharedId]) {
+      return;
+    }
+
+    this.mediaCacheService.resolveMediaUrl(sharedPost.mediaRef, sharedPost.mediaKind ?? 'image', 'normal')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(url => {
+        if (!url) {
+          return;
+        }
+        this.sharedPostMediaUrls.update(urls => ({ ...urls, [sharedPost.sharedId]: url }));
+      });
   }
 }

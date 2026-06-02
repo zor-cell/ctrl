@@ -138,7 +138,7 @@
 
           <span class="row-subtitle" [class.row-subtitle--unread]="hasUnreadMessages(chat)">
             @if (chat.lastMessage) {
-              {{ chat.lastMessage.content }}
+              {{ messagePreviewForMessage(chat.lastMessage) }}
             } @else {
               {{ participantText(chat) }}
             }
@@ -236,7 +236,10 @@
                 <span class="message-system-pill">{{ systemMessageLabel(message) }}</span>
               </div>
             } @else {
-            <article class="message-row" [class.own]="isOwnMessage(message)">
+            <article
+              class="message-row"
+              [class.own]="isOwnMessage(message)"
+              [class.message-row--shared-post]="hasSharedPost(message)">
               @if (!isOwnMessage(message)) {
                 <span class="avatar message-avatar" aria-hidden="true">
                   @if (avatarUrl(message.sender.id)) {
@@ -280,7 +283,53 @@
                     }
                     <time>{{ message.date | date: 'shortTime' }}</time>
                   </div>
-                  <p class="message-content">{{ message.content }}</p>
+                  @if (sharedPostFromMessage(message); as sharedPost) {
+                    <article class="shared-post-card" [class.shared-post-card--private]="!canViewSharedPost(sharedPost)">
+                      @if (canViewSharedPost(sharedPost)) {
+                        @if (sharedPost.post.mediaUrl) {
+                          <div class="shared-post-media">
+                            @if (sharedPost.post.mediaKind === 'video') {
+                              <video
+                                [src]="sharedPost.post.mediaUrl"
+                                muted
+                                playsinline
+                                preload="metadata"></video>
+                            } @else {
+                              <img
+                                [src]="sharedPost.post.mediaUrl"
+                                [alt]="sharedPost.post.caption"
+                                loading="lazy" />
+                            }
+                          </div>
+                        }
+
+                        <div class="shared-post-copy">
+                          <span class="shared-post-author">Shared post from @{{ sharedPost.post.username }}</span>
+                          <p>{{ sharedPost.post.caption }}</p>
+                          <a [href]="sharedPost.post.url">View post</a>
+                        </div>
+                      } @else {
+                        <div class="shared-post-private">
+                          <span class="shared-post-private-icon" aria-hidden="true">
+                            <i class="pi pi-lock"></i>
+                          </span>
+                          <div class="shared-post-private-copy">
+                            <span class="shared-post-author">Private post from @{{ sharedPost.post.username }}</span>
+                            <p>You cannot view this private post because you are not friends with this account.</p>
+                            @if (sharedPostProfileRoute(sharedPost); as profileRoute) {
+                              <a [routerLink]="profileRoute">View profile</a>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </article>
+
+                    @if (sharedPost.note) {
+                      <p class="message-content">{{ sharedPost.note }}</p>
+                    }
+                  } @else {
+                    <p class="message-content">{{ message.content }}</p>
+                  }
                 </div>
 
                 @if (message.reactions.length > 0) {
@@ -308,10 +357,44 @@
 
       <form class="message-composer" (ngSubmit)="sendMessage()">
         <div class="composer-main">
+          @if (sharedPostDraft(); as sharedPost) {
+            <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
+              @if (sharedPost.mediaUrl) {
+                <div class="composer-shared-post-media">
+                  @if (sharedPost.mediaKind === 'video') {
+                    <video
+                      [src]="sharedPost.mediaUrl"
+                      muted
+                      playsinline
+                      preload="metadata"></video>
+                  } @else {
+                    <img
+                      [src]="sharedPost.mediaUrl"
+                      [alt]="sharedPost.caption"
+                      loading="lazy" />
+                  }
+                </div>
+              }
+
+              <div class="composer-shared-post-copy">
+                <span>Shared post from @{{ sharedPost.username }}</span>
+                <p>{{ sharedPost.caption }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="composer-shared-post-remove"
+                (click)="clearSharedPostDraft()"
+                aria-label="Remove shared post">
+                <i class="pi pi-times"></i>
+              </button>
+            </article>
+          }
+
           <textarea
             pTextarea
             rows="1"
-            placeholder="Write a message..."
+            [placeholder]="sharedPostDraft() ? 'Add a message...' : 'Write a message...'"
             [ngModel]="messageText()"
             (ngModelChange)="messageText.set($event)"
             name="message"></textarea>
@@ -321,7 +404,7 @@
           type="submit"
           icon="pi pi-send"
           [rounded]="true"
-          [disabled]="!messageText().trim() || sendingMessage()"
+          [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
           aria-label="Send message" />
       </form>
     } @else {

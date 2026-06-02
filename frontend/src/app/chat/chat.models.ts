@@ -11,6 +11,19 @@ export interface MessageReaction {
   reactedByCurrentUser: boolean;
 }
 
+export interface SharedPost {
+  sharedId: string;
+  postId: string;
+  username: string;
+  caption: string | null;
+  mediaRef: string | null;
+  mediaKind: 'image' | 'video' | null;
+  sharedAt: string;
+  canView: boolean;
+  publicPost: boolean;
+  profileUsername: string | null;
+}
+
 export type SystemEventType = 'MEMBER_ADDED' | 'MEMBER_REMOVED' | 'MEMBER_LEFT';
 
 export interface ChatMessage {
@@ -24,6 +37,7 @@ export interface ChatMessage {
   systemEvent: SystemEventType | null;
   systemTargets: ChatParticipant[];
   reactions: MessageReaction[];
+  sharedPost: SharedPost | null;
 }
 
 export interface Chat {
@@ -47,4 +61,5 @@ export interface CreateChatRequest {
 
 export interface SendMessageRequest {
   content: string;
+  postIdToShare?: string | null;
 }

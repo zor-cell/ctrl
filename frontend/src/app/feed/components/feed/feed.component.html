@@ -301,6 +301,16 @@
         <i class="pi pi-comment"></i>
         <span>{{ post.comments.length }}</span>
       </button>
+
+      <button
+        class="action-btn"
+        (click)="openShareDialog(post)"
+        pTooltip="Send post"
+        tooltipPosition="top"
+        aria-label="Send post to friend"
+      >
+        <i class="pi pi-send"></i>
+      </button>
     </div>
 
     <button class="action-btn flag-btn" (click)="reportPost(post)" pTooltip="Report Post" tooltipPosition="top">
@@ -345,6 +355,57 @@
   [visible]="reportSourceDialogVisible()"
   (visibleChange)="reportSourceDialogVisible.set($event)">
 </app-report>
+
+<p-dialog
+  header="Send post"
+  [visible]="shareDialogVisible()"
+  (visibleChange)="onShareDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="share-post-dialog"
+>
+  <div class="share-dialog-content">
+    <input
+      class="share-search"
+      type="search"
+      placeholder="Search friends"
+      [value]="shareFriendQuery()"
+      (input)="shareFriendQuery.set($any($event.target).value)"
+    />
+
+    <div class="share-friends-list">
+      @if (filteredShareFriends().length === 0) {
+        <p class="share-empty">No friends found</p>
+      }
+
+      @for (friend of filteredShareFriends(); track friend.id) {
+        <button
+          type="button"
+          class="share-friend-row"
+          (click)="sharePostWithFriend(friend)"
+        >
+          <span class="share-avatar" aria-hidden="true">
+            @if (shareFriendAvatarUrl(friend) && !shareFriendAvatarFailed(friend)) {
+              <img
+                [src]="shareFriendAvatarUrl(friend)!"
+                alt=""
+                (error)="markShareFriendAvatarFailed(friend)"
+              />
+            } @else {
+              {{ shareFriendInitial(friend) }}
+            }
+          </span>
+          <span class="share-friend-copy">
+            <strong>{{ friend.name || friend.username }}</strong>
+            <span>@{{ friend.username }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</p-dialog>
 
 <!-- ─── Algorithm Config Dialog ─── -->
 <p-dialog

@@ -59,6 +59,10 @@ public class Message {
   @JoinColumn(name = "chat_id", referencedColumnName = "chat_id", nullable = false)
   private Chat chat;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "shared_id", referencedColumnName = "shared_id")
+  private Shared shared;
+
   @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private Set<Reaction> reactions = new LinkedHashSet<>();

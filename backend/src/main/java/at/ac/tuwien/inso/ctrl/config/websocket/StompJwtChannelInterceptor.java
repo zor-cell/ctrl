@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.config.websocket;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.user.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class StompJwtChannelInterceptor implements ChannelInterceptor {
 
   private final JwtService jwtService;
@@ -32,7 +34,8 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
 
     String authHeader = accessor.getFirstNativeHeader("Authorization");
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-      return message;
+      log.warn("[WebSocket] CONNECT without valid Authorization header");
+      return null;
     }
 
     String jwt = authHeader.substring("Bearer ".length());
@@ -45,9 +48,14 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
                 userDetails, null, userDetails.getAuthorities());
         accessor.setUser(authentication);
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.debug("[WebSocket] User authenticated: {}", username);
+      } else {
+        log.warn("[WebSocket] Invalid token for user: {}", username);
+        return null;
       }
-    } catch (Exception ignored) {
-      // Invalid tokens are rejected by the message security layer.
+    } catch (Exception e) {
+      log.warn("[WebSocket] JWT validation failed: {}", e.getMessage());
+      return null;
     }
 
     return message;
