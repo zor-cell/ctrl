@@ -89,13 +89,7 @@ export class ReportService {
   }
 
   getReportSummary(id: string) {
-    return this.httpClient.get<ReportSummaryResponse[]>(`${this.baseUri}/${id}/summary`).pipe(
-        tap(() => {
-          this.notificationService.showSuccess(
-            'Report Updated Successfully!',
-          );
-        }),
-      )
+    return this.httpClient.get<ReportSummaryResponse[]>(`${this.baseUri}/${id}/summary`).pipe()
 
 
   }
