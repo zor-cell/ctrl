@@ -1,6 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, inject, resource, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { CardModule } from 'primeng/card';
@@ -69,6 +70,23 @@ export class PostDetailPageComponent {
     this.location.back();
   }
 
+  errorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const backendMessage = this.extractBackendErrorMessage(error.error);
+      return backendMessage ?? error.message ?? 'Post could not be loaded.';
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    return 'Post could not be loaded.';
+  }
+
   goToUser(): void {
     if (this.post.value()?.isExternal) {
       if (this.post.hasValue() && this.post.value()?.userProfileUrl !== null) {
@@ -93,5 +111,19 @@ export class PostDetailPageComponent {
 
   timeAgo(value: string): string {
     return formatTimeAgo(value);
+  }
+
+  private extractBackendErrorMessage(error: unknown): string | null {
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (error && typeof error === 'object') {
+      const candidate = error as { message?: unknown; error?: unknown; detail?: unknown };
+      const message = candidate.message ?? candidate.error ?? candidate.detail;
+      return typeof message === 'string' && message.trim() ? message : null;
+    }
+
+    return null;
   }
 }

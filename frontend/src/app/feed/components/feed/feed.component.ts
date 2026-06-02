@@ -29,6 +29,8 @@ import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 import {MediaCacheService} from '../../../core/services/media-cache.service';
 import {usernameInitial} from '../../../core/utils/username-initial.utils';
+import { Chat, ChatParticipant } from '../../../chat/chat.models';
+import { ChatService } from '../../../chat/chat.service';
 
 interface SharedPostPayload {
   postId: string;
@@ -37,6 +39,18 @@ interface SharedPostPayload {
   url: string;
   mediaUrl: string | null;
   mediaKind: 'image' | 'video' | null;
+}
+
+interface ShareTarget {
+  id: string;
+  kind: 'direct' | 'group';
+  chatId: string | null;
+  username: string | null;
+  title: string;
+  subtitle: string;
+  avatarRef: string | null;
+  interactionCount: number;
+  lastActivityTime: number;
 }
 
 @Component({
@@ -99,20 +113,27 @@ export class FeedComponent implements OnInit {
 
   private readonly rel = inject(RelationshipService);
   private readonly mediaCacheService = inject(MediaCacheService);
+  private readonly chatService = inject(ChatService);
   protected readonly friends = this.rel.friends;
+  protected readonly shareChats = signal<Chat[]>([]);
   protected readonly shareFriendAvatarUrls = signal<Record<string, string>>({});
+  protected readonly shareGroupAvatarUrls = signal<Record<string, string>>({});
   protected readonly failedShareFriendAvatars = signal<Set<string>>(new Set());
-  protected readonly filteredShareFriends = computed(() => {
+  protected readonly failedShareGroupAvatars = signal<Set<string>>(new Set());
+  protected readonly filteredShareTargets = computed(() => {
     const query = this.shareFriendQuery().trim().toLowerCase();
-    return this.friends().filter(friend =>
+    return this.shareTargets().filter(target =>
       !query
-      || friend.username.toLowerCase().includes(query)
-      || friend.name.toLowerCase().includes(query)
+      || target.title.toLowerCase().includes(query)
+      || target.subtitle.toLowerCase().includes(query)
     );
   });
   constructor() {
     effect(() => {
       this.loadShareFriendAvatars(this.friends());
+    });
+    effect(() => {
+      this.loadShareGroupAvatars(this.shareChats());
     });
   }
 
@@ -141,6 +162,7 @@ export class FeedComponent implements OnInit {
     this.isLoading.set(true);
     this.userService.loadUser();
     this.viewTracking.startTracking();
+    this.loadShareChats();
 
     forkJoin([
       this.feedService.getFeed(true),
@@ -385,23 +407,24 @@ export class FeedComponent implements OnInit {
   protected openShareDialog(post: Post): void {
     this.selectedPostForShare.set(post);
     this.shareFriendQuery.set('');
+    this.loadShareChats();
     this.shareDialogVisible.set(true);
   }
 
-  protected sharePostWithFriend(friend: Friend): void {
+  protected sharePostWithTarget(target: ShareTarget): void {
     const post = this.selectedPostForShare();
     if (!post) {
       return;
     }
 
     this.shareDialogVisible.set(false);
+    const queryParams = target.chatId
+      ? { chat: target.chatId }
+      : { user: target.username };
+
     this.router.navigate(['/chat'], {
-      queryParams: {
-        user: friend.username,
-      },
-      state: {
-        sharedPost: this.sharedPostPayload(post),
-      },
+      queryParams,
+      state: { sharedPost: this.sharedPostPayload(post) },
     });
   }
 
@@ -433,6 +456,60 @@ export class FeedComponent implements OnInit {
     });
   }
 
+  protected shareTargetAvatarUrl(target: ShareTarget): string | null {
+    if (target.kind === 'group' && target.chatId) {
+      return this.shareGroupAvatarUrls()[target.chatId] ?? null;
+    }
+
+    if (!target.username) {
+      return null;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.shareFriendAvatarUrl(friend) : null;
+  }
+
+  protected shareTargetAvatarFailed(target: ShareTarget): boolean {
+    if (target.kind === 'group' && target.chatId) {
+      return this.failedShareGroupAvatars().has(target.chatId);
+    }
+
+    if (!target.username) {
+      return false;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.shareFriendAvatarFailed(friend) : false;
+  }
+
+  protected markShareTargetAvatarFailed(target: ShareTarget): void {
+    if (target.kind === 'group' && target.chatId) {
+      this.failedShareGroupAvatars.update(failed => {
+        const next = new Set(failed);
+        next.add(target.chatId!);
+        return next;
+      });
+      return;
+    }
+
+    if (!target.username) {
+      return;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    if (friend) {
+      this.markShareFriendAvatarFailed(friend);
+    }
+  }
+
+  protected shareTargetInitial(target: ShareTarget): string {
+    return usernameInitial(target.username ?? target.title);
+  }
+
+  protected shareTargetIcon(target: ShareTarget): string {
+    return target.kind === 'group' ? 'pi-users' : 'pi-user';
+  }
+
   private loadShareFriendAvatars(friends: Friend[]): void {
     friends.forEach(friend => {
       if (!friend.profilePicture || this.shareFriendAvatarUrls()[friend.id]) {
@@ -447,6 +524,135 @@ export class FeedComponent implements OnInit {
           this.shareFriendAvatarUrls.update(urls => ({ ...urls, [friend.id]: url }));
         });
     });
+  }
+
+  private loadShareGroupAvatars(chats: Chat[]): void {
+    chats
+      .filter(chat => chat.groupChat)
+      .forEach(chat => {
+        if (!chat.groupImage || this.shareGroupAvatarUrls()[chat.chatId]) {
+          return;
+        }
+
+        this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
+          .subscribe(url => {
+            if (!url) {
+              return;
+            }
+            this.shareGroupAvatarUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+          });
+      });
+  }
+
+  private loadShareChats(): void {
+    this.chatService.getChats().subscribe({
+      next: chats => this.shareChats.set(chats.map(chat => ({
+        ...chat,
+        personalMessageCount: chat.personalMessageCount ?? 0,
+      }))),
+    });
+  }
+
+  private shareTargets(): ShareTarget[] {
+    const friendsByUsername = new Map(
+      this.friends().map(friend => [friend.username.toLowerCase(), friend])
+    );
+    const targets = this.shareChats()
+      .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
+      .filter((target): target is ShareTarget => target !== null);
+    const usernamesWithChats = new Set(
+      targets
+        .filter(target => target.kind === 'direct' && target.username)
+        .map(target => target.username!.toLowerCase())
+    );
+    const friendsWithoutChats = this.friends()
+      .filter(friend => !usernamesWithChats.has(friend.username.toLowerCase()))
+      .map(friend => this.shareTargetFromFriend(friend));
+
+    return [...targets, ...friendsWithoutChats].sort((left, right) => {
+      if (left.interactionCount !== right.interactionCount) {
+        return right.interactionCount - left.interactionCount;
+      }
+      if (left.lastActivityTime !== right.lastActivityTime) {
+        return right.lastActivityTime - left.lastActivityTime;
+      }
+      return left.title.localeCompare(right.title);
+    });
+  }
+
+  private shareTargetFromChat(
+    chat: Chat,
+    friendsByUsername: Map<string, Friend>,
+  ): ShareTarget | null {
+    if (chat.groupChat) {
+      return {
+        id: `chat:${chat.chatId}`,
+        kind: 'group',
+        chatId: chat.chatId,
+        username: null,
+        title: chat.name,
+        subtitle: `${chat.participants.length} ${chat.participants.length === 1 ? 'member' : 'members'}`,
+        avatarRef: chat.groupImage,
+        interactionCount: chat.personalMessageCount ?? 0,
+        lastActivityTime: this.shareChatActivityTime(chat),
+      };
+    }
+
+    const other = this.shareDirectPartner(chat);
+    if (!other) {
+      return null;
+    }
+
+    const friend = friendsByUsername.get(other.username.toLowerCase());
+    return {
+      id: `chat:${chat.chatId}`,
+      kind: 'direct',
+      chatId: chat.chatId,
+      username: other.username,
+      title: other.name?.trim() || friend?.name || other.username,
+      subtitle: `@${other.username}`,
+      avatarRef: other.profilePicture ?? friend?.profilePicture ?? null,
+      interactionCount: chat.personalMessageCount ?? 0,
+      lastActivityTime: this.shareChatActivityTime(chat),
+    };
+  }
+
+  private shareTargetFromFriend(friend: Friend): ShareTarget {
+    return {
+      id: `friend:${friend.username}`,
+      kind: 'direct',
+      chatId: null,
+      username: friend.username,
+      title: friend.name || friend.username,
+      subtitle: `@${friend.username}`,
+      avatarRef: friend.profilePicture,
+      interactionCount: 0,
+      lastActivityTime: 0,
+    };
+  }
+
+  private shareDirectPartner(chat: Chat): ChatParticipant | null {
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
+    const byChatName = chat.participants.find(participant => participant.username === chat.name);
+    if (byChatName) {
+      return byChatName;
+    }
+
+    if (currentUserId) {
+      return chat.participants.find(participant => participant.id.toLowerCase() !== currentUserId) ?? null;
+    }
+
+    return chat.participants[0] ?? null;
+  }
+
+  private shareChatActivityTime(chat: Chat): number {
+    const value = chat.lastMessage?.date ?? chat.createdAt;
+    return new Date(value.endsWith('Z') ? value : `${value}Z`).getTime();
+  }
+
+  private friendByUsername(username: string): Friend | null {
+    const normalizedUsername = username.toLowerCase();
+    return this.friends().find(friend => friend.username.toLowerCase() === normalizedUsername) ?? null;
   }
 
   private sharedPostPayload(post: Post): SharedPostPayload {

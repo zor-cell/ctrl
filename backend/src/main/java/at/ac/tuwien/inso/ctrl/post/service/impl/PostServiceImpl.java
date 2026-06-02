@@ -277,7 +277,7 @@ public class PostServiceImpl implements PostService {
     Post post = this.fetchPost(postId);
     User user = this.fetchUser(username);
 
-    if (post.getIsRemoved()) {
+    if (Boolean.TRUE.equals(post.getIsRemoved())) {
       throw new NotFoundException("Post", postId);
     }
 

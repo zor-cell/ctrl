@@ -331,13 +331,13 @@ public class ChatService {
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Chat member", memberId.toString()));
 
-    createGroupSystemMessage(
-        chat, currentUser, SystemEventType.MEMBER_REMOVED, List.of(removedMember));
-
     int deletedRows = chatMemberRepository.deleteByChatIdAndUserId(chatId, memberId);
     if (deletedRows == 0) {
       throw new NotFoundException("Chat member", memberId.toString());
     }
+
+    createGroupSystemMessage(
+        chat, currentUser, SystemEventType.MEMBER_REMOVED, List.of(removedMember));
 
     return toChatResponse(reloadChatDetails(chatId), currentUser);
   }
@@ -351,8 +351,8 @@ public class ChatService {
         throw new InvalidRequestException("Group owners must delete the group instead of leaving");
       }
 
-      createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
       chatMemberRepository.deleteByChatIdAndUserId(chatId, currentUser.getId());
+      createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
       return;
     }
 
@@ -483,7 +483,7 @@ public class ChatService {
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
 
-    for (ChatMember member : chatWithMembers.getMembers()) {
+    for (ChatMember member : activeMembers(chatWithMembers)) {
       ChatResponse summary = toChatResponse(chatWithMembers, member.getUser());
       chatMessageBroadcaster.publishChatSummary(member.getUser().getUsername(), summary);
     }
@@ -552,7 +552,12 @@ public class ChatService {
         groupOwner != null ? groupOwner.getId() : null,
         groupOwnerResponse,
         groupOwner != null && groupOwner.getId().equals(currentUser.getId()),
+        countPersonalMessages(chat, currentUser),
         countUnreadMessages(chat, currentUser));
+  }
+
+  private long countPersonalMessages(Chat chat, User currentUser) {
+    return messageRepository.countPersonalMessages(chat, currentUser);
   }
 
   private long countUnreadMessages(Chat chat, User currentUser) {
@@ -716,7 +721,12 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     Chat reloadedChat = reloadChatDetails(chat.getChatId());
-    broadcastChatEvents(reloadedChat, savedMessage, actor, "MESSAGE");
+    Message reloadedMessage =
+        messageRepository
+            .findWithDetailsByMessageId(savedMessage.getMessageId())
+            .orElseThrow(
+                () -> new NotFoundException("Message", savedMessage.getMessageId().toString()));
+    broadcastChatEvents(reloadedChat, reloadedMessage, actor, "MESSAGE");
   }
 
   private List<ChatParticipantResponse> resolveSystemTargets(Message message) {

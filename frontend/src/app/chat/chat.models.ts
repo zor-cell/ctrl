@@ -51,6 +51,7 @@ export interface Chat {
   ownerId: string | null;
   groupOwner: ChatParticipant | null;
   owner: boolean;
+  personalMessageCount: number;
   unreadCount: number;
 }
 

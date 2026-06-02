@@ -370,36 +370,39 @@
     <input
       class="share-search"
       type="search"
-      placeholder="Search friends"
+      placeholder="Search people or groups"
       [value]="shareFriendQuery()"
       (input)="shareFriendQuery.set($any($event.target).value)"
     />
 
-    <div class="share-friends-list">
-      @if (filteredShareFriends().length === 0) {
-        <p class="share-empty">No friends found</p>
+    <div class="share-targets-list">
+      @if (filteredShareTargets().length === 0) {
+        <p class="share-empty">No people or groups found</p>
       }
 
-      @for (friend of filteredShareFriends(); track friend.id) {
+      @for (target of filteredShareTargets(); track target.id) {
         <button
           type="button"
-          class="share-friend-row"
-          (click)="sharePostWithFriend(friend)"
+          class="share-target-row"
+          (click)="sharePostWithTarget(target)"
         >
           <span class="share-avatar" aria-hidden="true">
-            @if (shareFriendAvatarUrl(friend) && !shareFriendAvatarFailed(friend)) {
+            @if (shareTargetAvatarUrl(target) && !shareTargetAvatarFailed(target)) {
               <img
-                [src]="shareFriendAvatarUrl(friend)!"
+                [src]="shareTargetAvatarUrl(target)!"
                 alt=""
-                (error)="markShareFriendAvatarFailed(friend)"
+                (error)="markShareTargetAvatarFailed(target)"
               />
             } @else {
-              {{ shareFriendInitial(friend) }}
+              {{ shareTargetInitial(target) }}
             }
           </span>
-          <span class="share-friend-copy">
-            <strong>{{ friend.name || friend.username }}</strong>
-            <span>@{{ friend.username }}</span>
+          <span class="share-target-copy">
+            <strong>{{ target.title }}</strong>
+            <span>{{ target.subtitle }}</span>
+          </span>
+          <span class="share-target-kind" [attr.aria-label]="target.kind">
+            <i class="pi" [class]="shareTargetIcon(target)"></i>
           </span>
         </button>
       }

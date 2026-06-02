@@ -70,4 +70,13 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
       @Param("chat") Chat chat,
       @Param("user") User user,
       @Param("lastReadAt") LocalDateTime lastReadAt);
+
+  @Query(
+      """
+      SELECT COUNT(m) FROM Message m
+      WHERE m.chat = :chat
+        AND m.fromUser = :user
+        AND m.system = false
+      """)
+  long countPersonalMessages(@Param("chat") Chat chat, @Param("user") User user);
 }

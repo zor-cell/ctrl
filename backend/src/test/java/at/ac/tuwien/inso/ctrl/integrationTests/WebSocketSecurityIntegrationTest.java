@@ -187,6 +187,25 @@ class WebSocketSecurityIntegrationTest {
   }
 
   @Test
+  void leavingGroup_removesGroupFromLeavingUsersChatList() {
+    ChatResponse chat =
+        chatService.createChat(
+            bob, new CreateChatRequest("leave_group", List.of("alice-ws", "chris-ws")));
+
+    chatService.leaveChat(alice, chat.chatId());
+
+    assertFalse(
+        chatService.getChats(alice).stream()
+            .anyMatch(response -> response.chatId().equals(chat.chatId())));
+    assertTrue(
+        chatService.getChats(bob).stream()
+            .anyMatch(response -> response.chatId().equals(chat.chatId())));
+    assertTrue(
+        chatService.getChats(chris).stream()
+            .anyMatch(response -> response.chatId().equals(chat.chatId())));
+  }
+
+  @Test
   void privateSharedPost_isNotBroadcastOnSharedTopicAndQueuePayloadIsPersonalized()
       throws Exception {
     Post privatePost = savePost("private-topic-post", "Topic leak check", false, alice);

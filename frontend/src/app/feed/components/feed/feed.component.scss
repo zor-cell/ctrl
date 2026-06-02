@@ -308,16 +308,16 @@ $radius-sm:    10px;
   font: inherit;
 }
 
-.share-friends-list {
+.share-targets-list {
   display: grid;
   gap: 0.4rem;
   max-height: min(22rem, 52vh);
   overflow-y: auto;
 }
 
-.share-friend-row {
+.share-target-row {
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2rem;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -360,8 +360,9 @@ $radius-sm:    10px;
   }
 }
 
-.share-friend-copy {
+.share-target-copy {
   display: grid;
+  gap: 0.05rem;
   min-width: 0;
 
   strong,
@@ -375,6 +376,16 @@ $radius-sm:    10px;
     color: $text-muted;
     font-size: 0.8rem;
   }
+}
+
+.share-target-kind {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: var(--p-text-muted-color);
+  background: var(--p-content-hover-background);
 }
 
 .share-empty {
