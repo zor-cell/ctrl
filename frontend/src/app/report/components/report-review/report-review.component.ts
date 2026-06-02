@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { timeAgo } from '../../../core/utils/date-time.utils';
 import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { Avatar } from 'primeng/avatar';
@@ -19,6 +20,8 @@ import { ReportSummaryResponse } from '../../dto/ReportSummaryResponse';
 import { TableModule } from 'primeng/table';
 import { Dialog } from 'primeng/dialog';
 import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-cache.service';
+import { ReportedCommentResponse } from '../../dto/ReportedCommentResponse';
+import { ReportedAccountResponse } from '../../dto/ReportedAccountResponse';
 
 @Component({
   selector: 'app-report-review',
@@ -33,6 +36,7 @@ import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-
     Tooltip,
     Button,
     NgTemplateOutlet,
+    RouterLink,
     ConfirmDialog,
     TableModule,
     Dialog,
@@ -54,15 +58,21 @@ export class ReportReviewComponent implements OnInit {
   protected postMediaUrls = signal<Record<string, string>>({});
   protected failedProfilePictures = signal<Set<string>>(new Set());
   protected reportedSources = signal<ReportedSourceResponse[]>([]);
+  protected reportedComments = signal<ReportedCommentResponse[]>([]);
+  protected reportedAccounts = signal<ReportedAccountResponse[]>([]);
 
   protected currentTab = signal<ContentTypeEnum>(ContentTypeEnum.POST);
   protected summaryDialogVisible = signal(false);
   protected reportSummaryData = signal<ReportSummaryResponse[]>([]);
 
   protected actionDialogVisible = signal(false);
-  protected selectedReport = signal<ReportedPostResponse | ReportedSourceResponse | null>(null);
+  protected selectedReport = signal<
+    ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse | null
+  >(null);
 
-  openActionDialog(report: ReportedPostResponse | ReportedSourceResponse) {
+  openActionDialog(
+    report: ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse,
+  ) {
     this.selectedReport.set(report);
     this.actionDialogVisible.set(true);
   }
@@ -84,6 +94,20 @@ export class ReportReviewComponent implements OnInit {
     this.reportedSources.set(reports);
     console.log(reports);
     this.currentTab.set(ContentTypeEnum.SOURCE);
+  }
+
+  async changeToAccounts() {
+    const reports = await this.reportService.getReportedAccounts();
+    this.reportedAccounts.set(reports);
+    console.log(reports);
+    this.currentTab.set(ContentTypeEnum.ACCOUNT);
+  }
+
+
+  async changeToComments() {
+    const reports = await this.reportService.getReportedComments();
+    this.reportedComments.set(reports);
+    this.currentTab.set(ContentTypeEnum.COMMENT);
   }
 
   isVideo(url: string): boolean {
@@ -135,7 +159,7 @@ export class ReportReviewComponent implements OnInit {
         this.reportService
           .updateStatus(ReportStatus.DECLINED, ReportAction.NONE, reportId)
           .subscribe(() => {
-            this.update_reports(reportId);
+            this.update_reports();
           });
       },
       reject: () => {
@@ -144,16 +168,8 @@ export class ReportReviewComponent implements OnInit {
     });
   }
 
-  private update_reports(reportId: string) {
-    if (this.currentTab() === ContentTypeEnum.POST) {
-      this.reportedPosts.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    } else if (this.currentTab() === ContentTypeEnum.SOURCE) {
-      this.reportedSources.update((reports) =>
-        reports.filter((report) => report.reportId !== reportId),
-      );
-    }
+  private update_reports() {
+    void this.refreshCurrentTab();
   }
 
   getReason(reason: string) {
@@ -190,7 +206,7 @@ export class ReportReviewComponent implements OnInit {
       accept: () => {
         console.log(`Marking action taken for report with ID: ${reportId}`);
         this.reportService.updateStatus(ReportStatus.VALIDATED, action, reportId).subscribe(() => {
-          this.update_reports(reportId);
+          this.update_reports();
         });
       },
       reject: () => {
@@ -284,5 +300,17 @@ export class ReportReviewComponent implements OnInit {
 
   private mediaKind(url: string): MediaCacheKind {
     return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(url) ? 'video' : 'image';
+  }
+
+  private async refreshCurrentTab(): Promise<void> {
+    if (this.currentTab() === ContentTypeEnum.POST) {
+      await this.changeToPosts();
+    } else if (this.currentTab() === ContentTypeEnum.SOURCE) {
+      await this.changeToSources();
+    } else if (this.currentTab() === ContentTypeEnum.COMMENT) {
+      await this.changeToComments();
+    } else if (this.currentTab() === ContentTypeEnum.ACCOUNT) {
+      await this.changeToAccounts();
+    }
   }
 }

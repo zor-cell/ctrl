@@ -82,4 +82,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
           """,
       nativeQuery = true)
   List<Float> calculateUserInteractionPreferenceVector(@Param("userId") UUID userId);
+
+  User getUserById(UUID uuid);
 }

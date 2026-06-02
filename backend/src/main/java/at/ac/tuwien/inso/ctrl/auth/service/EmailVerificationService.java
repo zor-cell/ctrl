@@ -100,12 +100,15 @@ public class EmailVerificationService {
       gmailEmailService.sendHtmlEmail(sendEmailRequest.email(), "Welcome to CTRL", htmlContent);
       saveVerificationCode(sendEmailRequest, code);
     } catch (MailException e) {
+      LOGGER.error("Failed to send email via Spring Mail", e);
       throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {
+      LOGGER.error("Failed to create email message", me);
       throw new CommunicationException("Failed to create email.");
     } catch (UsernameNotFoundException ignored) {
 
     } catch (IOException e) {
+      LOGGER.error("Gmail API send failed", e);
       throw new CommunicationException("Failed to send or create email.");
     }
   }

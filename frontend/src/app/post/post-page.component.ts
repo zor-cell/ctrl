@@ -21,6 +21,8 @@ import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
+import { ReportComponent } from '../report/components/report/report.component';
+import { ContentTypeEnum } from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
@@ -44,6 +46,7 @@ import {RelationshipService} from '../user/relationship.service';
     PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
+    ReportComponent,
     FollowBadgeComponent,
   ],
   templateUrl: './post-page.component.html',
@@ -62,6 +65,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
+  protected readonly reportDialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
@@ -159,6 +163,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
+  protected readonly ContentTypeEnum = ContentTypeEnum;
+
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
 
@@ -188,6 +194,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openCreateDialog() {
     this.dialogVisible.set(true);
+  }
+
+  protected openReportDialog() {
+    this.reportDialogVisible.set(true);
   }
 
   protected onPostCreated() {

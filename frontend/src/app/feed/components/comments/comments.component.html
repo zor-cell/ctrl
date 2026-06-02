@@ -113,9 +113,6 @@
                     <p-button label="Cancel" size="small" [rounded]="true"
                               severity="secondary" [text]="true"
                               (onClick)="cancelEdit()" />
-                    <p-button class="reply-btn" (click)="reportComment(comment)">
-                      <i class="pi pi-flag"></i> Report
-                    </p-button>
                   </div>
                 </div>
               } @else {
@@ -133,7 +130,13 @@
                             title="Delete">
                       <i class="pi pi-trash"></i>
                     </button>
+
+                  } @else {
+                    <button class="comment-action-btn reply-btn" (click)="reportComment(comment)">
+                      <i class="pi pi-flag"></i> Report
+                    </button>
                   }
+
                 </div>
               }
 
@@ -185,6 +188,11 @@
                           <button class="comment-action-btn delete-btn" (click)="deleteComment(reply.commentId)"
                                   title="Delete">
                             <i class="pi pi-trash"></i>
+                          </button>
+
+                        } @else {
+                          <button class="comment-action-btn reply-btn" (click)="reportComment(reply)">
+                            <i class="pi pi-flag"></i> Report
                           </button>
                         }
                       </div>
