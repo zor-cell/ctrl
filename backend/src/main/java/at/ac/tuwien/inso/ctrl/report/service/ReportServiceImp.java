@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -387,6 +388,7 @@ public class ReportServiceImp implements ReportService {
     } else {
       ContentTypeEnum type = report.getContentType();
       if (type == ContentTypeEnum.POST) {
+
         Post post =
             postRepository
                 .findById(report.getContentId())
@@ -398,6 +400,7 @@ public class ReportServiceImp implements ReportService {
         dealWithOtherReportsOfExternalAuthor(postUser);
 
       } else if (type == ContentTypeEnum.SOURCE) {
+
         Source source =
             sourceRepository
                 .findById(report.getContentId())
@@ -415,6 +418,7 @@ public class ReportServiceImp implements ReportService {
         author.setSuspended(true);
         externalAuthorRepository.save(author);
         dealWithOtherReportsOfExternalAuthor(author);
+
       } else if (type == ContentTypeEnum.COMMENT) {
         Comment comment =
             commentRepository
@@ -491,7 +495,7 @@ public class ReportServiceImp implements ReportService {
     } else {
 
       return userRepository
-          .findByUsername(contentId)
+          .findById(UUID.fromString(contentId))
           .orElseThrow(() -> new EntityNotFoundException("User not found: " + contentId));
     }
   }
