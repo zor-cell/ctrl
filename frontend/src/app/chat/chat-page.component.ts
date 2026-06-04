@@ -143,6 +143,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         post: SharedPostPayload;
       }
     | null = null;
+  private pendingChatId: string | null = null;
 
   protected readonly friends = this.relationshipService.friends;
   protected readonly currentUsername = computed(() => {
@@ -161,7 +162,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly filteredFriends = computed(() => {
     const query = this.normalizedSearchQuery();
     return this.friends()
-      .filter(friend => this.matchesFriend(friend, query));
+      .filter(friend => this.matchesFriend(friend, query))
+      .sort((left, right) => this.compareFriendsByChatAvailability(left, right));
   });
 
   protected readonly filteredChats = computed(() => {
@@ -229,13 +231,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         const username = params.get('user');
         const chatId = params.get('chat');
         const post = this.readSharedPostFromHistory();
-        if ((!username && !chatId) || !post) {
+
+        if ((username || chatId) && post) {
+          this.pendingSharedPost = { username: username ?? undefined, chatId: chatId ?? undefined, post };
+          if (this.chats().length > 0) {
+            this.openPendingSharedPostChat();
+          }
           return;
         }
 
-        this.pendingSharedPost = { username: username ?? undefined, chatId: chatId ?? undefined, post };
-        if (this.chats().length > 0) {
-          this.openPendingSharedPostChat();
+        if (chatId) {
+          this.pendingChatId = chatId;
+          if (this.chats().length > 0) {
+            this.openPendingChat();
+          }
         }
       });
 
@@ -309,6 +318,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     );
 
     return this.pickLatestDirectChat(matches);
+  }
+
+  private compareFriendsByChatAvailability(left: Friend, right: Friend): number {
+    const leftHasChat = this.directChatFor(left) !== null;
+    const rightHasChat = this.directChatFor(right) !== null;
+    if (leftHasChat !== rightHasChat) {
+      return leftHasChat ? 1 : -1;
+    }
+
+    return this.friendDisplayLabel(left).localeCompare(this.friendDisplayLabel(right));
+  }
+
+  private friendDisplayLabel(friend: Friend): string {
+    return (friend.name || friend.username).toLowerCase();
   }
 
   protected selectChat(chat: Chat): void {
@@ -526,6 +549,19 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     return this.normalizeId(owner.id) === this.normalizeId(participant.id);
+  }
+
+  protected isFriendParticipant(participant: ChatParticipant): boolean {
+    const participantUsername = participant.username.toLowerCase();
+    const participantId = this.normalizeId(participant.id);
+    return this.friends().some(friend =>
+      friend.username.toLowerCase() === participantUsername
+      || this.normalizeId(friend.id) === participantId
+    );
+  }
+
+  protected openParticipantProfile(participant: ChatParticipant): void {
+    this.router.navigate(['/profile', participant.username]);
   }
 
   protected groupImageUrl(chat: Chat): string | null {
@@ -888,7 +924,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.router.navigate(['/posts', postId]);
+    const chatId = this.selectedChat()?.chatId;
+    this.router.navigate(['/posts', postId], {
+      queryParams: chatId ? { fromChat: chatId } : undefined,
+    });
   }
 
   protected sharedPostProfileRoute(sharedPost: ParsedSharedPost): string[] | null {
@@ -982,6 +1021,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
           }
 
           this.openPendingSharedPostChat();
+          this.openPendingChat();
         },
         error: () => this.notificationService.showError('Failed to load chats'),
       });
@@ -1032,6 +1072,23 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       });
   }
 
+  private openPendingChat(): void {
+    const chatId = this.pendingChatId;
+    if (!chatId || this.pendingSharedPost) {
+      return;
+    }
+
+    const chat = this.chats().find(existingChat => existingChat.chatId === chatId);
+    this.pendingChatId = null;
+    if (!chat) {
+      this.clearChatQueryParam();
+      return;
+    }
+
+    this.selectChat(chat);
+    this.clearChatQueryParam();
+  }
+
   private directChatForUsername(username: string): Chat | null {
     const normalizedUsername = username.toLowerCase();
     const matches = this.chats().filter(chat =>
@@ -1048,6 +1105,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { user: null, chat: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private clearChatQueryParam(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { chat: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

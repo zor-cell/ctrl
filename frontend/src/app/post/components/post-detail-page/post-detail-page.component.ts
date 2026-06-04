@@ -47,6 +47,7 @@ export class PostDetailPageComponent {
   protected ContentTypeEnum = ContentTypeEnum;
 
   postId = this.route.snapshot.paramMap.get('postId');
+  private readonly returnChatId = this.route.snapshot.queryParamMap.get('fromChat');
   post = resource({
     loader: () => {
       return this.postService.getPostById(this.postId!);
@@ -67,6 +68,11 @@ export class PostDetailPageComponent {
   commentsVisible = signal<boolean>(false);
 
   goBack(): void {
+    if (this.returnChatId) {
+      this.router.navigate(['/chat'], { queryParams: { chat: this.returnChatId } });
+      return;
+    }
+
     this.location.back();
   }
 

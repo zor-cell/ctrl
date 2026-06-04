@@ -22,13 +22,13 @@
 
   <!-- Post Content -->
   @if (this.post.hasValue()) {
-    <!-- Back Button - positioned to the left of centered content -->
-    <div class="back-button-outside">
+    <div class="post-detail-toolbar">
       <p-button
+        label="Go back"
         icon="pi pi-arrow-left"
         (onClick)="goBack()"
         severity="secondary"
-        [text]="true"
+        [outlined]="true"
         size="small" />
     </div>
 

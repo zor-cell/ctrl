@@ -1081,14 +1081,36 @@ $chat-viewport-offset: 72px;
 
 .member-row {
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.5rem;
+  padding: 0;
   border-radius: 10px;
 
   &--owner {
     background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+  }
+}
+
+.member-profile-button {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.65rem 0.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--p-content-hover-background);
+    outline: none;
   }
 }
 
@@ -1126,6 +1148,18 @@ $chat-viewport-offset: 72px;
   border-radius: 999px;
   background: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.friend-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--p-primary-color);
+  border-radius: 999px;
+  color: var(--p-primary-color);
   font-size: 0.7rem;
   font-weight: 700;
   vertical-align: middle;

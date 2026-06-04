@@ -14,7 +14,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import {Observable, Subscription, catchError, of, switchMap, forkJoin} from 'rxjs';
+import {Observable, Subscription, catchError, finalize, forkJoin, of, switchMap} from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { usernameInitial } from '../core/utils/username-initial.utils';
@@ -34,6 +34,12 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+
+type ProfileFriendStatus =
+  | 'NONE'
+  | 'FRIEND'
+  | 'PENDING_REQUEST_SENT'
+  | 'PENDING_REQUEST_INCOMING';
 
 @Component({
   selector: 'app-post-page',
@@ -88,14 +94,23 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postPendingDeletion = signal<PostResponse | null>(null);
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
+  protected readonly friendActionBusy = signal(false);
 
   private readonly rel = inject(RelationshipService);
+  private readonly profileFriendStatusOverride = signal<{
+    username: string;
+    status: ProfileFriendStatus;
+  } | null>(null);
 
   protected readonly username = computed(
     () =>
       this.publicProfile()?.username
+      ?? this.publicProfileUsername()
       ?? this.userService.user()?.username
       ?? 'Unknown user',
+  );
+  protected readonly profileTargetUsername = computed(
+    () => this.publicProfile()?.username ?? this.publicProfileUsername(),
   );
   protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
   protected readonly currentProfilePicture = computed(
@@ -109,6 +124,16 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return bio && bio.length > 0 ? bio : 'No bio yet.';
   });
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
+  protected readonly isOwnPublicProfile = computed(() => {
+    const profileUsername = this.profileTargetUsername();
+    const currentUsername = this.userService.user()?.username;
+
+    return Boolean(
+      profileUsername
+      && currentUsername
+      && profileUsername.toLowerCase() === currentUsername.toLowerCase(),
+    );
+  });
   protected readonly canEditProfile = computed(
     () => !this.createOnlyMode() && !this.publicProfileMode(),
   );
@@ -146,6 +171,32 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly privatePostsHidden = computed(
     () => this.publicProfileMode() && this.publicProfile()?.canSeePrivatePosts === false,
   );
+  protected readonly publicProfileFriendStatus = computed<ProfileFriendStatus>(() => {
+    const username = this.profileTargetUsername()?.toLowerCase();
+
+    if (!username || this.isOwnPublicProfile()) {
+      return 'NONE';
+    }
+
+    const override = this.profileFriendStatusOverride();
+    if (override?.username.toLowerCase() === username) {
+      return override.status;
+    }
+
+    if (this.rel.friends().some(friend => friend.username.toLowerCase() === username)) {
+      return 'FRIEND';
+    }
+
+    if (this.rel.incomingRequests().some(request => request.username.toLowerCase() === username)) {
+      return 'PENDING_REQUEST_INCOMING';
+    }
+
+    if (this.rel.sentRequests().some(request => request.username.toLowerCase() === username)) {
+      return 'PENDING_REQUEST_SENT';
+    }
+
+    return 'NONE';
+  });
   protected readonly emptyPostsTitle = computed(() =>
     this.privatePostsHidden() ? 'Private posts are hidden' : 'No posts yet',
   );
@@ -198,6 +249,58 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openReportDialog() {
     this.reportDialogVisible.set(true);
+  }
+
+  protected sendProfileFriendRequest(): void {
+    const username = this.profileTargetUsername();
+
+    if (
+      !username
+      || this.isOwnPublicProfile()
+      || this.publicProfileFriendStatus() !== 'NONE'
+      || this.friendActionBusy()
+    ) {
+      return;
+    }
+
+    this.friendActionBusy.set(true);
+    this.rel.sendFriendRequest(username)
+      .pipe(finalize(() => this.friendActionBusy.set(false)))
+      .subscribe({
+        next: () => {
+          this.setProfileFriendStatusOverride(username, 'PENDING_REQUEST_SENT');
+          this.notificationService.showSuccess(`Friend request sent to ${username}`);
+        },
+        error: () => {
+          this.notificationService.showError('Failed to send friend request');
+        },
+      });
+  }
+
+  protected acceptProfileFriendRequest(): void {
+    const username = this.profileTargetUsername();
+
+    if (
+      !username
+      || this.isOwnPublicProfile()
+      || this.publicProfileFriendStatus() !== 'PENDING_REQUEST_INCOMING'
+      || this.friendActionBusy()
+    ) {
+      return;
+    }
+
+    this.friendActionBusy.set(true);
+    this.rel.acceptFriendRequest(username)
+      .pipe(finalize(() => this.friendActionBusy.set(false)))
+      .subscribe({
+        next: () => {
+          this.setProfileFriendStatusOverride(username, 'FRIEND');
+          this.notificationService.showSuccess(`Accepted friend request from ${username}`);
+        },
+        error: () => {
+          this.notificationService.showError('Failed to accept friend request');
+        },
+      });
   }
 
   protected onPostCreated() {
@@ -491,10 +594,14 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private loadProfileForRoute(username: string | null): void {
-    this.publicProfileUsername.set(username);
+    const isOwnProfileRoute = this.isCurrentUserProfileUsername(username);
+
+    this.publicProfileUsername.set(isOwnProfileRoute ? null : username);
     this.publicProfile.set(null);
     this.selectedPost.set(null);
     this.postPendingDeletion.set(null);
+    this.friendActionBusy.set(false);
+    this.profileFriendStatusOverride.set(null);
     this.myPosts.set([]);
     this.revokeProfilePictureObjectUrl();
     this.revokePostMediaObjectUrls();
@@ -571,6 +678,23 @@ export class PostPageComponent implements OnDestroy, OnInit {
         );
       },
     });
+  }
+
+  private setProfileFriendStatusOverride(
+    username: string,
+    status: ProfileFriendStatus,
+  ): void {
+    this.profileFriendStatusOverride.set({ username, status });
+  }
+
+  private isCurrentUserProfileUsername(username: string | null): boolean {
+    const currentUsername = this.userService.user()?.username;
+
+    return Boolean(
+      username
+      && currentUsername
+      && username.toLowerCase() === currentUsername.toLowerCase(),
+    );
   }
 
   private toTopicOption(topic: TopicResponse): TopicOption {

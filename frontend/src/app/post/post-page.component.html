@@ -27,12 +27,7 @@
       </div>
 
       <div class="post-profile-card__copy">
-        <h1 style="display: flex; align-items: center; gap: 10px;">
-          {{ username() }}
-          @if (!canEditProfile()) {
-            <app-follow-badge [username]="username()" />
-          }
-        </h1>
+        <h1>{{ username() }}</h1>
         <div class="profile-bio">
           <p>{{ userBio() }}</p>
           @if (canEditProfile()) {
@@ -73,8 +68,56 @@
         </div>
     } @else if (publicProfileMode()) {
       <div class="post-profile-card__actions">
+        @if (!isOwnPublicProfile()) {
+          <app-follow-badge
+            class="post-profile-card__follow-action"
+            [username]="username()"
+            [isExternal]="publicProfileFriendStatus() !== 'NONE'"
+            appearance="action"
+          />
+          @switch (publicProfileFriendStatus()) {
+            @case ('FRIEND') {
+              <p-button
+                label="Friend"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+                [disabled]="true"
+              />
+            }
+            @case ('PENDING_REQUEST_INCOMING') {
+              <p-button
+                label="Accept Request"
+                icon="pi pi-user-plus"
+                severity="info"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="acceptProfileFriendRequest()"
+              />
+            }
+            @case ('PENDING_REQUEST_SENT') {
+              <p-button
+                label="Request Sent"
+                icon="pi pi-clock"
+                severity="secondary"
+                size="small"
+                [disabled]="true"
+              />
+            }
+            @default {
+              <p-button
+                label="Add Friend"
+                icon="pi pi-user-plus"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="sendProfileFriendRequest()"
+              />
+            }
+          }
+        }
         <p-button
           icon="pi pi-flag"
+          ariaLabel="Report profile"
           severity="secondary"
           [rounded]="true"
           (onClick)="openReportDialog()"

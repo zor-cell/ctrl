@@ -564,22 +564,31 @@
     <ul class="members-list">
       @for (participant of sortedGroupMembers(); track participant.id) {
         <li class="member-row" [class.member-row--owner]="isGroupOwner(participant, chat)">
-          <span class="avatar" aria-hidden="true">
-            @if (avatarUrl(participant.id)) {
-              <img [src]="avatarUrl(participant.id)" alt="" />
-            } @else {
-              {{ initialFor(participant) }}
-            }
-          </span>
-          <span class="row-copy">
-            <span class="row-title">
-              {{ participant.name || participant.username }}
-              @if (isGroupOwner(participant, chat)) {
-                <span class="owner-badge">Owner</span>
+          <button
+            type="button"
+            class="member-profile-button"
+            (click)="openParticipantProfile(participant)"
+            [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
+            <span class="avatar" aria-hidden="true">
+              @if (avatarUrl(participant.id)) {
+                <img [src]="avatarUrl(participant.id)" alt="" />
+              } @else {
+                {{ initialFor(participant) }}
               }
             </span>
-            <span class="row-subtitle">&#64;{{ participant.username }}</span>
-          </span>
+            <span class="row-copy">
+              <span class="row-title">
+                {{ participant.name || participant.username }}
+                @if (isGroupOwner(participant, chat)) {
+                  <span class="owner-badge">Owner</span>
+                }
+                @if (isFriendParticipant(participant)) {
+                  <span class="friend-badge">Friend</span>
+                }
+              </span>
+              <span class="row-subtitle">&#64;{{ participant.username }}</span>
+            </span>
+          </button>
           @if (canRemoveMember(participant, chat)) {
             <button
               type="button"
