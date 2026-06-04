@@ -307,26 +307,32 @@
                       @if (canViewSharedPost(sharedPost)) {
                         <div class="shared-post-header">
                           <span class="shared-post-avatar" aria-hidden="true">
-                            {{ sharedPostAuthorInitial(sharedPost) }}
+                            @if (sharedPostAuthorAvatarUrl(sharedPost)) {
+                              <img [src]="sharedPostAuthorAvatarUrl(sharedPost)!" alt="" />
+                            } @else {
+                              {{ sharedPostAuthorInitial(sharedPost) }}
+                            }
                           </span>
                           <span class="shared-post-author-copy">
                             <span class="shared-post-author-name">{{ sharedPostAuthorName(sharedPost) }}</span>
                           </span>
                         </div>
 
-                        @if (sharedPost.post.mediaUrl) {
+                        @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
                           <div class="shared-post-media">
                             @if (sharedPost.post.mediaKind === 'video') {
                               <video
-                                [src]="sharedPost.post.mediaUrl"
+                                [src]="mediaUrl"
                                 muted
                                 playsinline
-                                preload="metadata"></video>
+                                preload="metadata"
+                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
                             } @else {
                               <img
-                                [src]="sharedPost.post.mediaUrl"
-                                [alt]="sharedPost.post.caption"
-                                loading="lazy" />
+                                [src]="mediaUrl"
+                                alt=""
+                                loading="lazy"
+                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
                             }
                           </div>
                         }
@@ -336,14 +342,14 @@
                           <span class="shared-post-link">View post</span>
                         </div>
                       } @else {
-                        <div class="shared-post-private">
-                          <span class="shared-post-private-icon" aria-hidden="true">
-                            <i class="pi pi-lock"></i>
+                        <div class="shared-post-unavailable">
+                          <span class="shared-post-unavailable-icon" aria-hidden="true">
+                            <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
                           </span>
-                          <div class="shared-post-private-copy">
-                            <span class="shared-post-author">Private post from @{{ sharedPost.post.username }}</span>
-                            <p>You cannot view this private post because you are not friends with this account.</p>
-                            @if (sharedPostProfileRoute(sharedPost); as profileRoute) {
+                          <div class="shared-post-unavailable-copy">
+                            <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
+                            <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
+                            @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
                               <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
                             }
                           </div>
@@ -444,6 +450,12 @@
   </section>
 </main>
 
+<app-comments
+  [post]="selectedChatPostForComments()"
+  [visible]="chatPostCommentsVisible()"
+  (visibleChange)="onChatPostCommentsVisibleChange($event)"
+/>
+
 <p-dialog
   header="Create group"
   [visible]="groupDialogVisible()"
@@ -503,7 +515,7 @@
     <section class="members-picker">
       <div class="members-picker-header">
         <span class="section-title">Members</span>
-        <span class="selected-count">{{ selectedGroupUsernames().length }} selected</span>
+        <span class="selected-count">{{ selectedGroupMemberCount() }} / {{ maxGroupMembers }} members</span>
       </div>
 
       <p-iconField iconPosition="left" class="members-search">
@@ -526,6 +538,7 @@
               <input
                 type="checkbox"
                 [checked]="isGroupFriendSelected(friend.username)"
+                [disabled]="!canSelectGroupFriend(friend.username)"
                 (change)="toggleGroupFriend(friend.username)" />
               <span class="avatar" aria-hidden="true">
                 @if (avatarUrl(friend.id)) {
@@ -608,7 +621,7 @@
     <section class="add-members-section">
       <div class="members-picker-header">
         <span class="section-title">Add members</span>
-        <span class="selected-count">{{ selectedAddMemberUsernames().length }} selected</span>
+        <span class="selected-count">{{ selectedAddMemberCount(chat) }} / {{ maxGroupMembers }} members</span>
       </div>
 
       <p-iconField iconPosition="left" class="members-search">
@@ -631,6 +644,7 @@
               <input
                 type="checkbox"
                 [checked]="isAddMemberFriendSelected(friend.username)"
+                [disabled]="!isAddMemberFriendSelected(friend.username) && !canSelectAdditionalMember()"
                 (change)="toggleAddMemberFriend(friend.username)" />
               <span class="avatar" aria-hidden="true">
                 @if (avatarUrl(friend.id)) {
@@ -651,7 +665,7 @@
       <button
         type="button"
         class="primary-button add-members-button"
-        [disabled]="selectedAddMemberUsernames().length === 0 || addingMembers()"
+        [disabled]="!canAddMembersToGroup()"
         (click)="addMembersToGroup()">
         Add to group
       </button>

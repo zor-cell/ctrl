@@ -17,6 +17,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import {Observable, Subscription, catchError, finalize, forkJoin, of, switchMap} from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
+import { previewMediaUrl } from '../core/utils/media-preview-url.utils';
 import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
@@ -34,12 +35,36 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+import {Friend} from '../user/dto/Relationship';
+import {Chat, ChatParticipant} from '../chat/chat.models';
+import {ChatService} from '../chat/chat.service';
 
 type ProfileFriendStatus =
   | 'NONE'
   | 'FRIEND'
   | 'PENDING_REQUEST_SENT'
   | 'PENDING_REQUEST_INCOMING';
+
+interface SharedPostPayload {
+  postId: string;
+  username: string;
+  caption: string;
+  url: string;
+  mediaUrl: string | null;
+  mediaKind: 'image' | 'video' | null;
+}
+
+interface ShareTarget {
+  id: string;
+  kind: 'direct' | 'group';
+  chatId: string | null;
+  username: string | null;
+  title: string;
+  subtitle: string;
+  avatarRef: string | null;
+  interactionCount: number;
+  lastActivityTime: number;
+}
 
 @Component({
   selector: 'app-post-page',
@@ -65,6 +90,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly postService = inject(PostService);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
+  private readonly chatService = inject(ChatService);
   protected readonly userService = inject(UserService);
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
@@ -95,8 +121,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
   protected readonly friendActionBusy = signal(false);
+  protected readonly shareDialogVisible = signal(false);
+  protected readonly selectedPostForShare = signal<PostResponse | null>(null);
+  protected readonly shareFriendQuery = signal('');
+  protected readonly shareChats = signal<Chat[]>([]);
+  protected readonly shareFriendAvatarUrls = signal<Record<string, string>>({});
+  protected readonly shareGroupAvatarUrls = signal<Record<string, string>>({});
+  protected readonly failedShareFriendAvatars = signal<Set<string>>(new Set());
+  protected readonly failedShareGroupAvatars = signal<Set<string>>(new Set());
 
   private readonly rel = inject(RelationshipService);
+  protected readonly friends = this.rel.friends;
   private readonly profileFriendStatusOverride = signal<{
     username: string;
     status: ProfileFriendStatus;
@@ -196,6 +231,14 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     return 'NONE';
+  });
+  protected readonly filteredShareTargets = computed(() => {
+    const query = this.shareFriendQuery().trim().toLowerCase();
+    return this.shareTargets().filter(target =>
+      !query
+      || target.title.toLowerCase().includes(query)
+      || target.subtitle.toLowerCase().includes(query)
+    );
   });
   protected readonly emptyPostsTitle = computed(() =>
     this.privatePostsHidden() ? 'Private posts are hidden' : 'No posts yet',
@@ -299,6 +342,59 @@ export class PostPageComponent implements OnDestroy, OnInit {
         },
         error: () => {
           this.notificationService.showError('Failed to accept friend request');
+        },
+      });
+  }
+
+  protected cancelProfileFriendRequest(): void {
+    const username = this.profileTargetUsername();
+
+    if (
+      !username
+      || this.isOwnPublicProfile()
+      || this.publicProfileFriendStatus() !== 'PENDING_REQUEST_SENT'
+      || this.friendActionBusy()
+    ) {
+      return;
+    }
+
+    this.friendActionBusy.set(true);
+    this.rel.cancelFriendRequest(username)
+      .pipe(finalize(() => this.friendActionBusy.set(false)))
+      .subscribe({
+        next: () => {
+          this.setProfileFriendStatusOverride(username, 'NONE');
+          this.notificationService.showSuccess(`Friend request to ${username} cancelled`);
+        },
+        error: () => {
+          this.notificationService.showError('Failed to cancel friend request');
+        },
+      });
+  }
+
+  protected removeProfileFriend(): void {
+    const username = this.profileTargetUsername();
+
+    if (
+      !username
+      || this.isOwnPublicProfile()
+      || this.publicProfileFriendStatus() !== 'FRIEND'
+      || this.friendActionBusy()
+    ) {
+      return;
+    }
+
+    this.friendActionBusy.set(true);
+    this.rel.unfriend(username)
+      .pipe(finalize(() => this.friendActionBusy.set(false)))
+      .subscribe({
+        next: () => {
+          this.setProfileFriendStatusOverride(username, 'NONE');
+          this.rel.loadFriends().subscribe();
+          this.notificationService.showSuccess(`Removed ${username} from friends`);
+        },
+        error: () => {
+          this.notificationService.showError('Failed to remove friend');
         },
       });
   }
@@ -478,6 +574,97 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postPendingDeletion.set(post);
   }
 
+  protected openShareDialog(post: PostResponse): void {
+    this.selectedPostForShare.set(post);
+    this.selectedPost.set(null);
+    this.shareFriendQuery.set('');
+    this.loadShareTargets();
+    this.shareDialogVisible.set(true);
+  }
+
+  protected sharePostWithTarget(target: ShareTarget): void {
+    const post = this.selectedPostForShare();
+    if (!post) {
+      return;
+    }
+
+    this.shareDialogVisible.set(false);
+    const queryParams = target.chatId
+      ? { chat: target.chatId }
+      : { user: target.username };
+
+    this.router.navigate(['/chat'], {
+      queryParams,
+      state: { sharedPost: this.sharedPostPayload(post) },
+    });
+  }
+
+  protected onShareDialogVisibleChange(visible: boolean): void {
+    this.shareDialogVisible.set(visible);
+    if (!visible) {
+      this.selectedPostForShare.set(null);
+      this.shareFriendQuery.set('');
+    }
+  }
+
+  protected shareTargetAvatarUrl(target: ShareTarget): string | null {
+    if (target.kind === 'group' && target.chatId) {
+      return this.shareGroupAvatarUrls()[target.chatId] ?? null;
+    }
+
+    if (!target.username) {
+      return null;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.shareFriendAvatarUrls()[friend.id] ?? null : null;
+  }
+
+  protected shareTargetAvatarFailed(target: ShareTarget): boolean {
+    if (target.kind === 'group' && target.chatId) {
+      return this.failedShareGroupAvatars().has(target.chatId);
+    }
+
+    if (!target.username) {
+      return false;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.failedShareFriendAvatars().has(friend.id) : false;
+  }
+
+  protected markShareTargetAvatarFailed(target: ShareTarget): void {
+    if (target.kind === 'group' && target.chatId) {
+      this.failedShareGroupAvatars.update(failed => {
+        const next = new Set(failed);
+        next.add(target.chatId!);
+        return next;
+      });
+      return;
+    }
+
+    if (!target.username) {
+      return;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    if (friend) {
+      this.failedShareFriendAvatars.update(failed => {
+        const next = new Set(failed);
+        next.add(friend.id);
+        return next;
+      });
+    }
+  }
+
+  protected shareTargetInitial(target: ShareTarget): string {
+    return usernameInitial(target.username ?? target.title);
+  }
+
+  protected shareTargetIcon(target: ShareTarget): string {
+    return target.kind === 'group' ? 'pi-users' : 'pi-user';
+  }
+
   protected cancelPostDeletion() {
     if (this.deletingPost()) {
       return;
@@ -537,7 +724,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return null;
     }
 
-    return this.postMediaObjectUrls()[post.postId] ?? this.directMediaUrl(post.mediaRef);
+    return this.postMediaObjectUrls()[post.postId]
+      ?? this.postCardMediaUrls()[post.postId]
+      ?? this.directMediaUrl(post.mediaRef);
   }
 
   protected selectedPostMediaKind(): PreviewKind {
@@ -554,6 +743,15 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected onPostCardMediaError(post: PostResponse): void {
+    this.revokePostCardMediaUrl(post.postId);
+  }
+
+  protected onSelectedPostMediaError(post: PostResponse): void {
+    if (this.postMediaObjectUrls()[post.postId]) {
+      this.revokePostMediaObjectUrl(post.postId);
+      return;
+    }
+
     this.revokePostCardMediaUrl(post.postId);
   }
 
@@ -577,7 +775,6 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
       next: posts => {
-        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -680,6 +877,183 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
   }
 
+  private loadShareTargets(): void {
+    forkJoin([
+      this.rel.loadFriends(),
+      this.chatService.getChats(),
+    ]).subscribe({
+      next: ([friends, chats]) => {
+        this.shareChats.set(chats.map(chat => ({
+          ...chat,
+          personalMessageCount: chat.personalMessageCount ?? 0,
+        })));
+        this.loadShareFriendAvatars(friends);
+        this.loadShareGroupAvatars(chats);
+      },
+      error: () => {
+        this.notificationService.showError('Share targets could not be loaded');
+      },
+    });
+  }
+
+  private loadShareFriendAvatars(friends: Friend[]): void {
+    friends.forEach(friend => {
+      if (!friend.profilePicture || this.shareFriendAvatarUrls()[friend.id]) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(friend.profilePicture, 'image', 'high')
+        .subscribe(url => {
+          if (url) {
+            this.shareFriendAvatarUrls.update(urls => ({ ...urls, [friend.id]: url }));
+          }
+        });
+    });
+  }
+
+  private loadShareGroupAvatars(chats: Chat[]): void {
+    chats
+      .filter(chat => chat.groupChat)
+      .forEach(chat => {
+        if (!chat.groupImage || this.shareGroupAvatarUrls()[chat.chatId]) {
+          return;
+        }
+
+        this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
+          .subscribe(url => {
+            if (url) {
+              this.shareGroupAvatarUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+            }
+          });
+      });
+  }
+
+  private shareTargets(): ShareTarget[] {
+    const friendsByUsername = new Map(
+      this.friends().map(friend => [friend.username.toLowerCase(), friend]),
+    );
+    const targets = this.shareChats()
+      .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
+      .filter((target): target is ShareTarget => target !== null);
+    const usernamesWithChats = new Set(
+      targets
+        .filter(target => target.kind === 'direct' && target.username)
+        .map(target => target.username!.toLowerCase()),
+    );
+    const friendsWithoutChats = this.friends()
+      .filter(friend => !usernamesWithChats.has(friend.username.toLowerCase()))
+      .map(friend => this.shareTargetFromFriend(friend));
+
+    return [...targets, ...friendsWithoutChats].sort((left, right) => {
+      if (left.interactionCount !== right.interactionCount) {
+        return right.interactionCount - left.interactionCount;
+      }
+      if (left.lastActivityTime !== right.lastActivityTime) {
+        return right.lastActivityTime - left.lastActivityTime;
+      }
+      return left.title.localeCompare(right.title);
+    });
+  }
+
+  private shareTargetFromChat(
+    chat: Chat,
+    friendsByUsername: Map<string, Friend>,
+  ): ShareTarget | null {
+    if (chat.groupChat) {
+      return {
+        id: `chat:${chat.chatId}`,
+        kind: 'group',
+        chatId: chat.chatId,
+        username: null,
+        title: chat.name,
+        subtitle: `${chat.participants.length} ${chat.participants.length === 1 ? 'member' : 'members'}`,
+        avatarRef: chat.groupImage,
+        interactionCount: chat.personalMessageCount ?? 0,
+        lastActivityTime: this.shareChatActivityTime(chat),
+      };
+    }
+
+    const other = this.shareDirectPartner(chat);
+    if (!other) {
+      return null;
+    }
+
+    const friend = friendsByUsername.get(other.username.toLowerCase());
+    return {
+      id: `chat:${chat.chatId}`,
+      kind: 'direct',
+      chatId: chat.chatId,
+      username: other.username,
+      title: other.name?.trim() || friend?.name || other.username,
+      subtitle: `@${other.username}`,
+      avatarRef: other.profilePicture ?? friend?.profilePicture ?? null,
+      interactionCount: chat.personalMessageCount ?? 0,
+      lastActivityTime: this.shareChatActivityTime(chat),
+    };
+  }
+
+  private shareTargetFromFriend(friend: Friend): ShareTarget {
+    return {
+      id: `friend:${friend.username}`,
+      kind: 'direct',
+      chatId: null,
+      username: friend.username,
+      title: friend.name || friend.username,
+      subtitle: `@${friend.username}`,
+      avatarRef: friend.profilePicture,
+      interactionCount: 0,
+      lastActivityTime: 0,
+    };
+  }
+
+  private shareDirectPartner(chat: Chat): ChatParticipant | null {
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
+    const byChatName = chat.participants.find(participant => participant.username === chat.name);
+    if (byChatName) {
+      return byChatName;
+    }
+
+    if (currentUserId) {
+      return chat.participants.find(
+        participant => participant.id.toLowerCase() !== currentUserId,
+      ) ?? null;
+    }
+
+    return chat.participants[0] ?? null;
+  }
+
+  private shareChatActivityTime(chat: Chat): number {
+    const value = chat.lastMessage?.date ?? chat.createdAt;
+    return new Date(value.endsWith('Z') ? value : `${value}Z`).getTime();
+  }
+
+  private friendByUsername(username: string): Friend | null {
+    const normalizedUsername = username.toLowerCase();
+    return this.friends().find(
+      friend => friend.username.toLowerCase() === normalizedUsername,
+    ) ?? null;
+  }
+
+  private sharedPostPayload(post: PostResponse): SharedPostPayload {
+    const caption = post.caption.length > 220
+      ? `${post.caption.slice(0, 217)}...`
+      : post.caption;
+    const mediaUrl =
+      this.postMediaObjectUrls()[post.postId]
+      ?? this.postCardMediaUrls()[post.postId]
+      ?? this.directMediaUrl(post.mediaRef);
+    const mediaKind = mediaUrl ? postMediaKind(post.mediaRef) : null;
+
+    return {
+      postId: post.postId,
+      username: post.username,
+      caption,
+      url: `${window.location.origin}/posts/${encodeURIComponent(post.postId)}`,
+      mediaUrl,
+      mediaKind: mediaKind === 'video' ? 'video' : mediaKind === 'image' ? 'image' : null,
+    };
+  }
+
   private setProfileFriendStatusOverride(
     username: string,
     status: ProfileFriendStatus,
@@ -764,7 +1138,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
       if (url) {
-        this.setPostCardMediaUrl(post.postId, url);
+        this.setPostCardMediaUrl(post.postId, previewMediaUrl(url) ?? url);
       }
     });
   }
@@ -772,8 +1146,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private resolveVerifiedMediaUrl(
     mediaRef: string,
     kind: PreviewKind,
+    priority: 'normal' | 'high' = 'normal',
   ): Observable<string | null> {
-    return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', 'normal').pipe(
+    return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', priority).pipe(
       switchMap(url => {
         if (!url) {
           return of(null);
@@ -814,7 +1189,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(
+    this.resolveVerifiedMediaUrl(
       post.mediaRef,
       postMediaKind(post.mediaRef),
       'high',

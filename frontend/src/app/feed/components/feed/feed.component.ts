@@ -1,4 +1,4 @@
-import {Component, computed, effect, inject, OnInit, signal, ElementRef} from '@angular/core';
+import {Component, computed, effect, inject, OnDestroy, OnInit, signal, ElementRef} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -78,7 +78,7 @@ interface ShareTarget {
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })
-export class FeedComponent implements OnInit {
+export class FeedComponent implements OnInit, OnDestroy {
   protected userService = inject(UserService);
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
@@ -157,10 +157,13 @@ export class FeedComponent implements OnInit {
 
   protected publicPosts = signal<Post[]>([]);
   protected privatePosts = signal<Post[]>([]);
+  private readonly relativeTimeNow = signal(Date.now());
+  private relativeTimeTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
+    this.relativeTimeTimer = setInterval(() => this.relativeTimeNow.set(Date.now()), 30_000);
     this.isLoading.set(true);
-    this.userService.loadUser();
+    this.userService.loadUser().subscribe();
     this.viewTracking.startTracking();
     this.loadShareChats();
 
@@ -188,6 +191,15 @@ export class FeedComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.relativeTimeTimer) {
+      clearInterval(this.relativeTimeTimer);
+      this.relativeTimeTimer = null;
+    }
+
+    this.viewTracking.stopAndClear();
   }
 
   openAlgorithmConfig(): void {
@@ -268,7 +280,7 @@ export class FeedComponent implements OnInit {
 
   timeAgo(createdAt: string): string {
     const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
-    const diffMs = Date.now() - new Date(normalized).getTime();
+    const diffMs = this.relativeTimeNow() - new Date(normalized).getTime();
     const minutes = Math.floor(diffMs / 60_000);
     if (minutes < 1) return 'just now';
     if (minutes < 60) return `${minutes} min ago`;
@@ -394,6 +406,20 @@ export class FeedComponent implements OnInit {
   reportPost(post: Post) {
     this.selectedPostForReport.set(post);
     this.reportDialogVisible.set(true);
+  }
+
+  protected onReportSubmitted(event: { contentType: ContentTypeEnum; contentId: string }): void {
+    if (event.contentType !== ContentTypeEnum.POST) {
+      return;
+    }
+
+    this.removePostFromFeed(event.contentId);
+    this.selectedPostForReport.set(null);
+  }
+
+  private removePostFromFeed(postId: string): void {
+    this.publicPosts.update(posts => posts.filter(post => post.postId !== postId));
+    this.privatePosts.update(posts => posts.filter(post => post.postId !== postId));
   }
 
   protected readonly ContentTypeEnum = ContentTypeEnum;

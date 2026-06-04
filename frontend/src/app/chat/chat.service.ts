@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 import { environment } from '../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
 import { Chat, ChatMessage, CreateChatRequest, SendMessageRequest } from './chat.models';
 
 @Injectable({
@@ -25,6 +26,14 @@ export class ChatService {
 
   getMessages(chatId: string) {
     return this.httpClient.get<ChatMessage[]>(`${this.baseUri}/${chatId}/messages`);
+  }
+
+  markChatRead(chatId: string) {
+    return this.httpClient.post<void>(
+      `${this.baseUri}/${chatId}/read`,
+      {},
+      { context: SILENT_ERROR_CONTEXT }
+    );
   }
 
   sendMessage(chatId: string, request: SendMessageRequest) {

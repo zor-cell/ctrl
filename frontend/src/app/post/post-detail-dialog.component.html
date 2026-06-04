@@ -63,19 +63,25 @@
       <div class="post-detail__body">
         @if (postMediaUrl() && postMediaKind(currentPost) === 'image') {
           <div class="post-detail__media-wrapper">
-            <img
-              [src]="postMediaUrl()!"
-              alt=""
-              class="post-detail__media"
-            />
+            <div class="post-detail__media-stage">
+              <img
+                [src]="postMediaUrl()!"
+                alt=""
+                class="post-detail__media"
+                (error)="handleMediaLoadError()"
+              />
+            </div>
           </div>
         } @else if (postMediaUrl() && postMediaKind(currentPost) === 'video') {
           <div class="post-detail__media-wrapper">
-            <video
-              [src]="postMediaUrl()!"
-              controls
-              class="post-detail__media"
-            ></video>
+            <div class="post-detail__media-stage">
+              <video
+                [src]="postMediaUrl()!"
+                controls
+                class="post-detail__media"
+                (error)="handleMediaLoadError()"
+              ></video>
+            </div>
           </div>
         }
 
@@ -134,6 +140,28 @@
             }
           }
         </section>
+
+        <div class="post-detail__actions">
+          <div class="post-detail__actions-left">
+            <span class="post-detail__action-btn post-detail__action-btn--static">
+              <i class="pi pi-comment"></i>
+              <span>{{ commentCount() }}</span>
+            </span>
+
+            @if (canShare) {
+              <button
+                type="button"
+                class="post-detail__action-btn"
+                aria-label="Share post"
+                pTooltip="Share post"
+                tooltipPosition="top"
+                (click)="requestShare()"
+              >
+                <i class="pi pi-send"></i>
+              </button>
+            }
+          </div>
+        </div>
 
         <section class="post-detail__comments comments-list" aria-labelledby="post-detail-comments-title">
           <h2 id="post-detail-comments-title">Comments ({{ commentCount() }})</h2>

@@ -19,6 +19,7 @@ export class ChatRealtimeBridgeService {
 
   private messageHandler: ((payload: ChatRealtimePayload) => void) | null = null;
   private chatListHandler: ((chat: Chat) => void) | null = null;
+  private chatRemovedHandler: ((chatId: string) => void) | null = null;
 
   ensureConnected(): void {
     const token = untracked(() => this.authService.token());
@@ -87,6 +88,7 @@ export class ChatRealtimeBridgeService {
   disconnect(): void {
     this.messageHandler = null;
     this.chatListHandler = null;
+    this.chatRemovedHandler = null;
     this.chatRealtimeService.disconnect();
   }
 
@@ -96,6 +98,10 @@ export class ChatRealtimeBridgeService {
 
   setChatListHandler(handler: ((chat: Chat) => void) | null): void {
     this.chatListHandler = handler;
+  }
+
+  setChatRemovedHandler(handler: ((chatId: string) => void) | null): void {
+    this.chatRemovedHandler = handler;
   }
 
   watchChat(chatId: string | null): void {
@@ -112,6 +118,10 @@ export class ChatRealtimeBridgeService {
       onChatSummary: chat => {
         this.chatUnreadService.applyChatUpdate(chat);
         this.chatListHandler?.(chat);
+      },
+      onChatRemoved: chatId => {
+        this.chatUnreadService.removeChat(chatId);
+        this.chatRemovedHandler?.(chatId);
       },
     };
   }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
+import { Client, IFrame, IMessage, StompSubscription } from '@stomp/stompjs';
 
 import { environment } from '../../environments/environment';
 import { Chat, ChatMessage } from './chat.models';
@@ -14,6 +14,7 @@ export interface ChatRealtimePayload {
 export interface ChatRealtimeHandlers {
   onMessageEvent: (payload: ChatRealtimePayload) => void;
   onChatSummary: (chat: Chat) => void;
+  onChatRemoved: (chatId: string) => void;
 }
 
 export type ConnectionStatus = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'FALLBACK' | 'ERROR';
@@ -27,6 +28,7 @@ export class ChatRealtimeService {
   private client: Client | null = null;
   private chatTopicSubscription: StompSubscription | null = null;
   private chatQueueSubscription: StompSubscription | null = null;
+  private chatRemovedSubscription: StompSubscription | null = null;
   private handlers: ChatRealtimeHandlers | null = null;
   private activeChatId: string | null = null;
   private sockJsFactory: SockJsFactory | null = null;
@@ -39,6 +41,7 @@ export class ChatRealtimeService {
   private isUsingFallback = false;
   private fallbackActivationInProgress = false;
   private nativeConnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private connectionGeneration = 0;
 
   isConnected(): boolean {
     return this.client?.connected ?? false;
@@ -74,6 +77,7 @@ export class ChatRealtimeService {
   }
 
   async connect(token: string, handlers: ChatRealtimeHandlers): Promise<void> {
+    const generation = ++this.connectionGeneration;
     this.handlers = handlers;
     this.currentToken = token;
     this.reconnectAttempts = 0;
@@ -83,7 +87,7 @@ export class ChatRealtimeService {
     this.connectionStatus$.next('CONNECTING');
 
     try {
-      this.activateNativeClient(token);
+      this.activateNativeClient(token, generation);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('[WebSocket] Connection failed:', errorMsg);
@@ -102,6 +106,7 @@ export class ChatRealtimeService {
   }
 
   disconnect(): void {
+    this.connectionGeneration += 1;
     this.activeChatId = null;
     this.handlers = null;
     this.currentToken = null;
@@ -120,6 +125,8 @@ export class ChatRealtimeService {
     this.chatTopicSubscription = null;
     this.chatQueueSubscription?.unsubscribe();
     this.chatQueueSubscription = null;
+    this.chatRemovedSubscription?.unsubscribe();
+    this.chatRemovedSubscription = null;
 
     if (this.client) {
       try {
@@ -150,8 +157,21 @@ export class ChatRealtimeService {
     this.nativeConnectTimeoutId = null;
   }
 
-  private activateNativeClient(token: string): void {
-    this.client = new Client({
+  private isActiveConnection(generation: number, client: Client): boolean {
+    return generation === this.connectionGeneration && this.client === client;
+  }
+
+  private isCurrentConnectionGeneration(generation: number): boolean {
+    return generation === this.connectionGeneration;
+  }
+
+  private isSockJsSessionClosedFrame(frame: IFrame): boolean {
+    return (frame.headers['message'] ?? '').toLowerCase().includes('session closed');
+  }
+
+  private activateNativeClient(token: string, generation: number): void {
+    let nativeClient: Client;
+    nativeClient = new Client({
       brokerURL: this.resolveNativeWebSocketUrl(),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
@@ -159,49 +179,81 @@ export class ChatRealtimeService {
       reconnectDelay: 0,
       heartbeatIncoming: 5000,
       heartbeatOutgoing: 5000,
-      onConnect: () => this.handleConnected(false),
+      onConnect: () => {
+        if (!this.isActiveConnection(generation, nativeClient)) {
+          return;
+        }
+
+        this.handleConnected(false);
+      },
       onDisconnect: () => {
+        if (!this.isActiveConnection(generation, nativeClient)) {
+          return;
+        }
+
         console.debug('[WebSocket] Disconnected');
         if (!this.fallbackActivationInProgress && !this.isUsingFallback) {
           this.connectionStatus$.next('DISCONNECTED');
         }
       },
       onStompError: frame => {
+        if (!this.isActiveConnection(generation, nativeClient)) {
+          return;
+        }
+
         const errorMsg = `STOMP Error: ${frame.headers['message'] || 'Unknown error'}`;
         console.error('[WebSocket]', errorMsg, frame);
         this.lastConnectionError = new Error(errorMsg);
         this.connectionStatus$.next('ERROR');
       },
       onWebSocketError: event => {
+        if (!this.isActiveConnection(generation, nativeClient)) {
+          return;
+        }
+
         const errorMsg = 'Native WebSocket connection failed';
         console.error('[WebSocket]', errorMsg, event);
         this.lastConnectionError = new Error(errorMsg);
-        void this.activateSockJsFallback(errorMsg);
+        void this.activateSockJsFallback(errorMsg, generation);
       },
       onWebSocketClose: event => {
+        if (!this.isActiveConnection(generation, nativeClient)) {
+          return;
+        }
+
         if (this.connectionStatus$.value === 'CONNECTING' && !this.isUsingFallback) {
           const reason = event.reason ? `: ${event.reason}` : '';
-          void this.activateSockJsFallback(`Native WebSocket closed before STOMP connect${reason}`);
+          void this.activateSockJsFallback(
+            `Native WebSocket closed before STOMP connect${reason}`,
+            generation,
+          );
         }
       },
     });
 
-    this.client.activate();
+    this.client = nativeClient;
+    nativeClient.activate();
     this.nativeConnectTimeoutId = setTimeout(() => {
       if (
-        this.connectionStatus$.value === 'CONNECTING'
-        && !this.client?.connected
+        this.isActiveConnection(generation, nativeClient)
+        && this.connectionStatus$.value === 'CONNECTING'
+        && !nativeClient.connected
         && !this.isUsingFallback
       ) {
         void this.activateSockJsFallback(
           `Native WebSocket did not finish STOMP connect within ${NATIVE_CONNECT_TIMEOUT_MS}ms`,
+          generation,
         );
       }
     }, NATIVE_CONNECT_TIMEOUT_MS);
   }
 
-  private async activateSockJsFallback(reason: string): Promise<void> {
-    if (this.fallbackActivationInProgress || this.isUsingFallback) {
+  private async activateSockJsFallback(reason: string, generation: number): Promise<void> {
+    if (
+      !this.isCurrentConnectionGeneration(generation)
+      || this.fallbackActivationInProgress
+      || this.isUsingFallback
+    ) {
       return;
     }
 
@@ -219,7 +271,12 @@ export class ChatRealtimeService {
 
     try {
       const SockJS = await this.loadSockJsFactory();
-      this.client = new Client({
+      if (!this.isCurrentConnectionGeneration(generation)) {
+        return;
+      }
+
+      let fallbackClient: Client;
+      fallbackClient = new Client({
         webSocketFactory: () =>
           new SockJS(this.resolveSockJsUrl(), undefined, {
             transports: ['xhr-streaming', 'xhr-polling'],
@@ -230,18 +287,41 @@ export class ChatRealtimeService {
         reconnectDelay: 5000,
         heartbeatIncoming: 5000,
         heartbeatOutgoing: 5000,
-        onConnect: () => this.handleConnected(true),
+        onConnect: () => {
+          if (!this.isActiveConnection(generation, fallbackClient)) {
+            return;
+          }
+
+          this.handleConnected(true);
+        },
         onDisconnect: () => {
+          if (!this.isActiveConnection(generation, fallbackClient)) {
+            return;
+          }
+
           console.debug('[WebSocket] SockJS fallback disconnected');
           this.connectionStatus$.next('DISCONNECTED');
         },
         onStompError: frame => {
+          if (!this.isActiveConnection(generation, fallbackClient)) {
+            return;
+          }
+
+          if (this.isSockJsSessionClosedFrame(frame)) {
+            console.debug('[WebSocket] SockJS fallback session closed; waiting for reconnect.');
+            return;
+          }
+
           const errorMsg = `SockJS fallback STOMP Error: ${frame.headers['message'] || 'Unknown error'}`;
           console.error('[WebSocket]', errorMsg, frame);
           this.lastConnectionError = new Error(errorMsg);
           this.connectionStatus$.next('ERROR');
         },
         onWebSocketError: event => {
+          if (!this.isActiveConnection(generation, fallbackClient)) {
+            return;
+          }
+
           const errorMsg = 'SockJS fallback connection failed';
           console.error('[WebSocket]', errorMsg, event);
           this.lastConnectionError = new Error(errorMsg);
@@ -249,14 +329,21 @@ export class ChatRealtimeService {
         },
       });
 
-      this.client.activate();
+      this.client = fallbackClient;
+      fallbackClient.activate();
     } catch (error) {
+      if (!this.isCurrentConnectionGeneration(generation)) {
+        return;
+      }
+
       const errorMsg = error instanceof Error ? error.message : 'Unknown SockJS fallback error';
       console.error('[WebSocket] SockJS fallback setup failed:', errorMsg);
       this.lastConnectionError = error instanceof Error ? error : new Error(errorMsg);
       this.connectionStatus$.next('ERROR');
     } finally {
-      this.fallbackActivationInProgress = false;
+      if (this.isCurrentConnectionGeneration(generation)) {
+        this.fallbackActivationInProgress = false;
+      }
     }
   }
 
@@ -269,10 +356,15 @@ export class ChatRealtimeService {
     );
     this.reconnectAttempts = 0;
     this.isUsingFallback = usingFallback;
+    this.lastConnectionError = null;
 
     this.chatQueueSubscription = this.client?.subscribe(
       '/user/queue/chats',
       message => this.handleChatSummary(message),
+    ) ?? null;
+    this.chatRemovedSubscription = this.client?.subscribe(
+      '/user/queue/chats/removed',
+      message => this.handleChatRemoved(message),
     ) ?? null;
     this.subscribeToActiveChat();
     this.connectionStatus$.next(usingFallback ? 'FALLBACK' : 'CONNECTED');
@@ -298,7 +390,7 @@ export class ChatRealtimeService {
     }
 
     this.chatTopicSubscription = this.client.subscribe(
-      `/topic/chats/${this.activeChatId}`,
+      `/user/queue/chats/${this.activeChatId}/messages`,
       message => this.handleMessageEvent(message),
     );
   }
@@ -354,6 +446,19 @@ export class ChatRealtimeService {
       this.handlers.onChatSummary(chat);
     } catch (error) {
       console.error('[WebSocket] Error handling chat summary:', error, message.body);
+    }
+  }
+
+  private handleChatRemoved(message: IMessage): void {
+    if (!this.handlers) {
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(message.body) as { chatId: string };
+      this.handlers.onChatRemoved(payload.chatId);
+    } catch (error) {
+      console.error('[WebSocket] Error handling chat removal:', error, message.body);
     }
   }
 }

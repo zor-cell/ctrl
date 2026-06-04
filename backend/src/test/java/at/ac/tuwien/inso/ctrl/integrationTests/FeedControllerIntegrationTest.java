@@ -13,6 +13,10 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
 import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.entity.Report;
+import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -42,6 +46,7 @@ public class FeedControllerIntegrationTest {
   @Autowired private UserRepository userRepository;
   @Autowired private PostRepository postRepository;
   @Autowired private PostVoteRepository postVoteRepository;
+  @Autowired private ReportRepository reportRepository;
   @Autowired private JwtService jwtService;
 
   private User existingUser;
@@ -53,6 +58,7 @@ public class FeedControllerIntegrationTest {
   @BeforeEach
   public void setUp() {
     postVoteRepository.deleteAll();
+    reportRepository.deleteAll();
     postRepository.deleteAll();
     userRepository.deleteAll();
 
@@ -81,6 +87,7 @@ public class FeedControllerIntegrationTest {
   @AfterEach
   public void tearDown() {
     postVoteRepository.deleteAll();
+    reportRepository.deleteAll();
     postRepository.deleteAll();
     userRepository.deleteAll();
   }
@@ -146,6 +153,64 @@ public class FeedControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].postId").value(post.getPostId()));
+  }
+
+  @Test
+  public void getFeed_shouldExcludeRemovedPosts_WhenPostWasRemovedAfterReport() throws Exception {
+    Post post = new Post();
+    post.setPostId("removed-post-id");
+    post.setCaption("Removed Post");
+    post.setUser(otherUser);
+    post.setPublic(true);
+    post.setIsRemoved(true);
+    post.setEmbedding(generateDummyEmbedding());
+    post.setCreatedAt(LocalDateTime.now());
+
+    postRepository.save(post);
+
+    mockMvc
+        .perform(
+            get(feedEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("page", "0")
+                .param("postsPerPage", "5")
+                .param("publicFeed", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
+  public void getFeed_shouldExcludePostsReportedByCurrentUser() throws Exception {
+    Post post = new Post();
+    post.setPostId("reported-post-id");
+    post.setCaption("Reported Post");
+    post.setUser(otherUser);
+    post.setPublic(true);
+    post.setEmbedding(generateDummyEmbedding());
+    post.setCreatedAt(LocalDateTime.now());
+
+    postRepository.save(post);
+    reportRepository.save(
+        Report.builder()
+            .reason("SPAM")
+            .description("Reported by current user")
+            .fromUser(existingUser)
+            .usernameReported(otherUser)
+            .contentType(ContentTypeEnum.POST)
+            .contentId(post.getPostId())
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build());
+
+    mockMvc
+        .perform(
+            get(feedEndpoint)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken)
+                .param("page", "0")
+                .param("postsPerPage", "5")
+                .param("publicFeed", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
   }
 
   @Test

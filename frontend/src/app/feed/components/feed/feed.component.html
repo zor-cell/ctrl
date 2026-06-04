@@ -343,7 +343,8 @@
   [userProfilePic]="selectedPostForReport()?.userProfilePic"
   [username]="selectedPostForReport()?.username"
   [visible]="reportDialogVisible()"
-  (visibleChange)="reportDialogVisible.set($event)">
+  (visibleChange)="reportDialogVisible.set($event)"
+  (reportSubmitted)="onReportSubmitted($event)">
 </app-report>
 
 <app-report

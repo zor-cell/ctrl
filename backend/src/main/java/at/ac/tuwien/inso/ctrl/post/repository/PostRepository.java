@@ -109,6 +109,14 @@ public interface PostRepository extends JpaRepository<Post, String> {
                  ON (fr.friend_id_1 = :userId AND fr.friend_id_2 = p.user_id)
                  OR (fr.friend_id_1 = p.user_id AND fr.friend_id_2 = :userId)
               WHERE p.post_id IN (:candidatePosts)
+                AND p.is_removed = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM reports r
+                  WHERE r.from_user_id = :userId
+                    AND r.content_type = 'POST'
+                    AND r.content_id = p.post_id
+                    AND r.status <> 'DECLINED'
+                )
           )
           SELECT
               c.post_id AS postId,
@@ -150,6 +158,14 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   SELECT p.post_id, p.embedding, p.created_at, p.upvotes
                   FROM posts p
                   WHERE p.is_public = true
+                      AND p.is_removed = false
+                      AND NOT EXISTS (
+                        SELECT 1 FROM reports r
+                        WHERE r.from_user_id = :userId
+                          AND r.content_type = 'POST'
+                          AND r.content_id = p.post_id
+                          AND r.status <> 'DECLINED'
+                      )
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
           )
@@ -185,6 +201,14 @@ public interface PostRepository extends JpaRepository<Post, String> {
                   SELECT p.post_id, p.embedding, p.created_at, p.upvotes
                   FROM posts p
                   WHERE p.is_public = false
+                    AND p.is_removed = false
+                    AND NOT EXISTS (
+                      SELECT 1 FROM reports r
+                      WHERE r.from_user_id = :userId
+                        AND r.content_type = 'POST'
+                        AND r.content_id = p.post_id
+                        AND r.status <> 'DECLINED'
+                    )
                     AND EXISTS (
                        SELECT 1 FROM friend_relation f
                        WHERE (f.friend_id_1 = :userId AND f.friend_id_2 = p.user_id)

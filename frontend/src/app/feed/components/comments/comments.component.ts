@@ -80,6 +80,10 @@ export class CommentsComponent implements OnChanges {
     return this.comments().filter(c => c.parentCommentId === commentId);
   }
 
+  closeDialog(): void {
+    this.visibleChange.emit(false);
+  }
+
   isOwnComment(comment: PostComment): boolean {
     // Adjust `.user()?.username` to match your actual UserService API
     return comment.username === this.userService.user()?.username;

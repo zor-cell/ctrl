@@ -22,7 +22,7 @@
     @case ('FOLLOWED') {
       @if (actionMode()) {
         <p-button label="Following" size="small" [rounded]="true"
-                  severity="secondary" [disabled]="true" [styleClass]="buttonStyleClass()" />
+                  severity="secondary" [loading]="busy()" (onClick)="unfollow()" [styleClass]="buttonStyleClass()" />
       } @else {
         <p-button label="Following" size="small" [rounded]="true"
                   severity="secondary" [loading]="busy()" (onClick)="unfollow()" [styleClass]="buttonStyleClass()"  />

@@ -6,7 +6,7 @@
   [resizable]="false"
   [style]="{ width: '95vw', maxWidth: '560px', maxHeight: '90vh' }"
   styleClass="comments-dialog"
-  [header]="'Comments (' + comments().length + ')'"
+  [showHeader]="false"
 >
   @if (post) {
 
@@ -15,7 +15,8 @@
       <div class="post-header">
         <div class="post-user">
           <p-avatar
-            [image]="post.userProfilePic"
+            [image]="post.userProfilePic || undefined"
+            [label]="post.userProfilePic ? undefined : (post.username || '?').charAt(0).toUpperCase()"
             shape="circle"
             size="normal"
             [style]="{ width: '42px', height: '42px' }"
@@ -42,6 +43,14 @@
             </div>
           }
         </div>
+
+        <button
+          type="button"
+          class="comments-close-button"
+          (click)="closeDialog()"
+          aria-label="Close comments">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
 
       @if (post.videoImageRef && post.videoImageRef.length > 0) {
@@ -81,7 +90,8 @@
         @for (comment of topLevelComments(); track comment.commentId) {
           <div class="comment">
             <p-avatar
-              [image]="comment.userProfilePic"
+              [image]="comment.userProfilePic || undefined"
+              [label]="comment.userProfilePic ? undefined : (comment.username || '?').charAt(0).toUpperCase()"
               shape="circle"
               [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
             />
@@ -144,7 +154,8 @@
               @for (reply of repliesFor(comment.commentId); track reply.commentId) {
                 <div class="comment reply">
                   <p-avatar
-                    [image]="reply.userProfilePic"
+                    [image]="reply.userProfilePic || undefined"
+                    [label]="reply.userProfilePic ? undefined : (reply.username || '?').charAt(0).toUpperCase()"
                     shape="circle"
                     [style]="{ width: '28px', height: '28px', flexShrink: '0' }"
                   />

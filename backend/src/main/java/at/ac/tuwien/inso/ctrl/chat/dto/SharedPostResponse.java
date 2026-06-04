@@ -7,10 +7,13 @@ public record SharedPostResponse(
     UUID sharedId,
     String postId,
     String username,
+    UUID profileUserId,
+    String profilePicture,
     String caption,
     String mediaRef,
     String mediaKind,
     LocalDateTime sharedAt,
     boolean canView,
     boolean publicPost,
-    String profileUsername) {}
+    String profileUsername,
+    String unavailableReason) {}

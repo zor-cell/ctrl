@@ -15,6 +15,8 @@ export interface SharedPost {
   sharedId: string;
   postId: string;
   username: string;
+  profileUserId: string | null;
+  profilePicture: string | null;
   caption: string | null;
   mediaRef: string | null;
   mediaKind: 'image' | 'video' | null;
@@ -22,6 +24,7 @@ export interface SharedPost {
   canView: boolean;
   publicPost: boolean;
   profileUsername: string | null;
+  unavailableReason: 'PRIVATE' | 'REMOVED' | null;
 }
 
 export type SystemEventType = 'MEMBER_ADDED' | 'MEMBER_REMOVED' | 'MEMBER_LEFT';

@@ -57,6 +57,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class ChatService {
 
+  private static final int MAX_GROUP_MEMBERS = 50;
   private static final Pattern GROUP_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9._]+$");
   private static final Set<String> ALLOWED_REACTION_EMOJIS =
       Set.of("👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥");
@@ -126,6 +127,10 @@ public class ChatService {
           "Group name may only contain letters, numbers, dots and underscores");
     }
 
+    if (groupChat && invitedUsers.size() + 1 > MAX_GROUP_MEMBERS) {
+      throw new InvalidRequestException("Group chats can have at most 50 members");
+    }
+
     Chat chat =
         Chat.builder()
             .chatId(UUID.randomUUID())
@@ -167,6 +172,12 @@ public class ChatService {
   }
 
   @Transactional
+  public void markChatAsRead(User currentUser, UUID chatId) {
+    Chat chat = requireChatMember(currentUser, chatId);
+    markChatAsRead(currentUser, chat);
+  }
+
+  @Transactional
   public ChatMessageResponse sendMessage(
       User currentUser, UUID chatId, SendMessageRequest request) {
     Chat chat = requireChatMember(currentUser, chatId);
@@ -189,7 +200,7 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     ChatMessageResponse response = toMessageResponse(savedMessage, currentUser);
-    broadcastChatEvents(chat, savedMessage, currentUser, "MESSAGE");
+    broadcastChatEvents(chat, savedMessage, "MESSAGE");
     return response;
   }
 
@@ -226,7 +237,11 @@ public class ChatService {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the group owner can delete it");
     }
 
+    List<String> activeMemberUsernames =
+        activeMembers(chat).stream().map(member -> member.getUser().getUsername()).toList();
     chatRepository.delete(chat);
+    activeMemberUsernames.forEach(
+        username -> chatMessageBroadcaster.publishChatRemoved(username, chatId));
   }
 
   @Transactional
@@ -244,6 +259,11 @@ public class ChatService {
 
     if (newMembers.isEmpty()) {
       throw new InvalidRequestException("All selected users are already members");
+    }
+
+    int activeMemberCount = activeMembers(chat).size();
+    if (activeMemberCount + newMembers.size() > MAX_GROUP_MEMBERS) {
+      throw new InvalidRequestException("Group chats can have at most 50 members");
     }
 
     LocalDateTime now = LocalDateTime.now();
@@ -298,7 +318,7 @@ public class ChatService {
 
     Message updatedMessage = requireMessageWithReactions(messageId);
     ChatMessageResponse response = toMessageResponse(updatedMessage, currentUser);
-    broadcastChatEvents(chat, updatedMessage, currentUser, "MESSAGE_UPDATE");
+    broadcastChatEvents(chat, updatedMessage, "MESSAGE_UPDATE");
     return response;
   }
 
@@ -336,6 +356,7 @@ public class ChatService {
       throw new NotFoundException("Chat member", memberId.toString());
     }
 
+    chatMessageBroadcaster.publishChatRemoved(removedMember.getUsername(), chatId);
     createGroupSystemMessage(
         chat, currentUser, SystemEventType.MEMBER_REMOVED, List.of(removedMember));
 
@@ -353,10 +374,12 @@ public class ChatService {
 
       chatMemberRepository.deleteByChatIdAndUserId(chatId, currentUser.getId());
       createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
+      chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
       return;
     }
 
     markMemberLeft(chatId, currentUser.getId());
+    chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
   }
 
   private List<User> resolveInvitedUsers(User currentUser, List<String> usernames) {
@@ -471,19 +494,18 @@ public class ChatService {
     return chat;
   }
 
-  private void broadcastChatEvents(Chat chat, Message message, User currentUser, String eventType) {
-    if (canPublishToSharedTopic(message)) {
-      ChatMessageResponse topicMessage = toMessageResponse(message, currentUser);
-      chatMessageBroadcaster.publishMessageEvent(
-          chat.getChatId(), new ChatRealtimePayload(eventType, chat.getChatId(), topicMessage));
-    }
-
+  private void broadcastChatEvents(Chat chat, Message message, String eventType) {
     Chat chatWithMembers =
         chatRepository
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
 
     for (ChatMember member : activeMembers(chatWithMembers)) {
+      ChatMessageResponse messageForMember = toMessageResponse(message, member.getUser());
+      chatMessageBroadcaster.publishMessageEvent(
+          member.getUser().getUsername(),
+          chat.getChatId(),
+          new ChatRealtimePayload(eventType, chat.getChatId(), messageForMember));
       ChatResponse summary = toChatResponse(chatWithMembers, member.getUser());
       chatMessageBroadcaster.publishChatSummary(member.getUser().getUsername(), summary);
     }
@@ -648,25 +670,36 @@ public class ChatService {
     boolean externalPost = post.isExternalPost();
     String username =
         externalPost ? post.getExternalAuthor().getDisplayName() : post.getUser().getUsername();
+    UUID profileUserId = externalPost ? null : post.getUser().getId();
+    String profilePicture = externalPost ? null : post.getUser().getProfilePicture();
     String profileUsername = externalPost ? null : post.getUser().getUsername();
     boolean publicPost = externalPost || post.isPublic();
+    boolean removed = Boolean.TRUE.equals(post.getIsRemoved());
     boolean canView = canViewPost(post, currentUser);
     String mediaRef = canView ? post.getMediaRef() : null;
+    String unavailableReason = removed ? "REMOVED" : canView ? null : "PRIVATE";
 
     return new SharedPostResponse(
         shared.getSharedId(),
         post.getPostId(),
         username,
+        profileUserId,
+        profilePicture,
         canView ? post.getCaption() : null,
         mediaRef,
         canView ? mediaKind(mediaRef) : null,
         shared.getCreatedAt(),
         canView,
         publicPost,
-        profileUsername);
+        profileUsername,
+        unavailableReason);
   }
 
   private boolean canViewPost(Post post, User currentUser) {
+    if (Boolean.TRUE.equals(post.getIsRemoved())) {
+      return false;
+    }
+
     if (post.isExternalPost() || post.isPublic()) {
       return true;
     }
@@ -678,16 +711,6 @@ public class ChatService {
 
     return owner.getId().equals(currentUser.getId())
         || friendRelationRepository.existsByUsers(owner, currentUser);
-  }
-
-  private boolean canPublishToSharedTopic(Message message) {
-    Shared shared = message.getShared();
-    if (shared == null) {
-      return true;
-    }
-
-    Post post = shared.getPost();
-    return post.isExternalPost() || post.isPublic();
   }
 
   private String mediaKind(String mediaRef) {
@@ -726,7 +749,7 @@ public class ChatService {
             .findWithDetailsByMessageId(savedMessage.getMessageId())
             .orElseThrow(
                 () -> new NotFoundException("Message", savedMessage.getMessageId().toString()));
-    broadcastChatEvents(reloadedChat, reloadedMessage, actor, "MESSAGE");
+    broadcastChatEvents(reloadedChat, reloadedMessage, "MESSAGE");
   }
 
   private List<ChatParticipantResponse> resolveSystemTargets(Message message) {

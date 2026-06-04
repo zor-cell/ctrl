@@ -4,14 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.chat.ChatService;
+import at.ac.tuwien.inso.ctrl.chat.dto.AddChatMembersRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatMessageResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatRealtimePayload;
+import at.ac.tuwien.inso.ctrl.chat.dto.ChatRemovedPayload;
 import at.ac.tuwien.inso.ctrl.chat.dto.ChatResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.CreateChatRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.SendMessageRequest;
@@ -21,6 +24,7 @@ import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.SharedRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
+import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
@@ -33,6 +37,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -206,13 +211,66 @@ class WebSocketSecurityIntegrationTest {
   }
 
   @Test
-  void privateSharedPost_isNotBroadcastOnSharedTopicAndQueuePayloadIsPersonalized()
+  void createGroup_rejectsMoreThan50Members() {
+    List<String> usernames = saveFriendUsernames(alice, "limitcreate", 50);
+
+    InvalidRequestException exception =
+        assertThrows(
+            InvalidRequestException.class,
+            () -> chatService.createChat(alice, new CreateChatRequest("too_many", usernames)));
+
+    assertEquals("Group chats can have at most 50 members", exception.getMessage());
+  }
+
+  @Test
+  void addMembers_rejectsWhenGroupWouldExceed50Members() {
+    List<String> initialMembers = saveFriendUsernames(alice, "limitadd", 49);
+    ChatResponse chat =
+        chatService.createChat(alice, new CreateChatRequest("full_group", initialMembers));
+    List<String> extraMembers = saveFriendUsernames(alice, "limitextra", 1);
+
+    InvalidRequestException exception =
+        assertThrows(
+            InvalidRequestException.class,
+            () ->
+                chatService.addMembers(
+                    alice, chat.chatId(), new AddChatMembersRequest(extraMembers)));
+
+    assertEquals("Group chats can have at most 50 members", exception.getMessage());
+  }
+
+  @Test
+  void markChatAsRead_clearsUnreadCountWithoutReloadingMessages() {
+    ChatResponse chat =
+        chatService.createChat(alice, new CreateChatRequest(null, List.of("bob-ws")));
+    chatService.sendMessage(alice, chat.chatId(), new SendMessageRequest("unread check", null));
+
+    ChatResponse unreadChat =
+        chatService.getChats(bob).stream()
+            .filter(response -> response.chatId().equals(chat.chatId()))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(1L, unreadChat.unreadCount());
+
+    chatService.markChatAsRead(bob, chat.chatId());
+
+    ChatResponse readChat =
+        chatService.getChats(bob).stream()
+            .filter(response -> response.chatId().equals(chat.chatId()))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(0L, readChat.unreadCount());
+  }
+
+  @Test
+  void privateSharedPost_isNotBroadcastOnSharedTopicAndMessageQueuePayloadIsPersonalized()
       throws Exception {
     Post privatePost = savePost("private-topic-post", "Topic leak check", false, alice);
     ChatResponse chat =
         chatService.createChat(
             bob, new CreateChatRequest("privacy_topic_group", List.of("alice-ws", "chris-ws")));
     BlockingQueue<ChatRealtimePayload> receivedMessages = new ArrayBlockingQueue<>(1);
+    BlockingQueue<ChatRealtimePayload> receivedTopicMessages = new ArrayBlockingQueue<>(1);
     BlockingQueue<ChatResponse> receivedSummaries = new ArrayBlockingQueue<>(1);
 
     WebSocketStompClient stompClient = createNativeStompClient();
@@ -231,6 +289,19 @@ class WebSocketSecurityIntegrationTest {
     try {
       session.subscribe(
           "/topic/chats/" + chat.chatId(),
+          new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+              return ChatRealtimePayload.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+              receivedTopicMessages.offer((ChatRealtimePayload) payload);
+            }
+          });
+      session.subscribe(
+          "/user/queue/chats/" + chat.chatId() + "/messages",
           new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -259,7 +330,15 @@ class WebSocketSecurityIntegrationTest {
       chatService.sendMessage(
           alice, chat.chatId(), new SendMessageRequest("hidden live", privatePost.getPostId()));
 
-      assertNull(receivedMessages.poll(750, TimeUnit.MILLISECONDS));
+      assertNull(receivedTopicMessages.poll(750, TimeUnit.MILLISECONDS));
+      ChatRealtimePayload messagePayload = receivedMessages.poll(5, TimeUnit.SECONDS);
+      assertNotNull(messagePayload);
+      assertNotNull(messagePayload.message().sharedPost());
+      assertFalse(messagePayload.message().own());
+      assertFalse(messagePayload.message().sharedPost().canView());
+      assertNull(messagePayload.message().sharedPost().caption());
+      assertEquals("alice-ws", messagePayload.message().sharedPost().profileUsername());
+
       ChatResponse summary = receivedSummaries.poll(5, TimeUnit.SECONDS);
       assertNotNull(summary);
       assertNotNull(summary.lastMessage());
@@ -267,6 +346,96 @@ class WebSocketSecurityIntegrationTest {
       assertFalse(summary.lastMessage().sharedPost().canView());
       assertNull(summary.lastMessage().sharedPost().caption());
       assertEquals("alice-ws", summary.lastMessage().sharedPost().profileUsername());
+    } finally {
+      session.disconnect();
+      stompClient.stop();
+    }
+  }
+
+  @Test
+  void nonMemberSubscriptionToChatMessageQueue_doesNotReceiveChatMessages() throws Exception {
+    ChatResponse chat =
+        chatService.createChat(alice, new CreateChatRequest(null, List.of("bob-ws")));
+    BlockingQueue<ChatRealtimePayload> receivedMessages = new ArrayBlockingQueue<>(1);
+
+    WebSocketStompClient stompClient = createNativeStompClient();
+    StompHeaders connectHeaders = new StompHeaders();
+    connectHeaders.add("Authorization", "Bearer " + jwtService.generateToken(chris));
+
+    StompSession session =
+        stompClient
+            .connectAsync(
+                "ws://localhost:" + port + "/ws",
+                new WebSocketHttpHeaders(),
+                connectHeaders,
+                new StompSessionHandlerAdapter() {})
+            .get(5, TimeUnit.SECONDS);
+
+    try {
+      session.subscribe(
+          "/user/queue/chats/" + chat.chatId() + "/messages",
+          new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+              return ChatRealtimePayload.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+              receivedMessages.offer((ChatRealtimePayload) payload);
+            }
+          });
+
+      chatService.sendMessage(
+          alice, chat.chatId(), new SendMessageRequest("private chat event", null));
+
+      assertNull(receivedMessages.poll(750, TimeUnit.MILLISECONDS));
+    } finally {
+      session.disconnect();
+      stompClient.stop();
+    }
+  }
+
+  @Test
+  void groupDeletion_sendsChatRemovedEventToMembers() throws Exception {
+    ChatResponse chat =
+        chatService.createChat(
+            bob, new CreateChatRequest("delete_group", List.of("alice-ws", "chris-ws")));
+    BlockingQueue<ChatRemovedPayload> removedEvents = new ArrayBlockingQueue<>(1);
+
+    WebSocketStompClient stompClient = createNativeStompClient();
+    StompHeaders connectHeaders = new StompHeaders();
+    connectHeaders.add("Authorization", "Bearer " + jwtService.generateToken(chris));
+
+    StompSession session =
+        stompClient
+            .connectAsync(
+                "ws://localhost:" + port + "/ws",
+                new WebSocketHttpHeaders(),
+                connectHeaders,
+                new StompSessionHandlerAdapter() {})
+            .get(5, TimeUnit.SECONDS);
+
+    try {
+      session.subscribe(
+          "/user/queue/chats/removed",
+          new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+              return ChatRemovedPayload.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+              removedEvents.offer((ChatRemovedPayload) payload);
+            }
+          });
+
+      chatService.deleteChat(bob, chat.chatId());
+
+      ChatRemovedPayload payload = removedEvents.poll(5, TimeUnit.SECONDS);
+      assertNotNull(payload);
+      assertEquals(chat.chatId(), payload.chatId());
     } finally {
       session.disconnect();
       stompClient.stop();
@@ -293,7 +462,7 @@ class WebSocketSecurityIntegrationTest {
             .get(5, TimeUnit.SECONDS);
 
     session.subscribe(
-        "/topic/chats/" + chat.chatId(),
+        "/user/queue/chats/" + chat.chatId() + "/messages",
         new StompFrameHandler() {
           @Override
           public Type getPayloadType(StompHeaders headers) {
@@ -326,12 +495,14 @@ class WebSocketSecurityIntegrationTest {
     assertEquals("MESSAGE", payload.type());
     assertEquals(chat.chatId(), payload.chatId());
     assertEquals("hello over stomp", payload.message().content());
+    assertFalse(payload.message().own());
 
     ChatResponse summary = receivedSummaries.poll(5, TimeUnit.SECONDS);
     assertNotNull(summary);
     assertEquals(chat.chatId(), summary.chatId());
     assertNotNull(summary.lastMessage());
     assertEquals("hello over stomp", summary.lastMessage().content());
+    assertFalse(summary.lastMessage().own());
 
     session.disconnect();
     stompClient.stop();
@@ -377,6 +548,18 @@ class WebSocketSecurityIntegrationTest {
             .friend2(secondUser)
             .since(LocalDateTime.now())
             .build());
+  }
+
+  private List<String> saveFriendUsernames(User user, String usernamePrefix, int count) {
+    List<String> usernames = new ArrayList<>();
+    for (int index = 0; index < count; index++) {
+      String username = usernamePrefix + index;
+      User friend = saveUser(username, username + "@test.com");
+      saveFriendRelation(user, friend);
+      usernames.add(username);
+    }
+
+    return usernames;
   }
 
   private Post savePost(String postId, String caption, boolean publicPost, User owner) {

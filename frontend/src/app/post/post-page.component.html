@@ -78,11 +78,12 @@
           @switch (publicProfileFriendStatus()) {
             @case ('FRIEND') {
               <p-button
-                label="Friend"
-                icon="pi pi-check"
-                severity="success"
+                label="Remove Friend"
+                icon="pi pi-user-minus"
+                severity="secondary"
                 size="small"
-                [disabled]="true"
+                [loading]="friendActionBusy()"
+                (onClick)="removeProfileFriend()"
               />
             }
             @case ('PENDING_REQUEST_INCOMING') {
@@ -97,11 +98,12 @@
             }
             @case ('PENDING_REQUEST_SENT') {
               <p-button
-                label="Request Sent"
-                icon="pi pi-clock"
+                label="Cancel Request"
+                icon="pi pi-times"
                 severity="secondary"
                 size="small"
-                [disabled]="true"
+                [loading]="friendActionBusy()"
+                (onClick)="cancelProfileFriendRequest()"
               />
             }
             @default {
@@ -325,8 +327,11 @@
   [currentProfilePicture]="currentProfilePicture()"
   [avatarInitial]="avatarInitial()"
   [canDelete]="canEditProfile()"
+  [canShare]="true"
   (dismissed)="closePost()"
   (deleteRequested)="requestPostDeletion($event)"
+  (shareRequested)="openShareDialog($event)"
+  (mediaLoadFailed)="onSelectedPostMediaError($event)"
 />
 
 <app-report
@@ -338,6 +343,60 @@
   [visible]="reportDialogVisible()"
   (visibleChange)="reportDialogVisible.set($event)"
 ></app-report>
+
+<p-dialog
+  header="Send post"
+  [visible]="shareDialogVisible()"
+  (visibleChange)="onShareDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="profile-share-dialog"
+>
+  <div class="share-dialog-content">
+    <input
+      class="share-search"
+      type="search"
+      placeholder="Search people or groups"
+      [value]="shareFriendQuery()"
+      (input)="shareFriendQuery.set($any($event.target).value)"
+    />
+
+    <div class="share-targets-list">
+      @if (filteredShareTargets().length === 0) {
+        <p class="share-empty">No people or groups found</p>
+      }
+
+      @for (target of filteredShareTargets(); track target.id) {
+        <button
+          type="button"
+          class="share-target-row"
+          (click)="sharePostWithTarget(target)"
+        >
+          <span class="share-avatar" aria-hidden="true">
+            @if (shareTargetAvatarUrl(target) && !shareTargetAvatarFailed(target)) {
+              <img
+                [src]="shareTargetAvatarUrl(target)!"
+                alt=""
+                (error)="markShareTargetAvatarFailed(target)"
+              />
+            } @else {
+              {{ shareTargetInitial(target) }}
+            }
+          </span>
+          <span class="share-target-copy">
+            <strong>{{ target.title }}</strong>
+            <span>{{ target.subtitle }}</span>
+          </span>
+          <span class="share-target-kind" [attr.aria-label]="target.kind">
+            <i class="pi" [class]="shareTargetIcon(target)"></i>
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</p-dialog>
 
 <p-dialog
   [visible]="postPendingDeletion() !== null"
