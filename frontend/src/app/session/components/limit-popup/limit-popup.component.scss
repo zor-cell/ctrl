@@ -1,3 +1,16 @@
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.popup-header i {
+  font-size: 1.5rem;
+  color: var(--p-primary-color); /* Uses PrimeNG's default primary color variable */
+}
+
 .popup-content {
   display: flex;
   flex-direction: column;

@@ -1,15 +1,21 @@
 <p-dialog
-        header="Session Limit Reached"
         [visible]="sessionState.isLimitReached()"
         [modal]="true"
         [closable]="false"
         [closeOnEscape]="false"
         [style]="{ width: '25rem' }">
 
-    <div class="popup-content">
-        <div><i class="pi pi-stopwatch"></i> {{ sessionState.limitMessage() }}</div>
+    <ng-template pTemplate="header">
+        <div class="popup-header">
+            <i class="pi pi-stopwatch"></i>
+            <span> Session Limit Reached</span>
+        </div>
+    </ng-template>
 
-        <div>You will not be able to see any more posts until tomorrow.</div>
+    <div class="popup-content">
+        <div>{{ sessionState.limitMessage() }}.
+            You will not be able to see any more posts until tomorrow.
+        </div>
 
         <div class="popup-actions">
             <p-button
