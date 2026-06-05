@@ -1,12 +1,10 @@
 package at.ac.tuwien.inso.ctrl.session;
 
-import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import java.time.LocalDateTime;
-
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +29,7 @@ public class SessionController {
 
   @PutMapping("/config")
   public SessionConfigDto updateConfig(
-          @AuthenticationPrincipal User user, @Valid @RequestBody SessionConfigDto config) {
+      @AuthenticationPrincipal User user, @Valid @RequestBody SessionConfigDto config) {
     return sessionService.updateConfig(user, config);
   }
 

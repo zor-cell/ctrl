@@ -2,9 +2,8 @@ package at.ac.tuwien.inso.ctrl.feed.controller;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
-import java.util.List;
-
 import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

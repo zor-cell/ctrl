@@ -23,7 +23,6 @@ public class WebConfig implements WebMvcConfigurer {
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
     // Register the session limit interceptor for all API endpoints
-    registry.addInterceptor(sessionLimitInterceptor)
-            .addPathPatterns("/api/**");
+    registry.addInterceptor(sessionLimitInterceptor).addPathPatterns("/api/**");
   }
 }

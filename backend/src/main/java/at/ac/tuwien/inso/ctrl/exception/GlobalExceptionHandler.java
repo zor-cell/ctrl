@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.exception;
 
 import jakarta.persistence.EntityNotFoundException;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,12 +126,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @ExceptionHandler(SessionLimitExceededException.class)
-  public ResponseEntity<Object> handleSessionLimitExceeded(SessionLimitExceededException ex, WebRequest request) {
+  public ResponseEntity<Object> handleSessionLimitExceeded(
+      SessionLimitExceededException ex, WebRequest request) {
     Map<String, String> responseBody = new HashMap<>();
     responseBody.put("errorCode", "SESSION_LIMIT_EXCEEDED");
     responseBody.put("message", ex.getMessage());
 
     return handleExceptionInternal(
-            ex, responseBody, new HttpHeaders(), HttpStatus.TOO_MANY_REQUESTS, request);
+        ex, responseBody, new HttpHeaders(), HttpStatus.TOO_MANY_REQUESTS, request);
   }
 }

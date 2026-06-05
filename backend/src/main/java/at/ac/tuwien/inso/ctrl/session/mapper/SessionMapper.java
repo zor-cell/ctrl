@@ -8,6 +8,6 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface SessionMapper {
-    @Mapping(source = "forcedCutoff", target = "isForcedCutoff")
-    SessionConfigDto toConfig(SessionConfig sessionConfig);
+  @Mapping(source = "forcedCutoff", target = "isForcedCutoff")
+  SessionConfigDto toConfig(SessionConfig sessionConfig);
 }

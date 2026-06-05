@@ -55,16 +55,17 @@ public class SessionService {
 
     sessionConfigRepository.save(config);
 
-    //split the current session to start fresh for this soft cutoff
+    // split the current session to start fresh for this soft cutoff
     SessionHistory currentSession = getOrCreateLastSession(currentUser);
     if (currentSession.getStart().isBefore(exactResetTime)) {
-      //save duration for previous session
+      // save duration for previous session
       long duration = Duration.between(currentSession.getStart(), exactResetTime).toMinutes();
       currentSession.setMinutes(duration);
       sessionRepository.save(currentSession);
 
-      //create a new session
-      SessionHistory newSession = SessionHistory.builder()
+      // create a new session
+      SessionHistory newSession =
+          SessionHistory.builder()
               .start(exactResetTime)
               .minutes(0L)
               .user(currentUser)
