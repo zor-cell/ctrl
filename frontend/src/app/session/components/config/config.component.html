@@ -10,15 +10,15 @@
             </div>
 
             <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
-                <div class="slider-field">
+                <div class="slider-field slider-temp">
                     <div class="slider-header">
                         <div class="slider-label-group">
-                            <label for="weightInteraction">Time Limit</label>
+                            <label for="timeLimit">Time Limit</label>
                             <i class="pi pi-info-circle hint-icon"
                                pTooltip="The maximum time in minutes you will be able to spend daily on CTRL."
                                tooltipPosition="right"></i>
                         </div>
-                        <span class="level-badge">{{ configForm.get('timeLimitMinutes')?.value}} Minute{{(configForm.get('timeLimitMinutes')?.value === 1 ? '' : 's')}}</span>
+                        <span>{{ configForm.get('timeLimitMinutes')?.value}} Minute{{(configForm.get('timeLimitMinutes')?.value === 1 ? '' : 's')}}</span>
                     </div>
                     <p-slider
                             id="timeLimit"
@@ -29,7 +29,7 @@
                     </p-slider>
                 </div>
 
-                <div class="slider-field">
+                <div class="slider-field slider-temp">
                     <div class="slider-header">
                         <div class="slider-label-group">
                             <label for="postLimit">Post Limit</label>
@@ -37,13 +37,13 @@
                                pTooltip="The maximum amount of posts you will be able to see daily on CTRL."
                                tooltipPosition="right"></i>
                         </div>
-                        <span class="level-badge">{{ configForm.get('postLimit')?.value}} Minute{{(configForm.get('postLimit')?.value === 1 ? '' : 's')}}</span>
+                        <span>{{ configForm.get('postLimit')?.value}} Post{{(configForm.get('postLimit')?.value === 1 ? '' : 's')}}</span>
                     </div>
                     <p-slider
                             id="postLimit"
                             formControlName="postLimit"
                             [min]="1"
-                            [max]="300"
+                            [max]="500"
                             [style]="{'width': '100%'}">
                     </p-slider>
                 </div>
