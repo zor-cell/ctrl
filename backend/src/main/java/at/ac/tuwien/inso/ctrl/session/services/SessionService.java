@@ -36,9 +36,9 @@ public class SessionService {
     LocalDateTime trackingStart = getTrackingStart(config);
 
     DailySessionStatsProjection currentStats = sessionRepository.getDailyStats(user, trackingStart);
-    //drop the heartbeat if session limit is already reached
-    if (currentStats.getTotalMinutes() >= config.getTimeLimitMinutes() ||
-            currentStats.getTotalPostsViewed() >= config.getPostLimit()) {
+    // drop the heartbeat if session limit is already reached
+    if (currentStats.getTotalMinutes() >= config.getTimeLimitMinutes()
+        || currentStats.getTotalPostsViewed() >= config.getPostLimit()) {
       return false;
     }
 
@@ -59,10 +59,10 @@ public class SessionService {
       sessionRepository.save(newSession);
     }
 
-    //check if this heartbeat crossed the limit threshold
+    // check if this heartbeat crossed the limit threshold
     DailySessionStatsProjection updatedStats = sessionRepository.getDailyStats(user, trackingStart);
-    return updatedStats.getTotalMinutes() >= config.getTimeLimitMinutes() ||
-            updatedStats.getTotalPostsViewed() >= config.getPostLimit();
+    return updatedStats.getTotalMinutes() >= config.getTimeLimitMinutes()
+        || updatedStats.getTotalPostsViewed() >= config.getPostLimit();
   }
 
   @Transactional

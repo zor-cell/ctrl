@@ -20,7 +20,7 @@ public class SessionController {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways
     boolean limitJustReached = sessionService.handleHeartbeat(LocalDateTime.now(), user);
-    if(limitJustReached) {
+    if (limitJustReached) {
       sessionService.verifyLimitsAndThrow(user);
     }
   }
