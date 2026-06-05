@@ -1,7 +1,9 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
+import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
+import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
 import at.ac.tuwien.inso.ctrl.session.mapper.SessionMapper;
@@ -10,6 +12,7 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +31,17 @@ public class SessionService {
   private long MAX_TIME_BETWEEN_HEARTBEATS;
 
   @Transactional
-  public void handleHeartbeat(LocalDateTime timestamp, User user) {
+  public boolean handleHeartbeat(LocalDateTime timestamp, User user) {
+    SessionConfig config = getOrCreateConfig(user);
+    LocalDateTime trackingStart = getTrackingStart(config);
+
+    DailySessionStatsProjection currentStats = sessionRepository.getDailyStats(user, trackingStart);
+    //drop the heartbeat if session limit is already reached
+    if (currentStats.getTotalMinutes() >= config.getTimeLimitMinutes() ||
+            currentStats.getTotalPostsViewed() >= config.getPostLimit()) {
+      return false;
+    }
+
     SessionHistory session = getOrCreateLastSession(user);
 
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
@@ -45,8 +58,14 @@ public class SessionService {
           SessionHistory.builder().start(timestamp).minutes(0L).user(user).postsViewed(0).build();
       sessionRepository.save(newSession);
     }
+
+    //check if this heartbeat crossed the limit threshold
+    DailySessionStatsProjection updatedStats = sessionRepository.getDailyStats(user, trackingStart);
+    return updatedStats.getTotalMinutes() >= config.getTimeLimitMinutes() ||
+            updatedStats.getTotalPostsViewed() >= config.getPostLimit();
   }
 
+  @Transactional
   public void resetSoftCutoff(User currentUser) {
     LocalDateTime exactResetTime = LocalDateTime.now();
 
@@ -126,5 +145,33 @@ public class SessionService {
 
               return sessionConfigRepository.save(defaultConfig);
             });
+  }
+
+  public LocalDateTime getTrackingStart(SessionConfig config) {
+    LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+    if (config.getLastSoftCutoff() != null && config.getLastSoftCutoff().isAfter(startOfToday)) {
+      return config.getLastSoftCutoff();
+    }
+
+    return startOfToday;
+  }
+
+  public void verifyLimitsAndThrow(User user) {
+    SessionConfig config = getOrCreateConfig(user);
+    LocalDateTime trackingStart = getTrackingStart(config);
+
+    DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, trackingStart);
+    if (stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
+      throw new SessionLimitExceededException(
+          "Your configured daily time limit of %s minute%s was exceeded"
+              .formatted(
+                  config.getTimeLimitMinutes(), config.getTimeLimitMinutes() == 1 ? "" : "s"));
+    }
+
+    if (stats.getTotalPostsViewed() >= config.getPostLimit()) {
+      throw new SessionLimitExceededException(
+          "The configured daily post limit of %s post%s was exceeded"
+              .formatted(config.getPostLimit(), config.getPostLimit() == 1 ? "" : "s"));
+    }
   }
 }

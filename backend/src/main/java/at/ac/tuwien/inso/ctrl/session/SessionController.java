@@ -19,7 +19,10 @@ public class SessionController {
   public void handleHeartbeat(@AuthenticationPrincipal User user) {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways
-    sessionService.handleHeartbeat(LocalDateTime.now(), user);
+    boolean limitJustReached = sessionService.handleHeartbeat(LocalDateTime.now(), user);
+    if(limitJustReached) {
+      sessionService.verifyLimitsAndThrow(user);
+    }
   }
 
   @GetMapping("/config")

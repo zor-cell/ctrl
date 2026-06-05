@@ -22,8 +22,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class SessionLimitInterceptor implements HandlerInterceptor {
   private final SessionService sessionService;
-  private final SessionRepository sessionRepository;
-  private final SeenPostRepository seenPostRepository;
 
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -48,28 +46,7 @@ public class SessionLimitInterceptor implements HandlerInterceptor {
     }
 
     User user = (User) authentication.getPrincipal();
-    SessionConfig config = sessionService.getOrCreateConfig(user);
-
-    LocalDateTime trackingStart = LocalDate.now().atStartOfDay();
-
-    // update the start of the tracking if soft cutoff was used
-    if (config.getLastSoftCutoff() != null && config.getLastSoftCutoff().isAfter(trackingStart)) {
-      trackingStart = config.getLastSoftCutoff();
-    }
-
-    DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, trackingStart);
-    if (stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
-      throw new SessionLimitExceededException(
-          "Your configured daily time limit of %s minute%s was exceeded"
-              .formatted(
-                  config.getTimeLimitMinutes(), config.getTimeLimitMinutes() == 1 ? "" : "s"));
-    }
-
-    if (stats.getTotalPostsViewed() >= config.getPostLimit()) {
-      throw new SessionLimitExceededException(
-          "The configured daily post limit of %s post%s was exceeded"
-              .formatted(config.getPostLimit(), config.getPostLimit() == 1 ? "" : "s"));
-    }
+    sessionService.verifyLimitsAndThrow(user);
 
     return true;
   }
