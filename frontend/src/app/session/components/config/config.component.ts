@@ -1,28 +1,24 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
 import {Button} from "primeng/button";
 import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {MultiSelect} from "primeng/multiselect";
 import {ProgressSpinner} from "primeng/progressspinner";
-import {Slider} from "primeng/slider";
 import {Tooltip} from "primeng/tooltip";
 import {SessionConfigService} from "../../session-config.service";
 import {SessionConfig} from "../../dto/SessionConfig";
-import {FloatLabel} from "primeng/floatlabel";
-import {InputText} from "primeng/inputtext";
 import {ToggleSwitch} from "primeng/toggleswitch";
+import {Slider} from "primeng/slider";
 
 @Component({
-  selector: 'session-config',
+  selector: 'app-session-config',
   imports: [
     Button,
     FormsModule,
     ProgressSpinner,
     ProgressSpinner,
     ReactiveFormsModule,
-    FloatLabel,
-    InputText,
     ToggleSwitch,
-    Tooltip
+    Tooltip,
+    Slider
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',

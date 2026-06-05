@@ -61,11 +61,11 @@ public class SessionLimitInterceptor implements HandlerInterceptor {
 
         DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, trackingStart);
         if(stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
-           throw new SessionLimitExceededException("The configured time limit of %s minutes was exceeded".formatted(config.getTimeLimitMinutes()));
+           throw new SessionLimitExceededException("Your configured daily time limit of %s minute%s was exceeded".formatted(config.getTimeLimitMinutes(), config.getTimeLimitMinutes() == 1 ? "" : "s"));
         }
 
         if(stats.getTotalPostsViewed() >= config.getPostLimit()) {
-            throw new SessionLimitExceededException("The configured post limit of %s posts was exceeded".formatted(config.getPostLimit()));
+            throw new SessionLimitExceededException("The configured daily post limit of %s post%s was exceeded".formatted(config.getPostLimit(), config.getPostLimit() == 1 ? "" : "s"));
         }
 
         return true;

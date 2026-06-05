@@ -7,54 +7,22 @@
         [style]="{ width: '25rem' }">
 
     <div class="popup-content">
-        <div>
-            <i class="pi pi-stopwatch"></i> You have reached your daily limit!
-        </div>
-
-        <div>{{ sessionState.limitMessage() }}</div>
+        <div><i class="pi pi-stopwatch"></i> {{ sessionState.limitMessage() }}</div>
 
         <div class="popup-actions">
             <p-button
                     label="I understand"
-                    (onClick)="hardCutoff()">
+                    (onClick)="hardCutoff()"
+                    [style.width]="sessionConfig()?.isForcedCutoff ? '100%' : 'auto'" fluid>
             </p-button>
 
             @if(!sessionConfig()?.isForcedCutoff) {
                 <p-button
                         label="Keep scrolling"
                         severity="danger"
-                        (onClick)="promptSoftCutoffConfirm()">
+                        (onClick)="softCutoff()">
                 </p-button>
             }
-        </div>
-    </div>
-</p-dialog>
-
-<p-dialog
-        header="Are you sure?"
-        [visible]="isConfirmingSoftCutoff()"
-        [modal]="true"
-        [closable]="false"
-        [closeOnEscape]="false"
-        [style]="{ width: '25rem' }">
-
-    <div class="popup-content">
-        <div class="popup-message">
-            Bypassing this limit will restart your session tracker. Are you sure you want to continue scrolling?
-        </div>
-
-        <div class="popup-actions">
-            <p-button
-                    label="Cancel"
-                    severity="secondary"
-                    (onClick)="cancelSoftCutoffConfirm()">
-            </p-button>
-
-            <p-button
-                    label="Yes, continue"
-                    severity="danger"
-                    (onClick)="executeSoftCutoff()">
-            </p-button>
         </div>
     </div>
 </p-dialog>

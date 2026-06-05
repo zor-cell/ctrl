@@ -1,10 +1,10 @@
-import {Component, inject, signal} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {Dialog} from "primeng/dialog";
 import {Button} from "primeng/button";
 import {SessionStateService} from "../../session-state.service";
-import {SessionService} from "../../../core/services/session.service";
 import {SessionConfigService} from "../../session-config.service";
-import {SessionConfig} from "../../dto/SessionConfig";
+import {toObservable, toSignal} from "@angular/core/rxjs-interop";
+import {filter, startWith, switchMap} from "rxjs";
 
 @Component({
   selector: 'app-limit-popup',
@@ -19,34 +19,23 @@ export class LimitPopupComponent {
   private sessionService = inject(SessionConfigService);
   protected sessionState = inject(SessionStateService);
 
-  protected sessionConfig = signal<SessionConfig | null>(null);
-  public isConfirmingSoftCutoff = signal<boolean>(false);
+  private limitReached$ = toObservable(this.sessionState.isLimitReached);
 
-  public promptSoftCutoffConfirm() {
-    this.isConfirmingSoftCutoff.set(true);
-  }
-
-  public cancelSoftCutoffConfirm() {
-    this.isConfirmingSoftCutoff.set(false);
-  }
-
-  public executeSoftCutoff() {
-    this.isConfirmingSoftCutoff.set(false);
-    this.softCutoff();
-  }
-
-  ngOnInit() {
-    this.sessionService.getConfig().subscribe(res => {
-      this.sessionConfig.set(res);
-    });
-  }
+  protected sessionConfig = toSignal(
+    this.limitReached$.pipe(
+      startWith(true),
+      filter(isReached => isReached === true),
+      switchMap(() => this.sessionService.getConfig())
+    ),
+    { initialValue: null }
+  );
 
   protected hardCutoff() {
     this.sessionState.closeModal()
   }
 
   protected softCutoff() {
-    this.sessionService.resetSoftCutoff().subscribe(res => {
+    this.sessionService.resetSoftCutoff().subscribe(() => {
       this.sessionState.closeModal();
     })
   }

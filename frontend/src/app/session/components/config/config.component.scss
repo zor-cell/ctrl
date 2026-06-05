@@ -1,3 +1,26 @@
+.slider-field {
+  margin-bottom: 1.25rem;
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .slider-label-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    label {
+      font-weight: 600;
+      color: var(--text-color);
+      margin: 0;
+    }
+  }
+}
+
 .form-field {
   display: flex;
   flex-direction: row;
