@@ -22,7 +22,7 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           COALESCE(SUM(s.minutes), 0) AS totalMinutes,
           COALESCE(SUM(s.postsViewed), 0) AS totalPostsViewed
           FROM SessionHistory s
-          WHERE s.user = :user AND s.start >= :startOfDay
+          WHERE s.user = :user AND s.start >= :trackingStart
   """)
-  DailySessionStatsProjection getDailyStats(@Param("user") User user, @Param("startOfDay") LocalDateTime startOfDay);
+  DailySessionStatsProjection getDailyStats(@Param("user") User user, @Param("trackingStart") LocalDateTime trackingStart);
 }

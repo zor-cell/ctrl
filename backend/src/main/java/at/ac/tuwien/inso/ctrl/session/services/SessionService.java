@@ -47,6 +47,34 @@ public class SessionService {
     }
   }
 
+  public void resetSoftCutoff(User currentUser) {
+    LocalDateTime exactResetTime = LocalDateTime.now();
+
+    SessionConfig config = getOrCreateConfig(currentUser);
+    config.setLastSoftCutoff(exactResetTime);
+
+    sessionConfigRepository.save(config);
+
+    //split the current session to start fresh for this soft cutoff
+    SessionHistory currentSession = getOrCreateLastSession(currentUser);
+    if (currentSession.getStart().isBefore(exactResetTime)) {
+      //save duration for previous session
+      long duration = Duration.between(currentSession.getStart(), exactResetTime).toMinutes();
+      currentSession.setMinutes(duration);
+      sessionRepository.save(currentSession);
+
+      //create a new session
+      SessionHistory newSession = SessionHistory.builder()
+              .start(exactResetTime)
+              .minutes(0L)
+              .user(currentUser)
+              .postsViewed(0)
+              .build();
+
+      sessionRepository.save(newSession);
+    }
+  }
+
   @Transactional
   public SessionConfigDto getConfig(User currentUser) {
     SessionConfig config = getOrCreateConfig(currentUser);

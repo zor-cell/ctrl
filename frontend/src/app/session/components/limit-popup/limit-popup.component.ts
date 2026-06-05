@@ -20,10 +20,34 @@ export class LimitPopupComponent {
   protected sessionState = inject(SessionStateService);
 
   protected sessionConfig = signal<SessionConfig | null>(null);
+  public isConfirmingSoftCutoff = signal<boolean>(false);
+
+  public promptSoftCutoffConfirm() {
+    this.isConfirmingSoftCutoff.set(true);
+  }
+
+  public cancelSoftCutoffConfirm() {
+    this.isConfirmingSoftCutoff.set(false);
+  }
+
+  public executeSoftCutoff() {
+    this.isConfirmingSoftCutoff.set(false);
+    this.softCutoff();
+  }
 
   ngOnInit() {
     this.sessionService.getConfig().subscribe(res => {
       this.sessionConfig.set(res);
     });
+  }
+
+  protected hardCutoff() {
+    this.sessionState.closeModal()
+  }
+
+  protected softCutoff() {
+    this.sessionService.resetSoftCutoff().subscribe(res => {
+      this.sessionState.closeModal();
+    })
   }
 }

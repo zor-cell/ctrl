@@ -34,4 +34,9 @@ public class SessionController {
           @AuthenticationPrincipal User user, @Valid @RequestBody SessionConfigDto config) {
     return sessionService.updateConfig(user, config);
   }
+
+  @PostMapping("/soft-cutoff")
+  public void resetSoftCutoff(@AuthenticationPrincipal User user) {
+    sessionService.resetSoftCutoff(user);
+  }
 }

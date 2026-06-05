@@ -11,6 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +47,7 @@ public class SessionConfig {
     // Enforces either forced or soft cutoff of sessions
     @Column(name = "is_forced_cutoff", nullable = false)
     private boolean isForcedCutoff;
+
+    @Column(name = "last_soft_cutoff")
+    private LocalDateTime lastSoftCutoff;
 }

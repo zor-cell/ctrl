@@ -52,9 +52,14 @@ public class SessionLimitInterceptor implements HandlerInterceptor {
         User user = (User) authentication.getPrincipal();
         SessionConfig config = sessionService.getOrCreateConfig(user);
 
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, startOfToday);
+        LocalDateTime trackingStart = LocalDate.now().atStartOfDay();
 
+        //update the start of the tracking if soft cutoff was used
+        if(config.getLastSoftCutoff() != null && config.getLastSoftCutoff().isAfter(trackingStart)) {
+            trackingStart = config.getLastSoftCutoff();
+        }
+
+        DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, trackingStart);
         if(stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
            throw new SessionLimitExceededException("The configured time limit of %s minutes was exceeded".formatted(config.getTimeLimitMinutes()));
         }
