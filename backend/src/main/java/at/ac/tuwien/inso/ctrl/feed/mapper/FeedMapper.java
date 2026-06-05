@@ -1,12 +1,14 @@
 package at.ac.tuwien.inso.ctrl.feed.mapper;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +19,9 @@ public class FeedMapper {
   public FeedPostResponse toFeedPostResponse(
       RecommendedPost recommendedPost,
       Map<String, String> postVotes,
-      Map<String, String> sourceVotes) {
+      Map<String, String> sourceVotes,
+      Set<PostLabelType> computedLabels) {
+
     Post post = recommendedPost.getPost();
 
     String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
@@ -33,14 +37,11 @@ public class FeedMapper {
     String postUserVote = postVotes.get(post.getPostId());
 
     List<LabelResponse> labels =
-        post.getPostLabels().stream()
+        computedLabels.stream()
             .map(
-                pl ->
+                type ->
                     new LabelResponse(
-                        pl.getLabel().getLabelId(),
-                        pl.getLabel().getName(),
-                        pl.getLabel().getEmoji(),
-                        pl.getLabel().getExplanation()))
+                        type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
             .toList();
 
     List<FeedPostResponse.SourceResponse> sources =
@@ -96,16 +97,7 @@ public class FeedMapper {
 
     String postUserVote = postVotes.get(post.getPostId());
 
-    List<LabelResponse> labels =
-        post.getPostLabels().stream()
-            .map(
-                pl ->
-                    new LabelResponse(
-                        pl.getLabel().getLabelId(),
-                        pl.getLabel().getName(),
-                        pl.getLabel().getEmoji(),
-                        pl.getLabel().getExplanation()))
-            .toList();
+    List<LabelResponse> labels = List.of();
 
     List<FeedPostResponse.SourceResponse> sources =
         post.getSource() != null

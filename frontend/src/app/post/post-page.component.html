@@ -1,62 +1,83 @@
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
-    <div class="post-profile-card__avatar">
-      <div class="profile-avatar profile-avatar--display" aria-hidden="true">
-        @if (currentProfilePicture()) {
-          <img
-            [src]="currentProfilePicture()!"
-            alt=""
-            class="profile-avatar__image"
-          />
-        } @else {
-          <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+      <div class="post-profile-card__avatar">
+        <div class="profile-avatar profile-avatar--display" aria-hidden="true">
+          @if (currentProfilePicture()) {
+            <img
+              [src]="currentProfilePicture()!"
+              alt=""
+              class="profile-avatar__image"
+            />
+          } @else {
+            <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
+          }
+        </div>
+        @if (updatingAvatar()) {
+          <span class="profile-avatar-status" aria-live="polite">Saving...</span>
         }
+
+        <input
+          #avatarInput
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          (change)="onAvatarSelected($event)"
+        />
       </div>
-      @if (updatingAvatar()) {
-        <span class="profile-avatar-status" aria-live="polite">Saving...</span>
-      }
 
-      <input
-        #avatarInput
-        type="file"
-        accept="image/*"
-        class="sr-only"
-        (change)="onAvatarSelected($event)"
-      />
-    </div>
+      <div class="post-profile-card__copy">
+        <h1 style="display: flex; align-items: center; gap: 10px;">
+          {{ username() }}
+          @if (!canEditProfile()) {
+            <app-follow-badge [username]="username()" />
+          }
+        </h1>
+        <div class="profile-bio">
+          <p>{{ userBio() }}</p>
+          @if (canEditProfile()) {
+            <p-button
+              label="Edit"
+              icon="pi pi-pencil"
+              size="small"
+              severity="secondary"
+              [text]="true"
+              (onClick)="startProfileEdit()"
+            />
+          }
+        </div>
+      </div>
 
-    <div class="post-profile-card__copy">
-      <h1>{{ username() }}</h1>
-      <div class="profile-bio">
-        <p>{{ userBio() }}</p>
-        @if (canEditProfile()) {
+      @if (canEditProfile()) {
+        <div class="post-profile-card__actions">
           <p-button
-            label="Edit"
-            icon="pi pi-pencil"
-            size="small"
+            icon="pi pi-users"
+            ariaLabel="Open community"
             severity="secondary"
-            [text]="true"
-            (onClick)="startProfileEdit()"
+            [rounded]="true"
+            routerLink="/followed"
           />
-        }
-      </div>
-    </div>
-
-    @if (canEditProfile()) {
+          <p-button
+            icon="pi pi-cog"
+            ariaLabel="Open profile settings"
+            severity="secondary"
+            [rounded]="true"
+            (onClick)="openProfileSettings()"
+          />
+          <p-button
+            label="Create Post"
+            icon="pi pi-plus"
+            size="large"
+            (onClick)="openCreateDialog()"
+          />
+        </div>
+    } @else if (publicProfileMode()) {
       <div class="post-profile-card__actions">
         <p-button
-          icon="pi pi-cog"
-          ariaLabel="Open profile settings"
+          icon="pi pi-flag"
           severity="secondary"
           [rounded]="true"
-          (onClick)="openProfileSettings()"
-        />
-        <p-button
-          label="Create Post"
-          icon="pi pi-plus"
-          size="large"
-          (onClick)="openCreateDialog()"
+          (onClick)="openReportDialog()"
         />
       </div>
     }
@@ -265,6 +286,16 @@
   (deleteRequested)="requestPostDeletion($event)"
 />
 
+<app-report
+  [contentType]="ContentTypeEnum.ACCOUNT"
+  [contentId]="publicProfile()?.id"
+  [contentTitle]="publicProfile()?.bio ?? (username() + ' has no bio')"
+  [userProfilePic]="currentProfilePicture() ?? undefined"
+  [username]="username()"
+  [visible]="reportDialogVisible()"
+  (visibleChange)="reportDialogVisible.set($event)"
+></app-report>
+
 <p-dialog
   [visible]="postPendingDeletion() !== null"
   [modal]="true"
@@ -307,5 +338,5 @@
   [modal]="!createOnlyMode()"
   [dismissableMask]="!createOnlyMode()"
   (visibleChange)="onComposerVisibleChange($event)"
-  (created)="onPostCreated()"
-/>
+  (created)="onPostCreated()">
+</app-post-composer>

@@ -46,6 +46,9 @@ public class Comment {
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
+  @Column(name = "is_removed")
+  private Boolean isRemoved = false;
+
   @Column(nullable = false)
   @Builder.Default
   private boolean edited = false;

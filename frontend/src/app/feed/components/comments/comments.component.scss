@@ -56,6 +56,16 @@ $radius-sm:   10px;
     font-weight: 600;
   }
 
+  .post-username--link {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   .post-info {
     font-size: 0.78rem;
     color: $text-muted;
@@ -170,6 +180,15 @@ $radius-sm:   10px;
 }
 
 .comment-username {
+  &--link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
   font-size: 0.84rem;
   font-weight: 600;
 }

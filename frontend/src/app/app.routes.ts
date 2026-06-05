@@ -59,10 +59,14 @@ export const routes: Routes = [
   {
     path: 'search',
     canActivate: [authGuard],
+    loadChildren: () =>
+      import('./search/search.routes').then(m => m.searchRoutes),
+  },
+  {
+    path: 'posts/:postId',
+    canActivate: [authGuard],
     loadComponent: () =>
-      import('./user/components/search-page/search-page.component').then(
-        m => m.SearchPageComponent,
-      ),
+      import('./post/components/post-detail-page/post-detail-page.component').then(m => m.PostDetailPageComponent),
   },
   {
     path: 'chat',

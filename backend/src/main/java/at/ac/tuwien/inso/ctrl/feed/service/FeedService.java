@@ -4,6 +4,8 @@ import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
@@ -28,6 +30,7 @@ public class FeedService {
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
   private final RecommendationService recommendationService;
+  private final LabelingService labelingService;
 
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(
@@ -75,8 +78,17 @@ public class FeedService {
                                 v -> v.getId().getSourceId(), SourceVote::getVoteType)))
             .orElse(Map.of());
 
+    // NEU: einmal Context bauen, dann pro Post Labels berechnen
+    LabelContext labelCtx = labelingService.buildContext(user);
+
     return recommendedPosts.stream()
-        .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
+        .map(
+            rp ->
+                feedMapper.toFeedPostResponse(
+                    rp,
+                    postVotes,
+                    sourceVotes,
+                    labelingService.computeLabels(rp.getPost(), labelCtx))) // NEU
         .toList();
   }
 }

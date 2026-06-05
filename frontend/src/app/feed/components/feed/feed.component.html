@@ -18,42 +18,104 @@
         <!-- PUBLIC TAB -->
         <p-tabpanel value="public">
           <div class="posts-list">
-            @if (publicPosts().length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-inbox"></i>
-                <p>No public posts yet.</p>
-              </div>
+
+            <!-- Skeleton Loader -->
+            @if (isLoading()) {
+              @for (i of skeletonItems; track i) {
+                <div class="post-card post-card--skeleton">
+                  <div class="skeleton-header">
+                    <p-skeleton shape="circle" size="42px" />
+                    <div class="skeleton-meta">
+                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="80px" height="0.72rem" />
+                    </div>
+                  </div>
+                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                  <div class="skeleton-body">
+                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                    <p-skeleton width="120px" height="0.75rem" />
+                  </div>
+                  <div class="skeleton-actions">
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
+                  </div>
+                </div>
+              }
             }
-            @for (post of publicPosts(); track post.postId) {
-              <section
-                class="post-card"
-                [appPostView]="post.postId"
-                (viewed)="onPostViewed($event)"
-              >
-                <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-              </section>
+
+            <!-- Real posts -->
+            @if (!isLoading()) {
+              @if (publicPosts().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-inbox"></i>
+                  <p>No public posts yet.</p>
+                </div>
+              }
+              @for (post of publicPosts(); track post.postId) {
+                <section
+                  class="post-card"
+                  [appPostView]="post.postId"
+                  (viewed)="onPostViewed($event)"
+                >
+                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                </section>
+              }
             }
+
           </div>
         </p-tabpanel>
 
         <!-- PRIVATE TAB -->
         <p-tabpanel value="private">
           <div class="posts-list">
-            @if (privatePosts().length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-inbox"></i>
-                <p>No private posts yet.</p>
-              </div>
+
+            <!-- Skeleton Loader -->
+            @if (isLoading()) {
+              @for (i of skeletonItems; track i) {
+                <div class="post-card post-card--skeleton">
+                  <div class="skeleton-header">
+                    <p-skeleton shape="circle" size="42px" />
+                    <div class="skeleton-meta">
+                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="80px" height="0.72rem" />
+                    </div>
+                  </div>
+                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                  <div class="skeleton-body">
+                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                    <p-skeleton width="120px" height="0.75rem" />
+                  </div>
+                  <div class="skeleton-actions">
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
+                  </div>
+                </div>
+              }
             }
-            @for (post of privatePosts(); track post.postId) {
-              <section
-                class="post-card"
-                [appPostView]="post.postId"
-                (viewed)="onPostViewed($event)"
-              >
-                <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-              </section>
+
+            <!-- Real posts -->
+            @if (!isLoading()) {
+              @if (privatePosts().length === 0) {
+                <div class="empty-state">
+                  <i class="pi pi-inbox"></i>
+                  <p>No private posts yet.</p>
+                </div>
+              }
+              @for (post of privatePosts(); track post.postId) {
+                <section
+                  class="post-card"
+                  [appPostView]="post.postId"
+                  (viewed)="onPostViewed($event)"
+                >
+                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                </section>
+              }
             }
+
           </div>
         </p-tabpanel>
 
@@ -76,8 +138,7 @@
         size="small"
         [rounded]="true"
         [outlined]="true"
-        routerLink="/settings"
-        [queryParams]="{tab: 'algorithm'}"
+        (onClick)="openAlgorithmConfig()"
       />
     </div>
   </div>
@@ -107,6 +168,7 @@
         }
         <span class="post-info">{{ timeAgo(post.createdAt) }}</span>
       </div>
+      <app-follow-badge [username]="post.username" [isExternal]="post.isExternal" />
     </div>
 
     <!-- Labels + Why Button -->
@@ -117,7 +179,7 @@
             <p-tag
               [value]="label[0]"
               severity="secondary"
-              styleClass="post-label"
+              class="post-label"
               [pTooltip]="label[1]"
               tooltipPosition="bottom"
             />
@@ -165,34 +227,32 @@
   @if (post.sourceIds.length > 0) {
     <div class="post-source-row">
       <div class="post-source-left">
-      <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
-        <i class="pi pi-external-link"></i>
-        {{ getDomain(post.sourceIds[0].url) }}
-      </a>
-      <i class="pi pi-info-circle hint-icon"
-         pTooltip="Is the source reliable and relevant to the post?"
-         tooltipPosition="right" style="margin-right: 0.4rem;margin-left: 0.2rem;"></i>
-      <button
-        class="action-btn upvote"
-        [class.active]="post.sourceIds[0].userVote === 'up'"
-        (click)="voteSource(post, 'up')"
-        [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-        [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
-      >
-        <i class="pi pi-check"></i>
-        <!--<span>{{ post.sourceIds[0].upvotes }}</span>-->
-      </button>
-      <button
-        class="action-btn downvote"
-        [class.active]="post.sourceIds[0].userVote === 'down'"
-        (click)="voteSource(post, 'down')"
-        [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-        [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
-      >
-        <i class="pi pi-times"></i>
-        <!--<span>{{ post.sourceIds[0].downvotes }}</span>-->
-      </button>
-        </div>
+        <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ getDomain(post.sourceIds[0].url) }}
+        </a>
+        <i class="pi pi-info-circle hint-icon"
+           pTooltip="Is the source reliable and relevant to the post?"
+           tooltipPosition="right" style="margin-right: 0.4rem;margin-left: 0.2rem;"></i>
+        <button
+          class="action-btn upvote"
+          [class.active]="post.sourceIds[0].userVote === 'up'"
+          (click)="voteSource(post, 'up')"
+          [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
+        >
+          <i class="pi pi-check"></i>
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="post.sourceIds[0].userVote === 'down'"
+          (click)="voteSource(post, 'down')"
+          [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
+          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
       <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
         <i class="pi pi-flag"></i>
       </button>
@@ -251,123 +311,17 @@
 </ng-template>
 
 <!-- ─── Why? Dialog ─── -->
-<p-dialog
-  header="Why am I seeing this post?"
+<app-why-dialog
+  [post]="selectedPost()"
   [visible]="whyDialogVisible()"
   (visibleChange)="whyDialogVisible.set($event)"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [style]="{ width: '90vw', maxWidth: '580px' }"
-  styleClass="why-dialog"
->
-  @if (selectedPost(); as post) {
-    <div class="dialog-grid">
-      <div class="text-secondary">
-        Our algorithm analyzed this post against your profile.
-        The bars below show the <strong>relative impact</strong> of each factor on the total score.
-      </div>
-
-      <div class="score-grid">
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-          label: 'Interests',
-          score: post.explanation.scoreInteraction,
-          total: post.explanation.totalScore,
-          description: 'Based on your past activity. It tracks how similar this content is to posts you have liked, commented on, or spent time watching.'
-            }"
-        />
-
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-          label: 'Topics',
-          score: post.explanation.scoreTopic,
-          total: post.explanation.totalScore,
-          description: 'Matches the specific topics you have selected in your profile.'
-        }"></ng-container>
-
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-              label: 'Recency',
-              score: post.explanation.scoreRecency,
-                total: post.explanation.totalScore,
-                description: 'Prioritizes fresh content. Newer posts get a boost to ensure your feed stays up-to-date and relevant.'
-            }"
-        />
-
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-              label: 'Source Quality',
-              score: post.explanation.scoreSource,
-                total: post.explanation.totalScore,
-                description: 'Measures the reliability and community trust of the source or author behind the post.'
-            }"
-        />
-
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-              label: 'Popularity',
-              score: post.explanation.scorePopularity,
-                total: post.explanation.totalScore,
-                description: 'Reflects current community engagement. Posts with high upvote rates and active discussions are boosted.'
-            }"
-        />
-
-        <ng-container *ngTemplateOutlet="divergingBar; context: {
-              label: 'Exploration',
-              score: post.explanation.scoreExploration,
-                total: post.explanation.totalScore,
-                description: 'Introduces new content outside your usual circle.'
-            }"
-        />
-      </div>
-
-      <div class="score-label">
-            <span>Total Relevancy
-                <i class="pi pi-info-circle hint-icon"
-                   pTooltip="This total is calculated by summing the weighted impact of your feed configuration. All posts are ranked according to this value."
-                   tooltipPosition="right"></i>
-            </span>
-        <span><strong>{{((post.explanation.totalScore / 6.0) * 100).toFixed(2)}} / 100</strong></span>
-      </div>
-    </div>
-  }
-  <ng-template pTemplate="footer">
-    <p-button
-      label="Got it"
-      (onClick)="closeWhyDialog()"
-      [fluid]="true"
-    />
-  </ng-template>
-</p-dialog>
-
-
-<!-- Reusable Template for the Bi-directional Bar -->
-<ng-template #divergingBar let-label="label" let-score="score" let-total="total" let-description="description">
-  @let percent = (score / total) * 100;
-  <div class="score-row">
-    <div class="score-label">
-            <span>{{ label }}
-              <i class="pi pi-info-circle hint-icon"
-                 [pTooltip]="description"
-                 tooltipPosition="right"></i>
-            </span>
-      <span>{{ percent >= 0 ? '+' : '' }}{{ percent.toFixed(1) }}%</span>
-    </div>
-    <div class="bi-bar-container">
-      @if(score === 0) {
-        <div class="bi-bar-center"></div>
-      }
-      @if (score < 0) {
-        <div class="bi-bar neg" [style.width.%]="Math.abs(score) * 50"></div>
-      }
-      @if (score > 0) {
-        <div class="bi-bar pos" [style.width.%]="score * 50"></div>
-      }
-    </div>
-  </div>
-</ng-template>
+/>
 
 <!-- ─── Comments Dialog ─── -->
 <app-comments
   [post]="selectedPostForComments()"
   [visible]="commentsDialogVisible()"
-  (visibleChange)="commentsDialogVisible.set($event)"
+  (visibleChange)="onCommentsVisibleChange($event)"
 />
 
 <!-- ─── Report Dialog ─── -->
@@ -392,8 +346,6 @@
   (visibleChange)="reportSourceDialogVisible.set($event)">
 </app-report>
 
-
-
 <!-- ─── Algorithm Config Dialog ─── -->
 <p-dialog
   header="Configure your Algorithm"
@@ -405,5 +357,5 @@
   [style]="{ width: '90vw', maxWidth: '520px' }"
   styleClass="algorithm-config-dialog"
 >
-  <app-algorithm-config />
+  <app-config />
 </p-dialog>

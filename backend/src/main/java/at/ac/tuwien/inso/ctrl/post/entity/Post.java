@@ -53,6 +53,7 @@ public class Post implements Votable {
   @Column(name = "is_ai_generated")
   private Boolean isAiGenerated = false;
 
+  @Builder.Default
   @Column(name = "is_removed")
   private Boolean isRemoved = false;
 
@@ -67,10 +68,6 @@ public class Post implements Votable {
   @Column(name = "embedding")
   @Array(length = EmbeddingModelConfig.MODEL_DIMENSIONS)
   private float[] embedding;
-
-  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private Set<PostLabel> postLabels = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default

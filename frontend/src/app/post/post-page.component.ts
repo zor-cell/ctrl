@@ -10,17 +10,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
+import {Observable, Subscription, catchError, of, switchMap, forkJoin} from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { usernameInitial } from '../core/utils/username-initial.utils';
 import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
+import { ReportComponent } from '../report/components/report/report.component';
+import { ContentTypeEnum } from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
@@ -30,17 +32,22 @@ import { PostDetailDialogComponent } from './post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
+import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
+import {RelationshipService} from '../user/relationship.service';
 
 @Component({
   selector: 'app-post-page',
   imports: [
     CommonModule,
+    RouterModule,
     Button,
     Dialog,
     TooltipModule,
     PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
+    ReportComponent,
+    FollowBadgeComponent,
   ],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
@@ -58,6 +65,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
+  protected readonly reportDialogVisible = signal(false);
   protected readonly avatarPreviewUrl = signal<string | null>(null);
   protected readonly profilePictureObjectUrl = signal<string | null>(null);
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
@@ -80,6 +88,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postPendingDeletion = signal<PostResponse | null>(null);
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
+
+  private readonly rel = inject(RelationshipService);
 
   protected readonly username = computed(
     () =>
@@ -153,6 +163,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
+  protected readonly ContentTypeEnum = ContentTypeEnum;
+
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
 
@@ -182,6 +194,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openCreateDialog() {
     this.dialogVisible.set(true);
+  }
+
+  protected openReportDialog() {
+    this.reportDialogVisible.set(true);
   }
 
   protected onPostCreated() {
@@ -458,6 +474,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
       next: posts => {
+        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -496,13 +513,18 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPublicProfile() {
     const username = this.publicProfileUsername();
-    if (!username) {
-      return;
-    }
+    if (!username) return;
 
     this.loadingPosts.set(true);
-    this.userService.getPublicProfile(username).subscribe({
-      next: profile => {
+
+    forkJoin([
+      this.userService.getPublicProfile(username),
+      this.rel.loadFriends(),
+      this.rel.loadFollowed(),
+      this.rel.loadSentFriendRequests(),
+      this.rel.loadIncomingFriendRequests(),
+    ]).subscribe({
+      next: ([profile]) => {
         this.publicProfile.set(profile);
         this.loadProfilePicture(profile.profilePicture);
       },
@@ -517,6 +539,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.postService.getProfilePostsForUser(username).subscribe({
       next: posts => {
+        console.log(posts)
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);

@@ -125,6 +125,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
   }
 
+  @ExceptionHandler(value = {UnauthorizedException.class})
+  protected ResponseEntity<Object> handleUnauthorized(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+  }
+
   @ExceptionHandler(SessionLimitExceededException.class)
   public ResponseEntity<Object> handleSessionLimitExceeded(
       SessionLimitExceededException ex, WebRequest request) {

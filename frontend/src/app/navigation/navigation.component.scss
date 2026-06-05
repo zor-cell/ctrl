@@ -10,14 +10,13 @@
   font-weight: bold;
 }
 
-.profile-container {
+.auth-buttons {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.25rem;
 }
 
-//show main nav items in the center of menubar on desktop
+// Desktop: Nav-Icons zentriert
 @media screen and (min-width: 960px) {
   :host ::ng-deep .p-menubar {
     justify-content: space-between;
@@ -67,10 +66,35 @@
   }
 }
 
-//mobile layout switch logo and hamburger
+:host ::ng-deep .nav-profile-item {
+  .p-menubar-item-link {
+    padding: 0.5rem;
+  }
+
+  .p-menubar-item-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background-image: var(--nav-profile-pic-url, none);
+    background-size: cover;
+    background-position: center;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+:host ::ng-deep .has-profile-pic .nav-profile-item .p-menubar-item-icon {
+  color: transparent;
+
+  &::before {
+    display: none;
+  }
+}
+
 @media screen and (max-width: 959px) {
   :host ::ng-deep .p-menubar {
-
     .p-menubar-button {
       order: 1;
       margin-left: 0;
