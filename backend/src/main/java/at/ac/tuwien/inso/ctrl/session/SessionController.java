@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.session;
 
+import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;

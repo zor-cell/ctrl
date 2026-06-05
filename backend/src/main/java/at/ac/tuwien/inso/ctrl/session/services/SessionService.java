@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class SessionService {
   private final SessionRepository sessionRepository;
   private final SessionConfigRepository sessionConfigRepository;
+  private final SeenPostRepository seenPostRepository;
   private final SessionMapper sessionMapper;
 
   @Value("${application.heartbeat.max-time-between-heartbeats:3}")

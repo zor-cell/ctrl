@@ -6,17 +6,23 @@
         [closeOnEscape]="false"
         [style]="{ width: '25rem' }">
 
-    <div class="flex flex-column align-items-center gap-4 py-3">
-        <i class="pi pi-stopwatch text-6xl text-primary"></i>
+    <div class="popup-content">
+        <div>
+            <i class="pi pi-stopwatch"></i> You have reached your daily limit!
+        </div>
 
-        <p class="m-0 text-center text-lg font-medium">
-            {{ sessionState.limitMessage() }}
-        </p>
+        <div>{{ sessionState.limitMessage() }}</div>
 
         <p-button
                 label="I understand"
                 (onClick)="sessionState.closeModal()"
                 fluid>
         </p-button>
+
+        @if(!sessionConfig()?.isForcedCutoff) {
+            <p-button>
+                Keep scrolling
+            </p-button>
+        }
     </div>
 </p-dialog>

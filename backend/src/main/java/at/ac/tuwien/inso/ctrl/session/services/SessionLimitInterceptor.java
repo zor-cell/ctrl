@@ -1,7 +1,9 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
+import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionConfigRepository;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Component
@@ -25,6 +29,7 @@ import java.util.UUID;
 public class SessionLimitInterceptor implements HandlerInterceptor {
     private final SessionService sessionService;
     private final SessionRepository sessionRepository;
+    private final SeenPostRepository seenPostRepository;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -46,14 +51,16 @@ public class SessionLimitInterceptor implements HandlerInterceptor {
 
         User user = (User) authentication.getPrincipal();
         SessionConfig config = sessionService.getOrCreateConfig(user);
-        SessionHistory session = sessionService.getOrCreateLastSession(user);
 
-        if(session.getMinutes() >= config.getTimeLimitMinutes()) {
-           throw new SessionLimitExceededException("Daily time limit reached");
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, startOfToday);
+
+        if(stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
+           throw new SessionLimitExceededException("The configured time limit of %s minutes was exceeded".formatted(config.getTimeLimitMinutes()));
         }
 
-        if(session.getPostsViewed() >= config.getPostLimit()) {
-            throw new SessionLimitExceededException("Daily post limit reached");
+        if(stats.getTotalPostsViewed() >= config.getPostLimit()) {
+            throw new SessionLimitExceededException("The configured post limit of %s posts was exceeded".formatted(config.getPostLimit()));
         }
 
         return true;

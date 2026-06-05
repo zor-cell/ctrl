@@ -2,6 +2,8 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 
 import at.ac.tuwien.inso.ctrl.post.entity.SeenPost;
 import at.ac.tuwien.inso.ctrl.post.entity.SeenPostId;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

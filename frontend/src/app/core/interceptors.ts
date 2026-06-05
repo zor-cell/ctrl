@@ -50,7 +50,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError(err => {
-      console.log(err)
+      //handle session limits
       if(err.status === 429 && err.error?.errorCode === 'SESSION_LIMIT_EXCEEDED') {
         sessionState.triggerLimitModal(err.error.message);
         return throwError(() => err);
