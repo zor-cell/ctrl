@@ -73,19 +73,12 @@
         </div>
     } @else if (publicProfileMode()) {
       <div class="post-profile-card__actions">
+        <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
         <p-button
-          icon="pi pi-flag"
+          icon="pi pi-ellipsis-v"
           severity="secondary"
           [rounded]="true"
-          (onClick)="openReportDialog()"
-        />
-      </div>
-      <div class="post-profile-card__actions">
-        <p-button
-          icon="pi pi-ban"
-          severity="secondary"
-          [rounded]="true"
-          (onClick)="blockUser()"
+          (onClick)="publicProfileMenu.toggle($event)"
         />
       </div>
     }

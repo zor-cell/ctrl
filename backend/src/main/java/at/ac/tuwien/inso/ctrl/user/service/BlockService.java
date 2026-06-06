@@ -68,8 +68,12 @@ public class BlockService {
     blockedRelationRepository.deleteById(relationId);
   }
 
-  public List<BlockedResponse> getBlockedUsers(User currentUser) {
-    List<User> blockedUsers = blockedRelationRepository.findBlockedUserByUser(currentUser);
+  public List<BlockedResponse> getBlockedUsers(User currentUser, String search) {
+    List<User> blockedUsers =
+        search == null || search.isBlank()
+            ? blockedRelationRepository.findBlockedUserByUser(currentUser)
+            : blockedRelationRepository.findBlockedUserByUserAndSearch(currentUser, search);
+
     return blockedUsers.stream().map(relationshipMapper::toBlockedResponse).toList();
   }
 }

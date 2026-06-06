@@ -134,7 +134,7 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
 
   private performBlockedSearch(query: string) {
     this.relationshipService
-      .loadBlocked() //(query || undefined)
+      .loadBlocked(query || undefined)
       .pipe(takeUntil(this._destroy$))
       .subscribe();
   }

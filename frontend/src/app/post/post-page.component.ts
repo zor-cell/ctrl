@@ -35,6 +35,7 @@ import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
 import {FriendRequestEventBusService} from '../user/friend-request-event-bus.service';
+import {Menu} from 'primeng/menu';
 
 @Component({
   selector: 'app-post-page',
@@ -43,6 +44,7 @@ import {FriendRequestEventBusService} from '../user/friend-request-event-bus.ser
     RouterModule,
     Button,
     Dialog,
+    Menu,
     TooltipModule,
     PostCaptionFormatPipe,
     PostComposerComponent,
@@ -164,12 +166,24 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly isVerifiedUser = computed(
     () => this.userService.user()?.isVerified ?? false,
   );
-  protected readonly maxBioLength = 280;
-  protected readonly createOnlyMode = signal(false);
-  protected readonly ContentTypeEnum = ContentTypeEnum;
+   protected readonly maxBioLength = 280;
+   protected readonly createOnlyMode = signal(false);
+   protected readonly ContentTypeEnum = ContentTypeEnum;
+   protected readonly publicProfileMenuItems = computed(() => [
+     {
+       label: 'Report',
+       icon: 'pi pi-flag',
+       command: () => this.openReportDialog(),
+     },
+     {
+       label: 'Block',
+       icon: 'pi pi-ban',
+       command: () => this.blockUser(),
+     },
+   ]);
 
-  private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
-  private routeParamsSubscription: Subscription | null = null;
+   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+   private routeParamsSubscription: Subscription | null = null;
 
   ngOnInit() {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');

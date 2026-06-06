@@ -20,4 +20,12 @@ public interface BlockedRelationRepository extends JpaRepository<BlockedRelation
 
   boolean existsBlockedRelationByUserAndBlockedUser(@Param("user") User user, @Param("blockedUser") User blockedUser);
 
+  @Query(
+      """
+      SELECT br.blockedUser FROM BlockedRelation br
+      WHERE br.user = :user
+      AND br.blockedUser.isSuspended = false
+      AND br.blockedUser.username LIKE CONCAT('%', :search, '%')
+      """)
+  List<User> findBlockedUserByUserAndSearch(User user, String search);
 }

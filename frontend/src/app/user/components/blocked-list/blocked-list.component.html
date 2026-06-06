@@ -2,9 +2,15 @@
   <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
 
   @if (blocked().length === 0) {
+    @if (searchQuery()) {
+      <div class="empty-state">
+        <p>No users match your search. Try a different search term or clear the search.</p>
+      </div>
+    } @else {
     <div class="empty-state">
         <p>You have not blocked anyone yet.</p>
     </div>
+    }
   } @else {
     <div class="list-container">
       @for (user of blocked(); track user.id) {

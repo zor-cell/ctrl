@@ -173,8 +173,12 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
-  loadBlocked() {
-    return this.http.get<Blocked[]>(`${this.baseUri}/block`).pipe(
+  loadBlocked(search?: string) {
+    let params = new HttpParams();
+    if (search) {
+      params = params.set('q', search);
+    }
+    return this.http.get<Blocked[]>(`${this.baseUri}/block`, { params }).pipe(
       tap(blocked => {
         this._blocked.set(blocked);
         this.cacheProfilePictures(blocked);
