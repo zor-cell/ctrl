@@ -147,6 +147,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly profileTargetUsername = computed(
     () => this.publicProfile()?.username ?? this.publicProfileUsername(),
   );
+  protected readonly profileActionUsername = computed(
+    () => this.publicProfile()?.username ?? null,
+  );
   protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
   protected readonly currentProfilePicture = computed(
     () =>
@@ -160,6 +163,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
   });
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
   protected readonly isOwnPublicProfile = computed(() => {
+    const profile = this.publicProfile();
+    const currentUser = this.userService.user();
+    if (profile && currentUser) {
+      return profile.id.toLowerCase() === currentUser.id.toLowerCase();
+    }
+
     const profileUsername = this.profileTargetUsername();
     const currentUsername = this.userService.user()?.username;
 
@@ -203,11 +212,18 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postsHeading = computed(() =>
     this.publicProfileMode() ? `${this.username()}'s posts` : 'Your posts',
   );
+  protected readonly publicProfilePrivateAccess = computed(
+    () =>
+      !this.publicProfileMode()
+      || this.isOwnPublicProfile()
+      || this.publicProfileFriendStatus() === 'FRIEND',
+  );
   protected readonly privatePostsHidden = computed(
-    () => this.publicProfileMode() && this.publicProfile()?.canSeePrivatePosts === false,
+    () => this.publicProfileMode() && !this.publicProfilePrivateAccess(),
   );
   protected readonly publicProfileFriendStatus = computed<ProfileFriendStatus>(() => {
-    const username = this.profileTargetUsername()?.toLowerCase();
+    const username = this.profileActionUsername()?.toLowerCase();
+    const profile = this.publicProfile();
 
     if (!username || this.isOwnPublicProfile()) {
       return 'NONE';
@@ -218,7 +234,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return override.status;
     }
 
-    if (this.rel.friends().some(friend => friend.username.toLowerCase() === username)) {
+    if (
+      this.isFriendWithProfile(username, profile?.id)
+      || profile?.canSeePrivatePosts === true
+    ) {
       return 'FRIEND';
     }
 
@@ -295,7 +314,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected sendProfileFriendRequest(): void {
-    const username = this.profileTargetUsername();
+    const username = this.profileActionUsername();
 
     if (
       !username
@@ -321,7 +340,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected acceptProfileFriendRequest(): void {
-    const username = this.profileTargetUsername();
+    const username = this.profileActionUsername();
 
     if (
       !username
@@ -347,7 +366,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected cancelProfileFriendRequest(): void {
-    const username = this.profileTargetUsername();
+    const username = this.profileActionUsername();
 
     if (
       !username
@@ -373,7 +392,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected removeProfileFriend(): void {
-    const username = this.profileTargetUsername();
+    const username = this.profileActionUsername();
 
     if (
       !username
@@ -390,6 +409,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       .subscribe({
         next: () => {
           this.setProfileFriendStatusOverride(username, 'NONE');
+          this.removePublicProfilePrivateAccess();
           this.rel.loadFriends().subscribe();
           this.notificationService.showSuccess(`Removed ${username} from friends`);
         },
@@ -829,10 +849,21 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.rel.loadIncomingFriendRequests(),
     ]).subscribe({
       next: ([profile]) => {
+        if (this.isOwnProfile(profile)) {
+          this.router.navigate(['/profile'], { replaceUrl: true });
+          this.publicProfileUsername.set(null);
+          this.publicProfile.set(null);
+          this.loadProfilePicture(this.userService.user()?.profilePicture);
+          this.loadMyPosts();
+          return;
+        }
+
         this.publicProfile.set(profile);
         this.loadProfilePicture(profile.profilePicture);
+        this.loadPublicProfilePosts(username);
       },
       error: () => {
+        this.myPosts.set([]);
         this.loadingPosts.set(false);
         this.notificationService.showWarning(
           'This profile could not be loaded from the backend.',
@@ -840,12 +871,14 @@ export class PostPageComponent implements OnDestroy, OnInit {
         );
       },
     });
+  }
 
+  private loadPublicProfilePosts(username: string): void {
     this.postService.getProfilePostsForUser(username).subscribe({
       next: posts => {
-        console.log(posts)
-        this.myPosts.set(posts);
-        this.loadPostMedia(posts);
+        const visiblePosts = this.visiblePublicProfilePosts(posts);
+        this.myPosts.set(visiblePosts);
+        this.loadPostMedia(visiblePosts);
         this.loadingPosts.set(false);
       },
       error: () => {
@@ -1059,6 +1092,46 @@ export class PostPageComponent implements OnDestroy, OnInit {
     status: ProfileFriendStatus,
   ): void {
     this.profileFriendStatusOverride.set({ username, status });
+  }
+
+  private visiblePublicProfilePosts(posts: PostResponse[]): PostResponse[] {
+    if (!this.publicProfileMode() || this.publicProfilePrivateAccess()) {
+      return posts;
+    }
+
+    return posts.filter(post => post.isPublic);
+  }
+
+  private removePublicProfilePrivateAccess(): void {
+    const profile = this.publicProfile();
+    if (profile) {
+      this.publicProfile.set({ ...profile, canSeePrivatePosts: false });
+    }
+
+    const selectedPost = this.selectedPost();
+    if (selectedPost && !selectedPost.isPublic) {
+      this.selectedPost.set(null);
+    }
+
+    const visiblePosts = this.visiblePublicProfilePosts(this.myPosts());
+    if (visiblePosts.length !== this.myPosts().length) {
+      this.myPosts.set(visiblePosts);
+      this.loadPostMedia(visiblePosts);
+    }
+  }
+
+  private isOwnProfile(profile: PublicUserProfile): boolean {
+    const currentUserId = this.userService.user()?.id;
+    return Boolean(currentUserId && profile.id.toLowerCase() === currentUserId.toLowerCase());
+  }
+
+  private isFriendWithProfile(username: string, profileId: string | undefined): boolean {
+    const normalizedProfileId = profileId?.toLowerCase();
+
+    return this.rel.friends().some(friend =>
+      friend.username.toLowerCase() === username
+      || Boolean(normalizedProfileId && friend.id.toLowerCase() === normalizedProfileId)
+    );
   }
 
   private isCurrentUserProfileUsername(username: string | null): boolean {

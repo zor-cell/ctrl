@@ -18,7 +18,9 @@ export class ChatSessionService {
   }
 
   teardown(): void {
-    this.chatRealtimeBridge.disconnect();
     this.chatUnreadService.clear();
+    if (this.chatRealtimeBridge.isConnectionActive()) {
+      this.chatRealtimeBridge.disconnect();
+    }
   }
 }

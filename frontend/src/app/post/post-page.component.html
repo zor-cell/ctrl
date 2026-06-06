@@ -68,10 +68,10 @@
         </div>
     } @else if (publicProfileMode()) {
       <div class="post-profile-card__actions">
-        @if (!isOwnPublicProfile()) {
+        @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
           <app-follow-badge
             class="post-profile-card__follow-action"
-            [username]="username()"
+            [username]="actionUsername"
             [isExternal]="publicProfileFriendStatus() !== 'NONE'"
             appearance="action"
           />

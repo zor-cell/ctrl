@@ -265,17 +265,18 @@ public class PostServiceUnitTest {
     Set<PostLabelType> labels = Set.of();
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
-    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
     when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
     when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(post));
     when(postMapper.toResponse(post, labels)).thenReturn(response);
 
-    List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", unverifiedUser);
 
     assertEquals(List.of(response), result);
+    verify(friendRelationRepository).existsByUsers(verifiedUser, unverifiedUser);
     verify(postRepository).findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene");
+    verify(postRepository, never()).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
     verify(postMapper).toResponse(post, labels);
   }
 
@@ -289,7 +290,6 @@ public class PostServiceUnitTest {
     Set<PostLabelType> labels = Set.of();
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
-    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
     when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
     when(labelingService.computeLabels(publicPost, labelCtx)).thenReturn(labels);
     when(labelingService.computeLabels(privatePost, labelCtx)).thenReturn(labels);
@@ -299,7 +299,7 @@ public class PostServiceUnitTest {
     when(postMapper.toResponse(publicPost, labels)).thenReturn(publicResponse);
     when(postMapper.toResponse(privatePost, labels)).thenReturn(privateResponse);
 
-    List<PostResponse> result = postService.getProfilePostsForUser("marlene", "new-user");
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", unverifiedUser);
 
     assertEquals(List.of(publicResponse, privateResponse), result);
     verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");

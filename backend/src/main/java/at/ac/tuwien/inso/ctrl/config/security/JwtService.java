@@ -60,9 +60,7 @@ public class JwtService {
       builder.claim("userId", user.getId().toString());
     }
 
-    return builder
-        .signWith(getSignInKey())
-        .compact();
+    return builder.signWith(getSignInKey()).compact();
   }
 
   public boolean isTokenValid(String token, UserDetails userDetails) {

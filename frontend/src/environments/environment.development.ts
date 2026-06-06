@@ -1,7 +1,13 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080/api',
-  wsUrl: 'ws://localhost:8080/ws',
+  apiUrl: '/api',
+  // Direct backend WebSocket — Vite dev proxy can corrupt STOMP frames (opCode 7).
+  wsUrl: 'ws://127.0.0.1:8080/ws',
+  // Native-first: every machine tries the native WebSocket and only falls back to SockJS at
+  // runtime if it actually fails. Override this to true ONLY locally (uncommitted) when VPN/
+  // socket-filter software (e.g. Cisco Secure Client, GlobalProtect) corrupts native WebSocket
+  // frames on macOS (server reports "opCode 7") and you want to skip the failing native attempt.
+  wsPreferSockJs: false,
   idAustria: {
     clientId: 'http://localhost:8080',
     redirectUri: 'http://localhost:4200/verification-callback',

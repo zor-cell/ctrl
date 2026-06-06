@@ -6,6 +6,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.SharedRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -47,6 +52,11 @@ public class FeedControllerIntegrationTest {
   @Autowired private PostRepository postRepository;
   @Autowired private PostVoteRepository postVoteRepository;
   @Autowired private ReportRepository reportRepository;
+  @Autowired private ChatRepository chatRepository;
+  @Autowired private ChatMemberRepository chatMemberRepository;
+  @Autowired private MessageRepository messageRepository;
+  @Autowired private ReactionRepository reactionRepository;
+  @Autowired private SharedRepository sharedRepository;
   @Autowired private JwtService jwtService;
 
   private User existingUser;
@@ -57,10 +67,7 @@ public class FeedControllerIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    postVoteRepository.deleteAll();
-    reportRepository.deleteAll();
-    postRepository.deleteAll();
-    userRepository.deleteAll();
+    cleanDatabase();
 
     float[] embedding = generateDummyEmbedding();
     existingUser =
@@ -86,10 +93,7 @@ public class FeedControllerIntegrationTest {
 
   @AfterEach
   public void tearDown() {
-    postVoteRepository.deleteAll();
-    reportRepository.deleteAll();
-    postRepository.deleteAll();
-    userRepository.deleteAll();
+    cleanDatabase();
   }
 
   @Test
@@ -232,5 +236,17 @@ public class FeedControllerIntegrationTest {
       embedding[i] = (float) Math.random();
     }
     return embedding;
+  }
+
+  private void cleanDatabase() {
+    reactionRepository.deleteAll();
+    messageRepository.deleteAll();
+    sharedRepository.deleteAll();
+    chatMemberRepository.deleteAll();
+    chatRepository.deleteAll();
+    postVoteRepository.deleteAll();
+    reportRepository.deleteAll();
+    postRepository.deleteAll();
+    userRepository.deleteAll();
   }
 }

@@ -57,7 +57,8 @@ public class StompJwtChannelInterceptor implements ChannelInterceptor {
       String username = jwtService.extractUsername(jwt);
       Optional<UUID> userId = jwtService.extractUserId(jwt);
       UserDetails userDetails =
-          userId.map(userDetailsService::loadUserById)
+          userId
+              .map(userDetailsService::loadUserById)
               .orElseGet(() -> userDetailsService.loadUserByUsername(username));
       if (jwtService.isTokenValid(jwt, userDetails)) {
         UsernamePasswordAuthenticationToken authentication =

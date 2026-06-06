@@ -21,6 +21,10 @@ export class ChatRealtimeBridgeService {
   private chatListHandler: ((chat: Chat) => void) | null = null;
   private chatRemovedHandler: ((chatId: string) => void) | null = null;
 
+  isConnectionActive(): boolean {
+    return this.chatRealtimeService.isConnectionActive();
+  }
+
   ensureConnected(): void {
     const token = untracked(() => this.authService.token());
     if (
@@ -54,7 +58,7 @@ export class ChatRealtimeBridgeService {
 
   /**
    * Get observable for connection status changes
-   * Statuses: DISCONNECTED, CONNECTING, CONNECTED, FALLBACK, ERROR
+   * Statuses: DISCONNECTED, CONNECTING, CONNECTED, SOCKJS, ERROR
    */
   getConnectionStatus$(): Observable<ConnectionStatus> {
     return this.chatRealtimeService.getConnectionStatus$();
@@ -68,7 +72,7 @@ export class ChatRealtimeBridgeService {
   }
 
   /**
-   * Check if currently using WebSocket (true) or fallback HTTP Polling (false)
+   * Check if currently using the native WebSocket transport (true) or SockJS (false)
    */
   isUsingWebSocket(): boolean {
     return this.chatRealtimeService.isUsingWebSocket();
