@@ -3,6 +3,7 @@
     <p-tablist>
       <p-tab value="friends">Friends</p-tab>
       <p-tab value="followed">Followed</p-tab>
+      <p-tab value="blocked">Blocked</p-tab>
     </p-tablist>
 
     <!-- Friends Tab Content -->
@@ -73,6 +74,14 @@
             (onClick)="openSearchDialog('followed')"
             severity="secondary" />
         </div>
+
+        <!-- Followed List -->
+        <app-followed-list [searchQuery]="followedSearch()" />
+      </div>
+    }
+    <!-- Followed Tab Content -->
+    @if (activeTab() === 'blocked') {
+      <div class="tab-content">
 
         <!-- Followed List -->
         <app-followed-list [searchQuery]="followedSearch()" />

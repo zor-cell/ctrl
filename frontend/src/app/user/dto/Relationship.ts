@@ -11,6 +11,12 @@ export interface Followed {
   profilePicture: string | null;
 }
 
+export interface Blocked {
+  id: string;
+  username: string;
+  profilePicture: string | null;
+}
+
 /**
  * FriendRequest response from backend.
  * The username field always contains the "other" person's username:

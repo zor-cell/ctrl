@@ -3,7 +3,7 @@ import { Subject, BehaviorSubject, ReplaySubject, Observable, takeUntil, shareRe
 import { FriendRequest } from './dto/Relationship';
 
 export interface FriendRequestActionEvent {
-  type: 'accepted' | 'declined' | 'cancelled' | 'sent' | 'followed' | 'unfriend' |'unfollowed';
+  type: 'accepted' | 'declined' | 'cancelled' | 'sent' | 'followed' | 'unfriend' |'unfollowed' | "blocked" | "unblock";
   username?: string;
   timestamp: Date;
 }
@@ -131,6 +131,13 @@ export class FriendRequestEventBusService implements OnDestroy {
   unfollowed(): void {
     this.emitAction({
       type: 'unfollowed',
+      timestamp: new Date(),
+    });
+  }
+
+  unblock(): void {
+    this.emitAction({
+      type: 'unblock',
       timestamp: new Date(),
     });
   }

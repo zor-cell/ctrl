@@ -34,6 +34,7 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+import {FriendRequestEventBusService} from '../user/friend-request-event-bus.service';
 
 @Component({
   selector: 'app-post-page',
@@ -60,6 +61,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
   protected readonly userService = inject(UserService);
+  private relationshipService = inject(RelationshipService);
+  private eventBus = inject(FriendRequestEventBusService);
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
@@ -791,6 +794,22 @@ export class PostPageComponent implements OnDestroy, OnInit {
     if (currentAvatarPreviewUrl) {
       URL.revokeObjectURL(currentAvatarPreviewUrl);
       this.avatarPreviewUrl.set(null);
+    }
+  }
+
+  blockUser() {
+    if (this.username()) {
+      this.relationshipService.unblock(this.username()).subscribe({
+        next: () => {
+          this.notificationService.showSuccess(`Unblocked ${this.username()}`);
+          this.eventBus.unblock();
+          this.relationshipService.loadBlocked().subscribe();
+        },
+        error: () => {
+          this.notificationService.showError(`Failed to unblock ${this.username}`);
+        },
+      });
+
     }
   }
 }
