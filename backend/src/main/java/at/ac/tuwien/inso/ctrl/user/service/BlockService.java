@@ -56,6 +56,18 @@ public class BlockService {
 
   }
 
+  public boolean inBlockedRelationship(User user, User user2) {
+
+    if (blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(user, user2)) {
+      return true;
+    }
+
+    if (blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(user2, user)) {
+      return true;
+    }
+    return false;
+  }
+
   public void unblockUser(User currentUser, String username) {
     User blockedUser = userRepository.findByUsername(username)
         .orElseThrow(() -> new EntityNotFoundException("User not found"));
