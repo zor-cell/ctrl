@@ -28,13 +28,13 @@ public class BlockedRelation {
   @EmbeddedId private BlockedRelationId id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("user")
-  @JoinColumn(name = "user", referencedColumnName = "id", nullable = false)
+  @MapsId("userId")
+  @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
   private User user;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @MapsId("blocked_user")
-  @JoinColumn(name = "blocked_user", referencedColumnName = "id", nullable = false)
+  @MapsId("blockedUserId")
+  @JoinColumn(name = "blocked_user_id", referencedColumnName = "id", nullable = false)
   private User blockedUser;
 
   @Column(name = "since")

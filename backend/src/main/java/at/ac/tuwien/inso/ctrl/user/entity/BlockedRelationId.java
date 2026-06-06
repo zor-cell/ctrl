@@ -18,9 +18,9 @@ import java.util.UUID;
 @EqualsAndHashCode
 @Embeddable
 public class BlockedRelationId implements Serializable {
-  @Column(name = "user")
-  private UUID user;
+  @Column(name = "user_id")
+  private UUID userId;
 
-  @Column(name = "blocked_user")
-  private UUID blockedUser;
+  @Column(name = "blocked_user_id")
+  private UUID blockedUserId;
 }

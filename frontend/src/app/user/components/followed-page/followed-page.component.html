@@ -83,8 +83,20 @@
     @if (activeTab() === 'blocked') {
       <div class="tab-content">
 
+        <div class="search-section">
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              type="text"
+              pInputText
+              placeholder="Search by username..."
+              [ngModel]="followedSearch()"
+              (ngModelChange)="onBlockedSearchChange($event)"
+              class="search-input" />
+          </p-iconField>
+        </div>
         <!-- Followed List -->
-        <app-followed-list [searchQuery]="followedSearch()" />
+        <app-blocked-list />
       </div>
     }
   </p-tabs>

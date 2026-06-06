@@ -1,6 +1,7 @@
-import {Component, effect, inject, signal, ViewChild} from '@angular/core';
+import {Component, effect, inject, input, signal, ViewChild} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {Button} from 'primeng/button';
-import {Menu} from 'primeng/menu';
+import {Menu, MenuModule} from 'primeng/menu';
 import {RelationshipService} from '../../relationship.service';
 import {Router} from '@angular/router';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -11,7 +12,8 @@ import {usernameInitial} from '../../../core/utils/username-initial.utils';
 
 @Component({
   selector: 'app-blocked-list',
-  imports: [Button, Menu],
+  standalone: true,
+  imports: [CommonModule, Button, MenuModule],
   templateUrl: './blocked-list.component.html',
   styleUrl: './blocked-list.component.scss',
 })
@@ -24,6 +26,7 @@ export class BlockedListComponent {
 
   @ViewChild('menu') menu!: Menu;
 
+  searchQuery = input<string>('');
   blocked = this.relationshipService.blocked;
   profilePictureUrls = signal<Record<string, string>>({});
   failedProfilePictures = signal<Set<string>>(new Set());
@@ -31,7 +34,7 @@ export class BlockedListComponent {
 
   menuItems = [
     {
-      label: 'Unfollow',
+      label: 'Unblock',
       icon: 'pi pi-user-minus',
       command: () => this.unblock(),
     },
@@ -47,6 +50,22 @@ export class BlockedListComponent {
     this.selectedUsername = username;
     this.menu.toggle(event);
   }
+
+  unblock() {
+    if (this.selectedUsername) {
+      this.relationshipService.unblock(this.selectedUsername).subscribe({
+        next: () => {
+          this.notificationService.showSuccess(`Unblocked ${this.selectedUsername}`);
+          this.eventBus.unblock();
+          this.relationshipService.loadBlocked().subscribe();
+        },
+        error: () => {
+          this.notificationService.showError(`Failed to unblock ${this.selectedUsername}`);
+        },
+      });
+    }
+  }
+
   navigateToProfile(username: string) {
     this.router.navigate(['/profile', username]);
   }
@@ -107,20 +126,6 @@ export class BlockedListComponent {
     return url;
   }
 
-  unblock() {
-    if (this.selectedUsername) {
-      this.relationshipService.unblock(this.selectedUsername).subscribe({
-        next: () => {
-          this.notificationService.showSuccess(`Unblocked ${this.selectedUsername}`);
-          this.eventBus.unblock();
-          this.relationshipService.loadBlocked().subscribe();
-        },
-        error: () => {
-          this.notificationService.showError(`Failed to unblock ${this.selectedUsername}`);
-        },
-      });
 
-    }
-  }
 }
 

@@ -17,6 +17,7 @@ import { FriendListComponent } from '../friend-list/friend-list.component';
 import { FollowedListComponent } from '../followed-list/followed-list.component';
 import { FriendRequestsDialogComponent } from '../friend-requests-dialog/friend-requests-dialog.component';
 import { UsersSearchComponent } from '../../../search/components/users-search/users-search.component';
+import {BlockedListComponent} from '../blocked-list/blocked-list.component';
 
 /**
  * Followed Page Component
@@ -44,6 +45,7 @@ import { UsersSearchComponent } from '../../../search/components/users-search/us
     FollowedListComponent,
     FriendRequestsDialogComponent,
     UsersSearchComponent,
+    BlockedListComponent,
   ],
   templateUrl: './followed-page.component.html',
   styleUrl: './followed-page.component.scss',
@@ -61,6 +63,7 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
 
   friendSearch = signal<string>('');
   followedSearch = signal<string>('');
+  blockedSearch = signal<string>('');
 
   pendingCount = computed(() => this.relationshipService.pendingRequestCount());
 
@@ -69,36 +72,34 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
   // Debounced search subjects
   private friendSearchInput$ = new Subject<string>();
   private followedSearchInput$ = new Subject<string>();
+  private blockedSearchInput$ = new Subject<string>();
 
   ngOnInit() {
     this.loadInitialData();
 
-    this.eventBus.state$
-      .pipe(takeUntil(this._destroy$))
-      .subscribe((state) => {
-        console.log(state)
-      });
+    this.eventBus.state$.pipe(takeUntil(this._destroy$)).subscribe((state) => {
+      console.log(state);
+    });
 
     // Setup debounced friend search
     this.friendSearchInput$
-      .pipe(
-        takeUntil(this._destroy$),
-        debounceTime(300),
-        distinctUntilChanged()
-      )
+      .pipe(takeUntil(this._destroy$), debounceTime(300), distinctUntilChanged())
       .subscribe((query) => {
         this.performFriendSearch(query);
       });
 
     // Setup debounced followed search
     this.followedSearchInput$
-      .pipe(
-        takeUntil(this._destroy$),
-        debounceTime(300),
-        distinctUntilChanged()
-      )
+      .pipe(takeUntil(this._destroy$), debounceTime(300), distinctUntilChanged())
       .subscribe((query) => {
         this.performFollowedSearch(query);
+      });
+
+    // Setup debounced blocked search
+    this.blockedSearchInput$
+      .pipe(takeUntil(this._destroy$), debounceTime(300), distinctUntilChanged())
+      .subscribe((query) => {
+        this.performBlockedSearch(query);
       });
   }
 
@@ -107,22 +108,33 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
     this._destroy$.complete();
     this.friendSearchInput$.complete();
     this.followedSearchInput$.complete();
+    this.blockedSearchInput$.complete();
   }
 
   private loadInitialData() {
     this.relationshipService.loadFriends().pipe(takeUntil(this._destroy$)).subscribe();
     this.relationshipService.loadFollowed().pipe(takeUntil(this._destroy$)).subscribe();
+    this.relationshipService.loadBlocked().pipe(takeUntil(this._destroy$)).subscribe();
     this.relationshipService.loadPendingRequestCount().pipe(takeUntil(this._destroy$)).subscribe();
   }
 
   private performFriendSearch(query: string) {
-    this.relationshipService.loadFriends(query || undefined)
+    this.relationshipService
+      .loadFriends(query || undefined)
       .pipe(takeUntil(this._destroy$))
       .subscribe();
   }
 
   private performFollowedSearch(query: string) {
-    this.relationshipService.loadFollowed(query || undefined)
+    this.relationshipService
+      .loadFollowed(query || undefined)
+      .pipe(takeUntil(this._destroy$))
+      .subscribe();
+  }
+
+  private performBlockedSearch(query: string) {
+    this.relationshipService
+      .loadBlocked() //(query || undefined)
       .pipe(takeUntil(this._destroy$))
       .subscribe();
   }
@@ -130,6 +142,11 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
   onFriendSearchChange(query: string) {
     this.friendSearch.set(query);
     this.friendSearchInput$.next(query);
+  }
+
+  onBlockedSearchChange(query: string) {
+    this.blockedSearch.set(query);
+    this.blockedSearchInput$.next(query);
   }
 
   onFollowedSearchChange(query: string) {

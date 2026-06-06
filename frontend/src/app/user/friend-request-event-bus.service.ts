@@ -142,6 +142,13 @@ export class FriendRequestEventBusService implements OnDestroy {
     });
   }
 
+  block(): void {
+    this.emitAction({
+      type: 'blocked',
+      timestamp: new Date(),
+    });
+  }
+
   getCurrentState(): FriendRequestState {
     return this._state.getValue();
   }

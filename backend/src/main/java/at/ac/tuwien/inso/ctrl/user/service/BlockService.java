@@ -1,12 +1,11 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
+import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.user.dto.BlockedResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
-import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.BlockedRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,6 +28,10 @@ public class BlockService {
   public void blockUser(User user, String username) {
     User blockedUser = userRepository.findByUsername(username)
         .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+    if (blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(user,blockedUser)) {
+      throw new ResourceAlreadyExistsException("User is already blocked", user.getUsername(), username);
+    }
 
     if (followService.isFollowing(user, blockedUser)) {
       followService.unfollow(user, username);

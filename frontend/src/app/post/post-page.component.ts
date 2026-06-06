@@ -799,14 +799,12 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   blockUser() {
     if (this.username()) {
-      this.relationshipService.unblock(this.username()).subscribe({
+      this.relationshipService.block(this.username()).subscribe({
         next: () => {
-          this.notificationService.showSuccess(`Unblocked ${this.username()}`);
-          this.eventBus.unblock();
-          this.relationshipService.loadBlocked().subscribe();
-        },
+          this.notificationService.showSuccess(`Blocked ${this.username()}`);
+          },
         error: () => {
-          this.notificationService.showError(`Failed to unblock ${this.username}`);
+          this.notificationService.showError(`Failed to block ${this.username()}`);
         },
       });
 

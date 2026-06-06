@@ -17,4 +17,7 @@ public interface BlockedRelationRepository extends JpaRepository<BlockedRelation
       AND br.blockedUser.isSuspended = false
       """)
   List<User> findBlockedUserByUser(@Param("user") User user);
+
+  boolean existsBlockedRelationByUserAndBlockedUser(@Param("user") User user, @Param("blockedUser") User blockedUser);
+
 }
