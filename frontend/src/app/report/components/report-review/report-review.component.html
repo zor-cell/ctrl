@@ -40,9 +40,8 @@
       </p-tabpanel>
 
       <!-- SOURCES TAB -->
-      <!-- SOURCES TAB -->
       <p-tabpanel value="sources">
-        <div class="sources-list">
+        <div class="reports-list">
           @if (reportedSources().length === 0) {
             <div class="empty-state">
               <i class="pi pi-inbox"></i>
@@ -58,7 +57,7 @@
       </p-tabpanel>
 
       <p-tabpanel value="comments">
-        <div class="sources-list">
+        <div class="reports-list">
           @if (reportedComments().length === 0) {
             <div class="empty-state">
               <i class="pi pi-inbox"></i>
@@ -74,7 +73,7 @@
       </p-tabpanel>
 
       <p-tabpanel value="accounts">
-        <div class="sources-list">
+        <div class="reports-list">
           @if (reportedAccounts().length === 0) {
             <div class="empty-state">
               <i class="pi pi-inbox"></i>
@@ -161,11 +160,11 @@
         (onClick)="viewReportSummary(report.reportId)"
         icon="pi pi-list"/>
       <p-button
-        label="Suspend Account"
+        label="Actions"
         severity="warn"
         size="small"
-        (onClick)="markActionTaken(report.reportId, ReportAction.DELETE_ACCOUNT); actionDialogVisible.set(false)"
-        icon="pi pi-user-minus"
+        (onClick)="openActionDialog(report)"
+        icon="pi pi-ellipsis-v"
       />
 
       <p-button
@@ -568,20 +567,41 @@
 >
   <div class="action-dialog-content">
   @if (selectedReport()) {
-      <p-button
-        [label]="'Take Down ' + formatContentType(selectedReport()!.contentType)"
-        severity="warn"
-        size="small"
-        (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM); actionDialogVisible.set(false)"
-        icon="pi pi-shield"
-      />
-      <p-button
-        label="Suspend Account"
-        severity="warn"
-        size="small"
-        (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ACCOUNT); actionDialogVisible.set(false)"
-        icon="pi pi-user-minus"
-      />
+      <div class="action-description-section">
+        <label class="report-label" for="actionDescription">Why are you taking the action? *</label>
+        <textarea
+          id="actionDescription"
+          [ngModel]="actionDescription()"
+          (ngModelChange)="actionDescription.set($event)"
+          (blur)="actionDescriptionTouched.set(true)"
+          rows="4"
+          class="description-input"
+          placeholder="Add a description for this action"
+          maxlength="1000"
+        ></textarea>
+        @if (actionDescriptionTouched() && !actionDescription().trim()) {
+          <p-message severity="error" size="small" variant="simple">
+            Please provide a description before taking action.
+          </p-message>
+        }
+      </div>
+
+      <div class="action-buttons-row">
+        <p-button
+          [label]="'Take Down ' + formatContentType(selectedReport()!.contentType)"
+          severity="warn"
+          size="small"
+          (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM)"
+          icon="pi pi-shield"
+        />
+        <p-button
+          label="Suspend Account"
+          severity="warn"
+          size="small"
+          (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ACCOUNT)"
+          icon="pi pi-user-minus"
+        />
+      </div>
 
   }
   </div>

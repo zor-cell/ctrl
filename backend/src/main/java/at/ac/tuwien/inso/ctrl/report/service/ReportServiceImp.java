@@ -176,6 +176,9 @@ public class ReportServiceImp implements ReportService {
       report.setCreatedAt(LocalDateTime.now());
     }
     report.setStatus(request.status());
+    if (request.description() != null) {
+      report.setDescription(request.description());
+    }
     reportRepository.save(report);
 
     if (request.action() == ReportAction.DELETE_ACCOUNT) {

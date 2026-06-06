@@ -323,7 +323,7 @@ public class ReportControllerIntegrationTest {
     reportRepository.save(report);
 
     UpdateReportRequest request =
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM);
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null);
 
     mockMvc
         .perform(
@@ -356,7 +356,7 @@ public class ReportControllerIntegrationTest {
     reportRepository.save(report);
 
     UpdateReportRequest request =
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT);
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null);
 
     mockMvc
         .perform(

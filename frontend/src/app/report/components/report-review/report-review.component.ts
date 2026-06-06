@@ -14,6 +14,7 @@ import { ReportService } from '../report.service';
 import { ContentTypeEnum, ReportAction, ReportStatus } from '../../dto/report';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { Message } from 'primeng/message';
 import { ReportedSourceResponse } from '../../dto/ReportedSourceResponse';
 import { getReportReason } from '../../dto/reportReasons';
 import { ReportSummaryResponse } from '../../dto/ReportSummaryResponse';
@@ -22,6 +23,7 @@ import { Dialog } from 'primeng/dialog';
 import { MediaCacheKind, MediaCacheService } from '../../../core/services/media-cache.service';
 import { ReportedCommentResponse } from '../../dto/ReportedCommentResponse';
 import { ReportedAccountResponse } from '../../dto/ReportedAccountResponse';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-report-review',
@@ -38,8 +40,11 @@ import { ReportedAccountResponse } from '../../dto/ReportedAccountResponse';
     NgTemplateOutlet,
     RouterLink,
     ConfirmDialog,
+    Message,
     TableModule,
     Dialog,
+    FormsModule,
+    ReactiveFormsModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './report-review.component.html',
@@ -67,13 +72,25 @@ export class ReportReviewComponent implements OnInit {
 
   protected actionDialogVisible = signal(false);
   protected selectedReport = signal<
-    ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse | null
+    | ReportedPostResponse
+    | ReportedSourceResponse
+    | ReportedCommentResponse
+    | ReportedAccountResponse
+    | null
   >(null);
+  protected actionDescription = signal<string>('');
+  protected actionDescriptionTouched = signal(false);
 
   openActionDialog(
-    report: ReportedPostResponse | ReportedSourceResponse | ReportedCommentResponse | ReportedAccountResponse,
+    report:
+      | ReportedPostResponse
+      | ReportedSourceResponse
+      | ReportedCommentResponse
+      | ReportedAccountResponse,
   ) {
     this.selectedReport.set(report);
+    this.actionDescription.set('');
+    this.actionDescriptionTouched.set(false);
     this.actionDialogVisible.set(true);
   }
   async ngOnInit(): Promise<void> {
@@ -103,7 +120,6 @@ export class ReportReviewComponent implements OnInit {
     this.currentTab.set(ContentTypeEnum.ACCOUNT);
   }
 
-
   async changeToComments() {
     const reports = await this.reportService.getReportedComments();
     this.reportedComments.set(reports);
@@ -115,17 +131,20 @@ export class ReportReviewComponent implements OnInit {
   }
 
   profilePictureUrl(report: ReportedPostResponse): string | null {
-    return this.profilePictureUrls()[report.reportId]
-      ?? this.directProfilePictureUrl(report.userProfilePic);
+    return (
+      this.profilePictureUrls()[report.reportId] ??
+      this.directProfilePictureUrl(report.userProfilePic)
+    );
   }
 
   hasProfilePicture(report: ReportedPostResponse): boolean {
-    return Boolean(this.profilePictureUrl(report))
-      && !this.failedProfilePictures().has(report.reportId);
+    return (
+      Boolean(this.profilePictureUrl(report)) && !this.failedProfilePictures().has(report.reportId)
+    );
   }
 
   markProfilePictureFailed(report: ReportedPostResponse): void {
-    this.failedProfilePictures.update(failedIds => {
+    this.failedProfilePictures.update((failedIds) => {
       const nextFailedIds = new Set(failedIds);
       nextFailedIds.add(report.reportId);
       return nextFailedIds;
@@ -137,8 +156,7 @@ export class ReportReviewComponent implements OnInit {
   }
 
   postMediaUrl(report: ReportedPostResponse): string | null {
-    return this.postMediaUrls()[report.reportId]
-      ?? this.directMediaUrl(report.mediaRef);
+    return this.postMediaUrls()[report.reportId] ?? this.directMediaUrl(report.mediaRef);
   }
 
   getDomain(url: string): string {
@@ -161,9 +179,6 @@ export class ReportReviewComponent implements OnInit {
           .subscribe(() => {
             this.update_reports();
           });
-      },
-      reject: () => {
-        console.log(`Dismissal cancelled for report with ID: ${reportId}`);
       },
     });
   }
@@ -199,18 +214,23 @@ export class ReportReviewComponent implements OnInit {
   }
 
   markActionTaken(reportId: string, action: ReportAction) {
+    if (!this.actionDescription().trim()) {
+      this.actionDescriptionTouched.set(true);
+      return;
+    }
+
     this.confirmationService.confirm({
       message: 'Are you sure you want to take an action?',
       header: 'Confirm Action',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         console.log(`Marking action taken for report with ID: ${reportId}`);
-        this.reportService.updateStatus(ReportStatus.VALIDATED, action, reportId).subscribe(() => {
-          this.update_reports();
-        });
-      },
-      reject: () => {
-        console.log(`Action cancelled for report with ID: ${reportId}`);
+        this.reportService
+          .updateStatus(ReportStatus.VALIDATED, action, reportId, this.actionDescription().trim())
+          .subscribe(() => {
+            this.update_reports();
+            this.actionDialogVisible.set(false);
+          });
       },
     });
   }
@@ -218,8 +238,8 @@ export class ReportReviewComponent implements OnInit {
   protected readonly ReportAction = ReportAction;
 
   private loadProfilePictures(reports: ReportedPostResponse[]): void {
-    const activeIds = new Set(reports.map(report => report.reportId));
-    this.profilePictureUrls.update(urls => {
+    const activeIds = new Set(reports.map((report) => report.reportId));
+    this.profilePictureUrls.update((urls) => {
       const nextUrls: Record<string, string> = {};
       Object.entries(urls).forEach(([id, url]) => {
         if (activeIds.has(id)) {
@@ -229,15 +249,15 @@ export class ReportReviewComponent implements OnInit {
       return nextUrls;
     });
 
-    reports.forEach(report => {
+    reports.forEach((report) => {
       if (!report.userProfilePic) {
         return;
       }
 
       this.mediaCacheService.resolveMediaUrl(report.userProfilePic, 'image', 'high').subscribe({
-        next: url => {
+        next: (url) => {
           if (url) {
-            this.profilePictureUrls.update(urls => ({
+            this.profilePictureUrls.update((urls) => ({
               ...urls,
               [report.reportId]: url,
             }));
@@ -257,8 +277,8 @@ export class ReportReviewComponent implements OnInit {
   }
 
   private loadPostMedia(reports: ReportedPostResponse[]): void {
-    const activeIds = new Set(reports.map(report => report.reportId));
-    this.postMediaUrls.update(urls => {
+    const activeIds = new Set(reports.map((report) => report.reportId));
+    this.postMediaUrls.update((urls) => {
       const nextUrls: Record<string, string> = {};
       Object.entries(urls).forEach(([id, url]) => {
         if (activeIds.has(id)) {
@@ -268,25 +288,23 @@ export class ReportReviewComponent implements OnInit {
       return nextUrls;
     });
 
-    reports.forEach(report => {
+    reports.forEach((report) => {
       if (!report.mediaRef) {
         return;
       }
 
-      this.mediaCacheService.resolveMediaUrl(
-        report.mediaRef,
-        this.mediaKind(report.mediaRef),
-        'high',
-      ).subscribe({
-        next: url => {
-          if (url) {
-            this.postMediaUrls.update(urls => ({
-              ...urls,
-              [report.reportId]: url,
-            }));
-          }
-        },
-      });
+      this.mediaCacheService
+        .resolveMediaUrl(report.mediaRef, this.mediaKind(report.mediaRef), 'high')
+        .subscribe({
+          next: (url) => {
+            if (url) {
+              this.postMediaUrls.update((urls) => ({
+                ...urls,
+                [report.reportId]: url,
+              }));
+            }
+          },
+        });
     });
   }
 

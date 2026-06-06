@@ -196,7 +196,7 @@ public class ReportServiceIntegrationTest {
     reportRepository.save(report);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     Post updatedPost = postRepository.findById(post.getPostId()).orElseThrow();
@@ -225,7 +225,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     Source updatedSource = sourceRepository.findById(source.getSourceId()).orElseThrow();
@@ -249,7 +249,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.DECLINED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.DECLINED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     Report r = reportRepository.findById(report.getReportId()).orElseThrow();
@@ -283,7 +283,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     Source updatedSource = sourceRepository.findById(source.getSourceId()).orElseThrow();
@@ -314,7 +314,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     User updatedUser = userRepository.findById(commentUser.getId()).orElseThrow();
@@ -336,7 +336,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
                 report.getReportId()));
   }
 
@@ -355,7 +355,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
                 report.getReportId()));
   }
 
@@ -377,7 +377,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     Comment updatedComment = commentRepository.findById(comment.getCommentId()).orElseThrow();
@@ -400,7 +400,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
         report.getReportId());
 
     User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
@@ -420,7 +420,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -443,7 +443,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -466,7 +466,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -489,7 +489,7 @@ public class ReportServiceIntegrationTest {
         IllegalArgumentException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -522,7 +522,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     Report report1FromRepo = reportRepository.findById(report.getReportId()).orElseThrow();
@@ -559,7 +559,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     Report report1FromRepo = reportRepository.findById(report.getReportId()).orElseThrow();
@@ -586,7 +586,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     User updatedUser = userRepository.findById(contentUser.getId()).orElseThrow();
@@ -669,7 +669,7 @@ public class ReportServiceIntegrationTest {
         CommunicationException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -697,7 +697,7 @@ public class ReportServiceIntegrationTest {
         CommunicationException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -725,7 +725,7 @@ public class ReportServiceIntegrationTest {
         CommunicationException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null),
                 report.getReportId()));
   }
 
@@ -754,7 +754,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     ExternalAuthor updatedAuthor =
@@ -781,7 +781,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     ExternalAuthor updatedAuthor =
@@ -810,7 +810,7 @@ public class ReportServiceIntegrationTest {
             null);
 
     reportService.updateReportStatus(
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
         report.getReportId());
 
     ExternalAuthor updatedAuthor =
@@ -840,7 +840,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
                 report.getReportId()));
   }
 
@@ -866,7 +866,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
                 report.getReportId()));
   }
 
@@ -891,7 +891,7 @@ public class ReportServiceIntegrationTest {
         EntityNotFoundException.class,
         () ->
             reportService.updateReportStatus(
-                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT),
+                new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null),
                 report.getReportId()));
   }
 
