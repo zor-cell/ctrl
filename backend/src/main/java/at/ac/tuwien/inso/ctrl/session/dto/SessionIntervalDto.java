@@ -2,4 +2,4 @@ package at.ac.tuwien.inso.ctrl.session.dto;
 
 import java.time.LocalDateTime;
 
-public record SessionIntervalDto(LocalDateTime startTime, long durationMinutes) {}
+public record SessionIntervalDto(LocalDateTime startTime, LocalDateTime endTime) {}

@@ -1,6 +1,8 @@
 package at.ac.tuwien.inso.ctrl.session.repository;
 
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
+import at.ac.tuwien.inso.ctrl.session.entity.DailySummary;
+import at.ac.tuwien.inso.ctrl.session.entity.DayOfWeekAverage;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.time.LocalDateTime;
@@ -49,14 +51,14 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           ORDER BY d.day
           """,
       nativeQuery = true)
-  List<Object[]> findLastSevenDaysSummary(@Param("userId") UUID userId);
+  List<DailySummary> findLastWeekSummary(@Param("userId") UUID userId);
 
   @Query(
       value =
           """
           WITH date_range AS (
             SELECT generate_series(
-              DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '60 days'),
+              DATE_TRUNC('day', CURRENT_TIMESTAMP - ((:days || ' days')::INTERVAL)),
               DATE_TRUNC('day', CURRENT_TIMESTAMP) - INTERVAL '1 day',
               INTERVAL '1 day'
             )::date AS day
@@ -68,7 +70,7 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
               COUNT(*) AS sessionCount
             FROM session_history
             WHERE user_id = :userId
-              AND started_at >= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '60 days')
+              AND started_at >= DATE_TRUNC('day', CURRENT_TIMESTAMP - ((:days || ' days')::INTERVAL))
               AND started_at < DATE_TRUNC('day', CURRENT_TIMESTAMP)
               AND minutes IS NOT NULL
             GROUP BY DATE(started_at)
@@ -84,21 +86,16 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           ORDER BY EXTRACT(ISODOW FROM dr.day)
           """,
       nativeQuery = true)
-  List<Object[]> findSixtyDayDayOfWeekAverages(@Param("userId") UUID userId);
+  List<DayOfWeekAverage> findDayOfWeekAverages(
+      @Param("userId") UUID userId, @Param("days") int days);
 
   @Query(
-      """
-      SELECT s FROM SessionHistory s
-      WHERE s.user = :user
-        AND s.start >= :dayStart
-        AND s.start < :dayEnd
-        AND s.minutes IS NOT NULL
-      ORDER BY s.start
-      """)
-  List<SessionHistory> findSessionsForDay(
+      "SELECT s FROM SessionHistory s WHERE s.user = :user AND s.start >= :weekAgo AND s.start <"
+          + " :tomorrow")
+  List<SessionHistory> findSessionsForLastWeek(
       @Param("user") User user,
-      @Param("dayStart") LocalDateTime dayStart,
-      @Param("dayEnd") LocalDateTime dayEnd);
+      @Param("weekAgo") LocalDateTime weekAgo,
+      @Param("tomorrow") LocalDateTime tomorrow);
 
   @Query(
       value =
@@ -106,12 +103,12 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           SELECT * FROM session_history
           WHERE user_id = :userId
             AND EXTRACT(ISODOW FROM started_at) = :dayOfWeek
-            AND started_at >= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '60 days')
+            AND started_at >= DATE_TRUNC('day', CURRENT_TIMESTAMP - ((:days || ' days')::INTERVAL))
             AND started_at < DATE_TRUNC('day', CURRENT_TIMESTAMP)
             AND minutes IS NOT NULL
           ORDER BY started_at
           """,
       nativeQuery = true)
-  List<SessionHistory> findSessionsForDayOfWeekInPeriod(
-      @Param("userId") UUID userId, @Param("dayOfWeek") int dayOfWeek);
+  List<SessionHistory> findSessionsForPeriod(
+      @Param("userId") UUID userId, @Param("days") long days);
 }

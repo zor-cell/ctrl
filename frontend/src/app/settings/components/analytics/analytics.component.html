@@ -1,0 +1,30 @@
+<div class="analytics-container">
+  @switch (view()) {
+    @case ('overview') {
+      <app-analytics-overview
+        [lastWeekData]="lastWeekData()"
+        [averageData]="averageData()"
+        [isLoadingLastWeek]="isLoadingLastWeek()"
+        [isLoadingAverage]="isLoadingAverage()"
+        [activeTab]="activeTab()"
+        (tabChange)="activeTab.set($event)"
+        (lastWeekBarClick)="onLastWeekBarClick($event)"
+        (averageBarClick)="onAverageBarClick($event)"
+      />
+    }
+    @case ('dayDetail') {
+      <app-analytics-day-detail
+        [dayDetail]="lastWeekDayDetail()[focusedDay()]"
+        (next)="focusedDay.update(f => math.min(f + 1, 6))"
+        (previous)="focusedDay.update(f => math.max(f - 1, 0))"
+        (goBack)="goBack()"
+      />
+    }
+    @case ('bucketDetail') {
+      <app-analytics-bucket-detail
+        [dayDetail]="averageDayDetail()[focusedDay()]"
+        (goBack)="goBack()"
+      />
+    }
+  }
+</div>

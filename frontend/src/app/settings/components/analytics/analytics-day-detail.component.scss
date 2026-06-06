@@ -1,0 +1,68 @@
+.detail-view {
+  padding: 0.5rem 0;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--p-text-color);
+  }
+}
+
+.timeline-container {
+  position: relative;
+  padding-top: 1.5rem;
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-around;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+
+  .axis-label {
+    font-size: 0.65rem;
+    color: var(--p-text-muted-color);
+    flex: 1;
+    text-align: left;
+  }
+}
+
+.timeline-track {
+  position: relative;
+  height: 4rem;
+  background: var(--p-surface-100);
+  border-radius: var(--p-border-radius);
+  overflow: hidden;
+
+  .app-dark & {
+    background: var(--p-surface-800);
+  }
+}
+
+.session-bar {
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  background: var(--p-primary-500);
+  border-radius: 3px;
+  opacity: 0.85;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+}

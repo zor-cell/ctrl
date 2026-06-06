@@ -1,0 +1,32 @@
+<div class="detail-view">
+  <div class="detail-header">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Back"
+      [text]="true"
+      (onClick)="goBack.emit()"
+    />
+    <h3>Average Profile — {{ dayOfWeekName() }}</h3>
+  </div>
+
+  <div class="buckets-legend">
+    <span class="legend-label">0 min</span>
+    <span class="legend-label">15 min (max)</span>
+  </div>
+
+  <div class="buckets-container">
+    @for (bucket of (dayDetail()?.buckets ?? []); track bucket.bucketIndex) {
+      <div class="bucket-wrapper">
+        <div
+          class="bucket-bar"
+          [style.height.%]="bucketHeight(bucket)"
+          [pTooltip]="bucketTooltip(bucket)"
+          tooltipPosition="top"
+        ></div>
+        @if (bucket.bucketIndex % 4 === 0) {
+          <span class="bucket-label">{{ bucket.timeLabel.split('-')[0] }}</span>
+        }
+      </div>
+    }
+  </div>
+</div>
