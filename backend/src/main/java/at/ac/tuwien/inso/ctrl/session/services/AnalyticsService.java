@@ -9,7 +9,6 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -30,7 +29,9 @@ public class AnalyticsService {
 
   @Transactional
   public List<LastWeekDayResponse> getLastWeek(User user) {
-    List<DailySummary> days = sessionRepository.findLastWeekSummary(user.getId());
+    LocalDate today = LocalDate.now(clock);
+    List<DailySummary> days =
+        sessionRepository.findLastWeekSummary(user.getId(), today.minusDays(7), today);
     return analyticsMapper.toLastWeekDayList(days);
   }
 
@@ -46,23 +47,29 @@ public class AnalyticsService {
 
   @Transactional
   public List<AverageDayResponse> getAverageWeek(User user) {
+    LocalDate today = LocalDate.now(clock);
     long timeframeInDays =
         Math.min(
-            ChronoUnit.DAYS.between(user.getCreatedAt(), Instant.now(clock)),
+            ChronoUnit.DAYS.between(
+                user.getCreatedAt().atZone(clock.getZone()).toLocalDate(), today),
             avgTimeframeInWeeks * 7);
     List<DayOfWeekAverage> days =
-        sessionRepository.findDayOfWeekAverages(user.getId(), (int) timeframeInDays);
+        sessionRepository.findDayOfWeekAverages(
+            user.getId(), today.minusDays(timeframeInDays), today);
     return analyticsMapper.toAverageDayResponseList(days);
   }
 
   @Transactional
   public List<AverageDayDetailResponse> getAverageWeekDetails(User user) {
+    LocalDate today = LocalDate.now(clock);
     long timeframeInDays =
         Math.min(
-            ChronoUnit.DAYS.between(user.getCreatedAt(), Instant.now(clock)),
+            ChronoUnit.DAYS.between(
+                user.getCreatedAt().atZone(clock.getZone()).toLocalDate(), today),
             avgTimeframeInWeeks * 7);
     List<SessionHistory> sessions =
-        sessionRepository.findSessionsForPeriod(user.getId(), timeframeInDays);
+        sessionRepository.findSessionsForPeriod(
+            user.getId(), today.minusDays(timeframeInDays).atStartOfDay(), today.atStartOfDay());
 
     return analyticsMapper.toAverageDayDetailResponseList(sessions, timeframeInDays);
   }

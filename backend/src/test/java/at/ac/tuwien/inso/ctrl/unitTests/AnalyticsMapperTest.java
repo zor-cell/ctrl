@@ -3,9 +3,11 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import at.ac.tuwien.inso.ctrl.session.dto.AverageDayDetailResponse;
+import at.ac.tuwien.inso.ctrl.session.dto.AverageDayResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.AverageTimeBucketResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionIntervalDto;
+import at.ac.tuwien.inso.ctrl.session.entity.DayOfWeekAverage;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
 import at.ac.tuwien.inso.ctrl.session.mapper.AnalyticsMapper;
 import java.time.Clock;
@@ -316,21 +318,87 @@ public class AnalyticsMapperTest {
   }
 
   @Nested
+  class ToAverageDayResponse {
+
+    @Test
+    void shouldMapDayOfWeekAverageToAverageDayResponse() {
+      DayOfWeekAverage day =
+          new DayOfWeekAverage() {
+            @Override
+            public Integer getDayOfWeek() {
+              return 4; // Thursday
+            }
+
+            @Override
+            public Double getAvgMinutes() {
+              return 7.5;
+            }
+
+            @Override
+            public Double getAvgSessionCount() {
+              return 2.5;
+            }
+
+            @Override
+            public Integer getDaysInPeriod() {
+              return 8;
+            }
+          };
+
+      AverageDayResponse result = mapper.toAverageDayResponse(day);
+      assertThat(result.dayOfWeek()).isEqualTo(3);
+      assertThat(result.avgTotalMinutes()).isEqualTo(7.5);
+      assertThat(result.avgSessionCount()).isEqualTo(2.5);
+      assertThat(result.daysInPeriod()).isEqualTo(8);
+    }
+
+    @Test
+    void shouldPreserveFractionalAverages() {
+      DayOfWeekAverage day =
+          new DayOfWeekAverage() {
+            @Override
+            public Integer getDayOfWeek() {
+              return 1;
+            }
+
+            @Override
+            public Double getAvgMinutes() {
+              return 0.75;
+            }
+
+            @Override
+            public Double getAvgSessionCount() {
+              return 0.25;
+            }
+
+            @Override
+            public Integer getDaysInPeriod() {
+              return 1;
+            }
+          };
+
+      AverageDayResponse result = mapper.toAverageDayResponse(day);
+      assertThat(result.avgTotalMinutes()).isEqualTo(0.75);
+      assertThat(result.avgSessionCount()).isEqualTo(0.25);
+    }
+  }
+
+  @Nested
   class TimestampToString {
 
     @Test
     void shouldFormatMidnightCorrectly() {
-      assertThat(mapper.timestampToString(LocalTime.of(0, 0))).isEqualTo("0:0-0:15");
+      assertThat(mapper.timestampToString(LocalTime.of(0, 0))).isEqualTo("00:00-00:15");
     }
 
     @Test
     void shouldFormatNormalTimestampCorrectly() {
-      assertThat(mapper.timestampToString(LocalTime.of(9, 30))).isEqualTo("9:30-9:45");
+      assertThat(mapper.timestampToString(LocalTime.of(9, 30))).isEqualTo("09:30-09:45");
     }
 
     @Test
     void shouldWrapAroundForLastBucket() {
-      assertThat(mapper.timestampToString(LocalTime.of(23, 45))).isEqualTo("23:45-0:0");
+      assertThat(mapper.timestampToString(LocalTime.of(23, 45))).isEqualTo("23:45-00:00");
     }
   }
 }

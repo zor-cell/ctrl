@@ -43,7 +43,7 @@ public class AnalyticsMapper {
   public AverageDayResponse toAverageDayResponse(DayOfWeekAverage day) {
     return new AverageDayResponse(
         day.getDayOfWeek() - 1,
-        day.getAvgTotalMinutes(),
+        day.getAvgMinutes(),
         day.getAvgSessionCount(),
         day.getDaysInPeriod());
   }

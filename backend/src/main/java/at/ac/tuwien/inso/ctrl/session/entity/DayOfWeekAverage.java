@@ -3,9 +3,9 @@ package at.ac.tuwien.inso.ctrl.session.entity;
 public interface DayOfWeekAverage {
   Integer getDayOfWeek();
 
-  Long getAvgTotalMinutes();
+  Double getAvgMinutes();
 
-  Long getAvgSessionCount();
+  Double getAvgSessionCount();
 
   Integer getDaysInPeriod();
 }
