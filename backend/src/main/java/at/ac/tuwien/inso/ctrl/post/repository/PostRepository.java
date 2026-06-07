@@ -6,6 +6,8 @@ import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -363,4 +365,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
             """,
       nativeQuery = true)
   Integer findUpvotePercentile95();
+
+  List<Post> findPostsByUser(User user);
 }

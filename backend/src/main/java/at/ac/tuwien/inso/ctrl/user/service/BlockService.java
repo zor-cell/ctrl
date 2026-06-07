@@ -1,6 +1,15 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
+import at.ac.tuwien.inso.ctrl.comments.service.CommentService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.BlockedResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelationId;
@@ -22,8 +31,13 @@ public class BlockService {
   private final FollowService followService;
   private final UserRepository userRepository;
   private final FriendshipService friendshipService;
+  private final PostRepository postRepository;
   private final BlockedRelationRepository blockedRelationRepository;
   private final RelationshipMapper relationshipMapper;
+  private final CommentRepository commentRepository;
+  private final CommentService commentService;
+  private final PostVoteRepository postVoteRepository;
+  private final SourceVoteRepository sourceVoteRepository;
 
   public void blockUser(User user, String username) {
     User blockedUser = userRepository.findByUsername(username)
@@ -53,7 +67,25 @@ public class BlockService {
 
     blockedRelationRepository.save(blockedRelation);
 
+    removeBlockedUserContent(user, blockedUser);
 
+
+  }
+
+  private void removeBlockedUserContent(User user, User blockedUser) {
+    List<Post> posts = postRepository.findPostsByUser(user);
+
+    posts.forEach(post -> {
+      List<Comment> comments = commentRepository.findCommentsByUserAndPost(blockedUser, post);
+
+      comments.forEach(comment -> {
+        commentService.deleteComment(comment.getCommentId(), blockedUser.getUsername());
+      });
+
+      postVoteRepository.findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString())).ifPresent(postVoteRepository::delete);
+      sourceVoteRepository.findById(new SourceVoteId(post.getSource().getSourceId(), blockedUser.getId().toString())).ifPresent(sourceVoteRepository::delete);
+
+    });
   }
 
   public boolean inBlockedRelationship(User user, User user2) {
