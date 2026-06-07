@@ -75,7 +75,8 @@ public class AnalyticsServiceTest {
     @Test
     void shouldCallRepositoryWithCorrectUserId() {
       User user = testUser();
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayList(any())).thenReturn(List.of());
 
       analyticsService.getLastWeek(user);
@@ -92,7 +93,8 @@ public class AnalyticsServiceTest {
     void shouldPassRepositoryResultToMapper() {
       User user = testUser();
       List<DailySummary> summaries = List.of();
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any())).thenReturn(summaries);
+      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
+          .thenReturn(summaries);
       when(analyticsMapper.toLastWeekDayList(summaries)).thenReturn(List.of());
 
       analyticsService.getLastWeek(user);
@@ -105,7 +107,8 @@ public class AnalyticsServiceTest {
       User user = testUser();
       List<LastWeekDayResponse> mapperOutput =
           List.of(new LastWeekDayResponse(LocalDate.of(2026, 4, 24), 0L, 0L));
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayList(any())).thenReturn(mapperOutput);
 
       List<LastWeekDayResponse> result = analyticsService.getLastWeek(user);
@@ -176,7 +179,8 @@ public class AnalyticsServiceTest {
     void shouldCallRepositoryWithCorrectUserId() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
-      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(List.of());
 
       analyticsService.getAverageWeek(user);
@@ -193,7 +197,8 @@ public class AnalyticsServiceTest {
     void shouldCallRepositoryWithCorrectDaysParameter() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
-      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(List.of());
 
       analyticsService.getAverageWeek(user);
@@ -211,7 +216,8 @@ public class AnalyticsServiceTest {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       List<DayOfWeekAverage> averages = List.of();
-      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any())).thenReturn(averages);
+      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
+          .thenReturn(averages);
       when(analyticsMapper.toAverageDayResponseList(averages)).thenReturn(List.of());
 
       analyticsService.getAverageWeek(user);
@@ -224,7 +230,8 @@ public class AnalyticsServiceTest {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       List<AverageDayResponse> mapperOutput = List.of(new AverageDayResponse(0, 0.0, 0.0, 0));
-      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(mapperOutput);
 
       List<AverageDayResponse> result = analyticsService.getAverageWeek(user);
@@ -240,7 +247,8 @@ public class AnalyticsServiceTest {
     void shouldUseFullTimeframeWhenAccountIsOlderThanTimeframe() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
-      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong())).thenReturn(List.of());
 
       analyticsService.getAverageWeekDetails(user);
@@ -257,7 +265,8 @@ public class AnalyticsServiceTest {
     void shouldCapTimeframeToAccountAgeWhenAccountIsYoungerThanTimeframe() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2026, 4, 16, 0, 0).toInstant(ZoneOffset.UTC));
-      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong())).thenReturn(List.of());
 
       analyticsService.getAverageWeekDetails(user);
@@ -275,7 +284,8 @@ public class AnalyticsServiceTest {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       List<SessionHistory> sessions = List.of(session(LocalDateTime.of(2026, 4, 27, 10, 0), 30));
-      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any())).thenReturn(sessions);
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(sessions);
       when(analyticsMapper.toAverageDayDetailResponseList(sessions, 56L)).thenReturn(List.of());
 
       analyticsService.getAverageWeekDetails(user);
@@ -295,7 +305,8 @@ public class AnalyticsServiceTest {
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       List<AverageDayDetailResponse> mapperOutput =
           List.of(new AverageDayDetailResponse("", 0, List.of(), 0));
-      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong()))
           .thenReturn(mapperOutput);
 
