@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 public class SessionService {
   private final SessionRepository sessionRepository;
   private final SessionConfigRepository sessionConfigRepository;
-  private final SeenPostRepository seenPostRepository;
   private final SessionMapper sessionMapper;
 
   @Value("${application.heartbeat.max-time-between-heartbeats:3}")
@@ -106,9 +105,10 @@ public class SessionService {
   public SessionConfigDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
 
-    config.setTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
-    config.setPostLimit(sessionConfigDto.postLimit());
-    config.setForcedCutoff(sessionConfigDto.isForcedCutoff());
+    //limits are stored and only take effect on the next day
+    config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
+    config.setNextPostLimit(sessionConfigDto.postLimit());
+    config.setNextIsForcedCutoff(sessionConfigDto.isForcedCutoff());
 
     return sessionMapper.toConfig(sessionConfigRepository.save(config));
   }

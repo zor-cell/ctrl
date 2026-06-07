@@ -38,12 +38,21 @@ public class SessionConfig {
   @Column(name = "time_limit_minutes")
   private Integer timeLimitMinutes;
 
+  @Column(name = "next_time_limit_minutes")
+  private Integer nextTimeLimitMinutes;
+
   @Column(name = "post_limit")
   private Integer postLimit;
+
+  @Column(name = "next_post_limit")
+  private Integer nextPostLimit;
 
   // Enforces either forced or soft cutoff of sessions
   @Column(name = "is_forced_cutoff", nullable = false)
   private boolean isForcedCutoff;
+
+  @Column(name = "next_is_forced_cutoff")
+  private Boolean nextIsForcedCutoff;
 
   @Column(name = "last_soft_cutoff")
   private LocalDateTime lastSoftCutoff;

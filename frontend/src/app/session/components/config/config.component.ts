@@ -7,6 +7,9 @@ import {SessionConfigService} from "../../session-config.service";
 import {SessionConfig} from "../../dto/SessionConfig";
 import {ToggleSwitch} from "primeng/toggleswitch";
 import {Slider} from "primeng/slider";
+import {Message} from "primeng/message";
+import {ConfirmationService} from "primeng/api";
+import {ConfirmDialog} from "primeng/confirmdialog";
 
 @Component({
   selector: 'app-session-config',
@@ -18,14 +21,18 @@ import {Slider} from "primeng/slider";
     ReactiveFormsModule,
     ToggleSwitch,
     Tooltip,
-    Slider
+    Slider,
+    Message,
+    ConfirmDialog
   ],
+  providers: [ConfirmationService],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
 })
 export class SessionConfigComponent implements OnInit {
   private readonly configService = inject(SessionConfigService);
   private readonly fb = inject(NonNullableFormBuilder);
+  private confirmationService = inject(ConfirmationService);
 
   protected isLoading = signal<boolean>(true);
 
@@ -47,12 +54,28 @@ export class SessionConfigComponent implements OnInit {
     });
   }
 
-  protected saveConfig() {
+  protected confirmSave() {
     if (this.configForm.invalid) {
       this.configForm.markAllAsTouched();
       return;
     }
 
+    this.confirmationService.confirm({
+      header: 'Confirm Limits',
+      message: 'Your new session limits will be applied starting tomorrow. Do you want to proceed?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Save',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary'
+      },
+      accept: () => {
+        this.saveConfig();
+      }
+    })
+  }
+
+  protected saveConfig() {
     const formValue = this.configForm.getRawValue() as SessionConfig;
 
     this.configService.updateConfig(formValue).subscribe(updatedConfig => {

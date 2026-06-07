@@ -20,7 +20,7 @@ export class SessionConfigService {
   public updateConfig(updateConfigRequest: SessionConfig) {
     return this.httpClient.put<SessionConfig>(this.baseUri + '/config', updateConfigRequest).pipe(
       tap(() => {
-        this.notificationService.showSuccess('Updated session configuration');
+        this.notificationService.showSuccess('Configuration saved. Changes will take effect tomorrow');
       })
     );
   }
