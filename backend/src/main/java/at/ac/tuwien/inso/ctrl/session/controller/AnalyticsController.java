@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.session.controller;
 import at.ac.tuwien.inso.ctrl.session.dto.*;
 import at.ac.tuwien.inso.ctrl.session.services.AnalyticsService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,7 @@ public class AnalyticsController {
   }
 
   @GetMapping("/last-week/detailed")
-  public LastWeekDetailResponse getDaySessionDetail(@AuthenticationPrincipal User user) {
+  public List<LastWeekDayDetailResponse> getDaySessionDetail(@AuthenticationPrincipal User user) {
     return analyticsService.getLastWeekDetails(user);
   }
 
@@ -32,7 +33,8 @@ public class AnalyticsController {
   }
 
   @GetMapping("/weekly-average/detailed")
-  public AverageWeekDetailResponse getWeeklyAverageDetails(@AuthenticationPrincipal User user) {
+  public List<AverageDayDetailResponse> getWeeklyAverageDetails(
+      @AuthenticationPrincipal User user) {
     return analyticsService.getAverageWeekDetails(user);
   }
 }

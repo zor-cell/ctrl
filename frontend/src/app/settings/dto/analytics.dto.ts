@@ -13,39 +13,36 @@ export interface SessionIntervalDto {
   endTime: string;
 }
 
-export interface LastWeekDayDetailResponse {
+export interface LastWeekDayDetailResponse extends DetailedDay {
   date: string;
   sessions: SessionIntervalDto[];
 }
 
-export interface LastWeekDetailResponse {
-  days: LastWeekDayDetailResponse[];
-}
-
-export interface AverageDayResponse {
-  dayOfWeek: string;
+export interface AverageWeekDayResponse {
   avgTotalMinutes: number;
   avgSessionCount: number;
+  dayOfWeek: number;
   daysInPeriod: number;
 }
 
+
 export interface AverageWeekResponse {
-  days: AverageDayResponse[];
+  days: AverageWeekDayResponse[];
 }
 
 export interface TimeBucketDto {
-  bucketIndex: number;
-  timeLabel: string;
-  avgMinutes: number;
+  label: string;
+  averageTime: number;
   contributingSessions: number;
 }
 
-export interface AverageDayDetailResponse {
-  dayOfWeek: number;
+export interface AverageDayDetailResponse extends DetailedDay {
   buckets: TimeBucketDto[];
+  dayOfWeek: number;
   daysInPeriod: number;
 }
 
-export interface AverageWeekDetailResponse {
-  days: AverageDayDetailResponse[];
+
+export interface DetailedDay {
+  title: string
 }

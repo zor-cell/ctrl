@@ -25,7 +25,8 @@ public class AnalyticsMapperTest {
 
   private static final Clock CLOCK =
       Clock.fixed(LocalDateTime.of(2026, 5, 1, 0, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-  // "today" = Friday 2026-05-01, so "last 7 days" = 2026-04-24 (Fri) through 2026-04-30 (Thu)
+  // "today" = Friday 2026-05-01, so "last 7 days" = 2026-04-24 (Fri) through
+  // 2026-04-30 (Thu)
 
   private AnalyticsMapper mapper;
 
@@ -105,7 +106,8 @@ public class AnalyticsMapperTest {
               .findFirst()
               .orElseThrow();
       assertThat(apr27.sessions()).hasSize(1);
-      assertThat(apr27.sessions().get(0).startTime()).isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
+      assertThat(apr27.sessions().get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
       assertThat(apr27.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
 
       LastWeekDayDetailResponse apr28 =
@@ -114,7 +116,8 @@ public class AnalyticsMapperTest {
               .findFirst()
               .orElseThrow();
       assertThat(apr28.sessions()).hasSize(1);
-      assertThat(apr28.sessions().get(0).startTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+      assertThat(apr28.sessions().get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
       assertThat(apr28.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 30));
     }
 
@@ -128,7 +131,8 @@ public class AnalyticsMapperTest {
               .filter(d -> d.date().equals(LocalDate.of(2026, 4, 27)))
               .findFirst()
               .orElseThrow();
-      assertThat(apr27.sessions().get(0).startTime()).isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
+      assertThat(apr27.sessions().get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
       assertThat(apr27.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
 
       LastWeekDayDetailResponse apr28 =
@@ -136,7 +140,8 @@ public class AnalyticsMapperTest {
               .filter(d -> d.date().equals(LocalDate.of(2026, 4, 28)))
               .findFirst()
               .orElseThrow();
-      assertThat(apr28.sessions().get(0).startTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+      assertThat(apr28.sessions().get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
       assertThat(apr28.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 30));
     }
   }
@@ -150,8 +155,7 @@ public class AnalyticsMapperTest {
           mapper
               .splitSessionAtMidnight(
                   new SessionIntervalDto(
-                      LocalDateTime.of(2026, 5, 1, 10, 0),
-                      LocalDateTime.of(2026, 5, 1, 10, 45)))
+                      LocalDateTime.of(2026, 5, 1, 10, 0), LocalDateTime.of(2026, 5, 1, 10, 45)))
               .toList();
       assertThat(result).hasSize(1);
     }
@@ -162,8 +166,7 @@ public class AnalyticsMapperTest {
           mapper
               .splitSessionAtMidnight(
                   new SessionIntervalDto(
-                      LocalDateTime.of(2026, 4, 30, 23, 30),
-                      LocalDateTime.of(2026, 5, 1, 0, 30)))
+                      LocalDateTime.of(2026, 4, 30, 23, 30), LocalDateTime.of(2026, 5, 1, 0, 30)))
               .toList();
       assertThat(result).hasSize(2);
     }
@@ -174,8 +177,7 @@ public class AnalyticsMapperTest {
           mapper
               .splitSessionAtMidnight(
                   new SessionIntervalDto(
-                      LocalDateTime.of(2026, 4, 30, 23, 30),
-                      LocalDateTime.of(2026, 5, 1, 0, 30)))
+                      LocalDateTime.of(2026, 4, 30, 23, 30), LocalDateTime.of(2026, 5, 1, 0, 30)))
               .toList();
       assertThat(result.get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
     }
@@ -186,8 +188,7 @@ public class AnalyticsMapperTest {
           mapper
               .splitSessionAtMidnight(
                   new SessionIntervalDto(
-                      LocalDateTime.of(2026, 4, 30, 23, 30),
-                      LocalDateTime.of(2026, 5, 1, 0, 30)))
+                      LocalDateTime.of(2026, 4, 30, 23, 30), LocalDateTime.of(2026, 5, 1, 0, 30)))
               .toList();
       assertThat(result.get(1).startTime()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
     }
@@ -283,25 +284,20 @@ public class AnalyticsMapperTest {
 
     @Test
     void shouldReturnSevenEntries() {
-      List<AverageDayDetailResponse> result =
-          mapper.toAverageDayDetailResponseList(List.of(), 56);
+      List<AverageDayDetailResponse> result = mapper.toAverageDayDetailResponseList(List.of(), 56);
       assertThat(result).hasSize(7);
     }
 
     @Test
     void shouldLabelEntriesWithCorrectDayOfWeekNames() {
-      List<AverageDayDetailResponse> result =
-          mapper.toAverageDayDetailResponseList(List.of(), 56);
-      List<String> labels = result.stream().map(AverageDayDetailResponse::dayOfWeek).toList();
-      assertThat(labels)
-          .containsExactly(
-              "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
+      List<AverageDayDetailResponse> result = mapper.toAverageDayDetailResponseList(List.of(), 56);
+      List<Integer> labels = result.stream().map(AverageDayDetailResponse::dayOfWeek).toList();
+      assertThat(labels).containsExactly(0, 1, 2, 3, 4, 5, 6);
     }
 
     @Test
     void shouldSetDaysInPeriodFromContributingDays() {
-      List<AverageDayDetailResponse> result =
-          mapper.toAverageDayDetailResponseList(List.of(), 56);
+      List<AverageDayDetailResponse> result = mapper.toAverageDayDetailResponseList(List.of(), 56);
       assertThat(result).allMatch(d -> d.daysInPeriod() == 8);
     }
 
@@ -313,11 +309,8 @@ public class AnalyticsMapperTest {
               session(LocalDateTime.of(2026, 4, 30, 10, 0), 15));
       List<AverageDayDetailResponse> result = mapper.toAverageDayDetailResponseList(sessions, 9);
       AverageDayDetailResponse thursday =
-          result.stream()
-              .filter(d -> d.dayOfWeek().equals("THURSDAY"))
-              .findFirst()
-              .orElseThrow();
-      AverageTimeBucketResponse bucket = thursday.timeBuckets().get(40); // 10:00 bucket
+          result.stream().filter(d -> d.dayOfWeek() == 3).findFirst().orElseThrow();
+      AverageTimeBucketResponse bucket = thursday.buckets().get(40); // 10:00 bucket
       assertThat(bucket.averageTime()).isEqualTo(15.0);
     }
   }

@@ -16,9 +16,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,9 +42,11 @@ public class AnalyticsMapper {
   }
 
   public AverageDayResponse toAverageDayResponse(DayOfWeekAverage day) {
-    String label = DayOfWeek.of(day.getDayOfWeek()).toString();
     return new AverageDayResponse(
-        label, day.getAvgTotalMinutes(), day.getAvgSessionCount(), day.getDaysInPeriod());
+        day.getDayOfWeek() - 1,
+        day.getAvgTotalMinutes(),
+        day.getAvgSessionCount(),
+        day.getDaysInPeriod());
   }
 
   public List<AverageDayResponse> toAverageDayResponseList(List<DayOfWeekAverage> days) {
@@ -59,7 +63,10 @@ public class AnalyticsMapper {
         .datesUntil(LocalDate.now(clock))
         .map(
             date -> {
-              return new LastWeekDayDetailResponse(date, sessionMap.getOrDefault(date, List.of()));
+              return new LastWeekDayDetailResponse(
+                  date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.ENGLISH)),
+                  date,
+                  sessionMap.getOrDefault(date, List.of()));
             })
         .toList();
   }
@@ -102,7 +109,8 @@ public class AnalyticsMapper {
     for (int i = 0; i < buckets.length; i++) {
       res.add(
           new AverageDayDetailResponse(
-              DayOfWeek.of(i + 1).toString(),
+              DayOfWeek.of(i + 1).getDisplayName(TextStyle.FULL, Locale.ENGLISH),
+              i,
               this.toAverageTimeBucketResponseList(buckets[i], contributingDays[i]),
               contributingDays[i]));
     }
@@ -155,9 +163,7 @@ public class AnalyticsMapper {
 
         int overlap =
             Math.min(endMinuteOfDay, bucketEndMinute)
-                - Math.max(
-                    i.startTime().get(ChronoField.MINUTE_OF_DAY),
-                    bucketStartMinute);
+                - Math.max(i.startTime().get(ChronoField.MINUTE_OF_DAY), bucketStartMinute);
 
         if (overlap > 0) {
           buckets[weekday][startBucket].addMinutes(overlap);
@@ -202,8 +208,10 @@ public class AnalyticsMapper {
 
   public String timestampToString(LocalTime timestamp) {
     int timeBucketSizeInMinutes = 24 * 60 / TIME_BUCKETS_PER_DAY;
-    return timestamp.format(DateTimeFormatter.ofPattern("H:m"))
+    return timestamp.format(DateTimeFormatter.ofPattern("HH:mm"))
         + "-"
-        + timestamp.plusMinutes(timeBucketSizeInMinutes).format(DateTimeFormatter.ofPattern("H:m"));
+        + timestamp
+            .plusMinutes(timeBucketSizeInMinutes)
+            .format(DateTimeFormatter.ofPattern("HH:mm"));
   }
 }

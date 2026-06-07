@@ -35,13 +35,13 @@ public class AnalyticsService {
   }
 
   @Transactional
-  public LastWeekDetailResponse getLastWeekDetails(User user) {
+  public List<LastWeekDayDetailResponse> getLastWeekDetails(User user) {
     List<SessionHistory> sessions =
         sessionRepository.findSessionsForLastWeek(
             user,
             LocalDate.now(clock).minusDays(7).atStartOfDay(),
             LocalDate.now(clock).atStartOfDay());
-    return analyticsMapper.toLastWeekDetailResponse(sessions);
+    return analyticsMapper.toLastWeekDayDetailResponseList(sessions);
   }
 
   @Transactional
@@ -56,7 +56,7 @@ public class AnalyticsService {
   }
 
   @Transactional
-  public AverageWeekDetailResponse getAverageWeekDetails(User user) {
+  public List<AverageDayDetailResponse> getAverageWeekDetails(User user) {
     long timeframeInDays =
         Math.min(
             ChronoUnit.DAYS.between(user.getCreatedAt(), Instant.now(clock)),
@@ -64,8 +64,6 @@ public class AnalyticsService {
     List<SessionHistory> sessions =
         sessionRepository.findSessionsForPeriod(user.getId(), timeframeInDays);
 
-    List<AverageDayDetailResponse> days =
-        analyticsMapper.toAverageDayDetailResponseList(sessions, timeframeInDays);
-    return new AverageWeekDetailResponse(days);
+    return analyticsMapper.toAverageDayDetailResponseList(sessions, timeframeInDays);
   }
 }

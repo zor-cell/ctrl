@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.session.dto.AverageDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.AverageDayResponse;
-import at.ac.tuwien.inso.ctrl.session.dto.AverageWeekDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.AverageWeekResponse;
+import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekResponse;
@@ -160,11 +160,11 @@ public class AnalyticsServiceTest {
     @Test
     void shouldReturnMapperOutput() {
       User user = testUser();
-      LastWeekDetailResponse mapperOutput = new LastWeekDetailResponse(List.of());
+      List<LastWeekDayDetailResponse> mapperOutput = List.of();
       when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(List.of());
-      when(analyticsMapper.toLastWeekDetailResponse(any())).thenReturn(mapperOutput);
+      when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(mapperOutput);
 
-      LastWeekDetailResponse result = analyticsService.getLastWeekDetails(user);
+      List<LastWeekDayDetailResponse> result = analyticsService.getLastWeekDetails(user);
 
       assertThat(result).isEqualTo(mapperOutput);
     }
@@ -214,8 +214,7 @@ public class AnalyticsServiceTest {
     void shouldReturnMapperOutput() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
-      List<AverageDayResponse> mapperOutput =
-          List.of(new AverageDayResponse("MONDAY", 0.0, 0.0, 0));
+      List<AverageDayResponse> mapperOutput = List.of(new AverageDayResponse(0, 0.0, 0.0, 0));
       when(sessionRepository.findDayOfWeekAverages(user.getId(), 56)).thenReturn(List.of());
       when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(mapperOutput);
 
@@ -271,14 +270,14 @@ public class AnalyticsServiceTest {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       List<AverageDayDetailResponse> mapperOutput =
-          List.of(new AverageDayDetailResponse("MONDAY", List.of(), 0));
+          List.of(new AverageDayDetailResponse("", 0, List.of(), 0));
       when(sessionRepository.findSessionsForPeriod(user.getId(), 56L)).thenReturn(List.of());
       when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong()))
           .thenReturn(mapperOutput);
 
-      AverageWeekDetailResponse result = analyticsService.getAverageWeekDetails(user);
+      List<AverageDayDetailResponse> result = analyticsService.getAverageWeekDetails(user);
 
-      assertThat(result.averageDayDetails()).isEqualTo(mapperOutput);
+      assertThat(result).isEqualTo(mapperOutput);
     }
   }
 }

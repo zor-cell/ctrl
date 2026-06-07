@@ -74,16 +74,24 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
               AND started_at < DATE_TRUNC('day', CURRENT_TIMESTAMP)
               AND minutes IS NOT NULL
             GROUP BY DATE(started_at)
+          ),
+          filled AS (
+            SELECT
+              dr.day,
+              EXTRACT(ISODOW FROM dr.day)::int      AS dayOfWeek,
+              COALESCE(dt.totalMinutes, 0)          AS totalMinutes,
+              COALESCE(dt.sessionCount, 0)          AS sessionCount
+            FROM date_range dr
+            LEFT JOIN daily_totals dt ON dr.day = dt.day
           )
           SELECT
-            EXTRACT(ISODOW FROM dr.day)::int AS dayOfWeek,
-            COALESCE(AVG(dt.totalMinutes), 0) AS avgTotalMinutes,
-            COALESCE(AVG(dt.sessionCount), 0) AS avgSessionCount,
-            COUNT(dr.day)::int AS daysInPeriod
-          FROM date_range dr
-          LEFT JOIN daily_totals dt ON dr.day = dt.day
-          GROUP BY EXTRACT(ISODOW FROM dr.day)
-          ORDER BY EXTRACT(ISODOW FROM dr.day)
+            dayOfWeek,
+            COALESCE(AVG(totalMinutes), 0)   AS avgTotalMinutes,
+            COALESCE(AVG(sessionCount), 0)   AS avgSessionCount,
+            COUNT(day)::int                  AS daysInPeriod
+          FROM filled
+          GROUP BY dayOfWeek
+          ORDER BY dayOfWeek
           """,
       nativeQuery = true)
   List<DayOfWeekAverage> findDayOfWeekAverages(
@@ -102,7 +110,6 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           """
           SELECT * FROM session_history
           WHERE user_id = :userId
-            AND EXTRACT(ISODOW FROM started_at) = :dayOfWeek
             AND started_at >= DATE_TRUNC('day', CURRENT_TIMESTAMP - ((:days || ' days')::INTERVAL))
             AND started_at < DATE_TRUNC('day', CURRENT_TIMESTAMP)
             AND minutes IS NOT NULL

@@ -1,30 +1,30 @@
 <div class="analytics-container">
-  @switch (view()) {
-    @case ('overview') {
-      <app-analytics-overview
-        [lastWeekData]="lastWeekData()"
-        [averageData]="averageData()"
-        [isLoadingLastWeek]="isLoadingLastWeek()"
-        [isLoadingAverage]="isLoadingAverage()"
-        [activeTab]="activeTab()"
-        (tabChange)="activeTab.set($event)"
-        (lastWeekBarClick)="onLastWeekBarClick($event)"
-        (averageBarClick)="onAverageBarClick($event)"
+  <div class="chart-controls">
+    <p-selectButton [ngModel]="this.timeMode()" [options]="timeModeOptions" (ngModelChange)="this.changeTimeMode($event)"></p-selectButton>
+    <h3> {{ this.title() }}</h3>
+    @if (this.viewMode() === 'detailed') {
+      <p-button (onClick)="this.goBack()" label="Back to the overview" severity="secondary"></p-button>
+    }
+  </div>
+
+  <div class="chart-wrapper">
+    <div class="transparentButton">
+      <p-button (onClick)="this.focusedDay.update(d => d - 1)" icon="pi pi-arrow-left" [style.visibility]="previousDayButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+    </div>
+    @if (loading()[activeKey()]) {
+      <p-skeleton height="350px" borderRadius="12px" />
+    } @else {
+      <p-chart
+        type="bar"
+        [data]="chartData()"
+        [options]="chartOptions()"
+        height="350px"
+        styleClass="animate-fadein"
       />
     }
-    @case ('dayDetail') {
-      <app-analytics-day-detail
-        [dayDetail]="lastWeekDayDetail()[focusedDay()]"
-        (next)="focusedDay.update(f => math.min(f + 1, 6))"
-        (previous)="focusedDay.update(f => math.max(f - 1, 0))"
-        (goBack)="goBack()"
-      />
-    }
-    @case ('bucketDetail') {
-      <app-analytics-bucket-detail
-        [dayDetail]="averageDayDetail()[focusedDay()]"
-        (goBack)="goBack()"
-      />
-    }
-  }
+
+    <div class="transparentButton">
+      <p-button (onClick)="this.focusedDay.update(d => d + 1)" icon="pi pi-arrow-right" [style.visibility]="nextDayButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+    </div>
+  </div>
 </div>

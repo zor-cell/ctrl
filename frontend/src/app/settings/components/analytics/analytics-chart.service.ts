@@ -1,5 +1,21 @@
 import { Injectable } from '@angular/core';
 import { ChartData, ChartOptions, TooltipItem, ChartEvent, ActiveElement } from 'chart.js';
+import {
+  LastWeekResponse,
+  AverageWeekResponse,
+  SessionIntervalDto,
+  LastWeekDayDetailResponse,
+  AverageDayDetailResponse,
+} from '../../dto/analytics.dto';
+import { DatasetKey, DatasetResponse } from './analytics.types';
+
+export interface Session {
+  start: string; // "HH:mm"
+  end: string;   // "HH:mm"
+}
+
+export interface OverviewItem { label: string; minutes: number; sessionCount: number; };
+export interface DetailedItem { label: string; minutes: number; tooltipLabel: string; };
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsChartService {
@@ -19,6 +35,93 @@ export class AnalyticsChartService {
           .trim() || '#f3f4f6',
     };
   }
+
+  private readonly dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  buildChartData(
+    key: DatasetKey,
+    data: DatasetResponse,
+    focusedDayIndex = 0
+  ): ChartData<'bar'> {
+    switch (key) {
+      case 'overview-lastweek':
+        return this.buildBarChartData(
+          (data as LastWeekResponse).days,
+          d => d.totalMinutes,
+          d => d.date.slice(5)
+        );
+      case 'overview-average': {
+        const filled = Array.from({ length: 7 }, (_, i) =>
+          (data as AverageWeekResponse).days
+            .find(d => d.dayOfWeek === i) ?? { dayOfWeek: i, avgTotalMinutes: 0, avgSessionCount: 0 }
+        );
+        return this.buildBarChartData(
+          filled,
+          d => d.avgTotalMinutes,
+          d => this.dayNames[d.dayOfWeek]
+        );
+      }
+      case 'detailed-lastweek': {
+        const day = (data as LastWeekDayDetailResponse[])[focusedDayIndex];
+        const sessions = day.sessions.map(s => this.mapSessionDtoToSession(s));
+        return this.buildTimelineChartData(sessions);
+      }
+      case 'detailed-average': {
+        const day = (data as AverageDayDetailResponse[])[focusedDayIndex];
+        return this.buildBarChartData(
+          day.buckets,
+          b => b.averageTime,
+          b => b.label.slice(0, 2)
+        );
+      }
+      default:
+        throw new Error(`Unsupported dataset key: ${key}`);
+    }
+  }
+
+  buildChartOptions(
+    key: DatasetKey,
+    data: DatasetResponse,
+    onBarClick?: (index: number) => void,
+    focusedDayIndex = 0
+  ): ChartOptions<'bar'> {
+    switch (key) {
+      case 'overview-lastweek':
+        return this.buildOverviewChartOptions(
+          (data as LastWeekResponse).days,
+          d => d.totalMinutes,
+          d => d.sessionCount,
+          onBarClick!
+        );
+      case 'overview-average': {
+        const filled = Array.from({ length: 7 }, (_, i) =>
+          (data as AverageWeekResponse).days
+            .find(d => d.dayOfWeek === i) ?? { dayOfWeek: i, avgTotalMinutes: 0, avgSessionCount: 0 }
+        );
+        return this.buildOverviewChartOptions(
+          filled,
+          d => d.avgTotalMinutes,
+          d => d.avgSessionCount,
+          onBarClick!
+        );
+      }
+      case 'detailed-lastweek': {
+        return this.buildTimelineChartOptions();
+      }
+      case 'detailed-average': {
+        const day = (data as AverageDayDetailResponse[])[focusedDayIndex];
+        return this.buildDetailedChartOptions(
+          day.buckets,
+          b => b.averageTime,
+          b => `${b.label}: ${b.averageTime.toFixed(1)} min avg, ${b.contributingSessions} sessions`
+        );
+      }
+      default:
+        throw new Error(`Unsupported dataset key: ${key}`);
+    }
+  }
+
+  // ── Reusable primitives ──
 
   buildBarChartData<T>(
     items: T[],
@@ -40,7 +143,7 @@ export class AnalyticsChartService {
     };
   }
 
-  buildChartOptions<T>(
+  buildOverviewChartOptions<T>(
     items: T[],
     valueFn: (item: T) => number,
     countFn: (item: T) => number,
@@ -61,7 +164,7 @@ export class AnalyticsChartService {
               if (!item) return '';
               const minutes = valueFn(item);
               const count = countFn(item);
-              return `${minutes.toFixed(1)} min, ${count.toFixed(1)} sessions`;
+              return `${minutes.toFixed(1)} min, ${count} sessions`;
             },
           },
         },
@@ -92,5 +195,128 @@ export class AnalyticsChartService {
         }
       },
     };
+  }
+
+  buildDetailedChartOptions<T>(
+    items: T[],
+    valueFn: (item: T) => number,
+    tooltipLabelFn: (item: T) => string
+  ): ChartOptions<'bar'> {
+    const { text, surface } = this.getColors();
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx: TooltipItem<'bar'>) => {
+              const idx = ctx.dataIndex;
+              const item = items[idx];
+              if (!item) return '';
+              return tooltipLabelFn(item);
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: text,
+            maxTicksLimit: 24,
+            autoSkip: true
+          },
+          grid: { color: surface },
+        },
+        y: {
+          min: 0,
+          max: 16,
+          ticks: { color: text },
+          grid: { color: surface },
+          beginAtZero: true,
+          title: { display: true, text: 'Minutes', color: text },
+        },
+      },
+    };
+  }
+
+  buildTimelineChartData(sessions: Session[]): ChartData<'bar'> {
+    const { primary } = this.getColors();
+    return {
+      labels: [''],  // single row
+      datasets: sessions.map(s => ({
+        data: [[this.toDecimal(s.start), this.toDecimal(s.end)]] as [number, number][],
+        backgroundColor: primary,
+        borderRadius: 4,
+        borderSkipped: false,
+        barThickness: 40,
+      })),
+    };
+  }
+
+  buildTimelineChartOptions(): ChartOptions<'bar'> {
+    const { text, surface } = this.getColors();
+
+    return {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx: TooltipItem<'bar'>) => {
+              const raw = ctx.raw as [number, number];
+              const start = raw[0];
+              const end = raw[1];
+              const duration = end - start;
+              return `${this.decimalToTime(start)} – ${this.decimalToTime(end)} (${this.decimalToMinutes(duration)} min)`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          min: 0,
+          max: 24,
+          ticks: {
+            color: text,
+            stepSize: 1,
+          },
+          grid: { color: surface },
+        },
+        y: {
+          stacked: true,
+          display: false,
+        },
+      },
+    };
+  }
+  // ── Private helpers ──
+
+  private mapSessionDtoToSession(dto: SessionIntervalDto): Session {
+    const start = new Date(dto.startTime);
+    const end = new Date(dto.endTime);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return {
+      start: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
+      end: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
+    };
+  }
+
+  private toDecimal(time: string): number {
+    const [h, m] = time.split(':').map(Number);
+    return h + m / 60;
+  }
+
+  private decimalToTime(decimal: number): string {
+    const h = Math.floor(decimal);
+    const m = Math.round((decimal - h) * 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
+  private decimalToMinutes(decimal: number): string {
+    return Math.floor(decimal * 60).toString();
   }
 }
