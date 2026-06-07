@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ChartData, ChartOptions, TooltipItem, ChartEvent, ActiveElement } from 'chart.js';
 import {
-  LastWeekResponse,
-  AverageWeekResponse,
   SessionIntervalDto,
   LastWeekDayDetailResponse,
   AverageDayDetailResponse,
+  LastWeekDayResponse,
+  AverageWeekDayResponse,
 } from '../../dto/analytics.dto';
 import { DatasetKey, DatasetResponse } from './analytics.types';
 
@@ -46,13 +46,13 @@ export class AnalyticsChartService {
     switch (key) {
       case 'overview-lastweek':
         return this.buildBarChartData(
-          (data as LastWeekResponse).days,
+          (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
           d => d.date.slice(5)
         );
       case 'overview-average': {
         const filled = Array.from({ length: 7 }, (_, i) =>
-          (data as AverageWeekResponse).days
+          (data as AverageWeekDayResponse[])
             .find(d => d.dayOfWeek === i) ?? { dayOfWeek: i, avgTotalMinutes: 0, avgSessionCount: 0 }
         );
         return this.buildBarChartData(
@@ -88,14 +88,14 @@ export class AnalyticsChartService {
     switch (key) {
       case 'overview-lastweek':
         return this.buildOverviewChartOptions(
-          (data as LastWeekResponse).days,
+          (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
           d => d.sessionCount,
           onBarClick!
         );
       case 'overview-average': {
         const filled = Array.from({ length: 7 }, (_, i) =>
-          (data as AverageWeekResponse).days
+          (data as AverageWeekDayResponse[])
             .find(d => d.dayOfWeek === i) ?? { dayOfWeek: i, avgTotalMinutes: 0, avgSessionCount: 0 }
         );
         return this.buildOverviewChartOptions(

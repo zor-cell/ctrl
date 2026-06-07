@@ -4,10 +4,6 @@ export interface LastWeekDayResponse {
   sessionCount: number;
 }
 
-export interface LastWeekResponse {
-  days: LastWeekDayResponse[];
-}
-
 export interface SessionIntervalDto {
   startTime: string;
   endTime: string;
@@ -23,11 +19,6 @@ export interface AverageWeekDayResponse {
   avgSessionCount: number;
   dayOfWeek: number;
   daysInPeriod: number;
-}
-
-
-export interface AverageWeekResponse {
-  days: AverageWeekDayResponse[];
 }
 
 export interface TimeBucketDto {

@@ -5,7 +5,6 @@ import at.ac.tuwien.inso.ctrl.session.dto.AverageDayResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.AverageTimeBucketResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayResponse;
-import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionIntervalDto;
 import at.ac.tuwien.inso.ctrl.session.dto.TimeBucket;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySummary;
@@ -91,11 +90,6 @@ public class AnalyticsMapper {
     } else {
       return Stream.of(session);
     }
-  }
-
-  public LastWeekDetailResponse toLastWeekDetailResponse(List<SessionHistory> sessions) {
-    List<LastWeekDayDetailResponse> days = this.toLastWeekDayDetailResponseList(sessions);
-    return new LastWeekDetailResponse(days);
   }
 
   public List<AverageDayDetailResponse> toAverageDayDetailResponseList(

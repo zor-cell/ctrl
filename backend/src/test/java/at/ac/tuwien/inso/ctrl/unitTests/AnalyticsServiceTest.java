@@ -9,11 +9,8 @@ import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.session.dto.AverageDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.AverageDayResponse;
-import at.ac.tuwien.inso.ctrl.session.dto.AverageWeekResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayDetailResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDayResponse;
-import at.ac.tuwien.inso.ctrl.session.dto.LastWeekDetailResponse;
-import at.ac.tuwien.inso.ctrl.session.dto.LastWeekResponse;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySummary;
 import at.ac.tuwien.inso.ctrl.session.entity.DayOfWeekAverage;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
@@ -106,9 +103,9 @@ public class AnalyticsServiceTest {
       when(sessionRepository.findLastWeekSummary(user.getId())).thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayList(any())).thenReturn(mapperOutput);
 
-      LastWeekResponse result = analyticsService.getLastWeek(user);
+      List<LastWeekDayResponse> result = analyticsService.getLastWeek(user);
 
-      assertThat(result.days()).isEqualTo(mapperOutput);
+      assertThat(result).isEqualTo(mapperOutput);
     }
   }
 
@@ -119,8 +116,7 @@ public class AnalyticsServiceTest {
     void shouldCallRepositoryWithCorrectUser() {
       User user = testUser();
       when(sessionRepository.findSessionsForLastWeek(eq(user), any(), any())).thenReturn(List.of());
-      when(analyticsMapper.toLastWeekDetailResponse(any()))
-          .thenReturn(new LastWeekDetailResponse(List.of()));
+      when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(List.of());
 
       analyticsService.getLastWeekDetails(user);
 
@@ -131,8 +127,7 @@ public class AnalyticsServiceTest {
     void shouldCallRepositoryWithCorrectDateRange() {
       User user = testUser();
       when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(List.of());
-      when(analyticsMapper.toLastWeekDetailResponse(any()))
-          .thenReturn(new LastWeekDetailResponse(List.of()));
+      when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(List.of());
 
       analyticsService.getLastWeekDetails(user);
 
@@ -149,12 +144,11 @@ public class AnalyticsServiceTest {
       User user = testUser();
       List<SessionHistory> sessions = List.of(session(LocalDateTime.of(2026, 4, 27, 10, 0), 30));
       when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(sessions);
-      when(analyticsMapper.toLastWeekDetailResponse(sessions))
-          .thenReturn(new LastWeekDetailResponse(List.of()));
+      when(analyticsMapper.toLastWeekDayDetailResponseList(sessions)).thenReturn(List.of());
 
       analyticsService.getLastWeekDetails(user);
 
-      verify(analyticsMapper).toLastWeekDetailResponse(sessions);
+      verify(analyticsMapper).toLastWeekDayDetailResponseList(sessions);
     }
 
     @Test
@@ -218,9 +212,9 @@ public class AnalyticsServiceTest {
       when(sessionRepository.findDayOfWeekAverages(user.getId(), 56)).thenReturn(List.of());
       when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(mapperOutput);
 
-      AverageWeekResponse result = analyticsService.getAverageWeek(user);
+      List<AverageDayResponse> result = analyticsService.getAverageWeek(user);
 
-      assertThat(result.days()).isEqualTo(mapperOutput);
+      assertThat(result).isEqualTo(mapperOutput);
     }
   }
 

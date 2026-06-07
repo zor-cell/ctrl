@@ -18,7 +18,7 @@ public class AnalyticsController {
   private final AnalyticsService analyticsService;
 
   @GetMapping("/last-week")
-  public LastWeekResponse getLastWeekSessions(@AuthenticationPrincipal User user) {
+  public List<LastWeekDayResponse> getLastWeekSessions(@AuthenticationPrincipal User user) {
     return analyticsService.getLastWeek(user);
   }
 
@@ -28,7 +28,7 @@ public class AnalyticsController {
   }
 
   @GetMapping("/weekly-average")
-  public AverageWeekResponse getWeeklyAverage(@AuthenticationPrincipal User user) {
+  public List<AverageDayResponse> getWeeklyAverage(@AuthenticationPrincipal User user) {
     return analyticsService.getAverageWeek(user);
   }
 
