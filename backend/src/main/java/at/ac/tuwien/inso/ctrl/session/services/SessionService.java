@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
-import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
@@ -105,7 +104,7 @@ public class SessionService {
   public SessionConfigDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
 
-    //limits are stored and only take effect on the next day
+    // limits are stored and only take effect on the next day
     config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
     config.setNextPostLimit(sessionConfigDto.postLimit());
     config.setNextIsForcedCutoff(sessionConfigDto.isForcedCutoff());

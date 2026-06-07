@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class SessionConfigScheduler {
-    private final SessionConfigRepository sessionConfigRepository;
+  private final SessionConfigRepository sessionConfigRepository;
 
-    @Scheduled(cron = "0 0 0 * * *")
-    @Transactional
-    public void rollOverSessionLimits() {
-        sessionConfigRepository.applyNextDayLimits();
-    }
+  @Scheduled(cron = "0 0 0 * * *")
+  @Transactional
+  public void rollOverSessionLimits() {
+    sessionConfigRepository.applyNextDayLimits();
+  }
 }
