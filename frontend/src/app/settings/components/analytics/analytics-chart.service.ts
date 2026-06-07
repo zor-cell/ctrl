@@ -317,6 +317,9 @@ export class AnalyticsChartService {
   }
 
   private decimalToMinutes(decimal: number): string {
-    return Math.floor(decimal * 60).toString();
+    const h = Math.floor(decimal);
+    const m = Math.round((decimal - h) * 60);
+    const val = h * 60 + m;
+    return '' + val;
   }
 }
