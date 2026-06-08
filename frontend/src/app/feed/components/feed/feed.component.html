@@ -17,7 +17,7 @@
 
         <!-- PUBLIC TAB -->
         <p-tabpanel value="public">
-          <div class="posts-list">
+          <div class="posts-list" [class.blurred-lock]="sessionState.isLimitActive() && publicPosts().length > 0">
 
             <!-- Skeleton Loader -->
             @if (isLoading()) {
@@ -48,10 +48,17 @@
             <!-- Real posts -->
             @if (!isLoading()) {
               @if (publicPosts().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-inbox"></i>
-                  <p>No public posts yet.</p>
-                </div>
+                  @if (sessionState.isLimitActive()) {
+                      <div class="empty-state">
+                          <i class="pi pi-lock"></i>
+                          <p>Session Limit Reached</p>
+                      </div>
+                  } @else {
+                      <div class="empty-state">
+                          <i class="pi pi-inbox"></i>
+                          <p>No public posts yet.</p>
+                      </div>
+                  }
               }
               @for (post of publicPosts(); track post.postId) {
                 <section
@@ -100,10 +107,17 @@
             <!-- Real posts -->
             @if (!isLoading()) {
               @if (privatePosts().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-inbox"></i>
-                  <p>No private posts yet.</p>
-                </div>
+                  @if (sessionState.isLimitActive()) {
+                      <div class="empty-state">
+                          <i class="pi pi-lock"></i>
+                          <p>Session Limit Reached</p>
+                      </div>
+                  } @else {
+                      <div class="empty-state">
+                          <i class="pi pi-inbox"></i>
+                          <p>No private posts yet.</p>
+                      </div>
+                  }
               }
               @for (post of privatePosts(); track post.postId) {
                 <section
@@ -212,7 +226,7 @@
       } @else {
         <img
           [src]="post.videoImageRef[0]"
-          [alt]="post.caption"
+          [alt]="(post.caption | slice:0:50) + (post.caption?.length > 50 ? '...' : '')"
           class="post-image"
           loading="lazy"
         />

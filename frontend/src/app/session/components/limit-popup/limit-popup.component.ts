@@ -21,7 +21,7 @@ export class LimitPopupComponent {
   private sessionService = inject(SessionConfigService);
   protected sessionState = inject(SessionStateService);
 
-  private limitReached$ = toObservable(this.sessionState.isLimitReached);
+  private limitReached$ = toObservable(this.sessionState.showModal);
 
   protected sessionConfig = toSignal(
     this.limitReached$.pipe(
@@ -38,6 +38,7 @@ export class LimitPopupComponent {
 
   protected softCutoff() {
     this.sessionService.resetSoftCutoff().subscribe(() => {
+      this.sessionState.resetLimit();
       this.sessionState.closeModal();
     })
   }

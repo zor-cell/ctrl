@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal, ElementRef} from '@angular/core';
+import {Component, inject, OnInit, signal, ElementRef, effect} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -26,6 +26,7 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {RelationshipService} from '../../../user/relationship.service';
 import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
+import {SessionStateService} from "../../../session/session-state.service";
 
 @Component({
   selector: 'app-feed',
@@ -56,6 +57,7 @@ export class FeedComponent implements OnInit {
   protected userService = inject(UserService);
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
+  protected sessionState = inject(SessionStateService);
 
   readonly viewTracking = inject(ViewTrackingService);
 
@@ -269,6 +271,9 @@ export class FeedComponent implements OnInit {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+
+        this.sessionState.resetLimit();
+
         this.isLoading.set(false);
         this.isRefreshing.set(false);
         this.scrollFeedToTop();
@@ -276,6 +281,9 @@ export class FeedComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.isRefreshing.set(false);
+
+        this.publicPosts.set([]);
+        this.privatePosts.set([]);
       },
     });
   }
