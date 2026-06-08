@@ -64,6 +64,12 @@ public class ChatController {
     return chatService.getMessages(currentUser, chatId);
   }
 
+  @PostMapping("/{chatId}/read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void markChatAsRead(@AuthenticationPrincipal User currentUser, @PathVariable UUID chatId) {
+    chatService.markChatAsRead(currentUser, chatId);
+  }
+
   @PostMapping("/{chatId}/messages")
   @ResponseStatus(HttpStatus.CREATED)
   public ChatMessageResponse sendMessage(

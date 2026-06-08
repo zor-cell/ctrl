@@ -1,8 +1,14 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, untracked } from '@angular/core';
+import { Observable } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { Chat } from './chat.models';
-import { ChatRealtimeHandlers, ChatRealtimePayload, ChatRealtimeService } from './chat-realtime.service';
+import {
+  ChatRealtimeHandlers,
+  ChatRealtimePayload,
+  ChatRealtimeService,
+  ConnectionStatus,
+} from './chat-realtime.service';
 import { ChatUnreadService } from './chat-unread.service';
 
 @Injectable({ providedIn: 'root' })
@@ -13,18 +19,70 @@ export class ChatRealtimeBridgeService {
 
   private messageHandler: ((payload: ChatRealtimePayload) => void) | null = null;
   private chatListHandler: ((chat: Chat) => void) | null = null;
+  private chatRemovedHandler: ((chatId: string) => void) | null = null;
+
+  isConnectionActive(): boolean {
+    return this.chatRealtimeService.isConnectionActive();
+  }
 
   ensureConnected(): void {
-    const token = this.authService.token();
-    if (!token || !this.authService.validateSession() || this.chatRealtimeService.isConnected()) {
+    const token = untracked(() => this.authService.token());
+    if (
+      !token
+      || !this.authService.validateSession()
+      || this.chatRealtimeService.isConnectionActive()
+    ) {
       return;
     }
 
     void this.chatRealtimeService.connect(token, this.createHandlers());
   }
 
+  /**
+   * Reconnect with latest token - useful if token was refreshed
+   */
+  reconnectWithLatestToken(): void {
+    const token = untracked(() => this.authService.token());
+    if (!token || !this.authService.validateSession()) {
+      console.warn('[ChatRealtimeBridge] Cannot reconnect: no valid token');
+      return;
+    }
+
+    console.debug('[ChatRealtimeBridge] Reconnecting with latest token');
+    void this.chatRealtimeService.connect(token, this.createHandlers());
+  }
+
   whenConnected(): Promise<void> {
     return this.chatRealtimeService.whenConnected();
+  }
+
+  /**
+   * Get observable for connection status changes
+   * Statuses: DISCONNECTED, CONNECTING, CONNECTED, SOCKJS, ERROR
+   */
+  getConnectionStatus$(): Observable<ConnectionStatus> {
+    return this.chatRealtimeService.getConnectionStatus$();
+  }
+
+  /**
+   * Get current connection status
+   */
+  getCurrentConnectionStatus(): ConnectionStatus {
+    return this.chatRealtimeService.getCurrentConnectionStatus();
+  }
+
+  /**
+   * Check if currently using the native WebSocket transport (true) or SockJS (false)
+   */
+  isUsingWebSocket(): boolean {
+    return this.chatRealtimeService.isUsingWebSocket();
+  }
+
+  /**
+   * Get last connection error, if any
+   */
+  getLastConnectionError(): Error | null {
+    return this.chatRealtimeService.getLastConnectionError();
   }
 
   resyncWatchedChat(chatId: string | null): void {
@@ -34,6 +92,7 @@ export class ChatRealtimeBridgeService {
   disconnect(): void {
     this.messageHandler = null;
     this.chatListHandler = null;
+    this.chatRemovedHandler = null;
     this.chatRealtimeService.disconnect();
   }
 
@@ -43,6 +102,10 @@ export class ChatRealtimeBridgeService {
 
   setChatListHandler(handler: ((chat: Chat) => void) | null): void {
     this.chatListHandler = handler;
+  }
+
+  setChatRemovedHandler(handler: ((chatId: string) => void) | null): void {
+    this.chatRemovedHandler = handler;
   }
 
   watchChat(chatId: string | null): void {
@@ -59,6 +122,10 @@ export class ChatRealtimeBridgeService {
       onChatSummary: chat => {
         this.chatUnreadService.applyChatUpdate(chat);
         this.chatListHandler?.(chat);
+      },
+      onChatRemoved: chatId => {
+        this.chatUnreadService.removeChat(chatId);
+        this.chatRemovedHandler?.(chatId);
       },
     };
   }

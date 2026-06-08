@@ -23,7 +23,7 @@ $radius-sm:   10px;
   .p-dialog-content {
     padding: 0 !important;
     overflow-y: auto;
-    border-radius: 0 0 $radius $radius !important;
+    border-radius: $radius !important;
   }
 }
 
@@ -38,6 +38,7 @@ $radius-sm:   10px;
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
+  border-bottom: 1px solid $border;
 
   .post-user {
     display: flex;
@@ -82,6 +83,25 @@ $radius-sm:   10px;
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
+}
+
+.comments-close-button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.comments-close-button:hover {
+  background: var(--p-content-hover-background);
+  color: var(--p-text-color);
 }
 
 .post-labels {

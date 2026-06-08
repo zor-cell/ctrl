@@ -39,6 +39,7 @@ export class ReportComponent implements OnInit, OnChanges {
   @Input() username: string | undefined;
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() reportSubmitted = new EventEmitter<{ contentType: ContentTypeEnum; contentId: string }>();
 
   private fb = inject(FormBuilder);
   private reportService = inject(ReportService)
@@ -55,7 +56,7 @@ export class ReportComponent implements OnInit, OnChanges {
   reportReasons = signal<ReportReason[]>([]);
   ngOnInit() {
     this.initializeForm();
-    this.userService.loadUser();
+    this.userService.loadUser().subscribe();
     this.updateReasonsByContentType();
 
   }
@@ -130,6 +131,10 @@ export class ReportComponent implements OnInit, OnChanges {
 
     this.reportService.createReport(this.reportData).subscribe({
       next: () => {
+        this.reportSubmitted.emit({
+          contentType: this.contentType,
+          contentId: this.contentId!,
+        });
         setTimeout(() => {
           this.close();
           this.isSubmitting.set(false);

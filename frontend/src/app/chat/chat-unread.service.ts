@@ -22,6 +22,11 @@ export class ChatUnreadService {
     this.recalculateTotal();
   }
 
+  removeChat(chatId: string): void {
+    this.unreadByChatId.delete(chatId);
+    this.recalculateTotal();
+  }
+
   private recalculateTotal(): void {
     let total = 0;
     for (const count of this.unreadByChatId.values()) {

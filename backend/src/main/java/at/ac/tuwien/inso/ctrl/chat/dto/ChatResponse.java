@@ -15,4 +15,5 @@ public record ChatResponse(
     UUID ownerId,
     ChatParticipantResponse groupOwner,
     boolean owner,
+    long personalMessageCount,
     long unreadCount) {}
