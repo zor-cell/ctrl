@@ -88,15 +88,15 @@ public interface PostRepository extends JpaRepository<Post, String> {
                      -- Exploration [0 to 1]
                     (
                      CASE
-                       -- Slider favors Exploration (> 0.5): Boost unfollowed users
-                       WHEN :wExploration > 0.5 AND fr.friend_id_1 IS NULL AND f.follower_id IS NULL AND (p.user_id IS NULL OR p.user_id != :userId)
-                         THEN (:wExploration - 0.5) * 2.0
-                       -- Slider favors Following (< 0.5): Boost friend users
-                       WHEN :wExploration < 0.5 AND fr.friend_id_1 IS NOT NULL
-                         THEN (0.5 - :wExploration) * 2.0
-                       -- Slider favors Following (< 0.5): Boost followed users
-                       WHEN :wExploration < 0.5 AND f.follower_id IS NOT NULL
-                         THEN (0.5 - :wExploration) * 1.5
+                       -- Boost friend users [0 to 1]
+                       WHEN fr.friend_id_1 IS NOT NULL
+                         THEN (1.0 - :wExploration) * 1.0
+                       -- Boost followed users [0 to 0.75]
+                       WHEN f.follower_id IS NOT NULL
+                         THEN (1.0 - :wExploration) * 0.75
+                       -- Boost unfollowed users [0 to 1]
+                       WHEN (p.user_id IS NULL OR p.user_id != :userId)
+                         THEN :wExploration * 1.0
                        ELSE 0.0
                      END
                      ) AS score_exploration
