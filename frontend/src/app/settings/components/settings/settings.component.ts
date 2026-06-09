@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from "primeng/tabs";
 import {ProfileComponent} from "../../../user/components/profile/profile.component";
 import {AlgorithmConfigComponent} from "../../../algorithm/components/config/config.component";
@@ -25,8 +25,18 @@ import {SessionConfigComponent} from "../../../session/components/config/config.
 export class SettingsComponent {
   private route = inject(ActivatedRoute);
 
-  protected activeTab = toSignal(
-    this.route.queryParamMap.pipe(map(params => params.get('tab') ?? 'account')),
-    { initialValue: 'account' }
+  private readonly STORAGE_KEY = 'settings-active-tab';
+
+  protected activeTab = signal<string>(
+    this.route.snapshot.queryParamMap.get('tab') ??
+    localStorage.getItem(this.STORAGE_KEY) ??
+    'account'
   );
+
+  protected onTabChange(tab: string | number | undefined): void {
+    if (tab == null) return;
+    const value = String(tab);
+    this.activeTab.set(value);
+    localStorage.setItem(this.STORAGE_KEY, value);
+  }
 }

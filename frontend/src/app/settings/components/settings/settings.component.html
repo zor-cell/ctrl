@@ -1,5 +1,5 @@
 <div class="wrapper">
-    <p-tabs [value]="activeTab()">
+    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
         <p-tablist>
             <p-tab value="account">
                 Account
