@@ -4,6 +4,8 @@ import {Injectable, signal} from "@angular/core";
   providedIn: 'root',
 })
 export class SessionStateService {
+  public static LIMIT_DISMISSED_KEY = 'session_limit_dismissed';
+
   public isLimitActive = signal<boolean>(false);
   public showModal = signal<boolean>(false);
   public limitMessage = signal<string>('');
@@ -13,12 +15,24 @@ export class SessionStateService {
   }
 
   public triggerLimitModal(message: string) {
+    const dontShowModal = localStorage.getItem('session_limit_dismissed') === 'true';
+    if(dontShowModal) {
+      return;
+    }
+
     this.limitMessage.set(message);
     this.isLimitActive.set(true);
     this.showModal.set(true);
   }
 
-  public closeModal() {
+  public closeModal(withSnooze: boolean) {
     this.showModal.set(false);
+
+    if(withSnooze) {
+      this.resetLimit();
+      localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
+    } else {
+      localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
+    }
   }
 }

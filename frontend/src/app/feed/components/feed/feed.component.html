@@ -19,6 +19,12 @@
         <p-tabpanel value="public">
           <div class="posts-list" [class.blurred-lock]="sessionState.isLimitActive() && publicPosts().length > 0">
 
+          @if (sessionState.isLimitActive()) {
+              <div class="empty-state">
+                  <i class="pi pi-lock"></i>
+                  <p>Session Limit Reached</p>
+              </div>
+          } @else {
             <!-- Skeleton Loader -->
             @if (isLoading()) {
               @for (i of skeletonItems; track i) {
@@ -48,17 +54,10 @@
             <!-- Real posts -->
             @if (!isLoading()) {
               @if (publicPosts().length === 0) {
-                  @if (sessionState.isLimitActive()) {
-                      <div class="empty-state">
-                          <i class="pi pi-lock"></i>
-                          <p>Session Limit Reached</p>
-                      </div>
-                  } @else {
-                      <div class="empty-state">
-                          <i class="pi pi-inbox"></i>
-                          <p>No public posts yet.</p>
-                      </div>
-                  }
+                  <div class="empty-state">
+                      <i class="pi pi-inbox"></i>
+                      <p>No public posts yet.</p>
+                  </div>
               }
               @for (post of publicPosts(); track post.postId) {
                 <section
@@ -70,7 +69,7 @@
                 </section>
               }
             }
-
+          }
           </div>
         </p-tabpanel>
 
@@ -78,6 +77,12 @@
         <p-tabpanel value="private">
           <div class="posts-list">
 
+              @if (sessionState.isLimitActive()) {
+                  <div class="empty-state">
+                      <i class="pi pi-lock"></i>
+                      <p>Session Limit Reached</p>
+                  </div>
+              } @else {
             <!-- Skeleton Loader -->
             @if (isLoading()) {
               @for (i of skeletonItems; track i) {
@@ -129,7 +134,7 @@
                 </section>
               }
             }
-
+              }
           </div>
         </p-tabpanel>
 

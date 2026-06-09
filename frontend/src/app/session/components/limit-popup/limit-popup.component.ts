@@ -33,13 +33,12 @@ export class LimitPopupComponent {
   );
 
   protected hardCutoff() {
-    this.sessionState.closeModal()
+    this.sessionState.closeModal(false);
   }
 
   protected softCutoff() {
     this.sessionService.snooze().subscribe(() => {
-      this.sessionState.resetLimit();
-      this.sessionState.closeModal();
+      this.sessionState.closeModal(true);
     })
   }
 }
