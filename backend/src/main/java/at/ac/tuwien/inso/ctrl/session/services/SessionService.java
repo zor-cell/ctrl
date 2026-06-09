@@ -56,9 +56,9 @@ public class SessionService {
       sessionRepository.save(newSession);
     }
 
-    if(wasAlreadyExceeded) {
+    if (wasAlreadyExceeded) {
       if (config.getLastSnooze() != null && !isSnoozed(config)) {
-        //snooze time limit reached, reset the snooze timestamp
+        // snooze time limit reached, reset the snooze timestamp
         config.setLastSnooze(null);
         sessionConfigRepository.save(config);
         return true;
@@ -75,8 +75,9 @@ public class SessionService {
   @Transactional
   public void snooze(User currentUser) {
     SessionConfig config = getOrCreateConfig(currentUser);
-    if(!config.isAllowSnooze()) {
-      throw new InvalidRequestException("Snooze cannot be applied because of session configuration");
+    if (!config.isAllowSnooze()) {
+      throw new InvalidRequestException(
+          "Snooze cannot be applied because of session configuration");
     }
 
     config.setLastSnooze(LocalDateTime.now());
@@ -174,7 +175,8 @@ public class SessionService {
   }
 
   private boolean isSnoozed(SessionConfig config) {
-    return config.isAllowSnooze() && config.getLastSnooze() != null
+    return config.isAllowSnooze()
+        && config.getLastSnooze() != null
         && config.getLastSnooze().plusMinutes(SNOOZE_DURATION_MINUTES).isAfter(LocalDateTime.now());
   }
 

@@ -2,8 +2,6 @@ import {Component, inject, signal} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from "primeng/tabs";
 import {ProfileComponent} from "../../../user/components/profile/profile.component";
 import {AlgorithmConfigComponent} from "../../../algorithm/components/config/config.component";
-import {toSignal} from "@angular/core/rxjs-interop";
-import {map} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
 import {SessionConfigComponent} from "../../../session/components/config/config.component";
 
