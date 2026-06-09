@@ -1,8 +1,8 @@
 import { Injectable, inject, untracked } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { AuthService } from '../auth/auth.service';
-import { Chat } from './chat.models';
+import { AuthService } from '../../auth/auth.service';
+import { Chat } from '../models/chat.models';
 import {
   ChatRealtimeHandlers,
   ChatRealtimePayload,

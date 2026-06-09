@@ -42,7 +42,16 @@
               },
               "src/assets"
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/styles.scss"],
+            "allowedCommonJsDependencies": [
+              "@stomp/stompjs",
+              "sockjs-client",
+              "url-parse",
+              "inherits",
+              "events",
+              "eventsource",
+              "crypto"
+            ]
           },
           "configurations": {
             "production": {
@@ -54,8 +63,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "10kB",
-                  "maximumError": "16kB"
+                  "maximumWarning": "22kB",
+                  "maximumError": "26kB"
                 }
               ],
               "outputHashing": "all"

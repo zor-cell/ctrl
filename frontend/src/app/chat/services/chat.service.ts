@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { environment } from '../../environments/environment';
-import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
-import { Chat, ChatMessage, CreateChatRequest, SendMessageRequest } from './chat.models';
+import { environment } from '../../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../../core/interceptors';
+import { Chat, ChatMessage, CreateChatRequest, SendMessageRequest } from '../models/chat.models';
 
 @Injectable({
   providedIn: 'root',

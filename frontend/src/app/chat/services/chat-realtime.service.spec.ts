@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { ChatRealtimeHandlers, ChatRealtimeService } from './chat-realtime.service';
 
 const activateMock = vi.fn();

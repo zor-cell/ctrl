@@ -2,9 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Client, IFrame, IMessage, StompSubscription } from '@stomp/stompjs';
 
-import { environment } from '../../environments/environment';
-import { Chat, ChatMessage } from './chat.models';
-import { createStompNativeWebSocket } from './stomp-native-websocket';
+import { environment } from '../../../environments/environment';
+import { Chat, ChatMessage } from '../models/chat.models';
+import { createStompNativeWebSocket } from '../realtime/stomp-native-websocket';
 
 export interface ChatRealtimePayload {
   type: 'MESSAGE' | 'MESSAGE_UPDATE';
