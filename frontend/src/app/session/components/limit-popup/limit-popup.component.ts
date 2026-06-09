@@ -37,7 +37,7 @@ export class LimitPopupComponent {
   }
 
   protected softCutoff() {
-    this.sessionService.resetSoftCutoff().subscribe(() => {
+    this.sessionService.snooze().subscribe(() => {
       this.sessionState.resetLimit();
       this.sessionState.closeModal();
     })

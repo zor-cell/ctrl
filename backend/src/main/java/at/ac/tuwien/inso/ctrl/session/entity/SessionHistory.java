@@ -38,7 +38,7 @@ public class SessionHistory {
   @Column(name = "started_at")
   private LocalDateTime start;
 
-  private Long minutes;
+  private Long seconds;
 
   @Column(name = "posts_viewed")
   private Integer postsViewed;

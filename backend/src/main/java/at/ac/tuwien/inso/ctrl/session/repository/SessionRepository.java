@@ -18,7 +18,7 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
   @Query(
       """
           SELECT
-          COALESCE(SUM(s.minutes), 0) AS totalMinutes,
+          COALESCE(SUM(s.seconds), 0) AS totalSeconds,
           COALESCE(SUM(s.postsViewed), 0) AS totalPostsViewed
           FROM SessionHistory s
           WHERE s.user = :user AND s.start >= :trackingStart

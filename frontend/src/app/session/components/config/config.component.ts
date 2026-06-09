@@ -39,7 +39,7 @@ export class SessionConfigComponent implements OnInit {
   protected configForm = this.fb.group({
     timeLimitMinutes:   [50, [Validators.required, Validators.min(0)]],
     postLimit:       [50, [Validators.required, Validators.min(0)]],
-    isForcedCutoff:   [true, [Validators.required]],
+    allowSnooze:   [true, [Validators.required]],
   });
 
   ngOnInit() {

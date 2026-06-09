@@ -47,13 +47,12 @@ public class SessionConfig {
   @Column(name = "next_post_limit")
   private Integer nextPostLimit;
 
-  // Enforces either forced or soft cutoff of sessions
-  @Column(name = "is_forced_cutoff", nullable = false)
-  private boolean isForcedCutoff;
+  @Column(name = "allow_snooze", nullable = false)
+  private boolean allowSnooze;
 
-  @Column(name = "next_is_forced_cutoff")
-  private Boolean nextIsForcedCutoff;
+  @Column(name = "next_allow_snooze")
+  private Boolean nextAllowSnooze;
 
-  @Column(name = "last_soft_cutoff")
-  private LocalDateTime lastSoftCutoff;
+  @Column(name = "last_snooze")
+  private LocalDateTime lastSnooze;
 }

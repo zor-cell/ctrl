@@ -25,7 +25,7 @@ export class SessionConfigService {
     );
   }
 
-  public resetSoftCutoff() {
-    return this.httpClient.post<void>(this.baseUri + '/soft-cutoff', {});
+  public snooze() {
+    return this.httpClient.post<void>(this.baseUri + '/snooze', {});
   }
 }

@@ -36,8 +36,8 @@ public class SessionController {
     return sessionService.updateConfig(user, config);
   }
 
-  @PostMapping("/soft-cutoff")
-  public void resetSoftCutoff(@AuthenticationPrincipal User user) {
-    sessionService.resetSoftCutoff(user);
+  @PostMapping("/snooze")
+  public void snooze(@AuthenticationPrincipal User user) {
+    sessionService.snooze(user);
   }
 }

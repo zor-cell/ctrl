@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.session.services;
 
+import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
@@ -25,72 +26,61 @@ public class SessionService {
   private final SessionConfigRepository sessionConfigRepository;
   private final SessionMapper sessionMapper;
 
-  @Value("${application.heartbeat.max-time-between-heartbeats:3}")
+  @Value("${application.session.max-time-between-heartbeats:3}")
   private long MAX_TIME_BETWEEN_HEARTBEATS;
+
+  @Value("${application.session.snooze-time:5}")
+  private int SNOOZE_DURATION_MINUTES = 5;
 
   @Transactional
   public boolean handleHeartbeat(LocalDateTime timestamp, User user) {
     SessionConfig config = getOrCreateConfig(user);
-    LocalDateTime trackingStart = getTrackingStart(config);
-
-    DailySessionStatsProjection currentStats = sessionRepository.getDailyStats(user, trackingStart);
-    // drop the heartbeat if session limit is already reached
-    if (currentStats.getTotalMinutes() >= config.getTimeLimitMinutes()
-        || currentStats.getTotalPostsViewed() >= config.getPostLimit()) {
-      return false;
-    }
+    LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
 
     SessionHistory session = getOrCreateLastSession(user);
+    DailySessionStatsProjection oldStats = sessionRepository.getDailyStats(user, startOfDay);
+    boolean wasAlreadyExceeded = isExceeded(config, oldStats);
 
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
     // otherwise compute and save the new duration
     if (session
         .getStart()
-        .plusMinutes(session.getMinutes() + MAX_TIME_BETWEEN_HEARTBEATS)
+        .plusSeconds(session.getSeconds() + MAX_TIME_BETWEEN_HEARTBEATS * 60)
         .isAfter(LocalDateTime.now())) {
-      long duration = Duration.between(session.getStart(), LocalDateTime.now()).toMinutes();
-      session.setMinutes(duration);
+      long duration = Duration.between(session.getStart(), LocalDateTime.now()).toSeconds();
+      session.setSeconds(duration);
       sessionRepository.save(session);
     } else {
       SessionHistory newSession =
-          SessionHistory.builder().start(timestamp).minutes(0L).user(user).postsViewed(0).build();
+          SessionHistory.builder().start(timestamp).seconds(0L).user(user).postsViewed(0).build();
       sessionRepository.save(newSession);
+    }
+
+    if(wasAlreadyExceeded) {
+      if (config.getLastSnooze() != null && !isSnoozed(config)) {
+        //snooze time limit reached, reset the snooze timestamp
+        config.setLastSnooze(null);
+        sessionConfigRepository.save(config);
+        return true;
+      }
+
+      return false;
     }
 
     // check if this heartbeat crossed the limit threshold
-    DailySessionStatsProjection updatedStats = sessionRepository.getDailyStats(user, trackingStart);
-    return updatedStats.getTotalMinutes() >= config.getTimeLimitMinutes()
-        || updatedStats.getTotalPostsViewed() >= config.getPostLimit();
+    DailySessionStatsProjection newStats = sessionRepository.getDailyStats(user, startOfDay);
+    return isExceeded(config, newStats);
   }
 
   @Transactional
-  public void resetSoftCutoff(User currentUser) {
-    LocalDateTime exactResetTime = LocalDateTime.now();
-
+  public void snooze(User currentUser) {
     SessionConfig config = getOrCreateConfig(currentUser);
-    config.setLastSoftCutoff(exactResetTime);
-
-    sessionConfigRepository.save(config);
-
-    // split the current session to start fresh for this soft cutoff
-    SessionHistory currentSession = getOrCreateLastSession(currentUser);
-    if (currentSession.getStart().isBefore(exactResetTime)) {
-      // save duration for previous session
-      long duration = Duration.between(currentSession.getStart(), exactResetTime).toMinutes();
-      currentSession.setMinutes(duration);
-      sessionRepository.save(currentSession);
-
-      // create a new session
-      SessionHistory newSession =
-          SessionHistory.builder()
-              .start(exactResetTime)
-              .minutes(0L)
-              .user(currentUser)
-              .postsViewed(0)
-              .build();
-
-      sessionRepository.save(newSession);
+    if(!config.isAllowSnooze()) {
+      throw new InvalidRequestException("Snooze cannot be applied because of session configuration");
     }
+
+    config.setLastSnooze(LocalDateTime.now());
+    sessionConfigRepository.save(config);
   }
 
   @Transactional
@@ -103,11 +93,25 @@ public class SessionService {
   @Transactional
   public SessionConfigDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
+    DailySessionStatsProjection stats =
+        sessionRepository.getDailyStats(currentUser, LocalDate.now().atStartOfDay());
 
-    // limits are stored and only take effect on the next day
-    config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
-    config.setNextPostLimit(sessionConfigDto.postLimit());
-    config.setNextIsForcedCutoff(sessionConfigDto.isForcedCutoff());
+    boolean isAlreadyExceeded = isExceeded(config, stats);
+    if (isAlreadyExceeded) {
+      // limits are stored and only take effect on the next day
+      config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
+      config.setNextPostLimit(sessionConfigDto.postLimit());
+      config.setNextAllowSnooze(sessionConfigDto.allowSnooze());
+    } else {
+      // limits are updated immediately if limit is not reached
+      config.setTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
+      config.setPostLimit(sessionConfigDto.postLimit());
+      config.setAllowSnooze(sessionConfigDto.allowSnooze());
+
+      config.setNextTimeLimitMinutes(null);
+      config.setNextPostLimit(null);
+      config.setNextAllowSnooze(null);
+    }
 
     return sessionMapper.toConfig(sessionConfigRepository.save(config));
   }
@@ -118,7 +122,7 @@ public class SessionService {
       SessionHistory newSession =
           SessionHistory.builder()
               .start(LocalDateTime.now())
-              .minutes(0L)
+              .seconds(0L)
               .user(user)
               .postsViewed(0)
               .build();
@@ -139,28 +143,23 @@ public class SessionService {
                       .user(user)
                       .timeLimitMinutes(30)
                       .postLimit(100)
-                      .isForcedCutoff(true)
+                      .allowSnooze(true)
                       .build();
 
               return sessionConfigRepository.save(defaultConfig);
             });
   }
 
-  public LocalDateTime getTrackingStart(SessionConfig config) {
-    LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-    if (config.getLastSoftCutoff() != null && config.getLastSoftCutoff().isAfter(startOfToday)) {
-      return config.getLastSoftCutoff();
-    }
-
-    return startOfToday;
-  }
-
   public void verifyLimitsAndThrow(User user) {
     SessionConfig config = getOrCreateConfig(user);
-    LocalDateTime trackingStart = getTrackingStart(config);
 
-    DailySessionStatsProjection stats = sessionRepository.getDailyStats(user, trackingStart);
-    if (stats.getTotalMinutes() >= config.getTimeLimitMinutes()) {
+    if (isSnoozed(config)) {
+      return;
+    }
+
+    DailySessionStatsProjection stats =
+        sessionRepository.getDailyStats(user, LocalDate.now().atStartOfDay());
+    if (stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L) {
       throw new SessionLimitExceededException(
           "Your configured daily time limit of %s minute%s was exceeded"
               .formatted(
@@ -172,5 +171,15 @@ public class SessionService {
           "The configured daily post limit of %s post%s was exceeded"
               .formatted(config.getPostLimit(), config.getPostLimit() == 1 ? "" : "s"));
     }
+  }
+
+  private boolean isSnoozed(SessionConfig config) {
+    return config.isAllowSnooze() && config.getLastSnooze() != null
+        && config.getLastSnooze().plusMinutes(SNOOZE_DURATION_MINUTES).isAfter(LocalDateTime.now());
+  }
+
+  private boolean isExceeded(SessionConfig config, DailySessionStatsProjection stats) {
+    return stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L
+        || stats.getTotalPostsViewed() >= config.getPostLimit();
   }
 }

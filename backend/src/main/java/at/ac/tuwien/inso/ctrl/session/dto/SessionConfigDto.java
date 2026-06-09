@@ -6,4 +6,4 @@ import jakarta.validation.constraints.NotNull;
 public record SessionConfigDto(
     @NotNull @Min(0) Integer timeLimitMinutes,
     @NotNull @Min(0) Integer postLimit,
-    @NotNull boolean isForcedCutoff) {}
+    @NotNull boolean allowSnooze) {}

@@ -21,10 +21,10 @@
             <p-button
                     label="I understand"
                     (onClick)="hardCutoff()"
-                    [style.width]="sessionConfig()?.isForcedCutoff ? '100%' : 'auto'" fluid>
+                    [style.width]="sessionConfig()?.allowSnooze ? '100%' : 'auto'" fluid>
             </p-button>
 
-            @if(!sessionConfig()?.isForcedCutoff) {
+            @if(sessionConfig()?.allowSnooze) {
                 <p-button
                         label="Keep scrolling"
                         severity="danger"

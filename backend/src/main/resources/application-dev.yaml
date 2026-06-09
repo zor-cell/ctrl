@@ -27,6 +27,9 @@ application:
       redirect-uri: "http://localhost:4200/verification-callback"
   auth:
     require-email-verification: false
+  session:
+    max-time-between-heartbeats: 3 #minutes
+    snooze-time: 1 #minutes
 
 infinity:
   url: http://localhost:7997
