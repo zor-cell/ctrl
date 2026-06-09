@@ -143,7 +143,7 @@ public class SessionService {
                       .user(user)
                       .timeLimitMinutes(30)
                       .postLimit(100)
-                      .allowSnooze(true)
+                      .allowSnooze(false)
                       .build();
 
               return sessionConfigRepository.save(defaultConfig);
