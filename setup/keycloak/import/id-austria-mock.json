@@ -422,7 +422,128 @@
     "realmRoles" : [ "default-roles-id-austria-mock" ],
     "notBefore" : 0,
     "groups" : [ ]
-  } ],
+  },
+    {
+      "id" : "ec40ad6e-cdc3-426e-9b46-d6203458a111",
+      "username" : "philippe_zorman",
+      "firstName" : "Philippe",
+      "lastName" : "Zorman",
+      "email" : "philippe.zorman@email.com",
+      "emailVerified" : true,
+      "attributes" : {
+        "birthdate" : [ "2000-01-01" ]
+      },
+      "createdTimestamp" : 1775834058147,
+      "enabled" : true,
+      "totp" : false,
+      "credentials" : [{
+        "type" : "password",
+        "value" : "password",
+        "temporary" : false
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "default-roles-id-austria-mock" ],
+      "notBefore" : 0,
+      "groups" : [ ]
+    },
+    {
+      "id" : "ec40ad6e-cdc3-426e-9b46-d6203458a112",
+      "username" : "felix_wildmann",
+      "firstName" : "Felix",
+      "lastName" : "Wildmann",
+      "email" : "felix.wildmann@email.com",
+      "emailVerified" : true,
+      "attributes" : {
+        "birthdate" : [ "2000-01-01" ]
+      },
+      "createdTimestamp" : 1775834058147,
+      "enabled" : true,
+      "totp" : false,
+      "credentials" : [{
+        "type" : "password",
+        "value" : "password",
+        "temporary" : false
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "default-roles-id-austria-mock" ],
+      "notBefore" : 0,
+      "groups" : [ ]
+    },
+    {
+      "id" : "ec40ad6e-cdc3-426e-9b46-d6203458a113",
+      "username" : "christoph_zeitler",
+      "firstName" : "Christoph",
+      "lastName" : "Zeitler",
+      "email" : "chris.zeitler@email.com",
+      "emailVerified" : true,
+      "attributes" : {
+        "birthdate" : [ "2000-01-01" ]
+      },
+      "createdTimestamp" : 1775834058147,
+      "enabled" : true,
+      "totp" : false,
+      "credentials" : [{
+        "type" : "password",
+        "value" : "password",
+        "temporary" : false
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "default-roles-id-austria-mock" ],
+      "notBefore" : 0,
+      "groups" : [ ]
+    },
+    {
+      "id" : "ec40ad6e-cdc3-426e-9b46-d6203458a114",
+      "username" : "marlene_lehotzki",
+      "firstName" : "Marlene",
+      "lastName" : "Lehotzki",
+      "email" : "marlene.lehotzki@email.com",
+      "emailVerified" : true,
+      "attributes" : {
+        "birthdate" : [ "2000-01-01" ]
+      },
+      "createdTimestamp" : 1775834058147,
+      "enabled" : true,
+      "totp" : false,
+      "credentials" : [{
+        "type" : "password",
+        "value" : "password",
+        "temporary" : false
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "default-roles-id-austria-mock" ],
+      "notBefore" : 0,
+      "groups" : [ ]
+    },
+    {
+      "id" : "ec40ad6e-cdc3-426e-9b46-d6203458a115",
+      "username" : "franziska_schrefl",
+      "firstName" : "Franziska",
+      "lastName" : "Schrefl",
+      "email" : "franziska.schrefl@email.com",
+      "emailVerified" : true,
+      "attributes" : {
+        "birthdate" : [ "2000-01-01" ]
+      },
+      "createdTimestamp" : 1775834058147,
+      "enabled" : true,
+      "totp" : false,
+      "credentials" : [{
+        "type" : "password",
+        "value" : "password",
+        "temporary" : false
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "default-roles-id-austria-mock" ],
+      "notBefore" : 0,
+      "groups" : [ ]
+    }
+  ],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]
