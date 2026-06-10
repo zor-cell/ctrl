@@ -1,0 +1,189 @@
+<!-- ─── Loading ─── -->
+@if (loading()) {
+  <div class="pdv-loading">
+    <p-progressSpinner strokeWidth="3" [style]="{ width: '32px', height: '32px' }" />
+  </div>
+}
+
+<!-- ─── Error ─── -->
+@if (error()) {
+  <div class="pdv-empty">
+    <i class="pi pi-exclamation-circle"></i>
+    <p>Could not load post.</p>
+  </div>
+}
+
+<!-- ─── Content ─── -->
+@if (post(); as p) {
+
+  <!-- Header -->
+  <div class="post-header">
+    <div class="post-user">
+      <p-avatar
+        [image]="p.userProfilePicture || undefined"
+        [label]="p.userProfilePicture ? undefined : p.username.charAt(0).toUpperCase()"
+        shape="circle"
+        [style]="{ width: '42px', height: '42px' }"
+      />
+      <div class="post-meta">
+        @if (p.isExternal) {
+          <span class="post-username">{{ p.username }}</span>
+        } @else {
+          <a class="post-username post-username--link" [routerLink]="['/profile', p.username]">
+            {{ p.username }}
+          </a>
+        }
+        <span class="post-info">{{ timeAgo(p.createdAt) }}</span>
+      </div>
+      <app-follow-badge [username]="p.username" [isExternal]="p.isExternal" />
+    </div>
+
+    <div class="post-header-right">
+      @if (p.labelIds.length > 0) {
+        <div class="post-labels">
+          @for (label of p.labelIds; track label) {
+            <p-tag [value]="label" severity="secondary" styleClass="post-label" />
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Media -->
+  @if (p.mediaUrl) {
+    <div class="preview-image-wrapper">
+      @if (isVideo(p.mediaUrl)) {
+        <video [src]="p.mediaUrl" class="preview-image" controls playsinline preload="metadata"></video>
+      } @else {
+        <img [src]="p.mediaUrl" [alt]="p.caption" class="preview-image" />
+      }
+    </div>
+  }
+
+  <!-- Caption -->
+  <p class="post-caption">{{ p.caption }}</p>
+
+  <!-- Source -->
+  @if (p.source?.singleSources?.length) {
+    <div class="post-source-row">
+      <div class="post-source-left">
+        <a class="post-source" [href]="p.source!.singleSources[0].url" target="_blank" rel="noopener noreferrer">
+          <i class="pi pi-external-link"></i>
+          {{ getDomain(p.source!.singleSources[0].url) }}
+        </a>
+        <i class="pi pi-info-circle hint-icon"
+           pTooltip="Is the source reliable and relevant to the post?"
+           tooltipPosition="right"></i>
+        <button
+          class="action-btn upvote"
+          [class.active]="sourceVote() === 'up'"
+          (click)="voteSource('up')"
+          aria-label="Source upvote"
+          [attr.aria-pressed]="sourceVote() === 'up'"
+        >
+          <i class="pi pi-check"></i>
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="sourceVote() === 'down'"
+          (click)="voteSource('down')"
+          aria-label="Source downvote"
+          [attr.aria-pressed]="sourceVote() === 'down'"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <button class="action-btn flag-btn source-flag-btn" (click)="reportSourceVisible.set(true)" pTooltip="Report Source" tooltipPosition="top">
+        <i class="pi pi-flag"></i>
+      </button>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="post-actions">
+    <div class="post-actions-left">
+
+      <!-- PRIVATE: Heart -->
+      @if (!p.isPublic) {
+        <button
+          class="action-btn heart"
+          [class.active]="postVote() === 'up'"
+          (click)="votePost('up')"
+          [attr.aria-label]="'Like – ' + postUpvotes()"
+          [attr.aria-pressed]="postVote() === 'up'"
+        >
+          <i class="pi pi-heart"></i>
+          @if (postUpvotes() > 0) { <span>{{ postUpvotes() }}</span> }
+        </button>
+      }
+
+      <!-- PUBLIC: Up/Downvote -->
+      @if (p.isPublic) {
+        <button
+          class="action-btn upvote"
+          [class.active]="postVote() === 'up'"
+          (click)="votePost('up')"
+          [attr.aria-label]="'Upvote – ' + postUpvotes()"
+          [attr.aria-pressed]="postVote() === 'up'"
+        >
+          <i class="pi pi-thumbs-up"></i>
+          @if (postUpvotes() > 0) { <span>{{ postUpvotes() }}</span> }
+        </button>
+        <button
+          class="action-btn downvote"
+          [class.active]="postVote() === 'down'"
+          (click)="votePost('down')"
+          [attr.aria-label]="'Downvote – ' + postDownvotes()"
+          [attr.aria-pressed]="postVote() === 'down'"
+        >
+          <i class="pi pi-thumbs-down"></i>
+          @if (postDownvotes() > 0) { <span>{{ postDownvotes() }}</span> }
+        </button>
+      }
+
+      <button class="action-btn">
+        <i class="pi pi-comment"></i>
+        <span>{{ commentsComponent?.count ?? 0 }}</span>
+      </button>
+      <button class="action-btn" (click)="openShareDialog()" pTooltip="Send post" tooltipPosition="top" aria-label="Send post to friend">
+        <i class="pi pi-send"></i>
+      </button>
+    </div>
+    @if (!isOwnPost()) {
+      <button class="action-btn flag-btn" (click)="reportPostVisible.set(true)" pTooltip="Report Post" tooltipPosition="top">
+        <i class="pi pi-flag"></i>
+      </button>
+    }
+  </div>
+
+  <div class="comments-divider"></div>
+
+  <!-- ─── Comments ─── -->
+  <app-post-comment #commentsComponent [postId]="p.postId" />
+
+  <!-- Report dialogs -->
+  <app-report
+    [contentType]="ContentTypeEnum.POST"
+    [contentId]="p.postId"
+    [contentTitle]="p.caption"
+    [username]="p.username"
+    [visible]="reportPostVisible()"
+    (visibleChange)="reportPostVisible.set($event)"
+  />
+
+  <app-report
+    [contentType]="ContentTypeEnum.SOURCE"
+    [contentId]="p.source?.sourceId || undefined"
+    [contentTitle]="p.source?.singleSources?.[0]?.url || undefined"
+    [username]="p.username"
+    [visible]="reportSourceVisible()"
+    (visibleChange)="reportSourceVisible.set($event)"
+  />
+}
+
+<!-- ─── Share Dialog ─── -->
+<app-post-share-dialog
+  [post]="post()"
+  [visible]="shareDialogVisible()"
+  (visibleChange)="onShareDialogVisibleChange($event)"
+/>

@@ -1,0 +1,159 @@
+<!-- Comments list -->
+<div class="comments-list">
+  @if (loadingComments()) {
+    <div class="pdv-loading">
+      <p-progressSpinner strokeWidth="3" [style]="{ width: '28px', height: '28px' }" />
+    </div>
+  }
+
+  @if (!loadingComments()) {
+    @if (topLevelComments().length === 0) {
+      <div class="pdv-empty">
+        <i class="pi pi-comment"></i>
+        <p>No comments yet.</p>
+      </div>
+    }
+
+    @for (comment of topLevelComments(); track comment.commentId) {
+      <div class="comment">
+        <p-avatar
+          [image]="comment.userProfilePic || undefined"
+          [label]="comment.userProfilePic ? undefined : comment.username.charAt(0).toUpperCase()"
+          shape="circle"
+          [style]="{ width: '34px', height: '34px', flexShrink: '0' }"
+        />
+        <div class="comment-body">
+          <div class="comment-header">
+            <a class="comment-username comment-username--link" [routerLink]="['/profile', comment.username]">
+              {{ comment.username }}
+            </a>
+            <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
+            @if (comment.edited) { <span class="comment-edited">edited</span> }
+          </div>
+
+          @if (editingCommentId() === comment.commentId) {
+            <div class="edit-form">
+              <textarea pInputTextarea [(ngModel)]="editContent" [autoResize]="true" [rows]="2"
+                        class="comment-input" (keydown.escape)="cancelEdit()"></textarea>
+              <div class="edit-actions">
+                <p-button label="Save" size="small" [rounded]="true"
+                          [disabled]="!editContent.trim()" (onClick)="saveEdit(comment.commentId)" />
+                <p-button label="Cancel" size="small" [rounded]="true" severity="secondary"
+                          [text]="true" (onClick)="cancelEdit()" />
+              </div>
+            </div>
+          } @else {
+            <p class="comment-content">{{ comment.content }}</p>
+            <div class="comment-actions">
+              <button class="reply-btn" (click)="setReplyingTo(comment)">
+                <i class="pi pi-reply"></i> Reply
+              </button>
+              @if (isOwnComment(comment)) {
+                <button class="comment-action-btn edit-btn" (click)="startEdit(comment)">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="comment-action-btn delete-btn" (click)="onDeleteComment(comment.commentId)">
+                  <i class="pi pi-trash"></i>
+                </button>
+              } @else {
+                <button class="comment-action-btn reply-btn" (click)="onReportComment(comment)">
+                  <i class="pi pi-flag"></i> Report
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Replies -->
+          @for (reply of repliesFor(comment.commentId); track reply.commentId) {
+            <div class="comment reply">
+              <p-avatar
+                [image]="reply.userProfilePic || undefined"
+                [label]="reply.userProfilePic ? undefined : reply.username.charAt(0).toUpperCase()"
+                shape="circle"
+                [style]="{ width: '28px', height: '28px', flexShrink: '0' }"
+              />
+              <div class="comment-body">
+                <div class="comment-header">
+                  <a class="comment-username comment-username--link" [routerLink]="['/profile', reply.username]">
+                    {{ reply.username }}
+                  </a>
+                  <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
+                  @if (reply.edited) { <span class="comment-edited">edited</span> }
+                </div>
+                @if (editingCommentId() === reply.commentId) {
+                  <div class="edit-form">
+                    <textarea pInputTextarea [(ngModel)]="editContent" [autoResize]="true" [rows]="2"
+                              class="comment-input" (keydown.escape)="cancelEdit()"></textarea>
+                    <div class="edit-actions">
+                      <p-button label="Save" size="small" [rounded]="true"
+                                [disabled]="!editContent.trim()" (onClick)="saveEdit(reply.commentId)" />
+                      <p-button label="Cancel" size="small" [rounded]="true" severity="secondary"
+                                [text]="true" (onClick)="cancelEdit()" />
+                    </div>
+                  </div>
+                } @else {
+                  <p class="comment-content">{{ reply.content }}</p>
+                  <div class="comment-actions">
+                    @if (isOwnComment(reply)) {
+                      <button class="comment-action-btn edit-btn" (click)="startEdit(reply)">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button class="comment-action-btn delete-btn" (click)="onDeleteComment(reply.commentId)">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    } @else {
+                      <button class="comment-action-btn reply-btn" (click)="onReportComment(reply)">
+                        <i class="pi pi-flag"></i> Report
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<!-- Comment Input Footer -->
+<div class="comment-input-footer">
+  @if (replyingTo()) {
+    <div class="replying-to-banner">
+      <span>Replying to <strong>{{ replyingTo()!.username }}</strong></span>
+      <button class="cancel-reply-btn" (click)="cancelReply()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+  <div class="comment-input-row">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="newComment"
+      [autoResize]="true"
+      [rows]="1"
+      [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+      class="comment-input"
+      [disabled]="submitting()"
+      (keydown.enter)="$event.preventDefault(); submitComment()"
+    ></textarea>
+    <p-button
+      icon="pi pi-send"
+      [rounded]="true"
+      [text]="true"
+      [loading]="submitting()"
+      [disabled]="!newComment.trim() || submitting()"
+      (onClick)="submitComment()"
+    />
+  </div>
+</div>
+
+<!-- Report Comment Dialog -->
+<app-report
+  [contentType]="ContentTypeEnum.COMMENT"
+  [contentId]="selectedCommentForReport()?.commentId"
+  [contentTitle]="selectedCommentForReport()?.content"
+  [userProfilePic]="selectedCommentForReport()?.userProfilePic"
+  [username]="selectedCommentForReport()?.username"
+  [visible]="reportCommentVisible()"
+  (visibleChange)="reportCommentVisible.set($event)"
+/>
