@@ -26,7 +26,7 @@ import {RelationshipService} from '../../../user/relationship.service';
 import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 import {PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
-import {PostShareDialogComponent} from '../../../post/components/post-share/post-share-dialog.component';
+import {PostShareDialogComponent} from '../../../post/components/post-detail-share/post-share-dialog.component';
 import {PostStateService} from '../../../post/services/post-state.service';
 
 @Component({

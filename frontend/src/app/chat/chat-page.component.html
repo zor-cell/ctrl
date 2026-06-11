@@ -107,9 +107,13 @@
         <span class="avatar" [class.avatar--group]="chat.groupChat" aria-hidden="true">
           @if (chat.groupChat && groupImageUrl(chat)) {
             <img [src]="groupImageUrl(chat)" alt="" />
-          } @else if (!chat.groupChat && otherParticipant(chat); as other) {
-            @if (avatarUrl(other.id)) {
-              <img [src]="avatarUrl(other.id)" alt="" />
+          } @else if (!chat.groupChat) {
+            @if (otherParticipant(chat); as other) {
+              @if (avatarUrl(other.id)) {
+                <img [src]="avatarUrl(other.id)" alt="" />
+              } @else {
+                {{ chatAvatarLabel(chat) }}
+              }
             } @else {
               {{ chatAvatarLabel(chat) }}
             }
@@ -160,9 +164,13 @@
           [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'">
           @if (chat.groupChat && groupImageUrl(chat)) {
             <img [src]="groupImageUrl(chat)" alt="" />
-          } @else if (!chat.groupChat && otherParticipant(chat); as other) {
-            @if (avatarUrl(other.id)) {
-              <img [src]="avatarUrl(other.id)" alt="" />
+          } @else if (!chat.groupChat) {
+            @if (otherParticipant(chat); as other) {
+              @if (avatarUrl(other.id)) {
+                <img [src]="avatarUrl(other.id)" alt="" />
+              } @else {
+                {{ chatAvatarLabel(chat) }}
+              }
             } @else {
               {{ chatAvatarLabel(chat) }}
             }
@@ -247,65 +255,65 @@
                 <span class="message-system-pill">{{ systemMessageLabel(message) }}</span>
               </div>
             } @else {
-            <article
-              class="message-row"
-              [class.own]="isOwnMessage(message)"
-              [class.message-row--shared-post]="hasSharedPost(message)">
-              @if (!isOwnMessage(message)) {
-                <span class="avatar message-avatar" aria-hidden="true">
+              <article
+                class="message-row"
+                [class.own]="isOwnMessage(message)"
+                [class.message-row--shared-post]="hasSharedPost(message)">
+                @if (!isOwnMessage(message)) {
+                  <span class="avatar message-avatar" aria-hidden="true">
                   @if (avatarUrl(message.sender.id)) {
                     <img [src]="avatarUrl(message.sender.id)" alt="" />
                   } @else {
                     {{ initialFor(message.sender) }}
                   }
                 </span>
-              }
+                }
 
-              <div
-                class="message-stack"
-                [class.message-stack--own]="isOwnMessage(message)"
-                tabindex="0"
-                (mouseenter)="setHoveredMessage(message.messageId)"
-                (mouseleave)="clearHoveredMessage(message.messageId)"
-                (click)="setHoveredMessage(message.messageId)"
-                (keydown.enter)="setHoveredMessage(message.messageId)"
-                (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
                 <div
-                  class="reaction-bar"
-                  [class.reaction-bar--visible]="
+                  class="message-stack"
+                  [class.message-stack--own]="isOwnMessage(message)"
+                  tabindex="0"
+                  (mouseenter)="setHoveredMessage(message.messageId)"
+                  (mouseleave)="clearHoveredMessage(message.messageId)"
+                  (click)="setHoveredMessage(message.messageId)"
+                  (keydown.enter)="setHoveredMessage(message.messageId)"
+                  (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
+                  <div
+                    class="reaction-bar"
+                    [class.reaction-bar--visible]="
                     reactionPickerMessageId() === message.messageId
                     || hoveredMessageId() === message.messageId
                   ">
-                  @for (emoji of reactionEmojis; track emoji) {
-                    <button
-                      type="button"
-                      class="reaction-bar-item"
-                      (click)="toggleReaction(message, emoji)"
-                      [attr.aria-label]="'React with ' + emoji">
-                      {{ emoji }}
-                    </button>
-                  }
-                </div>
-
-                <div class="message-bubble">
-                  <div class="message-meta">
-                    @if (!isOwnMessage(message)) {
-                      <span>{{ message.sender.name || message.sender.username }}</span>
+                    @for (emoji of reactionEmojis; track emoji) {
+                      <button
+                        type="button"
+                        class="reaction-bar-item"
+                        (click)="toggleReaction(message, emoji)"
+                        [attr.aria-label]="'React with ' + emoji">
+                        {{ emoji }}
+                      </button>
                     }
-                    <time>{{ message.date | date: 'shortTime' }}</time>
                   </div>
-                  @if (sharedPostFromMessage(message); as sharedPost) {
-                    <article
-                      class="shared-post-card"
-                      [class.shared-post-card--private]="!canViewSharedPost(sharedPost)"
-                      [class.shared-post-card--clickable]="canViewSharedPost(sharedPost)"
-                      [attr.role]="canViewSharedPost(sharedPost) ? 'link' : null"
-                      [attr.tabindex]="canViewSharedPost(sharedPost) ? 0 : null"
-                      (click)="openSharedPostDetail(sharedPost)"
-                      (keydown.enter)="openSharedPostDetail(sharedPost)"
-                      (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)">
-                      @if (canViewSharedPost(sharedPost)) {
-                        <div class="shared-post-header">
+
+                  <div class="message-bubble">
+                    <div class="message-meta">
+                      @if (!isOwnMessage(message)) {
+                        <span>{{ message.sender.name || message.sender.username }}</span>
+                      }
+                      <time>{{ message.date | date: 'shortTime' }}</time>
+                    </div>
+                    @if (sharedPostFromMessage(message); as sharedPost) {
+                      <article
+                        class="shared-post-card"
+                        [class.shared-post-card--private]="!canViewSharedPost(sharedPost)"
+                        [class.shared-post-card--clickable]="canViewSharedPost(sharedPost)"
+                        [attr.role]="canViewSharedPost(sharedPost) ? 'link' : null"
+                        [attr.tabindex]="canViewSharedPost(sharedPost) ? 0 : null"
+                        (click)="openSharedPostDetail(sharedPost)"
+                        (keydown.enter)="openSharedPostDetail(sharedPost)"
+                        (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)">
+                        @if (canViewSharedPost(sharedPost)) {
+                          <div class="shared-post-header">
                           <span class="shared-post-avatar" aria-hidden="true">
                             @if (sharedPostAuthorAvatarUrl(sharedPost)) {
                               <img [src]="sharedPostAuthorAvatarUrl(sharedPost)!" alt="" />
@@ -313,75 +321,75 @@
                               {{ sharedPostAuthorInitial(sharedPost) }}
                             }
                           </span>
-                          <span class="shared-post-author-copy">
+                            <span class="shared-post-author-copy">
                             <span class="shared-post-author-name">{{ sharedPostAuthorName(sharedPost) }}</span>
                           </span>
-                        </div>
-
-                        @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
-                          <div class="shared-post-media">
-                            @if (sharedPost.post.mediaKind === 'video') {
-                              <video
-                                [src]="mediaUrl"
-                                muted
-                                playsinline
-                                preload="metadata"
-                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
-                            } @else {
-                              <img
-                                [src]="mediaUrl"
-                                alt=""
-                                loading="lazy"
-                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
-                            }
                           </div>
-                        }
 
-                        <div class="shared-post-copy">
-                          <p>{{ sharedPost.post.caption }}</p>
-                          <span class="shared-post-link">View post</span>
-                        </div>
-                      } @else {
-                        <div class="shared-post-unavailable">
+                          @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
+                            <div class="shared-post-media">
+                              @if (sharedPost.post.mediaKind === 'video') {
+                                <video
+                                  [src]="mediaUrl"
+                                  muted
+                                  playsinline
+                                  preload="metadata"
+                                  (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                              } @else {
+                                <img
+                                  [src]="mediaUrl"
+                                  alt=""
+                                  loading="lazy"
+                                  (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                              }
+                            </div>
+                          }
+
+                          <div class="shared-post-copy">
+                            <p>{{ sharedPost.post.caption }}</p>
+                            <span class="shared-post-link">View post</span>
+                          </div>
+                        } @else {
+                          <div class="shared-post-unavailable">
                           <span class="shared-post-unavailable-icon" aria-hidden="true">
                             <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
                           </span>
-                          <div class="shared-post-unavailable-copy">
-                            <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
-                            <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
-                            @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
-                              <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
-                            }
+                            <div class="shared-post-unavailable-copy">
+                              <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
+                              <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
+                              @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
+                                <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
+                              }
+                            </div>
                           </div>
-                        </div>
+                        }
+                      </article>
+
+                      @if (sharedPost.note) {
+                        <p class="message-content">{{ sharedPost.note }}</p>
                       }
-                    </article>
-
-                    @if (sharedPost.note) {
-                      <p class="message-content">{{ sharedPost.note }}</p>
-                    }
-                  } @else {
-                    <p class="message-content">{{ message.content }}</p>
-                  }
-                </div>
-
-                @if (message.reactions.length > 0) {
-                  <div class="message-reactions-floating">
-                    @for (reaction of message.reactions; track reaction.emoji) {
-                      <button
-                        type="button"
-                        class="reaction-chip"
-                        [class.reaction-chip--active]="reaction.reactedByCurrentUser"
-                        (click)="toggleReaction(message, reaction.emoji)"
-                        [attr.aria-label]="'React with ' + reaction.emoji">
-                        <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
-                        <span class="reaction-chip-count">{{ reaction.count }}</span>
-                      </button>
+                    } @else {
+                      <p class="message-content">{{ message.content }}</p>
                     }
                   </div>
-                }
-              </div>
-            </article>
+
+                  @if (message.reactions.length > 0) {
+                    <div class="message-reactions-floating">
+                      @for (reaction of message.reactions; track reaction.emoji) {
+                        <button
+                          type="button"
+                          class="reaction-chip"
+                          [class.reaction-chip--active]="reaction.reactedByCurrentUser"
+                          (click)="toggleReaction(message, reaction.emoji)"
+                          [attr.aria-label]="'React with ' + reaction.emoji">
+                          <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
+                          <span class="reaction-chip-count">{{ reaction.count }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </article>
             }
           }
           <div #messageListEnd class="message-list-end" aria-hidden="true"></div>
@@ -410,7 +418,7 @@
               }
 
               <div class="composer-shared-post-copy">
-                <span>Shared post from @{{ sharedPost.username }}</span>
+                <span>Shared post from &#64;{{ sharedPost.username }}</span>
                 <p>{{ sharedPost.caption }}</p>
               </div>
 
@@ -450,10 +458,10 @@
   </section>
 </main>
 
-<app-comments
-  [post]="selectedChatPostForComments()"
-  [visible]="chatPostCommentsVisible()"
-  (visibleChange)="onChatPostCommentsVisibleChange($event)"
+<!-- ─── Post Detail Dialog ─── -->
+<app-post-detail-dialog
+  [postId]="selectedChatPostId()"
+  (dismissed)="selectedChatPostId.set(null)"
 />
 
 <p-dialog
@@ -618,58 +626,58 @@
     </ul>
 
     @if (chat.owner) {
-    <section class="add-members-section">
-      <div class="members-picker-header">
-        <span class="section-title">Add members</span>
-        <span class="selected-count">{{ selectedAddMemberCount(chat) }} / {{ maxGroupMembers }} members</span>
-      </div>
+      <section class="add-members-section">
+        <div class="members-picker-header">
+          <span class="section-title">Add members</span>
+          <span class="selected-count">{{ selectedAddMemberCount(chat) }} / {{ maxGroupMembers }} members</span>
+        </div>
 
-      <p-iconField iconPosition="left" class="members-search">
-        <p-inputIcon styleClass="pi pi-search" />
-        <input
-          type="text"
-          pInputText
-          placeholder="Search friends"
-          [ngModel]="addMemberSearch()"
-          (ngModelChange)="addMemberSearch.set($event)"
-          name="addMemberSearch" />
-      </p-iconField>
+        <p-iconField iconPosition="left" class="members-search">
+          <p-inputIcon styleClass="pi pi-search" />
+          <input
+            type="text"
+            pInputText
+            placeholder="Search friends"
+            [ngModel]="addMemberSearch()"
+            (ngModelChange)="addMemberSearch.set($event)"
+            name="addMemberSearch" />
+        </p-iconField>
 
-      <div class="group-friends-list add-members-list">
-        @if (filteredAddMemberFriends().length === 0) {
-          <p class="picker-empty">No friends to add</p>
-        } @else {
-          @for (friend of filteredAddMemberFriends(); track friend.id) {
-            <label class="group-friend-row">
-              <input
-                type="checkbox"
-                [checked]="isAddMemberFriendSelected(friend.username)"
-                [disabled]="!isAddMemberFriendSelected(friend.username) && !canSelectAdditionalMember()"
-                (change)="toggleAddMemberFriend(friend.username)" />
-              <span class="avatar" aria-hidden="true">
+        <div class="group-friends-list add-members-list">
+          @if (filteredAddMemberFriends().length === 0) {
+            <p class="picker-empty">No friends to add</p>
+          } @else {
+            @for (friend of filteredAddMemberFriends(); track friend.id) {
+              <label class="group-friend-row">
+                <input
+                  type="checkbox"
+                  [checked]="isAddMemberFriendSelected(friend.username)"
+                  [disabled]="!isAddMemberFriendSelected(friend.username) && !canSelectAdditionalMember()"
+                  (change)="toggleAddMemberFriend(friend.username)" />
+                <span class="avatar" aria-hidden="true">
                 @if (avatarUrl(friend.id)) {
                   <img [src]="avatarUrl(friend.id)" alt="" />
                 } @else {
                   {{ initialFor(friend) }}
                 }
               </span>
-              <span class="row-copy">
+                <span class="row-copy">
                 <span class="row-title">{{ friend.name || friend.username }}</span>
                 <span class="row-subtitle">&#64;{{ friend.username }}</span>
               </span>
-            </label>
+              </label>
+            }
           }
-        }
-      </div>
+        </div>
 
-      <button
-        type="button"
-        class="primary-button add-members-button"
-        [disabled]="!canAddMembersToGroup()"
-        (click)="addMembersToGroup()">
-        Add to group
-      </button>
-    </section>
+        <button
+          type="button"
+          class="primary-button add-members-button"
+          [disabled]="!canAddMembersToGroup()"
+          (click)="addMembersToGroup()">
+          Add to group
+        </button>
+      </section>
     }
   </p-dialog>
 }

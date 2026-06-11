@@ -27,8 +27,8 @@ import { UserService } from '../../../user/user.service';
 import { ReportComponent } from '../../../report/components/report/report.component';
 import { ContentTypeEnum } from '../../../report/dto/report';
 import { FollowBadgeComponent } from '../../../feed/components/follow-badge/follow-badge.component';
-import { PostShareDialogComponent } from '../post-share/post-share-dialog.component';
-import { PostCommentComponent} from '../post-comment/post-comment';
+import { PostShareDialogComponent } from '../post-detail-share/post-share-dialog.component';
+import { PostCommentComponent} from '../post-detail-comment/post-comment.component';
 import { PostStateService } from '../../services/post-state.service';
 
 @Component({

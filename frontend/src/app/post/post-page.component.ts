@@ -29,7 +29,7 @@ import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from './dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
-import { PostDetailDialogComponent } from './post-detail-dialog.component';
+import { PostDetailDialogComponent} from './components/post-detail-dialog/post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';

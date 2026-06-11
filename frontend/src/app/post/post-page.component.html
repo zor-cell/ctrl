@@ -321,18 +321,10 @@
 </p-dialog>
 
 <app-post-detail-dialog
-  [post]="selectedPost()"
-  [resolvedMediaUrl]="selectedPostMediaUrl()"
-  [topicOptions]="topicOptions()"
-  [currentProfilePicture]="currentProfilePicture()"
-  [avatarInitial]="avatarInitial()"
-  [canDelete]="canEditProfile()"
-  [canShare]="true"
+  [postId]="selectedPost()?.postId ?? null"
   (dismissed)="closePost()"
-  (deleteRequested)="requestPostDeletion($event)"
-  (shareRequested)="openShareDialog($event)"
-  (mediaLoadFailed)="onSelectedPostMediaError($event)"
 />
+
 
 <app-report
   [contentType]="ContentTypeEnum.ACCOUNT"

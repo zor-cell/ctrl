@@ -40,8 +40,7 @@ import { ChatRealtimePayload } from './chat-realtime.service';
 import { ChatRealtimeBridgeService } from './chat-realtime-bridge.service';
 import { ChatUnreadService } from './chat-unread.service';
 import { ChatService } from './chat.service';
-import { CommentsComponent } from '../feed/components/comments/comments.component';
-import { Post } from '../feed/dto/Post';
+import { PostDetailDialogComponent } from '../post/components/post-detail-dialog/post-detail-dialog.component';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
 const MAX_GROUP_MEMBERS = 50;
@@ -85,7 +84,7 @@ type GroupConfirmationAction = 'delete' | 'leave';
     InputText,
     Textarea,
     TooltipModule,
-    CommentsComponent,
+    PostDetailDialogComponent,
   ],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.scss',
@@ -126,8 +125,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly hoveredMessageId = signal<string | null>(null);
   protected readonly loadingMembersDialog = signal(false);
   protected readonly sharedPostDraft = signal<SharedPostPayload | null>(null);
-  protected readonly chatPostCommentsVisible = signal(false);
-  protected readonly selectedChatPostForComments = signal<Post | null>(null);
+  protected readonly selectedChatPostId = signal<string | null>(null);
 
   protected readonly reactionEmojis = REACTION_EMOJIS;
   protected readonly maxGroupMembers = MAX_GROUP_MEMBERS;
@@ -155,10 +153,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   );
   private pendingSharedPost:
     | {
-        username?: string;
-        chatId?: string;
-        post: SharedPostPayload;
-      }
+    username?: string;
+    chatId?: string;
+    post: SharedPostPayload;
+  }
     | null = null;
   private pendingChatId: string | null = null;
 
@@ -249,39 +247,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       }
 
       queueMicrotask(() => untracked(() => this.loadAvatar(user.id, user.profilePicture)));
-    });
-
-    effect(() => {
-      const selectedPost = this.selectedChatPostForComments();
-      if (!selectedPost?.userId) {
-        return;
-      }
-
-      const avatarUrl = this.avatarUrls()[selectedPost.userId] ?? '';
-      const currentUser = this.userService.user();
-      const username =
-        currentUser?.id === selectedPost.userId ? currentUser.username : selectedPost.username;
-
-      if (selectedPost.userProfilePic === avatarUrl && selectedPost.username === username) {
-        return;
-      }
-
-      queueMicrotask(() => untracked(() => {
-        const latestPost = this.selectedChatPostForComments();
-        if (
-          !latestPost
-          || latestPost.postId !== selectedPost.postId
-          || latestPost.userId !== selectedPost.userId
-        ) {
-          return;
-        }
-
-        this.selectedChatPostForComments.set({
-          ...latestPost,
-          username,
-          userProfilePic: avatarUrl,
-        });
-      }));
     });
   }
 
@@ -449,73 +414,22 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.resetAddMemberSelection();
+    this.loadingMembersDialog.set(true);
     this.membersDialogVisible.set(true);
-    this.refreshSelectedGroupChat(chat.chatId);
-  }
-
-  protected setHoveredMessage(messageId: string): void {
-    this.hoveredMessageId.set(messageId);
-  }
-
-  protected clearHoveredMessage(messageId: string): void {
-    if (this.hoveredMessageId() === messageId) {
-      this.hoveredMessageId.set(null);
-    }
-  }
-
-  protected canRemoveMember(participant: ChatParticipant, chat: Chat): boolean {
-    if (!chat.owner || !chat.groupChat) {
-      return false;
-    }
-
-    if (this.isGroupOwner(participant, chat)) {
-      return false;
-    }
-
-    const currentUsername = this.currentUsername();
-    return currentUsername ? participant.username !== currentUsername : false;
-  }
-
-  protected removeMemberFromGroup(participant: ChatParticipant): void {
-    const chat = this.selectedChat();
-    if (!chat?.groupChat || !chat.owner) {
-      return;
-    }
-
-    const previousChat = chat;
-    const optimisticChat = this.upsertChat({
-      ...chat,
-      participants: chat.participants.filter(
-        member => this.normalizeId(member.id) !== this.normalizeId(participant.id)
-      ),
-    });
-    this.selectedChat.set(optimisticChat);
-
-    this.chatService.removeMember(chat.chatId, participant.id)
-      .pipe(takeUntil(this.destroy$))
+    this.chatService.getChat(chat.chatId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loadingMembersDialog.set(false))
+      )
       .subscribe({
-        next: updatedChat => {
-          const normalizedChat = this.upsertChat(updatedChat);
-          if (this.selectedChat()?.chatId === normalizedChat.chatId) {
+        next: refreshedChat => {
+          const normalizedChat = this.upsertChat(refreshedChat);
+          if (this.selectedChat()?.chatId === refreshedChat.chatId) {
             this.selectedChat.set(normalizedChat);
           }
-          this.loadMessages(normalizedChat.chatId);
-          this.notificationService.showSuccess('Member removed');
         },
-        error: () => {
-          const restoredChat = this.upsertChat(previousChat);
-          if (this.selectedChat()?.chatId === restoredChat.chatId) {
-            this.selectedChat.set(restoredChat);
-          }
-          this.notificationService.showError('Failed to remove member');
-        },
+        error: () => this.notificationService.showError('Failed to load group members'),
       });
-  }
-
-  protected closeMembersDialog(): void {
-    this.membersDialogVisible.set(false);
-    this.resetAddMemberSelection();
   }
 
   protected onMembersDialogVisibilityChange(visible: boolean): void {
@@ -525,46 +439,51 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected requestDeleteSelectedGroup(): void {
+  protected canRemoveMember(participant: ChatParticipant, chat: Chat): boolean {
+    return chat.owner === true && !this.isGroupOwner(participant, chat);
+  }
+
+  protected removeMemberFromGroup(participant: ChatParticipant): void {
     const chat = this.selectedChat();
-    if (!chat || !chat.groupChat || !chat.owner) {
+    if (!chat?.groupChat || !chat.owner) {
       return;
     }
 
+    this.chatService.removeMember(chat.chatId, participant.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedChat: Chat) => {
+          const normalizedChat = this.upsertChat(updatedChat);
+          this.selectedChat.set(normalizedChat);
+          this.loadMessages(normalizedChat.chatId);
+        },
+        error: () => this.notificationService.showError('Failed to remove member'),
+      });
+  }
+
+  protected requestDeleteSelectedGroup(): void {
     this.groupConfirmationAction.set('delete');
   }
 
   protected requestLeaveGroup(): void {
-    const chat = this.selectedChat();
-    if (!chat?.groupChat || chat.owner) {
-      return;
-    }
-
     this.groupConfirmationAction.set('leave');
+  }
+
+  protected closeGroupConfirmation(): void {
+    this.groupConfirmationAction.set(null);
   }
 
   protected onGroupConfirmationVisibilityChange(visible: boolean): void {
     if (!visible) {
-      this.closeGroupConfirmation();
+      this.groupConfirmationAction.set(null);
     }
-  }
-
-  protected closeGroupConfirmation(): void {
-    if (this.groupActionInProgress()) {
-      return;
-    }
-
-    this.groupConfirmationAction.set(null);
   }
 
   protected confirmGroupAction(): void {
     const action = this.groupConfirmationAction();
     if (action === 'delete') {
       this.deleteSelectedGroup();
-      return;
-    }
-
-    if (action === 'leave') {
+    } else if (action === 'leave') {
       this.leaveGroup();
     }
   }
@@ -576,16 +495,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected toggleAddMemberFriend(username: string): void {
     this.selectedAddMemberUsernames.update(usernames =>
       usernames.includes(username)
-        ? usernames.filter(selectedUsername => selectedUsername !== username)
-        : this.canSelectAdditionalMember()
-          ? [...usernames, username]
-          : usernames
+        ? usernames.filter(u => u !== username)
+        : [...usernames, username]
     );
   }
 
   protected canSelectAdditionalMember(): boolean {
     const chat = this.selectedChat();
-    if (!chat?.groupChat) {
+    if (!chat) {
       return false;
     }
 
@@ -595,8 +512,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected canAddMembersToGroup(): boolean {
     const chat = this.selectedChat();
     const selectedCount = this.selectedAddMemberUsernames().length;
-    return Boolean(
-      chat?.groupChat
+    return (
+      !!chat?.groupChat
+      && chat.owner === true
       && selectedCount > 0
       && chat.participants.length + selectedCount <= MAX_GROUP_MEMBERS
       && !this.addingMembers()
@@ -858,8 +776,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const currentUserId = this.userService.user()?.id;
     const currentUserIsTarget = currentUserId
       ? message.systemTargets.some(
-          target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
-        )
+        target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
+      )
       : false;
 
     switch (message.systemEvent) {
@@ -1062,17 +980,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.selectedChatPostForComments.set(this.sharedPostToFeedPost(sharedPost));
-    this.chatPostCommentsVisible.set(true);
-    this.ensureSelectedChatPostAvatar(sharedPost);
-    this.ensureSelectedChatPostMedia(sharedPost);
-  }
-
-  protected onChatPostCommentsVisibleChange(visible: boolean): void {
-    this.chatPostCommentsVisible.set(visible);
-    if (!visible) {
-      this.selectedChatPostForComments.set(null);
-    }
+    this.selectedChatPostId.set(postId);
   }
 
   protected sharedPostProfileRoute(sharedPost: ParsedSharedPost): string[] | null {
@@ -1164,77 +1072,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
   }
 
-  private sharedPostToFeedPost(sharedPost: ParsedSharedPost): Post {
-    const post = sharedPost.post;
-    const mediaUrl = this.resolvedSharedPostMediaUrl(post) ?? post.mediaUrl;
-    const authorUserId = this.sharedPostAuthorUserId(post);
-
-    return {
-      postId: post.postId,
-      userId: authorUserId ?? '',
-      username: this.sharedPostAuthorUsername(post),
-      userProfilePic: authorUserId ? this.avatarUrl(authorUserId) ?? '' : '',
-      createdAt: post.sharedAt ?? new Date().toISOString(),
-      caption: post.caption,
-      isPublic: post.publicPost ?? true,
-      likes: 0,
-      upvotes: 0,
-      downvotes: 0,
-      userVote: null,
-      labelIds: [],
-      topicIds: [],
-      videoImageRef: mediaUrl ? [mediaUrl] : [],
-      isExternal: !post.profileUserId && !post.profileUsername,
-      sourceIds: [],
-      comments: [],
-      explanation: {
-        scoreInteraction: 0,
-        scoreTopic: 0,
-        scoreRecency: 0,
-        scorePopularity: 0,
-        scoreSource: 0,
-        scoreExploration: 0,
-        totalScore: 0,
-      },
-    };
-  }
-
-  private ensureSelectedChatPostMedia(sharedPost: ParsedSharedPost): void {
-    const post = sharedPost.post;
-    if (post.mediaUrl || !post.mediaRef) {
-      return;
-    }
-
-    this.mediaCacheService.resolveMediaUrl(post.mediaRef, post.mediaKind ?? 'image', 'normal')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(url => {
-        const selectedPost = this.selectedChatPostForComments();
-        if (!url || !selectedPost || selectedPost.postId !== post.postId) {
-          return;
-        }
-
-        this.selectedChatPostForComments.set({
-          ...selectedPost,
-          videoImageRef: [url],
-        });
-      });
-  }
-
-  private ensureSelectedChatPostAvatar(sharedPost: ParsedSharedPost): void {
-    const profileUserId = this.sharedPostAuthorUserId(sharedPost.post);
-    if (!profileUserId) {
-      return;
-    }
-
-    const currentUser = this.userService.user();
-    const profilePicture =
-      currentUser?.id === profileUserId
-        ? currentUser.profilePicture
-        : sharedPost.post.profilePicture ?? null;
-
-    this.loadAvatar(profileUserId, profilePicture);
-  }
-
   protected participantText(chat: Chat): string {
     const count = chat.participants.length;
     return count > 2 ? `${count} members` : '';
@@ -1247,6 +1084,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected isSelected(chat: Chat): boolean {
     return this.selectedChat()?.chatId === chat.chatId;
+  }
+
+  protected setHoveredMessage(messageId: string): void {
+    this.hoveredMessageId.set(messageId);
+  }
+
+  protected clearHoveredMessage(messageId: string): void {
+    if (this.hoveredMessageId() === messageId) {
+      this.hoveredMessageId.set(null);
+    }
   }
 
   private loadFriends(): void {
@@ -1361,10 +1208,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private directChatForUsername(username: string): Chat | null {
     const normalizedUsername = username.toLowerCase();
     const matches = this.chats().filter(chat =>
-      !chat.groupChat
-      && chat.participants.some(
-        participant => participant.username.toLowerCase() === normalizedUsername
-      )
+        !chat.groupChat
+        && chat.participants.some(
+          participant => participant.username.toLowerCase() === normalizedUsername
+        )
     );
 
     return this.pickLatestDirectChat(matches);
@@ -1897,8 +1744,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const canView = sharedPost.canView ?? true;
     const postId = this.resolveSharedPostId(sharedPost.postId) ?? '';
     const mediaUrl = canView
-      && sharedPost.mediaRef?.startsWith('http')
-      && !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
+    && sharedPost.mediaRef?.startsWith('http')
+    && !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
       ? sharedPost.mediaRef
       : canView
         ? resolvedMediaUrl
