@@ -61,7 +61,7 @@ export class FeedService {
       upvotes: item.upvotes ?? 0,
       downvotes: item.downvotes ?? 0,
       userVote: item.userVote ?? null,
-      labelIds: item.labelIds?.map((l: any) => [l.name, l.explanation]) ?? [],
+      labelIds: item.labelIds ?? [],
       topicIds: item.topicIds ?? [],
       videoImageRef: this.resolveVideoImageRef(item),
       sourceIds: item.sourceIds ?? [],

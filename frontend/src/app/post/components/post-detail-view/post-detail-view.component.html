@@ -38,7 +38,7 @@
             <app-follow-badge [username]="p.username" [isExternal]="p.isExternal" />
         </div>
 
-        <div class="post-header-right">
+        <div class="post-header-center">
             @if ((p.labelIds?.length ?? 0) > 0) {
                 <div class="post-labels">
                     @for (label of p.labelIds; track label.labelId) {
@@ -46,6 +46,12 @@
                     }
                 </div>
             }
+        </div>
+
+        <div class="post-header-right">
+            <button class="action-btn close-btn" (click)="closeClicked.emit()" aria-label="Ansicht schließen">
+                <i class="pi pi-times"></i>
+            </button>
         </div>
     </div>
 

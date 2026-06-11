@@ -9,5 +9,5 @@
   [style]="{ width: 'min(45rem, 92vw)' }"
   (visibleChange)="onVisibleChange($event)"
 >
-  <app-post-detail-view [postId]="postId" />
+  <app-post-detail-view [postId]="postId" (closeClicked)="onVisibleChange(false)" />
 </p-dialog>

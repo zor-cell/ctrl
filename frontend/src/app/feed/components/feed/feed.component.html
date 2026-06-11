@@ -173,16 +173,10 @@
 
     <!-- Labels + Why Button -->
     <div class="post-header-right">
-      @if (post.labelIds.length > 0) {
+      @if ((post.labelIds?.length ?? 0) > 0) {
         <div class="post-labels">
-          @for (label of post.labelIds; track label) {
-            <p-tag
-              [value]="label[0]"
-              severity="secondary"
-              class="post-label"
-              [pTooltip]="label[1]"
-              tooltipPosition="bottom"
-            />
+          @for (label of post.labelIds; track label.labelId) {
+            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
           }
         </div>
       }

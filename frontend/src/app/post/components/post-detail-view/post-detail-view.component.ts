@@ -58,7 +58,8 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
   private readonly postState    = inject(PostStateService);
 
   @Input() postId: string | null = null;
-  @Output() readonly shareClicked = new EventEmitter<void>();
+  @Output() readonly shareClicked  = new EventEmitter<void>();
+  @Output() readonly closeClicked  = new EventEmitter<void>();
 
   @ViewChild(PostShareDialogComponent) private shareDialog!: PostShareDialogComponent;
   @ViewChild('commentsComponent') protected commentsComponent?: PostCommentComponent;

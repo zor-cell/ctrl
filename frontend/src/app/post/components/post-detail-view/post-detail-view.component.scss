@@ -31,10 +31,10 @@ $radius-sm:  10px;
 
 // ─── Post Header ──────────────────────────────────────
 .post-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
+  padding: 10px 12px 10px 16px;
   border-bottom: 1px solid $border;
   position: sticky;
   top: 0;
@@ -45,12 +45,14 @@ $radius-sm:  10px;
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
 
   .post-meta {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
 
   .post-username {
@@ -71,18 +73,37 @@ $radius-sm:  10px;
   }
 }
 
+.post-header-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 8px;
+}
+
 .post-header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
-  margin-left: auto;
 }
 
 .post-labels {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 4px;
+}
+
+.close-btn {
+  border-color: transparent !important;
+  padding: 6px 8px !important;
+  color: $text-muted;
+
+  &:hover {
+    color: var(--p-text-color) !important;
+    border-color: transparent !important;
+    background: var(--p-content-hover-background, #f4f4f4) !important;
+  }
 }
 
 :host ::ng-deep .post-label {
