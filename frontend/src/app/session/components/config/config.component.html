@@ -9,12 +9,7 @@
                 <h2>Session Limits</h2>
             </div>
 
-            <div>
-                Configure your personal session limits.
-                Any changes made to your session configuration will take effect tomorrow at midnight.
-            </div>
-
-            <form [formGroup]="configForm" (ngSubmit)="confirmSave()">
+            <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
                 <div class="slider-field slider-temp">
                     <div class="slider-header">
                         <div class="slider-label-group">
@@ -72,8 +67,3 @@
         }
     </div>
 </div>
-
-<p-confirmDialog
-        [style]="{ width: '450px' }"
-        [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
-</p-confirmDialog>

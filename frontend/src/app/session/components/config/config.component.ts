@@ -54,28 +54,12 @@ export class SessionConfigComponent implements OnInit {
     });
   }
 
-  protected confirmSave() {
+  protected saveConfig() {
     if (this.configForm.invalid) {
       this.configForm.markAllAsTouched();
       return;
     }
 
-    this.confirmationService.confirm({
-      header: 'Confirm Limits',
-      message: 'Your new session limits will be applied starting tomorrow. Do you want to proceed?',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Save',
-      rejectLabel: 'Cancel',
-      rejectButtonProps: {
-        severity: 'secondary'
-      },
-      accept: () => {
-        this.saveConfig();
-      }
-    })
-  }
-
-  protected saveConfig() {
     const formValue = this.configForm.getRawValue() as SessionConfig;
 
     this.configService.updateConfig(formValue).subscribe(updatedConfig => {

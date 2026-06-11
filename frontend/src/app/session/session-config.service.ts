@@ -4,6 +4,7 @@ import {HttpClient} from "@angular/common/http";
 import {NotificationService} from "../core/services/notification.service";
 import {tap} from "rxjs";
 import {SessionConfig} from "./dto/SessionConfig";
+import {SessionConfigUpdateResponse} from "./dto/SessionConfigUpdateResponse";
 
 @Injectable({
   providedIn: 'root',
@@ -18,9 +19,13 @@ export class SessionConfigService {
   }
 
   public updateConfig(updateConfigRequest: SessionConfig) {
-    return this.httpClient.put<SessionConfig>(this.baseUri + '/config', updateConfigRequest).pipe(
-      tap(() => {
-        this.notificationService.showSuccess('Configuration saved. Changes will take effect tomorrow');
+    return this.httpClient.put<SessionConfigUpdateResponse>(this.baseUri + '/config', updateConfigRequest).pipe(
+      tap(config => {
+        if(config.appliedImmediately) {
+          this.notificationService.showSuccess('Configuration saved');
+        } else {
+          this.notificationService.showSuccess('Configuration saved. Changes will take effect tomorrow at midnight');
+        }
       })
     );
   }

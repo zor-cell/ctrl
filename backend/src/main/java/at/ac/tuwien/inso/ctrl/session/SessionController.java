@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.session;
 
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
+import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
@@ -31,7 +32,7 @@ public class SessionController {
   }
 
   @PutMapping("/config")
-  public SessionConfigDto updateConfig(
+  public SessionConfigUpdateResponseDto updateConfig(
       @AuthenticationPrincipal User user, @Valid @RequestBody SessionConfigDto config) {
     return sessionService.updateConfig(user, config);
   }

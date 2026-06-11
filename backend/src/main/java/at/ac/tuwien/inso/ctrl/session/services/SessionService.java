@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.session.services;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
+import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
@@ -92,7 +93,7 @@ public class SessionService {
   }
 
   @Transactional
-  public SessionConfigDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
+  public SessionConfigUpdateResponseDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
     DailySessionStatsProjection stats =
         sessionRepository.getDailyStats(currentUser, LocalDate.now().atStartOfDay());
@@ -114,7 +115,14 @@ public class SessionService {
       config.setNextAllowSnooze(null);
     }
 
-    return sessionMapper.toConfig(sessionConfigRepository.save(config));
+    var savedConfig = sessionConfigRepository.save(config);
+
+    return new SessionConfigUpdateResponseDto(
+            savedConfig.getTimeLimitMinutes(),
+            savedConfig.getPostLimit(),
+            sessionConfigDto.allowSnooze(),
+            !isAlreadyExceeded
+    );
   }
 
   public SessionHistory getOrCreateLastSession(User user) {
