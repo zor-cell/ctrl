@@ -15,7 +15,7 @@ export class SessionStateService {
   }
 
   public triggerLimitModal(message: string) {
-    const dontShowModal = localStorage.getItem('session_limit_dismissed') === 'true';
+    const dontShowModal = localStorage.getItem(SessionStateService.LIMIT_DISMISSED_KEY) === 'true';
     if(dontShowModal) {
       return;
     }
