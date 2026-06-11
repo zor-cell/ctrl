@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal, ElementRef} from '@angular/core';
+import {Component, computed, effect, inject, OnDestroy, OnInit, signal, ElementRef} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -24,8 +24,34 @@ import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/po
 import {ReactiveFormsModule} from "@angular/forms";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {RelationshipService} from '../../../user/relationship.service';
+import {Friend} from '../../../user/dto/Relationship';
 import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
+import {MediaCacheService} from '../../../core/services/media-cache.service';
+import {usernameInitial} from '../../../core/utils/username-initial.utils';
+import { Chat, ChatParticipant } from '../../../chat/chat.models';
+import { ChatService } from '../../../chat/chat.service';
+
+interface SharedPostPayload {
+  postId: string;
+  username: string;
+  caption: string;
+  url: string;
+  mediaUrl: string | null;
+  mediaKind: 'image' | 'video' | null;
+}
+
+interface ShareTarget {
+  id: string;
+  kind: 'direct' | 'group';
+  chatId: string | null;
+  username: string | null;
+  title: string;
+  subtitle: string;
+  avatarRef: string | null;
+  interactionCount: number;
+  lastActivityTime: number;
+}
 import {SessionStateService} from "../../../session/session-state.service";
 
 @Component({
@@ -53,7 +79,7 @@ import {SessionStateService} from "../../../session/session-state.service";
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })
-export class FeedComponent implements OnInit {
+export class FeedComponent implements OnInit, OnDestroy {
   protected userService = inject(UserService);
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
@@ -75,6 +101,9 @@ export class FeedComponent implements OnInit {
   protected reportSourceDialogVisible = signal(false);
   protected selectedSourceForReport = signal<PostSource | null>(null);
   protected selectedPostForSourceReport = signal<Post | null>(null);
+  protected shareDialogVisible = signal(false);
+  protected selectedPostForShare = signal<Post | null>(null);
+  protected shareFriendQuery = signal('');
 
   protected algorithmConfigVisible = signal(false);
   protected isRefreshing = signal(false);
@@ -85,6 +114,30 @@ export class FeedComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   private readonly rel = inject(RelationshipService);
+  private readonly mediaCacheService = inject(MediaCacheService);
+  private readonly chatService = inject(ChatService);
+  protected readonly friends = this.rel.friends;
+  protected readonly shareChats = signal<Chat[]>([]);
+  protected readonly shareFriendAvatarUrls = signal<Record<string, string>>({});
+  protected readonly shareGroupAvatarUrls = signal<Record<string, string>>({});
+  protected readonly failedShareFriendAvatars = signal<Set<string>>(new Set());
+  protected readonly failedShareGroupAvatars = signal<Set<string>>(new Set());
+  protected readonly filteredShareTargets = computed(() => {
+    const query = this.shareFriendQuery().trim().toLowerCase();
+    return this.shareTargets().filter(target =>
+      !query
+      || target.title.toLowerCase().includes(query)
+      || target.subtitle.toLowerCase().includes(query)
+    );
+  });
+  constructor() {
+    effect(() => {
+      this.loadShareFriendAvatars(this.friends());
+    });
+    effect(() => {
+      this.loadShareGroupAvatars(this.shareChats());
+    });
+  }
 
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
@@ -106,11 +159,15 @@ export class FeedComponent implements OnInit {
 
   protected publicPosts = signal<Post[]>([]);
   protected privatePosts = signal<Post[]>([]);
+  private readonly relativeTimeNow = signal(Date.now());
+  private relativeTimeTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
+    this.relativeTimeTimer = setInterval(() => this.relativeTimeNow.set(Date.now()), 30_000);
     this.isLoading.set(true);
-    this.userService.loadUser();
+    this.userService.loadUser().subscribe();
     this.viewTracking.startTracking();
+    this.loadShareChats();
 
     forkJoin([
       this.feedService.getFeed(true),
@@ -136,6 +193,15 @@ export class FeedComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.relativeTimeTimer) {
+      clearInterval(this.relativeTimeTimer);
+      this.relativeTimeTimer = null;
+    }
+
+    this.viewTracking.stopAndClear();
   }
 
   openAlgorithmConfig(): void {
@@ -216,7 +282,7 @@ export class FeedComponent implements OnInit {
 
   timeAgo(createdAt: string): string {
     const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
-    const diffMs = Date.now() - new Date(normalized).getTime();
+    const diffMs = this.relativeTimeNow() - new Date(normalized).getTime();
     const minutes = Math.floor(diffMs / 60_000);
     if (minutes < 1) return 'just now';
     if (minutes < 60) return `${minutes} min ago`;
@@ -350,11 +416,292 @@ export class FeedComponent implements OnInit {
     this.reportDialogVisible.set(true);
   }
 
+  protected onReportSubmitted(event: { contentType: ContentTypeEnum; contentId: string }): void {
+    if (event.contentType !== ContentTypeEnum.POST) {
+      return;
+    }
+
+    this.removePostFromFeed(event.contentId);
+    this.selectedPostForReport.set(null);
+  }
+
+  private removePostFromFeed(postId: string): void {
+    this.publicPosts.update(posts => posts.filter(post => post.postId !== postId));
+    this.privatePosts.update(posts => posts.filter(post => post.postId !== postId));
+  }
+
   protected readonly ContentTypeEnum = ContentTypeEnum;
 
   reportSource(postSource: PostSource, post: Post) {
     this.selectedSourceForReport.set(postSource);
     this.reportSourceDialogVisible.set(true);
     this.selectedPostForSourceReport.set(post);
+  }
+
+  protected openShareDialog(post: Post): void {
+    this.selectedPostForShare.set(post);
+    this.shareFriendQuery.set('');
+    this.loadShareChats();
+    this.shareDialogVisible.set(true);
+  }
+
+  protected sharePostWithTarget(target: ShareTarget): void {
+    const post = this.selectedPostForShare();
+    if (!post) {
+      return;
+    }
+
+    this.shareDialogVisible.set(false);
+    const queryParams = target.chatId
+      ? { chat: target.chatId }
+      : { user: target.username };
+
+    this.router.navigate(['/chat'], {
+      queryParams,
+      state: { sharedPost: this.sharedPostPayload(post) },
+    });
+  }
+
+  protected onShareDialogVisibleChange(visible: boolean): void {
+    this.shareDialogVisible.set(visible);
+    if (!visible) {
+      this.selectedPostForShare.set(null);
+      this.shareFriendQuery.set('');
+    }
+  }
+
+  protected shareFriendAvatarUrl(friend: Friend): string | null {
+    return this.shareFriendAvatarUrls()[friend.id] ?? null;
+  }
+
+  protected shareFriendInitial(friend: Friend): string {
+    return usernameInitial(friend.username);
+  }
+
+  protected shareFriendAvatarFailed(friend: Friend): boolean {
+    return this.failedShareFriendAvatars().has(friend.id);
+  }
+
+  protected markShareFriendAvatarFailed(friend: Friend): void {
+    this.failedShareFriendAvatars.update(failed => {
+      const next = new Set(failed);
+      next.add(friend.id);
+      return next;
+    });
+  }
+
+  protected shareTargetAvatarUrl(target: ShareTarget): string | null {
+    if (target.kind === 'group' && target.chatId) {
+      return this.shareGroupAvatarUrls()[target.chatId] ?? null;
+    }
+
+    if (!target.username) {
+      return null;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.shareFriendAvatarUrl(friend) : null;
+  }
+
+  protected shareTargetAvatarFailed(target: ShareTarget): boolean {
+    if (target.kind === 'group' && target.chatId) {
+      return this.failedShareGroupAvatars().has(target.chatId);
+    }
+
+    if (!target.username) {
+      return false;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    return friend ? this.shareFriendAvatarFailed(friend) : false;
+  }
+
+  protected markShareTargetAvatarFailed(target: ShareTarget): void {
+    if (target.kind === 'group' && target.chatId) {
+      this.failedShareGroupAvatars.update(failed => {
+        const next = new Set(failed);
+        next.add(target.chatId!);
+        return next;
+      });
+      return;
+    }
+
+    if (!target.username) {
+      return;
+    }
+
+    const friend = this.friendByUsername(target.username);
+    if (friend) {
+      this.markShareFriendAvatarFailed(friend);
+    }
+  }
+
+  protected shareTargetInitial(target: ShareTarget): string {
+    return usernameInitial(target.username ?? target.title);
+  }
+
+  protected shareTargetIcon(target: ShareTarget): string {
+    return target.kind === 'group' ? 'pi-users' : 'pi-user';
+  }
+
+  private loadShareFriendAvatars(friends: Friend[]): void {
+    friends.forEach(friend => {
+      if (!friend.profilePicture || this.shareFriendAvatarUrls()[friend.id]) {
+        return;
+      }
+
+      this.mediaCacheService.resolveMediaUrl(friend.profilePicture, 'image', 'high')
+        .subscribe(url => {
+          if (!url) {
+            return;
+          }
+          this.shareFriendAvatarUrls.update(urls => ({ ...urls, [friend.id]: url }));
+        });
+    });
+  }
+
+  private loadShareGroupAvatars(chats: Chat[]): void {
+    chats
+      .filter(chat => chat.groupChat)
+      .forEach(chat => {
+        if (!chat.groupImage || this.shareGroupAvatarUrls()[chat.chatId]) {
+          return;
+        }
+
+        this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
+          .subscribe(url => {
+            if (!url) {
+              return;
+            }
+            this.shareGroupAvatarUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+          });
+      });
+  }
+
+  private loadShareChats(): void {
+    this.chatService.getChats().subscribe({
+      next: chats => this.shareChats.set(chats.map(chat => ({
+        ...chat,
+        personalMessageCount: chat.personalMessageCount ?? 0,
+      }))),
+    });
+  }
+
+  private shareTargets(): ShareTarget[] {
+    const friendsByUsername = new Map(
+      this.friends().map(friend => [friend.username.toLowerCase(), friend])
+    );
+    const targets = this.shareChats()
+      .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
+      .filter((target): target is ShareTarget => target !== null);
+    const usernamesWithChats = new Set(
+      targets
+        .filter(target => target.kind === 'direct' && target.username)
+        .map(target => target.username!.toLowerCase())
+    );
+    const friendsWithoutChats = this.friends()
+      .filter(friend => !usernamesWithChats.has(friend.username.toLowerCase()))
+      .map(friend => this.shareTargetFromFriend(friend));
+
+    return [...targets, ...friendsWithoutChats].sort((left, right) => {
+      if (left.interactionCount !== right.interactionCount) {
+        return right.interactionCount - left.interactionCount;
+      }
+      if (left.lastActivityTime !== right.lastActivityTime) {
+        return right.lastActivityTime - left.lastActivityTime;
+      }
+      return left.title.localeCompare(right.title);
+    });
+  }
+
+  private shareTargetFromChat(
+    chat: Chat,
+    friendsByUsername: Map<string, Friend>,
+  ): ShareTarget | null {
+    if (chat.groupChat) {
+      return {
+        id: `chat:${chat.chatId}`,
+        kind: 'group',
+        chatId: chat.chatId,
+        username: null,
+        title: chat.name,
+        subtitle: `${chat.participants.length} ${chat.participants.length === 1 ? 'member' : 'members'}`,
+        avatarRef: chat.groupImage,
+        interactionCount: chat.personalMessageCount ?? 0,
+        lastActivityTime: this.shareChatActivityTime(chat),
+      };
+    }
+
+    const other = this.shareDirectPartner(chat);
+    if (!other) {
+      return null;
+    }
+
+    const friend = friendsByUsername.get(other.username.toLowerCase());
+    return {
+      id: `chat:${chat.chatId}`,
+      kind: 'direct',
+      chatId: chat.chatId,
+      username: other.username,
+      title: other.name?.trim() || friend?.name || other.username,
+      subtitle: `@${other.username}`,
+      avatarRef: other.profilePicture ?? friend?.profilePicture ?? null,
+      interactionCount: chat.personalMessageCount ?? 0,
+      lastActivityTime: this.shareChatActivityTime(chat),
+    };
+  }
+
+  private shareTargetFromFriend(friend: Friend): ShareTarget {
+    return {
+      id: `friend:${friend.username}`,
+      kind: 'direct',
+      chatId: null,
+      username: friend.username,
+      title: friend.name || friend.username,
+      subtitle: `@${friend.username}`,
+      avatarRef: friend.profilePicture,
+      interactionCount: 0,
+      lastActivityTime: 0,
+    };
+  }
+
+  private shareDirectPartner(chat: Chat): ChatParticipant | null {
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
+    const byChatName = chat.participants.find(participant => participant.username === chat.name);
+    if (byChatName) {
+      return byChatName;
+    }
+
+    if (currentUserId) {
+      return chat.participants.find(participant => participant.id.toLowerCase() !== currentUserId) ?? null;
+    }
+
+    return chat.participants[0] ?? null;
+  }
+
+  private shareChatActivityTime(chat: Chat): number {
+    const value = chat.lastMessage?.date ?? chat.createdAt;
+    return new Date(value.endsWith('Z') ? value : `${value}Z`).getTime();
+  }
+
+  private friendByUsername(username: string): Friend | null {
+    const normalizedUsername = username.toLowerCase();
+    return this.friends().find(friend => friend.username.toLowerCase() === normalizedUsername) ?? null;
+  }
+
+  private sharedPostPayload(post: Post): SharedPostPayload {
+    const caption = post.caption.length > 220
+      ? `${post.caption.slice(0, 217)}...`
+      : post.caption;
+    const postUrl = `${window.location.origin}/feed?comments=${encodeURIComponent(post.postId)}`;
+    const mediaUrl = post.videoImageRef?.[0] ?? null;
+    return {
+      postId: post.postId,
+      username: post.username,
+      caption,
+      url: postUrl,
+      mediaUrl,
+      mediaKind: mediaUrl ? (this.isVideo(mediaUrl) ? 'video' : 'image') : null,
+    };
   }
 }

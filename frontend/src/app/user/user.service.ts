@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -126,13 +126,16 @@ export class UserService {
   }
 
   public isUsernameAvailable(username: string) {
-    const params = new HttpParams()
-      .set('q', username)
-      .set('excludeFriends', 'false')
-      .set('excludeFollowed', 'false')
-      .set('verifiedOnly', 'false');
-
-    return this.httpClient.get<UserSearchResult[]>(this.baseUri + '/search', { params }).pipe(
+    return this.httpClient.post<UserSearchResult[]>(
+      environment.apiUrl + '/search/users',
+      {
+        query: username,
+        excludeFriends: false,
+        excludeFollowed: false,
+        verifiedOnly: false,
+      },
+      { context: SILENT_ERROR_CONTEXT },
+    ).pipe(
       map(users => !users.some(user => user.username.toLowerCase() === username.toLowerCase()))
     );
   }

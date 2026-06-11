@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +50,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     String jwt = authHeader.substring("Bearer ".length());
     String username;
+    Optional<UUID> userId;
     try {
       username = jwtService.extractUsername(jwt);
+      userId = jwtService.extractUserId(jwt);
     } catch (Exception e) {
       log.debug(
           "JWT auth failed for {} {}: token could not be parsed ({})",
@@ -63,13 +67,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
       UserDetails userDetails;
       try {
-        userDetails = this.userDetailsService.loadUserByUsername(username);
+        userDetails =
+            userId
+                .map(this.userDetailsService::loadUserById)
+                .orElseGet(() -> this.userDetailsService.loadUserByUsername(username));
       } catch (UsernameNotFoundException e) {
         log.debug(
             "JWT auth failed for {} {}: user '{}' from token was not found",
             request.getMethod(),
             request.getRequestURI(),
-            username);
+            userId.map(UUID::toString).orElse(username));
         filterChain.doFilter(request, response);
         return;
       }

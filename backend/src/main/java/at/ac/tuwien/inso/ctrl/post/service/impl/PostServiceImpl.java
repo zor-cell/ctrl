@@ -180,9 +180,8 @@ public class PostServiceImpl implements PostService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername) {
+  public List<PostResponse> getProfilePostsForUser(String profileUsername, User viewer) {
     User profileOwner = fetchUser(profileUsername);
-    User viewer = fetchUser(viewerUsername);
     LabelContext ctx = labelingService.buildContext(viewer);
 
     boolean canSeePrivatePosts =
@@ -278,7 +277,7 @@ public class PostServiceImpl implements PostService {
     Post post = this.fetchPost(postId);
     User user = this.fetchUser(username);
 
-    if (post.getIsRemoved()) {
+    if (Boolean.TRUE.equals(post.getIsRemoved())) {
       throw new NotFoundException("Post", postId);
     }
 

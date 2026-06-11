@@ -138,7 +138,7 @@
 
           <span class="row-subtitle" [class.row-subtitle--unread]="hasUnreadMessages(chat)">
             @if (chat.lastMessage) {
-              {{ chat.lastMessage.content }}
+              {{ messagePreviewForMessage(chat.lastMessage) }}
             } @else {
               {{ participantText(chat) }}
             }
@@ -155,8 +155,9 @@
           type="button"
           class="avatar avatar-large avatar-button"
           [class.avatar-button--group]="chat.groupChat"
-          (click)="chat.groupChat ? openMembersDialog() : null"
-          [attr.aria-label]="chat.groupChat ? 'View group members' : null">
+          [class.avatar-button--direct]="!chat.groupChat"
+          (click)="chat.groupChat ? openMembersDialog() : openDirectChatProfile(chat)"
+          [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'">
           @if (chat.groupChat && groupImageUrl(chat)) {
             <img [src]="groupImageUrl(chat)" alt="" />
           } @else if (!chat.groupChat && otherParticipant(chat); as other) {
@@ -170,14 +171,24 @@
           }
         </button>
 
-        <div class="chat-header-copy">
-          <h2>{{ chatDisplayName(chat) }}</h2>
-          @if (!chat.groupChat && directChatSubtitle(chat); as subtitle) {
-            <p>{{ subtitle }}</p>
-          } @else if (chat.groupChat && participantText(chat)) {
-            <p>{{ participantText(chat) }}</p>
-          }
-        </div>
+        @if (!chat.groupChat) {
+          <button
+            type="button"
+            class="chat-header-copy chat-header-link"
+            (click)="openDirectChatProfile(chat)">
+            <h2>{{ chatDisplayName(chat) }}</h2>
+            @if (directChatSubtitle(chat); as subtitle) {
+              <p>{{ subtitle }}</p>
+            }
+          </button>
+        } @else {
+          <div class="chat-header-copy">
+            <h2>{{ chatDisplayName(chat) }}</h2>
+            @if (participantText(chat)) {
+              <p>{{ participantText(chat) }}</p>
+            }
+          </div>
+        }
 
         <div class="chat-header-actions">
           @if (chat.groupChat) {
@@ -194,7 +205,7 @@
             <button
               type="button"
               class="header-icon-button delete-group-button"
-              (click)="deleteSelectedGroup()"
+              (click)="requestDeleteSelectedGroup()"
               pTooltip="Delete group for everyone"
               tooltipPosition="bottom"
               aria-label="Delete group for everyone">
@@ -204,7 +215,7 @@
             <button
               type="button"
               class="header-icon-button leave-group-button"
-              (click)="leaveGroup()"
+              (click)="requestLeaveGroup()"
               pTooltip="Leave group"
               tooltipPosition="bottom"
               aria-label="Leave group">
@@ -236,7 +247,10 @@
                 <span class="message-system-pill">{{ systemMessageLabel(message) }}</span>
               </div>
             } @else {
-            <article class="message-row" [class.own]="isOwnMessage(message)">
+            <article
+              class="message-row"
+              [class.own]="isOwnMessage(message)"
+              [class.message-row--shared-post]="hasSharedPost(message)">
               @if (!isOwnMessage(message)) {
                 <span class="avatar message-avatar" aria-hidden="true">
                   @if (avatarUrl(message.sender.id)) {
@@ -280,7 +294,75 @@
                     }
                     <time>{{ message.date | date: 'shortTime' }}</time>
                   </div>
-                  <p class="message-content">{{ message.content }}</p>
+                  @if (sharedPostFromMessage(message); as sharedPost) {
+                    <article
+                      class="shared-post-card"
+                      [class.shared-post-card--private]="!canViewSharedPost(sharedPost)"
+                      [class.shared-post-card--clickable]="canViewSharedPost(sharedPost)"
+                      [attr.role]="canViewSharedPost(sharedPost) ? 'link' : null"
+                      [attr.tabindex]="canViewSharedPost(sharedPost) ? 0 : null"
+                      (click)="openSharedPostDetail(sharedPost)"
+                      (keydown.enter)="openSharedPostDetail(sharedPost)"
+                      (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)">
+                      @if (canViewSharedPost(sharedPost)) {
+                        <div class="shared-post-header">
+                          <span class="shared-post-avatar" aria-hidden="true">
+                            @if (sharedPostAuthorAvatarUrl(sharedPost)) {
+                              <img [src]="sharedPostAuthorAvatarUrl(sharedPost)!" alt="" />
+                            } @else {
+                              {{ sharedPostAuthorInitial(sharedPost) }}
+                            }
+                          </span>
+                          <span class="shared-post-author-copy">
+                            <span class="shared-post-author-name">{{ sharedPostAuthorName(sharedPost) }}</span>
+                          </span>
+                        </div>
+
+                        @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
+                          <div class="shared-post-media">
+                            @if (sharedPost.post.mediaKind === 'video') {
+                              <video
+                                [src]="mediaUrl"
+                                muted
+                                playsinline
+                                preload="metadata"
+                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                            } @else {
+                              <img
+                                [src]="mediaUrl"
+                                alt=""
+                                loading="lazy"
+                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                            }
+                          </div>
+                        }
+
+                        <div class="shared-post-copy">
+                          <p>{{ sharedPost.post.caption }}</p>
+                          <span class="shared-post-link">View post</span>
+                        </div>
+                      } @else {
+                        <div class="shared-post-unavailable">
+                          <span class="shared-post-unavailable-icon" aria-hidden="true">
+                            <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
+                          </span>
+                          <div class="shared-post-unavailable-copy">
+                            <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
+                            <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
+                            @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
+                              <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </article>
+
+                    @if (sharedPost.note) {
+                      <p class="message-content">{{ sharedPost.note }}</p>
+                    }
+                  } @else {
+                    <p class="message-content">{{ message.content }}</p>
+                  }
                 </div>
 
                 @if (message.reactions.length > 0) {
@@ -308,12 +390,47 @@
 
       <form class="message-composer" (ngSubmit)="sendMessage()">
         <div class="composer-main">
+          @if (sharedPostDraft(); as sharedPost) {
+            <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
+              @if (sharedPost.mediaUrl) {
+                <div class="composer-shared-post-media">
+                  @if (sharedPost.mediaKind === 'video') {
+                    <video
+                      [src]="sharedPost.mediaUrl"
+                      muted
+                      playsinline
+                      preload="metadata"></video>
+                  } @else {
+                    <img
+                      [src]="sharedPost.mediaUrl"
+                      [alt]="sharedPost.caption"
+                      loading="lazy" />
+                  }
+                </div>
+              }
+
+              <div class="composer-shared-post-copy">
+                <span>Shared post from @{{ sharedPost.username }}</span>
+                <p>{{ sharedPost.caption }}</p>
+              </div>
+
+              <button
+                type="button"
+                class="composer-shared-post-remove"
+                (click)="clearSharedPostDraft()"
+                aria-label="Remove shared post">
+                <i class="pi pi-times"></i>
+              </button>
+            </article>
+          }
+
           <textarea
             pTextarea
             rows="1"
-            placeholder="Write a message..."
+            [placeholder]="sharedPostDraft() ? 'Add a message...' : 'Write a message...'"
             [ngModel]="messageText()"
             (ngModelChange)="messageText.set($event)"
+            (keydown)="sendMessageOnEnter($event)"
             name="message"></textarea>
         </div>
 
@@ -321,7 +438,7 @@
           type="submit"
           icon="pi pi-send"
           [rounded]="true"
-          [disabled]="!messageText().trim() || sendingMessage()"
+          [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
           aria-label="Send message" />
       </form>
     } @else {
@@ -332,6 +449,12 @@
     }
   </section>
 </main>
+
+<app-comments
+  [post]="selectedChatPostForComments()"
+  [visible]="chatPostCommentsVisible()"
+  (visibleChange)="onChatPostCommentsVisibleChange($event)"
+/>
 
 <p-dialog
   header="Create group"
@@ -392,7 +515,7 @@
     <section class="members-picker">
       <div class="members-picker-header">
         <span class="section-title">Members</span>
-        <span class="selected-count">{{ selectedGroupUsernames().length }} selected</span>
+        <span class="selected-count">{{ selectedGroupMemberCount() }} / {{ maxGroupMembers }} members</span>
       </div>
 
       <p-iconField iconPosition="left" class="members-search">
@@ -415,6 +538,7 @@
               <input
                 type="checkbox"
                 [checked]="isGroupFriendSelected(friend.username)"
+                [disabled]="!canSelectGroupFriend(friend.username)"
                 (change)="toggleGroupFriend(friend.username)" />
               <span class="avatar" aria-hidden="true">
                 @if (avatarUrl(friend.id)) {
@@ -453,22 +577,31 @@
     <ul class="members-list">
       @for (participant of sortedGroupMembers(); track participant.id) {
         <li class="member-row" [class.member-row--owner]="isGroupOwner(participant, chat)">
-          <span class="avatar" aria-hidden="true">
-            @if (avatarUrl(participant.id)) {
-              <img [src]="avatarUrl(participant.id)" alt="" />
-            } @else {
-              {{ initialFor(participant) }}
-            }
-          </span>
-          <span class="row-copy">
-            <span class="row-title">
-              {{ participant.name || participant.username }}
-              @if (isGroupOwner(participant, chat)) {
-                <span class="owner-badge">Owner</span>
+          <button
+            type="button"
+            class="member-profile-button"
+            (click)="openParticipantProfile(participant)"
+            [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
+            <span class="avatar" aria-hidden="true">
+              @if (avatarUrl(participant.id)) {
+                <img [src]="avatarUrl(participant.id)" alt="" />
+              } @else {
+                {{ initialFor(participant) }}
               }
             </span>
-            <span class="row-subtitle">&#64;{{ participant.username }}</span>
-          </span>
+            <span class="row-copy">
+              <span class="row-title">
+                {{ participant.name || participant.username }}
+                @if (isGroupOwner(participant, chat)) {
+                  <span class="owner-badge">Owner</span>
+                }
+                @if (isFriendParticipant(participant)) {
+                  <span class="friend-badge">Friend</span>
+                }
+              </span>
+              <span class="row-subtitle">&#64;{{ participant.username }}</span>
+            </span>
+          </button>
           @if (canRemoveMember(participant, chat)) {
             <button
               type="button"
@@ -488,7 +621,7 @@
     <section class="add-members-section">
       <div class="members-picker-header">
         <span class="section-title">Add members</span>
-        <span class="selected-count">{{ selectedAddMemberUsernames().length }} selected</span>
+        <span class="selected-count">{{ selectedAddMemberCount(chat) }} / {{ maxGroupMembers }} members</span>
       </div>
 
       <p-iconField iconPosition="left" class="members-search">
@@ -511,6 +644,7 @@
               <input
                 type="checkbox"
                 [checked]="isAddMemberFriendSelected(friend.username)"
+                [disabled]="!isAddMemberFriendSelected(friend.username) && !canSelectAdditionalMember()"
                 (change)="toggleAddMemberFriend(friend.username)" />
               <span class="avatar" aria-hidden="true">
                 @if (avatarUrl(friend.id)) {
@@ -531,7 +665,7 @@
       <button
         type="button"
         class="primary-button add-members-button"
-        [disabled]="selectedAddMemberUsernames().length === 0 || addingMembers()"
+        [disabled]="!canAddMembersToGroup()"
         (click)="addMembersToGroup()">
         Add to group
       </button>
@@ -539,3 +673,34 @@
     }
   </p-dialog>
 }
+
+<p-dialog
+  [header]="groupConfirmationTitle()"
+  [visible]="groupConfirmationAction() !== null"
+  (visibleChange)="onGroupConfirmationVisibilityChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!groupActionInProgress()"
+  [style]="{ width: '90vw', maxWidth: '380px' }"
+  styleClass="chat-dialog group-confirmation-dialog">
+  <div class="group-confirmation">
+    <p>{{ groupConfirmationMessage() }}</p>
+    <div class="group-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="groupActionInProgress()"
+        (click)="closeGroupConfirmation()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        [disabled]="groupActionInProgress()"
+        (click)="confirmGroupAction()">
+        {{ groupConfirmationButtonLabel() }}
+      </button>
+    </div>
+  </div>
+</p-dialog>

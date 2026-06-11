@@ -173,7 +173,7 @@ public class PostControllerIntegrationTest {
     authenticate(user);
     PostResponse response = createPostResponse(user, "post-1", "Profile post");
 
-    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of(response));
+    when(postService.getProfilePostsForUser("marlene", user)).thenReturn(List.of(response));
 
     mockMvc
         .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
@@ -181,7 +181,7 @@ public class PostControllerIntegrationTest {
         .andExpect(jsonPath("$[0].postId").value("post-1"))
         .andExpect(jsonPath("$[0].caption").value("Profile post"));
 
-    verify(postService).getProfilePostsForUser("marlene", "marlene");
+    verify(postService).getProfilePostsForUser("marlene", user);
   }
 
   @Test
@@ -189,14 +189,14 @@ public class PostControllerIntegrationTest {
     User user = createUser("marlene");
     authenticate(user);
 
-    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of());
+    when(postService.getProfilePostsForUser("marlene", user)).thenReturn(List.of());
 
     mockMvc
         .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
         .andExpect(status().isOk())
         .andExpect(content().json("[]"));
 
-    verify(postService).getProfilePostsForUser("marlene", "marlene");
+    verify(postService).getProfilePostsForUser("marlene", user);
   }
 
   @Test

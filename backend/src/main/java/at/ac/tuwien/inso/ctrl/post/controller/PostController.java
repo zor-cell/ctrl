@@ -6,6 +6,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +37,8 @@ public class PostController {
 
   @GetMapping("/user/{username}")
   public List<PostResponse> getProfilePosts(
-      @PathVariable String username, @AuthenticationPrincipal UserDetails userDetails) {
-    return postService.getProfilePostsForUser(username, userDetails.getUsername());
+      @PathVariable String username, @AuthenticationPrincipal User currentUser) {
+    return postService.getProfilePostsForUser(username, currentUser);
   }
 
   @GetMapping("/{postId}")
