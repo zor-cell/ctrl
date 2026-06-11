@@ -30,7 +30,7 @@ application:
     require-email-verification: false
   session:
     max-time-between-heartbeats: 3 #minutes
-    snooze-time: 1 #minutes
+    snooze-time: 5 #minutes
 
 infinity:
   url: http://localhost:7997
