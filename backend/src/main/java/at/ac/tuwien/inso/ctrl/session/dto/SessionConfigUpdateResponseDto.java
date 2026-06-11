@@ -7,5 +7,4 @@ public record SessionConfigUpdateResponseDto(
     @NotNull @Min(0) Integer timeLimitMinutes,
     @NotNull @Min(0) Integer postLimit,
     @NotNull boolean allowSnooze,
-    boolean appliedImmediately
-) {}
+    boolean appliedImmediately) {}

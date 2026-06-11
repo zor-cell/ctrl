@@ -93,7 +93,8 @@ public class SessionService {
   }
 
   @Transactional
-  public SessionConfigUpdateResponseDto updateConfig(User currentUser, SessionConfigDto sessionConfigDto) {
+  public SessionConfigUpdateResponseDto updateConfig(
+      User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
     DailySessionStatsProjection stats =
         sessionRepository.getDailyStats(currentUser, LocalDate.now().atStartOfDay());
@@ -118,11 +119,10 @@ public class SessionService {
     var savedConfig = sessionConfigRepository.save(config);
 
     return new SessionConfigUpdateResponseDto(
-            savedConfig.getTimeLimitMinutes(),
-            savedConfig.getPostLimit(),
-            sessionConfigDto.allowSnooze(),
-            !isAlreadyExceeded
-    );
+        savedConfig.getTimeLimitMinutes(),
+        savedConfig.getPostLimit(),
+        sessionConfigDto.allowSnooze(),
+        !isAlreadyExceeded);
   }
 
   public SessionHistory getOrCreateLastSession(User user) {
