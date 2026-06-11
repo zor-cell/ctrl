@@ -236,19 +236,19 @@
            tooltipPosition="right" style="margin-right: 0.4rem;margin-left: 0.2rem;"></i>
         <button
           class="action-btn upvote"
-          [class.active]="post.sourceIds[0].userVote === 'up'"
+          [class.active]="sourceVoteFor(post.postId) === 'up'"
           (click)="voteSource(post, 'up')"
           [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
+          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'up'"
         >
           <i class="pi pi-check"></i>
         </button>
         <button
           class="action-btn downvote"
-          [class.active]="post.sourceIds[0].userVote === 'down'"
+          [class.active]="sourceVoteFor(post.postId) === 'down'"
           (click)="voteSource(post, 'down')"
           [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
+          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'down'"
         >
           <i class="pi pi-times"></i>
         </button>
@@ -266,10 +266,10 @@
       <!-- PRIVATE: Likes only -->
       @if (!post.isPublic) {
         <button class="action-btn heart"
-                [class.active]="post.userVote === 'up'"
+                [class.active]="userVoteFor(post.postId) === 'up'"
                 (click)="votePost(post, 'up')"
                 [attr.aria-label]="'Upvote – ' + post.upvotes"
-                [attr.aria-pressed]="post.userVote === 'up'">
+                [attr.aria-pressed]="userVoteFor(post.postId) === 'up'">
           <i class="pi pi-heart"></i>
         </button>
       }
@@ -278,19 +278,19 @@
       @if (post.isPublic) {
         <button
           class="action-btn upvote"
-          [class.active]="post.userVote === 'up'"
+          [class.active]="userVoteFor(post.postId) === 'up'"
           (click)="votePost(post, 'up')"
           [attr.aria-label]="'Upvote – ' + post.upvotes"
-          [attr.aria-pressed]="post.userVote === 'up'"
+          [attr.aria-pressed]="userVoteFor(post.postId) === 'up'"
         >
           <i class="pi pi-thumbs-up"></i>
         </button>
         <button
           class="action-btn downvote"
-          [class.active]="post.userVote === 'down'"
+          [class.active]="userVoteFor(post.postId) === 'down'"
           (click)="votePost(post, 'down')"
           [attr.aria-label]="'Downvote – ' + post.downvotes"
-          [attr.aria-pressed]="post.userVote === 'down'"
+          [attr.aria-pressed]="userVoteFor(post.postId) === 'down'"
         >
           <i class="pi pi-thumbs-down"></i>
         </button>
@@ -299,7 +299,7 @@
       <!-- Comments -->
       <button class="action-btn" (click)="openCommentsDialog(post.postId)">
         <i class="pi pi-comment"></i>
-        <span>{{ post.comments.length }}</span>
+        <span>{{ commentCount(post) }}</span>
       </button>
 
       <button

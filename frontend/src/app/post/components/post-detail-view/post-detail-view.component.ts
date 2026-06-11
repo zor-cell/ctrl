@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   EventEmitter,
   inject,
   Input,
@@ -28,6 +29,7 @@ import { ContentTypeEnum } from '../../../report/dto/report';
 import { FollowBadgeComponent } from '../../../feed/components/follow-badge/follow-badge.component';
 import { PostShareDialogComponent } from '../post-share/post-share-dialog.component';
 import { PostCommentComponent} from '../post-comment/post-comment';
+import { PostStateService } from '../../services/post-state.service';
 
 @Component({
   selector: 'app-post-detail-view',
@@ -50,9 +52,10 @@ import { PostCommentComponent} from '../post-comment/post-comment';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostDetailViewComponent implements OnChanges, OnDestroy {
-  private readonly postService = inject(PostService);
-  private readonly userService = inject(UserService);
-  private readonly cdr         = inject(ChangeDetectorRef);
+  private readonly postService  = inject(PostService);
+  private readonly userService  = inject(UserService);
+  private readonly cdr          = inject(ChangeDetectorRef);
+  private readonly postState    = inject(PostStateService);
 
   @Input() postId: string | null = null;
   @Output() readonly shareClicked = new EventEmitter<void>();
@@ -64,35 +67,49 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
   protected readonly loading = signal(false);
   protected readonly error   = signal(false);
 
-  // ─── Voting ───────────────────────────────────────────
-  protected readonly postVote      = signal<'up' | 'down' | null>(null);
+  // ─── Voting: computed signals from shared store (OnPush-compatible) ──────────
+  //
+  // Plain getters are invisible to Angular's change detection under OnPush.
+  // computed() creates reactive nodes that are tracked in the template, so
+  // the view updates automatically whenever the store's vote map changes.
+
+  private readonly _postId = signal<string | null>(null);
+
+  protected readonly postVote   = computed(() =>
+      this.postState.voteMap()[this._postId() ?? '']?.userVote  ?? null
+  );
+  protected readonly sourceVote = computed(() =>
+      this.postState.voteMap()[this._postId() ?? '']?.sourceVote ?? null
+  );
+
   protected readonly postUpvotes   = signal(0);
   protected readonly postDownvotes = signal(0);
-  protected readonly sourceVote    = signal<'up' | 'down' | null>(null);
+
   private votingInProgress       = false;
   private sourceVotingInProgress = false;
 
-  // ─── Report ───────────────────────────────────────────
+  // ─── Report ───────────────────────────────────────────────────────────────
   protected readonly reportPostVisible   = signal(false);
   protected readonly reportSourceVisible = signal(false);
   protected readonly ContentTypeEnum     = ContentTypeEnum;
 
-  // ─── Share ────────────────────────────────────────────
+  // ─── Share ────────────────────────────────────────────────────────────────
   protected readonly shareDialogVisible = signal(false);
 
-  // ─── Lifecycle ────────────────────────────────────────
+  // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   ngOnChanges(changes: SimpleChanges): void {
     const change   = changes['postId'];
     const current  = change?.currentValue as string | null;
     const previous = change?.previousValue as string | null;
+    this._postId.set(current);
     if (current && current !== previous) this.fetchPost(current);
     if (!current) this.reset();
   }
 
   ngOnDestroy(): void {}
 
-  // ─── Data fetching ────────────────────────────────────
+  // ─── Data fetching ────────────────────────────────────────────────────────
 
   private async fetchPost(postId: string): Promise<void> {
     this.loading.set(true);
@@ -100,9 +117,19 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     this.post.set(null);
     try {
       const post = await this.postService.getPostById(postId);
+      console.log(post)
       this.post.set(post);
-      console.log(post);
-      this.postVote.set(post.userVote ?? null);
+
+      // Seed vote state only if the feed hasn't already written a fresher value.
+      // initVote is a no-op when the postId is already tracked, so a vote cast
+      // in the feed before opening the detail-view is preserved.
+      const sourceVoteFromDetail = (post.source as any)?.userVote ?? null;
+      this.postState.initVote(postId, post.userVote ?? null, sourceVoteFromDetail);
+
+      // Seed comment count with the detail-view value (more accurate than feed snapshot).
+      const commentCount = post.comments?.length ?? 0;
+      this.postState.setCommentCount(postId, commentCount);
+
       this.postUpvotes.set(post.upvotes ?? 0);
       this.postDownvotes.set(post.downvotes ?? 0);
     } catch {
@@ -117,13 +144,34 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     this.post.set(null);
     this.loading.set(false);
     this.error.set(false);
-    this.postVote.set(null);
     this.postUpvotes.set(0);
     this.postDownvotes.set(0);
-    this.sourceVote.set(null);
   }
 
-  // ─── Voting ───────────────────────────────────────────
+  // ─── Comment count (from shared store) ────────────────────────────────────
+
+  /**
+   * Called by the template. Returns the live comment count from the shared
+   * store so that both the detail-view action bar and the feed card stay
+   * in sync without a round-trip.
+   */
+  protected get liveCommentCount(): number {
+    const fromStore = this.postState.getCommentCount(this.postId ?? '');
+    return fromStore ?? this.commentsComponent?.count ?? 0;
+  }
+
+  /**
+   * Called by PostCommentComponent (or its parent) whenever the user
+   * successfully submits a comment.
+   */
+  protected onCommentAdded(): void {
+    if (this.postId) {
+      this.postState.incrementCommentCount(this.postId);
+    }
+    this.cdr.markForCheck();
+  }
+
+  // ─── Voting ───────────────────────────────────────────────────────────────
 
   protected async votePost(voteType: VoteType): Promise<void> {
     const post = this.post();
@@ -136,19 +184,21 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
 
     const isSameVote = prevVote === voteType;
     const optimistic = this.calcOptimisticVote(prevUp, prevDown, prevVote, voteType, isSameVote);
-    this.postVote.set(optimistic.userVote);
+
+    // Write to shared store (feed will reflect this immediately)
+    this.postState.setUserVote(post.postId, optimistic.userVote);
     this.postUpvotes.set(optimistic.upvotes);
     this.postDownvotes.set(optimistic.downvotes);
     this.cdr.markForCheck();
 
     try {
       const result = await this.postService.votePost(post.postId, voteType);
-      this.postVote.set(result.userVote ?? null);
+      this.postState.setUserVote(post.postId, result.userVote ?? null);
       this.postUpvotes.set(result.upvotes ?? optimistic.upvotes);
       this.postDownvotes.set(result.downvotes ?? optimistic.downvotes);
     } catch (err) {
       console.error('Post-vote failed; reverting:', err);
-      this.postVote.set(prevVote);
+      this.postState.setUserVote(post.postId, prevVote);
       this.postUpvotes.set(prevUp);
       this.postDownvotes.set(prevDown);
     } finally {
@@ -164,15 +214,17 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
 
     const prevVote   = this.sourceVote();
     const isSameVote = prevVote === voteType;
-    this.sourceVote.set(isSameVote ? null : voteType);
+
+    // Write to shared store (feed will reflect this immediately)
+    this.postState.setSourceVote(this.postId!, isSameVote ? null : voteType);
     this.cdr.markForCheck();
 
     try {
       const result = await this.postService.voteSource(sourceId, voteType);
-      this.sourceVote.set(result.userVote ?? null);
+      this.postState.setSourceVote(this.postId!, result.userVote ?? null);
     } catch (err) {
       console.error('Source-vote failed; reverting:', err);
-      this.sourceVote.set(prevVote);
+      this.postState.setSourceVote(this.postId!, prevVote);
     } finally {
       this.sourceVotingInProgress = false;
       this.cdr.markForCheck();
@@ -180,11 +232,11 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
   }
 
   private calcOptimisticVote(
-    upvotes: number,
-    downvotes: number,
-    currentVote: 'up' | 'down' | null,
-    voteType: VoteType,
-    isSameVote: boolean,
+      upvotes: number,
+      downvotes: number,
+      currentVote: 'up' | 'down' | null,
+      voteType: VoteType,
+      isSameVote: boolean,
   ): { upvotes: number; downvotes: number; userVote: VoteType | null } {
     if (isSameVote) {
       if (voteType === 'up') upvotes = Math.max(0, upvotes - 1);
@@ -201,7 +253,7 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     return { upvotes, downvotes, userVote: voteType };
   }
 
-  // ─── Share ────────────────────────────────────────────
+  // ─── Share ────────────────────────────────────────────────────────────────
 
   protected openShareDialog(): void {
     this.shareDialogVisible.set(true);
@@ -213,13 +265,13 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     this.shareDialogVisible.set(visible);
   }
 
-  // ─── Post ownership ───────────────────────────────────
+  // ─── Post ownership ───────────────────────────────────────────────────────
 
   protected isOwnPost(): boolean {
     return this.post()?.username === this.userService.user()?.username;
   }
 
-  // ─── Utilities ────────────────────────────────────────
+  // ─── Utilities ────────────────────────────────────────────────────────────
 
   protected isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);

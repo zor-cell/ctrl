@@ -2,9 +2,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  EventEmitter,
   inject,
   Input,
   OnChanges,
+  Output,
   signal,
   SimpleChanges,
 } from '@angular/core';
@@ -45,6 +47,7 @@ export class PostCommentComponent implements OnChanges {
   private readonly cdr            = inject(ChangeDetectorRef);
 
   @Input() postId: string | null = null;
+  @Output() readonly commentAdded = new EventEmitter<void>();
 
   protected readonly comments         = signal<CommentResponse[]>([]);
   protected readonly loadingComments  = signal(false);
@@ -127,13 +130,14 @@ export class PostCommentComponent implements OnChanges {
     this.submitting.set(true);
     try {
       const created = await this.commentService.addComment(
-        this.postId,
-        text,
-        this.replyingTo()?.commentId ?? null,
+          this.postId,
+          text,
+          this.replyingTo()?.commentId ?? null,
       );
       this.comments.update(c => [...c, created]);
       this.newComment = '';
       this.replyingTo.set(null);
+      this.commentAdded.emit();
       this.cdr.markForCheck();
     } catch (err) {
       console.error('Failed to submit comment:', err);
@@ -174,7 +178,7 @@ export class PostCommentComponent implements OnChanges {
     try {
       await this.commentService.deleteComment(commentId);
       this.comments.update(c =>
-        c.filter(x => x.commentId !== commentId && x.parentCommentId !== commentId),
+          c.filter(x => x.commentId !== commentId && x.parentCommentId !== commentId),
       );
       this.cdr.markForCheck();
     } catch (err) {

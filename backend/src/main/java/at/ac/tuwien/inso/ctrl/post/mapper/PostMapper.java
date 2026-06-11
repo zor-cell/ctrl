@@ -21,149 +21,156 @@ public class PostMapper {
     List<LabelResponse> labelIds = List.of();
 
     List<String> topicIds =
-        post.getPostTopics().stream()
-            .map(postTopic -> postTopic.getTopic().getTopicId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+            post.getPostTopics().stream()
+                    .map(postTopic -> postTopic.getTopic().getTopicId())
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
     List<CommentResponse> comments =
-        post.getComments().stream()
-            .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
-            .toList();
+            post.getComments().stream()
+                    .sorted(Comparator.comparing(Comment::getCreatedAt))
+                    .map(this::toCommentResponse)
+                    .toList();
 
     return new PostResponse(
-        post.getPostId(),
-        post.getUser().getId(),
-        post.getUser().getUsername(),
-        sourceId,
-        toSourceResponse(post.getSource()),
-        post.getCaption(),
-        post.getMediaRef(),
-        post.isPublic(),
-        post.isAiGenerated(),
-        labelIds,
-        topicIds,
-        comments,
-        post.getUpvotes(),
-        post.getDownvotes(),
-        post.getCreatedAt());
+            post.getPostId(),
+            post.getUser().getId(),
+            post.getUser().getUsername(),
+            sourceId,
+            toSourceResponse(post.getSource()),
+            post.getCaption(),
+            post.getMediaRef(),
+            post.isPublic(),
+            post.isAiGenerated(),
+            labelIds,
+            topicIds,
+            comments,
+            post.getUpvotes(),
+            post.getDownvotes(),
+            post.getCreatedAt());
   }
 
   public PostResponse toResponse(Post post, Set<PostLabelType> computedLabels) {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
 
     List<LabelResponse> labels =
-        computedLabels.stream()
-            .map(
-                type ->
-                    new LabelResponse(
-                        type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
-            .toList();
+            computedLabels.stream()
+                    .map(
+                            type ->
+                                    new LabelResponse(
+                                            type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
+                    .toList();
 
     List<String> topicIds =
-        post.getPostTopics().stream()
-            .map(postTopic -> postTopic.getTopic().getTopicId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+            post.getPostTopics().stream()
+                    .map(postTopic -> postTopic.getTopic().getTopicId())
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
 
     List<CommentResponse> comments =
-        post.getComments().stream()
-            .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
-            .toList();
+            post.getComments().stream()
+                    .sorted(Comparator.comparing(Comment::getCreatedAt))
+                    .map(this::toCommentResponse)
+                    .toList();
 
     return new PostResponse(
-        post.getPostId(),
-        post.getUser().getId(),
-        post.getUser().getUsername(),
-        sourceId,
-        toSourceResponse(post.getSource()),
-        post.getCaption(),
-        post.getMediaRef(),
-        post.isPublic(),
-        post.isAiGenerated(),
-        labels,
-        topicIds,
-        comments,
-        post.getUpvotes(),
-        post.getDownvotes(),
-        post.getCreatedAt());
+            post.getPostId(),
+            post.getUser().getId(),
+            post.getUser().getUsername(),
+            sourceId,
+            toSourceResponse(post.getSource()),
+            post.getCaption(),
+            post.getMediaRef(),
+            post.isPublic(),
+            post.isAiGenerated(),
+            labels,
+            topicIds,
+            comments,
+            post.getUpvotes(),
+            post.getDownvotes(),
+            post.getCreatedAt());
   }
 
-  public DetailedPostResponse toDetailedPostResponse(Post post, PostVote postVote) {
+  public DetailedPostResponse toDetailedPostResponse(
+          Post post, PostVote postVote, Set<PostLabelType> computedLabels) {
     String userId =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getExternalAuthorId()
-            : post.getUser().getId().toString();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getExternalAuthorId()
+                    : post.getUser().getId().toString();
     String username =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getDisplayName()
+                    : post.getUser().getUsername();
     String avatarUrl =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getAvatarUrl()
+                    : post.getUser().getProfilePicture();
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
-    List<String> labelIds = List.of();
+    List<LabelResponse> labels =
+            computedLabels.stream()
+                    .map(
+                            type ->
+                                    new LabelResponse(
+                                            type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
+                    .toList();
     List<String> topicIds =
-        post.getPostTopics().stream()
-            .map(postTopic -> postTopic.getTopic().getTopicId())
-            .sorted(Comparator.naturalOrder())
-            .toList();
+            post.getPostTopics().stream()
+                    .map(postTopic -> postTopic.getTopic().getTopicId())
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
     List<CommentResponse> comments =
-        post.getComments().stream()
-            .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
-            .toList();
+            post.getComments().stream()
+                    .sorted(Comparator.comparing(Comment::getCreatedAt))
+                    .map(this::toCommentResponse)
+                    .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
 
     return new DetailedPostResponse(
-        post.getPostId(),
-        userId,
-        username,
-        avatarUrl,
-        sourceId,
-        toSourceResponse(post.getSource()),
-        post.getCaption(),
-        post.getMediaRef(),
-        post.isPublic(),
-        post.isExternalPost(),
-        userProfileUrl,
-        post.isAiGenerated(),
-        labelIds,
-        topicIds,
-        comments,
-        post.getUpvotes(),
-        post.getDownvotes(),
-        userVote,
-        post.getCreatedAt());
+            post.getPostId(),
+            userId,
+            username,
+            avatarUrl,
+            sourceId,
+            toSourceResponse(post.getSource()),
+            post.getCaption(),
+            post.getMediaRef(),
+            post.isPublic(),
+            post.isExternalPost(),
+            userProfileUrl,
+            post.isAiGenerated(),
+            labels,
+            topicIds,
+            comments,
+            post.getUpvotes(),
+            post.getDownvotes(),
+            userVote,
+            post.getCreatedAt());
   }
 
   public PostPreviewResponse toPostPreviewResponse(Post post) {
     String userId =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getExternalAuthorId()
-            : post.getUser().getId().toString();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getExternalAuthorId()
+                    : post.getUser().getId().toString();
     String username =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getDisplayName()
+                    : post.getUser().getUsername();
     String avatarUrl =
-        post.isExternalPost()
-            ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            post.isExternalPost()
+                    ? post.getExternalAuthor().getAvatarUrl()
+                    : post.getUser().getProfilePicture();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
     return new PostPreviewResponse(
-        post.getPostId(),
-        post.getCaption(),
-        post.getMediaRef(),
-        userId,
-        username,
-        avatarUrl,
-        post.isPublic(),
-        post.isExternalPost(),
-        userProfileUrl);
+            post.getPostId(),
+            post.getCaption(),
+            post.getMediaRef(),
+            userId,
+            username,
+            avatarUrl,
+            post.isPublic(),
+            post.isExternalPost(),
+            userProfileUrl);
   }
 
   private SourceResponse toSourceResponse(Source source) {
@@ -172,37 +179,37 @@ public class PostMapper {
     }
 
     List<SingleSourceResponse> singleSources =
-        source.getSingleSources().stream()
-            .sorted(
-                Comparator.comparing(
-                    SingleSource::getTitle, Comparator.nullsLast(String::compareTo)))
-            .map(this::toSingleSourceResponse)
-            .toList();
+            source.getSingleSources().stream()
+                    .sorted(
+                            Comparator.comparing(
+                                    SingleSource::getTitle, Comparator.nullsLast(String::compareTo)))
+                    .map(this::toSingleSourceResponse)
+                    .toList();
 
     return new SourceResponse(
-        source.getSourceId(),
-        source.getUpvotes(),
-        source.getDownvotes(),
-        source.getCreatedAt(),
-        singleSources);
+            source.getSourceId(),
+            source.getUpvotes(),
+            source.getDownvotes(),
+            source.getCreatedAt(),
+            singleSources);
   }
 
   private SingleSourceResponse toSingleSourceResponse(SingleSource source) {
     return new SingleSourceResponse(
-        source.getSingleSourceId(),
-        source.getJournal(),
-        source.getAuthor(),
-        source.getTitle(),
-        source.getUrl(),
-        source.getDate());
+            source.getSingleSourceId(),
+            source.getJournal(),
+            source.getAuthor(),
+            source.getTitle(),
+            source.getUrl(),
+            source.getDate());
   }
 
   private CommentResponse toCommentResponse(Comment comment) {
     return new CommentResponse(
-        comment.getCommentId(),
-        comment.getUser().getUsername(),
-        comment.getContent(),
-        comment.getCreatedAt(),
-        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId());
+            comment.getCommentId(),
+            comment.getUser().getUsername(),
+            comment.getContent(),
+            comment.getCreatedAt(),
+            comment.getParentComment() == null ? null : comment.getParentComment().getCommentId());
   }
 }

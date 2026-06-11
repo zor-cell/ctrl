@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, signal, ElementRef, ViewChild} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, signal, ElementRef, ViewChild, computed} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
@@ -27,6 +27,7 @@ import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 import {PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 import {PostShareDialogComponent} from '../../../post/components/post-share/post-share-dialog.component';
+import {PostStateService} from '../../../post/services/post-state.service';
 
 @Component({
   selector: 'app-feed',
@@ -61,6 +62,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   postService = inject(PostService);
 
   readonly viewTracking = inject(ViewTrackingService);
+
+  // ─── Shared state service ─────────────────────────────────────────────────
+  protected readonly postState = inject(PostStateService);
 
   protected whyDialogVisible = signal(false);
   protected selectedPost = signal<Post | null>(null);
@@ -129,6 +133,17 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+
+        // ── Seed shared state once for every post ──────────────────────────
+        [...publicPosts, ...privatePosts].forEach(post => {
+          this.postState.initVote(
+            post.postId,
+            (post.userVote as 'up' | 'down' | null) ?? null,
+            (post.sourceIds?.[0]?.userVote as 'up' | 'down' | null) ?? null,
+          );
+          this.postState.initCommentCount(post.postId, post.comments?.length ?? 0);
+        });
+
         this.isLoading.set(false);
 
         const postId = this.route.snapshot.queryParamMap.get('comments');
@@ -155,31 +170,54 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.algorithmConfigVisible.set(true);
   }
 
+  // ─── Comment count helper (reads from shared store) ───────────────────────
+
+  /**
+   * Returns the comment count for a post from the shared store.
+   * Falls back to the feed payload length so existing template references keep working.
+   */
+  protected commentCount(post: Post): number {
+    return this.postState.getCommentCount(post.postId) ?? post.comments?.length ?? 0;
+  }
+
+  // ─── Vote helpers (delegate to shared store for user-vote state) ──────────
+
+  protected userVoteFor(postId: string): 'up' | 'down' | null {
+    return this.postState.getVote(postId).userVote;
+  }
+
+  protected sourceVoteFor(postId: string): 'up' | 'down' | null {
+    return this.postState.getVote(postId).sourceVote;
+  }
+
   async votePost(post: Post, voteType: VoteType): Promise<void> {
     if (this.votingInProgress.has(post.postId)) return;
     this.votingInProgress.add(post.postId);
 
-    const previousVote = post.userVote;
+    const previousVote    = this.postState.getVote(post.postId).userVote;
     const previousUpvotes = post.upvotes;
     const previousDownvotes = post.downvotes;
 
-    const isSameVote = post.userVote === voteType;
-    const optimistic = this.calcOptimisticVote(post.upvotes, post.downvotes, post.userVote, voteType, isSameVote);
-    this.patchPost(post.postId, optimistic);
+    const isSameVote = previousVote === voteType;
+    const optimistic = this.calcOptimisticVote(post.upvotes, post.downvotes, previousVote, voteType, isSameVote);
+
+    // Update shared vote store immediately (optimistic)
+    this.postState.setUserVote(post.postId, optimistic.userVote);
+    this.patchPost(post.postId, { upvotes: optimistic.upvotes, downvotes: optimistic.downvotes });
 
     try {
       const result = await this.postService.votePost(post.postId, voteType);
+      this.postState.setUserVote(post.postId, result.userVote ?? null);
       this.patchPost(post.postId, {
         upvotes: result.upvotes,
         downvotes: result.downvotes,
-        userVote: result.userVote,
       });
     } catch (err) {
       console.error('Post-vote failed; will be reset:', err);
+      this.postState.setUserVote(post.postId, previousVote);
       this.patchPost(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
-        userVote: previousVote,
       });
     } finally {
       this.votingInProgress.delete(post.postId);
@@ -192,27 +230,30 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (this.sourceVotingInProgress.has(source.sourceId)) return;
     this.sourceVotingInProgress.add(source.sourceId);
 
-    const previousVote = source.userVote;
-    const previousUpvotes = source.upvotes;
+    const previousVote     = this.postState.getVote(post.postId).sourceVote;
+    const previousUpvotes  = source.upvotes;
     const previousDownvotes = source.downvotes;
 
-    const isSameVote = source.userVote === voteType;
-    const optimistic = this.calcOptimisticVote(source.upvotes, source.downvotes, source.userVote, voteType, isSameVote);
-    this.patchSource(post.postId, optimistic);
+    const isSameVote = previousVote === voteType;
+    const optimistic = this.calcOptimisticVote(source.upvotes, source.downvotes, previousVote, voteType, isSameVote);
+
+    // Update shared vote store immediately (optimistic)
+    this.postState.setSourceVote(post.postId, optimistic.userVote);
+    this.patchSource(post.postId, { upvotes: optimistic.upvotes, downvotes: optimistic.downvotes });
 
     try {
       const result = await this.postService.voteSource(source.sourceId, voteType);
+      this.postState.setSourceVote(post.postId, result.userVote ?? null);
       this.patchSource(post.postId, {
         upvotes: result.upvotes,
         downvotes: result.downvotes,
-        userVote: result.userVote,
       });
     } catch (err) {
       console.error('Source vote failed; will be reset:', err);
+      this.postState.setSourceVote(post.postId, previousVote);
       this.patchSource(post.postId, {
         upvotes: previousUpvotes,
         downvotes: previousDownvotes,
-        userVote: previousVote,
       });
     } finally {
       this.sourceVotingInProgress.delete(source.sourceId);
@@ -281,6 +322,15 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+
+        // Re-seed state for refreshed posts (init is a no-op if already tracked,
+        // so use set here to actually refresh values on a manual reload).
+        [...publicPosts, ...privatePosts].forEach(post => {
+          this.postState.setUserVote(post.postId, (post.userVote as 'up' | 'down' | null) ?? null);
+          this.postState.setSourceVote(post.postId, (post.sourceIds?.[0]?.userVote as 'up' | 'down' | null) ?? null);
+          this.postState.setCommentCount(post.postId, post.comments?.length ?? 0);
+        });
+
         this.isLoading.set(false);
         this.isRefreshing.set(false);
         this.scrollFeedToTop();
