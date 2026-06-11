@@ -7,7 +7,6 @@ import {
   inject,
   Input,
   OnChanges,
-  OnDestroy,
   Output,
   signal,
   SimpleChanges,
@@ -51,7 +50,7 @@ import { PostStateService } from '../../services/post-state.service';
   styleUrl: './post-detail-view.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PostDetailViewComponent implements OnChanges, OnDestroy {
+export class PostDetailViewComponent implements OnChanges {
   private readonly postService  = inject(PostService);
   private readonly userService  = inject(UserService);
   private readonly cdr          = inject(ChangeDetectorRef);
@@ -104,8 +103,6 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     if (!current) this.reset();
   }
 
-  ngOnDestroy(): void {}
-
   // ─── Data fetching ────────────────────────────────────────────────────────
 
   private async fetchPost(postId: string): Promise<void> {
@@ -116,7 +113,7 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
       const post = await this.postService.getPostById(postId);
       this.post.set(post);
 
-      const sourceVoteFromDetail = (post.source as any)?.userVote ?? null;
+      const sourceVoteFromDetail = (post.source as { userVote?: 'up' | 'down' | null })?.userVote ?? null;
       this.postState.initVote(postId, post.userVote ?? null, sourceVoteFromDetail);
 
       const commentCount = post.comments?.length ?? 0;

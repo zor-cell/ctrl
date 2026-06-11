@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, signal, ElementRef, ViewChild, computed} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, signal, ElementRef, ViewChild} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { UserService } from '../../../user/user.service';
 import { FeedService } from '../../services/feed.service';
