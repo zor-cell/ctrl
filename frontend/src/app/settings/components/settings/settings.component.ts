@@ -2,9 +2,9 @@ import { Component, inject, signal } from '@angular/core';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from "primeng/tabs";
 import { ProfileComponent } from "../../../user/components/profile/profile.component";
 import { AlgorithmConfigComponent } from "../../../algorithm/components/config/config.component";
-import { AnalyticsComponent } from "../analytics/analytics.component";
 import { ActivatedRoute } from "@angular/router";
 import { SessionConfigComponent } from "../../../session/components/config/config.component";
+import { AnalyticsComponent } from '../../../session/components/analytics/analytics.component';
 
 @Component({
   selector: 'app-settings',

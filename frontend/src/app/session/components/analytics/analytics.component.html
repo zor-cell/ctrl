@@ -1,0 +1,37 @@
+<div class="analytics-container">
+    <div class="chart-controls">
+      <h3> {{ this.title() }}</h3>
+      <div class="transparentButton">
+        <p-button (onClick)="this.goBack()" icon="pi pi-arrow-left" [style.visibility]="this.viewMode() === 'detailed' ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+      <div class="underline-select-button">
+        <p-selectButton
+          [options]="this.timeModeOptions"
+          [ngModel]="timeMode()"
+          (ngModelChange)="switchTimeMode($event)"
+          optionLabel="label"
+          optionValue="value"
+        />
+      </div>
+    </div>
+
+    <div class="chart-wrapper">
+      <div class="transparentButton">
+        <p-button (onClick)="this.focusedDay.update(d => d - 1)" icon="pi pi-arrow-left" [style.visibility]="previousDayButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+      @if (loading()[activeKey()]) {
+        <p-skeleton height="350px" borderRadius="12px" />
+      } @else {
+        <p-chart
+          type="bar"
+          [data]="chartData()"
+          [options]="chartOptions()"
+          height="350px"
+          styleClass="animate-fadein"
+        />
+      }
+      <div class="transparentButton">
+        <p-button (onClick)="this.focusedDay.update(d => d + 1)" icon="pi pi-arrow-right" [style.visibility]="nextDayButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+    </div>
+</div>

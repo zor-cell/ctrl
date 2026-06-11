@@ -1,0 +1,107 @@
+$color-interaction: var(--p-primary-color);
+::ng-deep .underline-select-button {
+
+  .p-selectbutton {
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  .p-togglebutton {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: color 0.2s !important;
+    color: var(--p-text-color-secondary);
+
+    .p-togglebutton-content {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      transition: none !important;
+    }
+
+    .p-togglebutton-label {
+      display: inline-block;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0.25rem;
+      transition: border-color 0.2s;
+    }
+
+    &:hover .p-togglebutton-label {
+      border-bottom-color: var(--p-text-color);
+    }
+  }
+
+  // More specific selector to win over the base rule
+  .p-togglebutton.p-togglebutton-checked {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transition: color 0.2s !important;
+    color: var(--p-primary-color) !important;
+
+    .p-togglebutton-content {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      transition: none !important;
+    }
+
+    // Force the underline to always show on the active label
+    .p-togglebutton-label {
+      border-bottom: 1px solid var(--p-primary-color) !important;
+    }
+  }
+
+  .p-togglebutton:focus,
+  .p-togglebutton:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+}
+
+.analytics-container {
+  margin: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+}
+
+:host ::ng-deep {
+  .transparentButton.p-button {
+    background: transparent;
+    border: none;
+    color: var(--p-text-color);
+  }
+}
+
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem;
+
+  h3 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.chart-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  .p-chart {
+    flex-grow: 1;
+  }
+
+  .p-button-icon-only {
+    background: transparent;
+    color: var(--p-text-color);
+  }
+}

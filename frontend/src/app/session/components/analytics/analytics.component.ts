@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AnalyticsService } from '../../services/analytics.service';
+import { AnalyticsService } from '../../analytics.service';
 import { AnalyticsChartService } from './analytics-chart.service';
 import { DatasetKey, DatasetResponse } from './analytics.types';
 import { ChartModule } from 'primeng/chart';
@@ -9,6 +9,8 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { DetailedDay } from '../../dto/analytics.dto';
+import { SessionConfigService } from '../../../session/session-config.service';
+import { SessionConfig } from '../../../session/dto/SessionConfig';
 
 export type ViewMode = 'overview' | 'detailed';
 export type TimeMode = 'lastweek' | 'average';
@@ -28,9 +30,10 @@ export type TimeMode = 'lastweek' | 'average';
   styleUrl: './analytics.component.scss',
 })
 
-export class AnalyticsComponent {
+export class AnalyticsComponent implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly analyticsChartService = inject(AnalyticsChartService);
+  private readonly configService = inject(SessionConfigService);
 
   viewModeOptions: { label: string; value: ViewMode }[] = [
     { label: 'Overview', value: 'overview' },
@@ -59,14 +62,16 @@ export class AnalyticsComponent {
   chartOptions = computed(() => {
     const key = this.activeKey();
     const data = this.cache()[key];
-    return data ? this.analyticsChartService.buildChartOptions(key, data, this.handleBarClick, this.focusedDay()) : null;
+    return data ? this.analyticsChartService.buildChartOptions(key, data, this.handleBarClick, this.focusedDay(), this.sessionConfig().timeLimitMinutes) : null;
   });
 
   protected focusedDay = signal<number>(0);
 
   title = computed(() => {
+    if (this.activeKey() === 'overview-lastweek') return 'Last 7 Days'
+    if (this.activeKey() === 'overview-average') return 'Average Week'
     const data = this.cache()[this.activeKey()];
-    if (!data || this.viewMode() !== 'detailed') return 'Usage Analytics';
+    if (!data) return 'Usage Analytics';
     return (data as DetailedDay[])[this.focusedDay()].title;
   });
 
@@ -82,6 +87,21 @@ export class AnalyticsComponent {
     if (this.viewMode() !== 'detailed') return false;
     return this.focusedDay() > 0;
   });
+
+  sessionConfig = signal<SessionConfig>({
+    timeLimitMinutes: 120,
+    postLimit: 0,
+    isForcedCutoff: true
+  });
+
+  ngOnInit(): void {
+    this.configService.getConfig().subscribe({
+      next: (config: SessionConfig) => {
+        this.sessionConfig.set(config);
+      },
+    });
+
+  }
 
   constructor() {
     effect(() => {
@@ -107,18 +127,9 @@ export class AnalyticsComponent {
     this.viewMode.set('overview');
   }
 
-  changeTimeMode(updateTo: TimeMode): void {
-    this.timeMode.set(updateTo)
-
-    if (this.viewMode() === 'overview') {
-      return;
-    }
-
-    const offset = (new Date().getDay() - 1) % 7;
-    if (this.timeMode() === 'lastweek') {
-      this.focusedDay.update(f => (f - offset) % 7);
-    } else {
-      this.focusedDay.update(f => (f + offset) % 7);
-    }
+  protected switchTimeMode(mode: TimeMode): void {
+    const offset = new Date().getDay() + 2
+    this.focusedDay.update(d => mode === 'average' ? (d + 7 - offset) % 7 : (d + offset) % 7);
+    this.timeMode.set(mode);
   }
 }

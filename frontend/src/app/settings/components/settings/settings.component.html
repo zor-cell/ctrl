@@ -1,28 +1,33 @@
 <div class="wrapper">
-    <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
-        <p-tablist>
-            <p-tab value="account">
-                Account
-            </p-tab>
-            <p-tab value="session">
-                Session
-            </p-tab>
-            <p-tab value="algorithm">
-                Algorithm
-            </p-tab>
-        </p-tablist>
+  <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="account">
+          Account
+      </p-tab>
+      <p-tab value="session">
+          Session
+      </p-tab>
+      <p-tab value="algorithm">
+          Algorithm
+      </p-tab>
+      <p-tab value="analytics">
+          Analytics
+      </p-tab>
+    </p-tablist>
 
-        <p-tabpanels>
-            <p-tabpanel value="account">
-                <app-profile></app-profile>
-            </p-tabpanel>
-            <p-tabpanel value="session">
-                <app-session-config></app-session-config>
-                <app-analytics></app-analytics>
-            </p-tabpanel>
-            <p-tabpanel value="algorithm">
-                <app-algorithm-config></app-algorithm-config>
-            </p-tabpanel>
-        </p-tabpanels>
-    </p-tabs>
+    <p-tabpanels>
+        <p-tabpanel value="account">
+            <app-profile></app-profile>
+        </p-tabpanel>
+        <p-tabpanel value="session">
+            <app-session-config></app-session-config>
+        </p-tabpanel>
+        <p-tabpanel value="algorithm">
+            <app-algorithm-config></app-algorithm-config>
+        </p-tabpanel>
+        <p-tabpanel value="analytics">
+            <app-analytics></app-analytics>
+        </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
 </div>

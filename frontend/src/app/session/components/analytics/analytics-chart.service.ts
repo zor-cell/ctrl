@@ -8,6 +8,7 @@ import {
   AverageWeekDayResponse,
 } from '../../dto/analytics.dto';
 import { DatasetKey, DatasetResponse } from './analytics.types';
+import { AnnotationOptions } from 'chartjs-plugin-annotation';
 
 export interface Session {
   start: string; // "HH:mm"
@@ -23,8 +24,8 @@ export class AnalyticsChartService {
     return {
       primary:
         getComputedStyle(document.documentElement)
-          .getPropertyValue('--p-primary-500')
-          .trim() || '#3b82f6',
+          .getPropertyValue('--p-accents-indigo')
+          .trim() || '#1f2937',
       text:
         getComputedStyle(document.documentElement)
           .getPropertyValue('--p-text-color')
@@ -48,7 +49,7 @@ export class AnalyticsChartService {
         return this.buildBarChartData(
           (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
-          d => d.date.slice(5)
+          d => this.dayNames[(new Date(d.date).getDay() + 6) % 7]
         );
       case 'overview-average': {
         const filled = Array.from({ length: 7 }, (_, i) =>
@@ -83,7 +84,8 @@ export class AnalyticsChartService {
     key: DatasetKey,
     data: DatasetResponse,
     onBarClick?: (index: number) => void,
-    focusedDayIndex = 0
+    focusedDayIndex = 0,
+    lineHeight = 0,
   ): ChartOptions<'bar'> {
     switch (key) {
       case 'overview-lastweek':
@@ -91,7 +93,9 @@ export class AnalyticsChartService {
           (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
           d => d.sessionCount,
-          onBarClick!
+          onBarClick!,
+          0,
+          lineHeight
         );
       case 'overview-average': {
         const filled = Array.from({ length: 7 }, (_, i) =>
@@ -102,7 +106,9 @@ export class AnalyticsChartService {
           filled,
           d => d.avgTotalMinutes,
           d => d.avgSessionCount,
-          onBarClick!
+          onBarClick!,
+          1,
+          lineHeight
         );
       }
       case 'detailed-lastweek': {
@@ -113,7 +119,7 @@ export class AnalyticsChartService {
         return this.buildDetailedChartOptions(
           day.buckets,
           b => b.averageTime,
-          b => `${b.label}: ${b.averageTime.toFixed(1)} min avg, ${b.contributingSessions} sessions`
+          b => `${b.label}: ${b.averageTime.toFixed(1)} min avg, ${b.contributingSessions} ${b.contributingSessions === 1 ? 'session' : 'sessions'}`
         );
       }
       default:
@@ -133,7 +139,6 @@ export class AnalyticsChartService {
       labels: items.map(labelFn),
       datasets: [
         {
-          label: 'Minutes',
           data: items.map(valueFn),
           backgroundColor: primary,
           borderRadius: 4,
@@ -147,16 +152,27 @@ export class AnalyticsChartService {
     items: T[],
     valueFn: (item: T) => number,
     countFn: (item: T) => number,
-    onBarClick: (index: number) => void
+    onBarClick: (index: number) => void,
+    valueDecimal: number,
+    lineHeight: number,
   ): ChartOptions<'bar'> {
-    const { text, surface } = this.getColors();
-
     return {
+      clip: false,
       responsive: true,
+      resizeDelay: 100,
       maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 0,
+          bottom: 0,
+          left: 60,
+          right: 60
+        }
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
+          displayColors: false,
           callbacks: {
             label: (ctx: TooltipItem<'bar'>) => {
               const idx = ctx.dataIndex;
@@ -164,21 +180,36 @@ export class AnalyticsChartService {
               if (!item) return '';
               const minutes = valueFn(item);
               const count = countFn(item);
-              return `${minutes.toFixed(1)} min, ${count} sessions`;
+              return `${minutes.toFixed(valueDecimal)} min, ${count} ${count === 1 ? 'session' : 'sessions'}`;
             },
           },
         },
+        annotation: {
+          annotations: {
+            targetLine: {
+              type: 'line' as const,
+              scaleID: 'y',
+              value: lineHeight,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 2,
+              label: {
+                display: true,
+                color: this.getColors().surface,
+                content: 'daily limit',
+                backgroundColor: 'rgba(255, 99, 132, 1)',
+                position: "start",
+                xAdjust: -58,
+                font: {
+                  size: 12
+                }
+              }
+            } as AnnotationOptions
+          }
+        }
       },
       scales: {
-        x: {
-          ticks: { color: text },
-          grid: { color: surface },
-        },
         y: {
-          ticks: { color: text },
-          grid: { color: surface },
-          beginAtZero: true,
-          title: { display: true, text: 'Minutes', color: text },
+          display: false,
         },
       },
       onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
@@ -202,14 +233,14 @@ export class AnalyticsChartService {
     valueFn: (item: T) => number,
     tooltipLabelFn: (item: T) => string
   ): ChartOptions<'bar'> {
-    const { text, surface } = this.getColors();
-
     return {
       responsive: true,
+      resizeDelay: 100,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
+          displayColors: false,
           callbacks: {
             label: (ctx: TooltipItem<'bar'>) => {
               const idx = ctx.dataIndex;
@@ -223,19 +254,12 @@ export class AnalyticsChartService {
       scales: {
         x: {
           ticks: {
-            color: text,
             maxTicksLimit: 24,
             autoSkip: true
           },
-          grid: { color: surface },
         },
         y: {
-          min: 0,
-          max: 16,
-          ticks: { color: text },
-          grid: { color: surface },
-          beginAtZero: true,
-          title: { display: true, text: 'Minutes', color: text },
+          display: false,
         },
       },
     };
@@ -256,15 +280,15 @@ export class AnalyticsChartService {
   }
 
   buildTimelineChartOptions(): ChartOptions<'bar'> {
-    const { text, surface } = this.getColors();
-
     return {
       indexAxis: 'y',
       responsive: true,
+      resizeDelay: 100,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
+          displayColors: false,
           callbacks: {
             label: (ctx: TooltipItem<'bar'>) => {
               const raw = ctx.raw as [number, number];
@@ -281,10 +305,8 @@ export class AnalyticsChartService {
           min: 0,
           max: 24,
           ticks: {
-            color: text,
             stepSize: 1,
           },
-          grid: { color: surface },
         },
         y: {
           stacked: true,

@@ -1,13 +1,15 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
-import {Button} from "primeng/button";
-import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
-import {ProgressSpinner} from "primeng/progressspinner";
-import {Tooltip} from "primeng/tooltip";
-import {SessionConfigService} from "../../session-config.service";
-import {SessionConfig} from "../../dto/SessionConfig";
-import {ToggleSwitch} from "primeng/toggleswitch";
-import {Slider} from "primeng/slider";
-import {ConfirmationService} from "primeng/api";
+import { ConfirmationService } from "primeng/api";
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { Button } from "primeng/button";
+import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
+import { ProgressSpinner } from "primeng/progressspinner";
+import { Tooltip } from "primeng/tooltip";
+import { SessionConfigService } from "../../session-config.service";
+import { SessionConfig } from "../../dto/SessionConfig";
+import { ToggleSwitch } from "primeng/toggleswitch";
+import { Slider } from "primeng/slider";
+import { UsageComponent } from '../usage/usage.component';
+import { Divider } from 'primeng/divider';
 
 @Component({
   selector: 'app-session-config',
@@ -19,7 +21,9 @@ import {ConfirmationService} from "primeng/api";
     ReactiveFormsModule,
     ToggleSwitch,
     Tooltip,
-    Slider
+    Slider,
+    UsageComponent,
+    Divider
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
@@ -32,9 +36,9 @@ export class SessionConfigComponent implements OnInit {
   protected isLoading = signal<boolean>(true);
 
   protected configForm = this.fb.group({
-    timeLimitMinutes:   [50, [Validators.required, Validators.min(0)]],
-    postLimit:       [50, [Validators.required, Validators.min(0)]],
-    allowSnooze:   [true, [Validators.required]],
+    timeLimitMinutes: [50, [Validators.required, Validators.min(0)]],
+    postLimit: [50, [Validators.required, Validators.min(0)]],
+    allowSnooze: [true, [Validators.required]],
   });
 
   ngOnInit() {
@@ -58,7 +62,7 @@ export class SessionConfigComponent implements OnInit {
     const formValue = this.configForm.getRawValue() as SessionConfig;
 
     this.configService.updateConfig(formValue).subscribe(updatedConfig => {
-        this.configForm.patchValue(updatedConfig);
+      this.configForm.patchValue(updatedConfig);
     });
   }
 }

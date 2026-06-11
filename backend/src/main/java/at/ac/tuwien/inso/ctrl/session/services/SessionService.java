@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
+import at.ac.tuwien.inso.ctrl.session.dto.SessionStateDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
@@ -12,6 +13,7 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionConfigRepository;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,6 +28,7 @@ public class SessionService {
   private final SessionRepository sessionRepository;
   private final SessionConfigRepository sessionConfigRepository;
   private final SessionMapper sessionMapper;
+  private final Clock clock;
 
   @Value("${application.session.max-time-between-heartbeats:3}")
   private long MAX_TIME_BETWEEN_HEARTBEATS;
@@ -34,9 +37,10 @@ public class SessionService {
   private int SNOOZE_DURATION_MINUTES = 5;
 
   @Transactional
-  public void handleHeartbeat(LocalDateTime timestamp, User user) {
+  public SessionStateDto handleHeartbeat(LocalDateTime timestamp, User user) {
     SessionConfig config = getOrCreateConfig(user);
     SessionHistory session = getOrCreateLastSession(user);
+    LocalDateTime trackingStart = LocalDate.now(clock).atStartOfDay();
 
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
     // otherwise compute and save the new duration
@@ -58,6 +62,14 @@ public class SessionService {
       config.setLastSnooze(null);
       sessionConfigRepository.save(config);
     }
+
+    // check if this heartbeat crossed the limit threshold
+    DailySessionStatsProjection updatedStats = sessionRepository.getDailyStats(user, trackingStart);
+    boolean limitReached =
+        updatedStats.getTotalSeconds() >= config.getTimeLimitMinutes()
+            || updatedStats.getTotalPostsViewed() >= config.getPostLimit();
+    return new SessionStateDto(
+        updatedStats.getTotalSeconds(), updatedStats.getTotalPostsViewed(), limitReached);
   }
 
   @Transactional

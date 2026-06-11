@@ -1,8 +1,13 @@
 import { inject, effect, Injectable } from "@angular/core";
 import { AuthService } from "../../auth/auth.service";
-import { fromEvent, Observable, retry, Subscription, switchMap, timer } from "rxjs";
+import { BehaviorSubject, fromEvent, Observable, retry, Subscription, switchMap, tap, timer } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../environments/environment";
+
+export interface Usage {
+  elapsedMinutes: number,
+  seenPosts: number
+}
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
@@ -11,6 +16,11 @@ export class SessionService {
 
   private heartbeat$: Subscription | null = null;
   private readonly INTERVAL_MS = environment.heartbeat.interval;
+  private sessionState = new BehaviorSubject<Usage>({
+    elapsedMinutes: 0,
+    seenPosts: 0
+  });
+  sessionState$ = this.sessionState.asObservable();
 
   constructor() {
     effect((onCleanup) => {
@@ -51,7 +61,9 @@ export class SessionService {
     this.heartbeat$ = null;
   }
 
-  private sendHeartbeat(): Observable<void> {
-    return this.httpClient.post<void>(environment.apiUrl + '/session/heartbeat', {});
+  private sendHeartbeat(): Observable<Usage> {
+    return this.httpClient.post<Usage>(environment.apiUrl + '/session/heartbeat', {}).pipe(
+      tap(state => this.sessionState.next(state))
+    );
   }
 }
