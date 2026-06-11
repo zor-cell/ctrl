@@ -69,10 +69,6 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
   protected readonly error   = signal(false);
 
   // ─── Voting: computed signals from shared store (OnPush-compatible) ──────────
-  //
-  // Plain getters are invisible to Angular's change detection under OnPush.
-  // computed() creates reactive nodes that are tracked in the template, so
-  // the view updates automatically whenever the store's vote map changes.
 
   private readonly _postId = signal<string | null>(null);
 
@@ -118,16 +114,11 @@ export class PostDetailViewComponent implements OnChanges, OnDestroy {
     this.post.set(null);
     try {
       const post = await this.postService.getPostById(postId);
-      console.log(post)
       this.post.set(post);
 
-      // Seed vote state only if the feed hasn't already written a fresher value.
-      // initVote is a no-op when the postId is already tracked, so a vote cast
-      // in the feed before opening the detail-view is preserved.
       const sourceVoteFromDetail = (post.source as any)?.userVote ?? null;
       this.postState.initVote(postId, post.userVote ?? null, sourceVoteFromDetail);
 
-      // Seed comment count with the detail-view value (more accurate than feed snapshot).
       const commentCount = post.comments?.length ?? 0;
       this.postState.setCommentCount(postId, commentCount);
 

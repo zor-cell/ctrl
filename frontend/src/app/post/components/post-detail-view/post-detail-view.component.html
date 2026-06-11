@@ -39,7 +39,7 @@
         </div>
 
         <div class="post-header-center">
-            @if ((p.labelIds?.length ?? 0) > 0) {
+            @if (p.labelIds.length > 0) {
                 <div class="post-labels">
                     @for (label of p.labelIds; track label.labelId) {
                         <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
@@ -166,6 +166,7 @@
 
     <!-- Report dialogs -->
     <app-report
+            [compact]="true"
             [contentType]="ContentTypeEnum.POST"
             [contentId]="p.postId"
             [contentTitle]="p.caption"
@@ -175,6 +176,7 @@
     />
 
     <app-report
+            [compact]="true"
             [contentType]="ContentTypeEnum.SOURCE"
             [contentId]="p.source?.sourceId || undefined"
             [contentTitle]="p.source?.singleSources?.[0]?.url || undefined"

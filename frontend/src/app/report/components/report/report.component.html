@@ -5,7 +5,8 @@
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
-  [style]="{ width: 'min(56rem, 92vw)' }"
+  [style]="{ width: compact ? 'min(36rem, 92vw)' : 'min(56rem, 92vw)', maxHeight: compact ? 'min(38rem, 85vh)' : 'none' }"
+  [contentStyle]="compact ? { overflowY: 'auto', maxHeight: 'calc(min(38rem, 85vh) - 4rem)' } : {}"
   styleClass="report-dialog"
   [header]="'Report ' + getContentTypeLabel()"
 >
@@ -41,7 +42,7 @@
         <!-- Reason Selection -->
         <div class="report-section">
           <h3 class="report-label">Select a reason</h3>
-          <div class="reason-buttons">
+          <div class="reason-buttons" [class.reason-buttons--compact]="compact">
             @for (reason of reportReasons(); track reason.value) {
               <button
                 type="button"

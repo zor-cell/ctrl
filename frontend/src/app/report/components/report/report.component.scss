@@ -156,6 +156,10 @@
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+  &.reason-buttons--compact {
+    grid-template-columns: 1fr;
+  }
 }
 
 .reason-btn {
