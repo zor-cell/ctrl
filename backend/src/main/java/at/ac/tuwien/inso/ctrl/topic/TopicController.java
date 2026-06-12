@@ -1,12 +1,15 @@
 package at.ac.tuwien.inso.ctrl.topic;
 
+import at.ac.tuwien.inso.ctrl.topic.dto.TopicCreateRequest;
 import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
 import at.ac.tuwien.inso.ctrl.topic.service.TopicService;
 import java.util.List;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/topics")
@@ -17,5 +20,12 @@ public class TopicController {
   @GetMapping
   public List<TopicResponse> getAvailableTopics() {
     return topicService.getAvailableTopics();
+  }
+
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize("hasRole('ADMIN')")
+  public TopicResponse createTopic(@Valid @RequestBody TopicCreateRequest request) {
+    return topicService.createTopic(request);
   }
 }
