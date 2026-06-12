@@ -7,9 +7,7 @@ import {SessionConfigService} from "../../session-config.service";
 import {SessionConfig} from "../../dto/SessionConfig";
 import {ToggleSwitch} from "primeng/toggleswitch";
 import {Slider} from "primeng/slider";
-import {Message} from "primeng/message";
 import {ConfirmationService} from "primeng/api";
-import {ConfirmDialog} from "primeng/confirmdialog";
 
 @Component({
   selector: 'app-session-config',
