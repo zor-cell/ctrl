@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.algorithm.entity;
+package at.ac.tuwien.inso.ctrl.topic.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

@@ -1,4 +1,4 @@
-package at.ac.tuwien.inso.ctrl.algorithm.controller;
+package at.ac.tuwien.inso.ctrl.algorithm;
 
 import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
 import at.ac.tuwien.inso.ctrl.algorithm.service.AlgorithmService;

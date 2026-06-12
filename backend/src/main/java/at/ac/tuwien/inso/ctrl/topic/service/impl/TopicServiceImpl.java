@@ -1,9 +1,9 @@
-package at.ac.tuwien.inso.ctrl.algorithm.service.impl;
+package at.ac.tuwien.inso.ctrl.topic.service.impl;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
-import at.ac.tuwien.inso.ctrl.algorithm.mapper.TopicMapper;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
-import at.ac.tuwien.inso.ctrl.algorithm.service.TopicService;
+import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
+import at.ac.tuwien.inso.ctrl.topic.mapper.TopicMapper;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.topic.service.TopicService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
