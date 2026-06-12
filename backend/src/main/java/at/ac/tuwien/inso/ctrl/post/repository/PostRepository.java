@@ -245,6 +245,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                      SELECT 1 
+                            FROM blocked_relation br 
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR 
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId))
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
               LIMIT 200
@@ -270,6 +276,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
           WHERE p.is_removed = false
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
+            AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                      SELECT 1 
+                            FROM blocked_relation br 
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR 
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId))
             AND pt.topic_id = ANY(ARRAY[:topicList])
           ORDER BY p.created_at DESC
           LIMIT :pageSize OFFSET :offset
@@ -300,6 +312,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                      SELECT 1 
+                            FROM blocked_relation br 
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR 
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId))
               ORDER BY totalScore DESC
               LIMIT 200
           """,
