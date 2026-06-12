@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -56,6 +57,9 @@ import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.messaging.simp.user.SimpSubscription;
+import org.springframework.messaging.simp.user.SimpUser;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -112,6 +116,7 @@ class WebSocketSecurityIntegrationTest {
   @Autowired private ReactionRepository reactionRepository;
   @Autowired private SharedRepository sharedRepository;
   @Autowired private PostRepository postRepository;
+  @Autowired private SimpUserRegistry simpUserRegistry;
 
   @LocalServerPort private int port;
 
@@ -300,6 +305,8 @@ class WebSocketSecurityIntegrationTest {
               receivedTopicMessages.offer((ChatRealtimePayload) payload);
             }
           });
+      waitForSubscription(chris.getUsername(), "/topic/chats/" + chat.chatId());
+
       session.subscribe(
           "/user/queue/chats/" + chat.chatId() + "/messages",
           new StompFrameHandler() {
@@ -313,6 +320,8 @@ class WebSocketSecurityIntegrationTest {
               receivedMessages.offer((ChatRealtimePayload) payload);
             }
           });
+      waitForSubscription(chris.getUsername(), "/user/queue/chats/" + chat.chatId() + "/messages");
+
       session.subscribe(
           "/user/queue/chats",
           new StompFrameHandler() {
@@ -326,6 +335,7 @@ class WebSocketSecurityIntegrationTest {
               receivedSummaries.offer((ChatResponse) payload);
             }
           });
+      waitForSubscription(chris.getUsername(), "/user/queue/chats");
 
       chatService.sendMessage(
           alice, chat.chatId(), new SendMessageRequest("hidden live", privatePost.getPostId()));
@@ -430,6 +440,7 @@ class WebSocketSecurityIntegrationTest {
               removedEvents.offer((ChatRemovedPayload) payload);
             }
           });
+      waitForSubscription(chris.getUsername(), "/user/queue/chats/removed");
 
       chatService.deleteChat(bob, chat.chatId());
 
@@ -474,6 +485,8 @@ class WebSocketSecurityIntegrationTest {
             receivedMessages.offer((ChatRealtimePayload) payload);
           }
         });
+    waitForSubscription(bob.getUsername(), "/user/queue/chats/" + chat.chatId() + "/messages");
+
     session.subscribe(
         "/user/queue/chats",
         new StompFrameHandler() {
@@ -487,6 +500,7 @@ class WebSocketSecurityIntegrationTest {
             receivedSummaries.offer((ChatResponse) payload);
           }
         });
+    waitForSubscription(bob.getUsername(), "/user/queue/chats");
 
     chatService.sendMessage(alice, chat.chatId(), new SendMessageRequest("hello over stomp", null));
 
@@ -508,6 +522,47 @@ class WebSocketSecurityIntegrationTest {
     stompClient.stop();
   }
 
+  private void waitForSubscription(String username, String destination) throws Exception {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (System.nanoTime() < deadline) {
+      if (hasSubscription(username, destination)) {
+        return;
+      }
+      Thread.sleep(50);
+    }
+
+    fail("Subscription was not registered for user " + username + " at destination " + destination);
+  }
+
+  private boolean hasSubscription(String username, String destination) {
+    SimpUser user = simpUserRegistry.getUser(username);
+    if (user == null) {
+      return false;
+    }
+
+    return user.getSessions().stream()
+        .flatMap(session -> session.getSubscriptions().stream())
+        .map(SimpSubscription::getDestination)
+        .anyMatch(registeredDestination -> destinationMatches(registeredDestination, destination));
+  }
+
+  private boolean destinationMatches(String registeredDestination, String requestedDestination) {
+    if (registeredDestination == null) {
+      return false;
+    }
+
+    if (registeredDestination.equals(requestedDestination)) {
+      return true;
+    }
+
+    if (requestedDestination.startsWith("/user")) {
+      String brokerDestination = requestedDestination.substring("/user".length());
+      return registeredDestination.startsWith(brokerDestination);
+    }
+
+    return false;
+  }
+
   private WebSocketStompClient createNativeStompClient() {
     return configureStompClient(new WebSocketStompClient(new StandardWebSocketClient()));
   }
@@ -524,6 +579,7 @@ class WebSocketSecurityIntegrationTest {
     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     converter.setObjectMapper(objectMapper);
     stompClient.setMessageConverter(converter);
+    stompClient.setDefaultHeartbeat(new long[] {0, 0});
     return stompClient;
   }
 
