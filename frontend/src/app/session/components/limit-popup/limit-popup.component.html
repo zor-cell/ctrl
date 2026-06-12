@@ -1,0 +1,37 @@
+<p-dialog
+        [visible]="sessionState.showModal()"
+        [modal]="true"
+        [closable]="false"
+        [closeOnEscape]="false"
+        [style]="{ width: '25rem' }">
+
+    <ng-template pTemplate="header">
+        <div class="popup-header">
+            <i class="pi pi-stopwatch"></i>
+            <span> Session Limit Reached</span>
+        </div>
+    </ng-template>
+
+    <div class="popup-content">
+        <div>{{ sessionState.limitMessage() }}.
+            You will not be able to see any more posts until tomorrow.
+        </div>
+
+        <div class="popup-actions">
+            <p-button
+                    label="I understand"
+                    (onClick)="hardCutoff()"
+                    [style.width]="!sessionConfig()?.allowSnooze ? '100%' : 'auto'" fluid>
+            </p-button>
+
+            @if(sessionConfig()?.allowSnooze) {
+                <p-button
+                        label="Keep scrolling"
+                        severity="danger"
+                        (onClick)="softCutoff()"
+                        [style.width]="'auto'">
+                </p-button>
+            }
+        </div>
+    </div>
+</p-dialog>

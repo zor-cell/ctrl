@@ -72,6 +72,10 @@ application:
     admin:
       username: ${ADMIN_USERNAME}
       password: ${ADMIN_PASSWORD}
+  session:
+    max-time-between-heartbeats: 3 #minutes
+    snooze-time: 5 #minutes
+
 
 management:
   health:

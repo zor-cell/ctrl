@@ -9,3 +9,10 @@
   padding: 0 10px !important;
   border-radius: 20px !important;
 }
+
+:host ::ng-deep .follow-btn--action.p-button {
+  height: 2.25rem !important;
+  padding: 0 0.85rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+}

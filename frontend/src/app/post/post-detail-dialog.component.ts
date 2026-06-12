@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { timeAgo as formatTimeAgo } from '../core/utils/date-time.utils';
 import { usernameInitial } from '../core/utils/username-initial.utils';
@@ -26,7 +27,7 @@ import { ContentTypeEnum } from '../report/dto/report';
 
 @Component({
   selector: 'app-post-detail-dialog',
-  imports: [CommonModule, Button, Dialog, PostCaptionFormatPipe, ReportComponent],
+  imports: [CommonModule, Button, Dialog, TooltipModule, PostCaptionFormatPipe, ReportComponent],
   templateUrl: './post-detail-dialog.component.html',
   styleUrl: './post-detail-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,10 +41,13 @@ export class PostDetailDialogComponent implements OnChanges {
   @Input() currentProfilePicture: string | null = null;
   @Input() avatarInitial = '?';
   @Input() canDelete = true;
+  @Input() canShare = true;
   @Input() resolvedMediaUrl: string | null = null;
 
   @Output() readonly dismissed = new EventEmitter<void>();
   @Output() readonly deleteRequested = new EventEmitter<PostResponse>();
+  @Output() readonly shareRequested = new EventEmitter<PostResponse>();
+  @Output() readonly mediaLoadFailed = new EventEmitter<PostResponse>();
 
   protected readonly commentDraft = signal('');
   protected readonly localComments = signal<CommentResponse[]>([]);
@@ -91,6 +95,18 @@ export class PostDetailDialogComponent implements OnChanges {
   protected requestDeletion() {
     if (this.post) {
       this.deleteRequested.emit(this.post);
+    }
+  }
+
+  protected requestShare() {
+    if (this.post) {
+      this.shareRequested.emit(this.post);
+    }
+  }
+
+  protected handleMediaLoadError() {
+    if (this.post) {
+      this.mediaLoadFailed.emit(this.post);
     }
   }
 

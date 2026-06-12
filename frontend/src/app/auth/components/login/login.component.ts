@@ -10,7 +10,7 @@ import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {Password} from "primeng/password";
 import {switchMap} from "rxjs";
-import {ChatSessionService} from '../../../chat/chat-session.service';
+import {ChatSessionService} from '../../../chat/services/chat-session.service';
 import {UserService} from "../../../user/user.service";
 
 @Component({
