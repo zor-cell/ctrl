@@ -91,7 +91,8 @@ export class NavigationComponent {
           styleClass: 'nav-admin-item',
           items: [
             {label: 'Reports', icon: 'pi pi-flag', routerLink: '/report'},
-            {label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'}
+            {label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'},
+            {label: 'Topics', icon: 'pi pi-tag', routerLink: '/topics'}
           ]
         });
       }

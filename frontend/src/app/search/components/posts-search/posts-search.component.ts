@@ -12,11 +12,11 @@ import { MultiSelectModule, MultiSelectFilterEvent } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { SearchService } from '../../services/search.service';
-import { TopicService } from '../../../algorithm/topic.service';
+import { TopicService } from '../../../topic/topic.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { PostPreview } from '../../dto/PostPreview';
-import { TopicResponse } from '../../../post/dto/TopicResponse';
+import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
 
 /**

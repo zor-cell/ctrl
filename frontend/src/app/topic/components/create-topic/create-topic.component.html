@@ -1,0 +1,59 @@
+<div class="flex justify-content-center mt-4">
+    <p-card header="Neues Topic erstellen" styleClass="w-full md:w-30rem shadow-3">
+        <form [formGroup]="topicForm" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
+
+            <!-- Feld: Name -->
+            <div class="flex flex-column gap-2">
+                <label for="name" class="font-semibold text-color">Name <span class="text-red-500">*</span></label>
+                <!-- Icon links vom Input -->
+                <div class="p-input-icon-left w-full">
+                    <i class="pi pi-hashtag"></i>
+                    <input
+                            id="name"
+                            type="text"
+                            pInputText
+                            formControlName="name"
+                            placeholder="z.B. software-engineering"
+                            class="w-full"
+                            [maxlength]="255" />
+                </div>
+
+                <!-- Moderne Angular v19 @if Syntax für Form-Validierung -->
+                @if (topicForm.controls.name.invalid && topicForm.controls.name.touched) {
+                    <small class="p-error">
+                        @if (topicForm.controls.name.hasError('required')) {
+                            Der Topic-Name ist ein Pflichtfeld.
+                        }
+                        @if (topicForm.controls.name.hasError('maxlength')) {
+                            Der Name darf maximal 255 Zeichen lang sein.
+                        }
+                    </small>
+                }
+            </div>
+
+            <!-- Feld: Emoji -->
+            <div class="flex flex-column gap-2">
+                <label for="emoji" class="font-semibold text-color">Emoji (Optional)</label>
+                <input
+                        id="emoji"
+                        type="text"
+                        pInputText
+                        formControlName="emoji"
+                        placeholder="z.B. 🚀"
+                        class="w-full"
+                        [maxlength]="255" />
+            </div>
+
+            <!-- Aktionen -->
+            <div class="flex justify-content-end mt-3">
+                <p-button
+                        type="submit"
+                        label="Erstellen"
+                        icon="pi pi-check"
+                        [loading]="isSubmitting()"
+                        [disabled]="topicForm.invalid || isSubmitting()" />
+            </div>
+
+        </form>
+    </p-card>
+</div>
