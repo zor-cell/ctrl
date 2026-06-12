@@ -45,7 +45,7 @@ export class AnalyticsChartService {
     focusedDayIndex = 0
   ): ChartData<'bar'> {
     switch (key) {
-      case 'overview-lastweek':
+      case 'overview-days':
         return this.buildBarChartData(
           (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
@@ -62,7 +62,7 @@ export class AnalyticsChartService {
           d => this.dayNames[d.dayOfWeek]
         );
       }
-      case 'detailed-lastweek': {
+      case 'detailed-days': {
         const day = (data as LastWeekDayDetailResponse[])[focusedDayIndex];
         const sessions = day.sessions.map(s => this.mapSessionDtoToSession(s));
         return this.buildTimelineChartData(sessions);
@@ -88,7 +88,7 @@ export class AnalyticsChartService {
     lineHeight = 0,
   ): ChartOptions<'bar'> {
     switch (key) {
-      case 'overview-lastweek':
+      case 'overview-days':
         return this.buildOverviewChartOptions(
           (data as LastWeekDayResponse[]),
           d => d.totalMinutes,
@@ -111,7 +111,7 @@ export class AnalyticsChartService {
           lineHeight
         );
       }
-      case 'detailed-lastweek': {
+      case 'detailed-days': {
         return this.buildTimelineChartOptions();
       }
       case 'detailed-average': {

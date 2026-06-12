@@ -6,15 +6,15 @@ import {
 } from '../../dto/analytics.dto';
 
 export type DatasetKey =
-  | 'overview-lastweek'
+  | 'overview-days'
   | 'overview-average'
-  | 'detailed-lastweek'
+  | 'detailed-days'
   | 'detailed-average';
 
 export interface DatasetMap {
-  'overview-lastweek': LastWeekDayResponse[];
+  'overview-days': LastWeekDayResponse[];
   'overview-average': AverageWeekDayResponse[];
-  'detailed-lastweek': LastWeekDayDetailResponse[];
+  'detailed-days': LastWeekDayDetailResponse[];
   'detailed-average': AverageDayDetailResponse[];
 }
 

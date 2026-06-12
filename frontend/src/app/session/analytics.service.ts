@@ -9,14 +9,16 @@ export class AnalyticsService {
   private readonly http = inject(HttpClient);
   private readonly baseUri = `${environment.apiUrl}/users/me/analytics`;
 
-  get(key: DatasetKey): Observable<DatasetResponse> {
-    return this.fetchers[key]();
+  get(key: DatasetKey, week: number): Observable<DatasetResponse> {
+    switch (key) {
+      case 'overview-days':
+        return this.http.get<DatasetResponse>(`${this.baseUri}/week/${week}`);
+      case 'overview-average':
+        return this.http.get<DatasetResponse>(`${this.baseUri}/weekly-average`);
+      case 'detailed-days':
+        return this.http.get<DatasetResponse>(`${this.baseUri}/week/detailed/${week}`);
+      case 'detailed-average':
+        return this.http.get<DatasetResponse>(`${this.baseUri}/weekly-average/detailed`);
+    }
   }
-
-  private fetchers: Record<DatasetKey, () => Observable<DatasetResponse>> = {
-    'overview-lastweek': () => this.http.get<DatasetResponse>(`${this.baseUri}/last-week`),
-    'detailed-lastweek': () => this.http.get<DatasetResponse>(`${this.baseUri}/last-week/detailed`),
-    'overview-average': () => this.http.get<DatasetResponse>(`${this.baseUri}/weekly-average`),
-    'detailed-average': () => this.http.get<DatasetResponse>(`${this.baseUri}/weekly-average/detailed`),
-  };
 }
