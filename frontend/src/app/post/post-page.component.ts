@@ -36,8 +36,8 @@ import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
 import {Friend} from '../user/dto/Relationship';
-import {Chat, ChatParticipant} from '../chat/chat.models';
-import {ChatService} from '../chat/chat.service';
+import {Chat, ChatParticipant} from '../chat/models/chat.models';
+import {ChatService} from '../chat/services/chat.service';
 
 type ProfileFriendStatus =
   | 'NONE'

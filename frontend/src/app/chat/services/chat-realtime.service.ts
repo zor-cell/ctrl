@@ -2,9 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Client, IFrame, IMessage, StompSubscription } from '@stomp/stompjs';
 
-import { environment } from '../../environments/environment';
-import { Chat, ChatMessage } from './chat.models';
-import { createStompNativeWebSocket } from './stomp-native-websocket';
+import { environment } from '../../../environments/environment';
+import { Chat, ChatMessage } from '../models/chat.models';
+import { createStompNativeWebSocket } from '../realtime/stomp-native-websocket';
 
 export interface ChatRealtimePayload {
   type: 'MESSAGE' | 'MESSAGE_UPDATE';
@@ -308,10 +308,11 @@ export class ChatRealtimeService {
           }),
         connectHeaders: {
           Authorization: `Bearer ${token}`,
+          'heart-beat': '0,0',
         },
         reconnectDelay: 5000,
-        heartbeatIncoming: 5000,
-        heartbeatOutgoing: 5000,
+        heartbeatIncoming: 0,
+        heartbeatOutgoing: 0,
         onConnect: () => {
           if (!this.isActiveConnection(generation, sockJsClient)) {
             return;

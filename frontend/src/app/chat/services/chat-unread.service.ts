@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { tap } from 'rxjs';
 
-import { Chat } from './chat.models';
+import { Chat } from '../models/chat.models';
 import { ChatService } from './chat.service';
 
 @Injectable({ providedIn: 'root' })

@@ -34,6 +34,8 @@ import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -47,6 +49,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +61,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class ChatService {
 
   private static final int MAX_GROUP_MEMBERS = 50;
+  private static final int DEFAULT_MESSAGE_PAGE_SIZE = 30;
+  private static final int MAX_MESSAGE_PAGE_SIZE = 100;
   private static final Pattern GROUP_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9._]+$");
   private static final Set<String> ALLOWED_REACTION_EMOJIS =
       Set.of("👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥");
@@ -162,9 +167,25 @@ public class ChatService {
 
   @Transactional
   public List<ChatMessageResponse> getMessages(User currentUser, UUID chatId) {
+    return getMessages(currentUser, chatId, null, DEFAULT_MESSAGE_PAGE_SIZE);
+  }
+
+  @Transactional
+  public List<ChatMessageResponse> getMessages(
+      User currentUser, UUID chatId, String before, Integer limit) {
     Chat chat = requireChatMember(currentUser, chatId);
+    LocalDateTime beforeCursor = parseMessageCursor(before);
+    PageRequest page = PageRequest.of(0, normalizeMessagePageSize(limit));
+    List<UUID> messageIds =
+        beforeCursor == null
+            ? messageRepository.findLatestMessageIds(chat, page)
+            : messageRepository.findMessageIdsBefore(chat, beforeCursor, page);
+
     List<ChatMessageResponse> messages =
-        messageRepository.findByChatOrderByDateAsc(chat).stream()
+        loadMessagesByIds(messageIds).stream()
+            .sorted(
+                Comparator.comparing(
+                    Message::getDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .map(message -> toMessageResponse(message, currentUser))
             .toList();
     markChatAsRead(currentUser, chat);
@@ -424,11 +445,41 @@ public class ChatService {
         .max(Comparator.comparing(this::latestActivityAt));
   }
 
+  private List<Message> loadMessagesByIds(List<UUID> messageIds) {
+    if (messageIds.isEmpty()) {
+      return List.of();
+    }
+
+    return messageRepository.findMessagesWithDetailsByIds(messageIds);
+  }
+
+  private int normalizeMessagePageSize(Integer limit) {
+    if (limit == null) {
+      return DEFAULT_MESSAGE_PAGE_SIZE;
+    }
+
+    return Math.min(Math.max(limit, 1), MAX_MESSAGE_PAGE_SIZE);
+  }
+
+  private LocalDateTime parseMessageCursor(String before) {
+    String trimmedBefore = trimToNull(before);
+    if (trimmedBefore == null) {
+      return null;
+    }
+
+    try {
+      return OffsetDateTime.parse(trimmedBefore).toLocalDateTime();
+    } catch (DateTimeParseException ignored) {
+      try {
+        return LocalDateTime.parse(trimmedBefore);
+      } catch (DateTimeParseException ex) {
+        throw new InvalidRequestException("Invalid message pagination cursor");
+      }
+    }
+  }
+
   private List<Chat> loadChatsForUser(User currentUser) {
-    return chatMemberRepository.findChatIdsForUser(currentUser.getId()).stream()
-        .map(chatRepository::findByChatIdWithDetails)
-        .flatMap(Optional::stream)
-        .toList();
+    return chatRepository.findActiveChatsForUserWithDetails(currentUser.getId());
   }
 
   private Chat reloadChatDetails(UUID chatId) {
@@ -499,14 +550,33 @@ public class ChatService {
         chatRepository
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
+    List<ChatMember> activeMembers = activeMembers(chatWithMembers);
+    Map<UUID, Long> personalMessageCounts =
+        countPersonalMessagesByUser(chatWithMembers, activeMembers);
+    Map<UUID, Long> unreadMessageCounts = countUnreadMessagesByUser(chatWithMembers, activeMembers);
+    Message summaryLastMessage =
+        "MESSAGE_UPDATE".equals(eventType)
+            ? messageRepository.findTopByChatOrderByDateDesc(chatWithMembers).orElse(null)
+            : message;
 
-    for (ChatMember member : activeMembers(chatWithMembers)) {
+    for (ChatMember member : activeMembers) {
+      UUID memberId = member.getUser().getId();
       ChatMessageResponse messageForMember = toMessageResponse(message, member.getUser());
+      ChatMessageResponse lastMessageForMember =
+          summaryLastMessage == null
+              ? null
+              : toMessageResponse(summaryLastMessage, member.getUser());
       chatMessageBroadcaster.publishMessageEvent(
           member.getUser().getUsername(),
           chat.getChatId(),
           new ChatRealtimePayload(eventType, chat.getChatId(), messageForMember));
-      ChatResponse summary = toChatResponse(chatWithMembers, member.getUser());
+      ChatResponse summary =
+          toChatResponse(
+              chatWithMembers,
+              member.getUser(),
+              lastMessageForMember,
+              personalMessageCounts.getOrDefault(memberId, 0L),
+              unreadMessageCounts.getOrDefault(memberId, 0L));
       chatMessageBroadcaster.publishChatSummary(member.getUser().getUsername(), summary);
     }
   }
@@ -557,6 +627,21 @@ public class ChatService {
             .map(message -> toMessageResponse(message, currentUser))
             .orElse(null);
 
+    return toChatResponse(
+        chat,
+        currentUser,
+        lastMessage,
+        countPersonalMessages(chat, currentUser),
+        countUnreadMessages(chat, currentUser));
+  }
+
+  private ChatResponse toChatResponse(
+      Chat chat,
+      User currentUser,
+      ChatMessageResponse lastMessage,
+      long personalMessageCount,
+      long unreadCount) {
+
     User groupOwner = resolveGroupOwner(chat);
     ChatParticipantResponse groupOwnerResponse =
         groupOwner != null ? toParticipantResponse(groupOwner) : null;
@@ -574,8 +659,38 @@ public class ChatService {
         groupOwner != null ? groupOwner.getId() : null,
         groupOwnerResponse,
         groupOwner != null && groupOwner.getId().equals(currentUser.getId()),
-        countPersonalMessages(chat, currentUser),
-        countUnreadMessages(chat, currentUser));
+        personalMessageCount,
+        unreadCount);
+  }
+
+  private Map<UUID, Long> countPersonalMessagesByUser(Chat chat, List<ChatMember> members) {
+    Set<UUID> userIds = activeMemberIds(members);
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return messageRepository.countPersonalMessagesByUsers(chat, userIds).stream()
+        .collect(
+            Collectors.toMap(
+                MessageRepository.UserMessageCount::getUserId,
+                MessageRepository.UserMessageCount::getMessageCount));
+  }
+
+  private Map<UUID, Long> countUnreadMessagesByUser(Chat chat, List<ChatMember> members) {
+    Set<UUID> userIds = activeMemberIds(members);
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return messageRepository.countUnreadMessagesByUsers(chat, userIds).stream()
+        .collect(
+            Collectors.toMap(
+                MessageRepository.UserMessageCount::getUserId,
+                MessageRepository.UserMessageCount::getMessageCount));
+  }
+
+  private Set<UUID> activeMemberIds(List<ChatMember> members) {
+    return members.stream().map(member -> member.getUser().getId()).collect(Collectors.toSet());
   }
 
   private long countPersonalMessages(Chat chat, User currentUser) {

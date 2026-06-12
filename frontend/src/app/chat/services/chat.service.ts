@@ -1,9 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { environment } from '../../environments/environment';
-import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
-import { Chat, ChatMessage, CreateChatRequest, SendMessageRequest } from './chat.models';
+import { environment } from '../../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../../core/interceptors';
+import { Chat, ChatMessage, CreateChatRequest, SendMessageRequest } from '../models/chat.models';
 
 @Injectable({
   providedIn: 'root',
@@ -24,8 +24,16 @@ export class ChatService {
     return this.httpClient.post<Chat>(this.baseUri, request);
   }
 
-  getMessages(chatId: string) {
-    return this.httpClient.get<ChatMessage[]>(`${this.baseUri}/${chatId}/messages`);
+  getMessages(chatId: string, options: { before?: string; limit?: number } = {}) {
+    let params = new HttpParams();
+    if (options.before) {
+      params = params.set('before', options.before);
+    }
+    if (options.limit) {
+      params = params.set('limit', options.limit);
+    }
+
+    return this.httpClient.get<ChatMessage[]>(`${this.baseUri}/${chatId}/messages`, { params });
   }
 
   markChatRead(chatId: string) {

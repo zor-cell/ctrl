@@ -4,7 +4,7 @@ import { Toast } from 'primeng/toast';
 
 import { AuthService } from './auth/auth.service';
 import { isPublicAuthRoute } from './auth/auth-routes';
-import { ChatSessionService } from './chat/chat-session.service';
+import { ChatSessionService } from './chat/services/chat-session.service';
 import { NavigationComponent } from './navigation/navigation.component';
 import { UserService } from './user/user.service';
 

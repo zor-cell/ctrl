@@ -72,7 +72,7 @@ export const routes: Routes = [
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./chat/chat-page.component').then(
+      import('./chat/components/chat-page/chat-page.component').then(
         m => m.ChatPageComponent,
       ),
   },

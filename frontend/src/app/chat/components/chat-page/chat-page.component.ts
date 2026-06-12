@@ -23,28 +23,30 @@ import { InputText } from 'primeng/inputtext';
 import { Textarea } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 import { Subject, finalize, of, switchMap, takeUntil } from 'rxjs';
-import { USERNAME_PATTERN } from '../user/validators';
+import { USERNAME_PATTERN } from '../../../user/validators';
 import { jwtDecode } from 'jwt-decode';
 
-import { AuthService } from '../auth/auth.service';
-import { CustomJwtPayload } from '../auth/dto/CustomJwtPayload';
-import { MediaCacheService } from '../core/services/media-cache.service';
-import { parseBackendDate } from '../core/utils/date-time.utils';
-import { usernameInitial } from '../core/utils/username-initial.utils';
-import { NotificationService } from '../core/services/notification.service';
-import { Friend } from '../user/dto/Relationship';
-import { RelationshipService } from '../user/relationship.service';
-import { UserService } from '../user/user.service';
-import { Chat, ChatMessage, ChatParticipant, SharedPost } from './chat.models';
-import { ChatRealtimePayload } from './chat-realtime.service';
-import { ChatRealtimeBridgeService } from './chat-realtime-bridge.service';
-import { ChatUnreadService } from './chat-unread.service';
-import { ChatService } from './chat.service';
-import { CommentsComponent } from '../feed/components/comments/comments.component';
-import { Post } from '../feed/dto/Post';
+import { AuthService } from '../../../auth/auth.service';
+import { CustomJwtPayload } from '../../../auth/dto/CustomJwtPayload';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { parseBackendDate } from '../../../core/utils/date-time.utils';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Friend } from '../../../user/dto/Relationship';
+import { RelationshipService } from '../../../user/relationship.service';
+import { UserService } from '../../../user/user.service';
+import { Chat, ChatMessage, ChatParticipant, SharedPost } from '../../models/chat.models';
+import { ChatRealtimePayload } from '../../services/chat-realtime.service';
+import { ChatRealtimeBridgeService } from '../../services/chat-realtime-bridge.service';
+import { ChatUnreadService } from '../../services/chat-unread.service';
+import { ChatService } from '../../services/chat.service';
+import { CommentsComponent } from '../../../feed/components/comments/comments.component';
+import { Post } from '../../../feed/dto/Post';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
 const MAX_GROUP_MEMBERS = 50;
+const MESSAGE_PAGE_SIZE = 30;
+const MESSAGE_SCROLL_TOP_THRESHOLD_PX = 80;
 const SHARED_POST_PREFIX = '[[CTRL_SHARED_POST:';
 const SHARED_POST_SUFFIX = ']]';
 
@@ -113,6 +115,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly messageText = signal('');
   protected readonly loadingChats = signal(false);
   protected readonly loadingMessages = signal(false);
+  protected readonly loadingOlderMessages = signal(false);
   protected readonly sendingMessage = signal(false);
   protected readonly friendDropdownOpen = signal(false);
   protected readonly groupDialogVisible = signal(false);
@@ -161,6 +164,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       }
     | null = null;
   private pendingChatId: string | null = null;
+  private readonly hasMoreMessages = signal(true);
 
   protected readonly friends = this.relationshipService.friends;
   protected readonly currentUsername = computed(() => {
@@ -402,9 +406,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.friendDropdownOpen.set(false);
     this.reactionPickerMessageId.set(null);
     this.messages.set([]);
+    this.hasMoreMessages.set(true);
+    this.loadingOlderMessages.set(false);
     this.selectedChat.set(normalizedChat);
     this.chatRealtimeBridge.watchChat(normalizedChat.chatId);
     this.loadMessages(normalizedChat.chatId);
+  }
+
+  protected onMessageListScroll(): void {
+    const list = this.messageListRef()?.nativeElement;
+    if (!list || list.scrollTop > MESSAGE_SCROLL_TOP_THRESHOLD_PX) {
+      return;
+    }
+
+    this.loadOlderMessages();
   }
 
   protected openGroupDialog(): void {
@@ -1046,6 +1061,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return mediaUrl && !this.failedSharedPostMediaUrls()[mediaUrl] ? mediaUrl : null;
   }
 
+  protected sharedPostHasMediaSlot(sharedPost: ParsedSharedPost): boolean {
+    return this.canViewSharedPost(sharedPost)
+      && Boolean(
+        sharedPost.post.mediaRef
+        || sharedPost.post.mediaUrl
+        || this.resolvedSharedPostMediaUrl(sharedPost.post),
+      );
+  }
+
   protected onSharedPostMediaError(sharedPost: ParsedSharedPost, mediaUrl: string): void {
     this.failedSharedPostMediaUrls.update(urls => ({ ...urls, [mediaUrl]: true }));
     this.ensureSharedPostPayloadMedia(sharedPost.post);
@@ -1390,10 +1414,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private loadMessages(chatId: string): void {
     this.loadingMessages.set(true);
-    this.chatService.getMessages(chatId)
+    this.hasMoreMessages.set(true);
+    this.chatService.getMessages(chatId, { limit: MESSAGE_PAGE_SIZE })
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.loadingMessages.set(false))
+        finalize(() => {
+          if (this.selectedChat()?.chatId === chatId) {
+            this.loadingMessages.set(false);
+          }
+        })
       )
       .subscribe({
         next: messages => {
@@ -1402,6 +1431,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
           }
 
           const normalizedMessages = messages.map(message => this.normalizeMessage(message));
+          this.hasMoreMessages.set(normalizedMessages.length === MESSAGE_PAGE_SIZE);
           this.messages.update(existingMessages =>
             this.mergeMessages(normalizedMessages, existingMessages)
           );
@@ -1416,11 +1446,68 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       });
   }
 
+  private loadOlderMessages(): void {
+    const chat = this.selectedChat();
+    const oldestMessage = this.messages()[0];
+    if (
+      !chat
+      || !oldestMessage
+      || this.loadingMessages()
+      || this.loadingOlderMessages()
+      || !this.hasMoreMessages()
+    ) {
+      return;
+    }
+
+    const list = this.messageListRef()?.nativeElement;
+    const previousScrollHeight = list?.scrollHeight ?? 0;
+    const previousScrollTop = list?.scrollTop ?? 0;
+
+    this.loadingOlderMessages.set(true);
+    this.chatService.getMessages(chat.chatId, {
+      before: oldestMessage.date,
+      limit: MESSAGE_PAGE_SIZE,
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          if (this.selectedChat()?.chatId === chat.chatId) {
+            this.loadingOlderMessages.set(false);
+          }
+        })
+      )
+      .subscribe({
+        next: messages => {
+          if (this.selectedChat()?.chatId !== chat.chatId) {
+            return;
+          }
+
+          const normalizedMessages = messages.map(message => this.normalizeMessage(message));
+          this.hasMoreMessages.set(normalizedMessages.length === MESSAGE_PAGE_SIZE);
+          if (normalizedMessages.length === 0) {
+            return;
+          }
+
+          this.messages.update(existingMessages =>
+            this.mergeMessages(normalizedMessages, existingMessages)
+          );
+          normalizedMessages.forEach(normalizedMessage => {
+            this.loadAvatar(normalizedMessage.sender.id, normalizedMessage.sender.profilePicture);
+            this.loadSharedPostMedia(normalizedMessage.sharedPost);
+          });
+          this.restoreMessageScrollPosition(previousScrollHeight, previousScrollTop);
+        },
+        error: () => this.notificationService.showError('Failed to load older messages'),
+      });
+  }
+
   private upsertChat(nextChat: Chat): Chat {
     const normalizedChat = this.normalizeChat(nextChat);
     this.chats.update(chats => {
       const otherChats = chats.filter(chat => chat.chatId !== normalizedChat.chatId);
-      return this.applyChatListDedupe([normalizedChat, ...otherChats]);
+      const nextChats = this.applyChatListDedupe([normalizedChat, ...otherChats]);
+      this.chatUnreadService.syncFromChats(nextChats);
+      return nextChats;
     });
 
     normalizedChat.participants.forEach(participant =>
@@ -1590,6 +1677,22 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private restoreMessageScrollPosition(previousScrollHeight: number, previousScrollTop: number): void {
+    afterNextRender(
+      () => {
+        requestAnimationFrame(() => {
+          const list = this.messageListRef()?.nativeElement;
+          if (!list) {
+            return;
+          }
+
+          list.scrollTop = list.scrollHeight - previousScrollHeight + previousScrollTop;
+        });
+      },
+      { injector: this.injector },
+    );
+  }
+
   private patchChatLastMessage(chat: Chat, message: ChatMessage): void {
     const updatedChat: Chat = {
       ...chat,
@@ -1681,17 +1784,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       const visibleChat = { ...chat, unreadCount: 0 };
       const normalizedChat = this.upsertChat(visibleChat);
       this.selectedChat.set(normalizedChat);
-
-      if (chat.lastMessage) {
-        const normalizedMessage = this.normalizeMessage(chat.lastMessage);
-        this.loadSharedPostMedia(normalizedMessage.sharedPost);
-        this.appendMessageIfMissing(normalizedMessage);
-        this.loadAvatar(
-          normalizedMessage.sender.id,
-          normalizedMessage.sender.profilePicture,
-        );
-      }
-      this.markChatReadInState(chat.chatId);
       return;
     }
 

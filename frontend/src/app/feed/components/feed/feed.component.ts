@@ -29,8 +29,8 @@ import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
 import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 import {MediaCacheService} from '../../../core/services/media-cache.service';
 import {usernameInitial} from '../../../core/utils/username-initial.utils';
-import { Chat, ChatParticipant } from '../../../chat/chat.models';
-import { ChatService } from '../../../chat/chat.service';
+import { Chat, ChatParticipant } from '../../../chat/models/chat.models';
+import { ChatService } from '../../../chat/services/chat.service';
 
 interface SharedPostPayload {
   postId: string;
