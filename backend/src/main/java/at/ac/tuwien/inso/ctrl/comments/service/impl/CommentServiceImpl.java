@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,15 +32,22 @@ public class CommentServiceImpl implements CommentService {
   private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final CommentMapper commentMapper;
+  private final BlockService blockService;
 
   @Override
   @Transactional(readOnly = true)
-  public List<CommentResponse> getCommentsForPost(String postId) {
+  public List<CommentResponse> getCommentsForPost(String postId, User currentUser) {
     if (!postRepository.existsById(postId)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found");
     }
 
-    List<Comment> all = commentRepository.findByPost_PostId(postId);
+    List<Comment> all =
+        commentRepository.findByPost_PostId(postId).stream()
+            .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(currentUser, c.getUser()))
+            .filter(c -> c.getParentComment() == null || (
+                c.getParentComment().getUser() != null &&
+                !blockService.inBlockedRelationship(currentUser, c.getParentComment().getUser())))
+            .toList();
 
     // Group replies by their parent's commentId
     Map<String, List<Comment>> repliesByParent =

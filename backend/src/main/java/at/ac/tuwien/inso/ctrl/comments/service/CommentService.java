@@ -3,12 +3,14 @@ package at.ac.tuwien.inso.ctrl.comments.service;
 import at.ac.tuwien.inso.ctrl.comments.dto.request.CreateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.request.UpdateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+
 import java.util.List;
 
 public interface CommentService {
 
   /** Returns all comments for the given post, with replies nested inside each top-level comment. */
-  List<CommentResponse> getCommentsForPost(String postId);
+  List<CommentResponse> getCommentsForPost(String postId, User currentUser);
 
   /**
    * Creates a new comment (or reply) on the given post authored by {@code username}. Throws if

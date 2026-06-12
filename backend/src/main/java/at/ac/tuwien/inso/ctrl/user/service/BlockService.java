@@ -19,7 +19,9 @@ import at.ac.tuwien.inso.ctrl.user.repository.BlockedRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +37,6 @@ public class BlockService {
   private final BlockedRelationRepository blockedRelationRepository;
   private final RelationshipMapper relationshipMapper;
   private final CommentRepository commentRepository;
-  private final CommentService commentService;
   private final PostVoteRepository postVoteRepository;
   private final SourceVoteRepository sourceVoteRepository;
 
@@ -78,8 +79,15 @@ public class BlockService {
     posts.forEach(post -> {
       List<Comment> comments = commentRepository.findCommentsByUserAndPost(blockedUser, post);
 
-      comments.forEach(comment -> {
-        commentService.deleteComment(comment.getCommentId(), blockedUser.getUsername());
+      comments.forEach(c -> {
+        Comment comment =
+            commentRepository
+                .findById(c.getCommentId())
+                .orElseThrow(
+                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+
+        commentRepository.delete(comment);
+        //commentService.deleteComment(comment.getCommentId(), blockedUser.getUsername());
       });
 
       postVoteRepository.findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString())).ifPresent(postVoteRepository::delete);

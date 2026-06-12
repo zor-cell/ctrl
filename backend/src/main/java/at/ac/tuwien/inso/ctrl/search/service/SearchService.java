@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.search.service;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostPreviewResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
@@ -20,6 +21,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +64,7 @@ public class SearchService {
               topicIdsArray,
               request.postsPerPage(),
               request.page() * request.postsPerPage());
+
     } else if (hasQuery && !hasTopics) {
       posts =
           postRepository.searchPostsBySimilarity(
@@ -87,8 +91,27 @@ public class SearchService {
       return Collections.emptyList();
     }
 
+    //filterComments(user, posts);
+
     return posts.stream().map(postMapper::toPostPreviewResponse).toList();
   }
+
+//  private void filterComments(User user, List<Post> posts) {
+//    for (Post post : posts) {
+//      if (post.getComments() == null || post.getComments().isEmpty()) {
+//        continue;
+//      }
+//
+//      Set<Comment> comments = post.getComments().stream()
+//          .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+//          .filter(c -> c.getParentComment() == null || (
+//              c.getParentComment().getUser() != null &&
+//                  !blockService.inBlockedRelationship(user, c.getParentComment().getUser())))
+//          .collect(Collectors.toSet());
+//      post.setComments(comments);
+//
+//    }
+//  }
 
   /** Searches for users based on username matching with optional relationship filters. */
   @Transactional(readOnly = true)
