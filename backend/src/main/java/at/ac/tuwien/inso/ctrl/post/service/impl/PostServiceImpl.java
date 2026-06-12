@@ -189,16 +189,22 @@ public class PostServiceImpl implements PostService {
         continue;
       }
 
-      Set<Comment> comments = post.getComments().stream()
-          .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-          .filter(c -> c.getParentComment() == null || (
-              c.getParentComment().getUser() != null &&
-                  !blockService.inBlockedRelationship(user, c.getParentComment().getUser())))
-          .collect(Collectors.toSet());
+      Set<Comment> comments =
+          post.getComments().stream()
+              .filter(
+                  c ->
+                      c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+              .filter(
+                  c ->
+                      c.getParentComment() == null
+                          || (c.getParentComment().getUser() != null
+                              && !blockService.inBlockedRelationship(
+                                  user, c.getParentComment().getUser())))
+              .collect(Collectors.toSet());
       post.setComments(comments);
-
     }
   }
+
   @Override
   @Transactional(readOnly = true)
   public List<PostResponse> getProfilePostsForUser(String profileUsername, User viewer) {
@@ -214,7 +220,6 @@ public class PostServiceImpl implements PostService {
             ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
             : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
                 profileUsername);
-
 
     filterComments(viewer, posts);
 
@@ -313,12 +318,17 @@ public class PostServiceImpl implements PostService {
       }
     }
 
-    Set<Comment> comments = post.getComments().stream()
-        .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-        .filter(c -> c.getParentComment() == null || (
-            c.getParentComment().getUser() != null &&
-                !blockService.inBlockedRelationship(user, c.getParentComment().getUser())))
-        .collect(Collectors.toSet());
+    Set<Comment> comments =
+        post.getComments().stream()
+            .filter(
+                c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+            .filter(
+                c ->
+                    c.getParentComment() == null
+                        || (c.getParentComment().getUser() != null
+                            && !blockService.inBlockedRelationship(
+                                user, c.getParentComment().getUser())))
+            .collect(Collectors.toSet());
     post.setComments(comments);
 
     List<PostVote> userVote =
