@@ -11,7 +11,7 @@ import {DatePicker} from "primeng/datepicker";
 import {environment} from '../../../../environments/environment';
 import {Password} from "primeng/password";
 import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
-import {usernameValidator, USERNAME_VALIDATION_MESSAGE} from "../../../user/validators";
+import {usernameValidator, USERNAME_VALIDATION_MESSAGE, passwordValidator, PASSWORD_VALIDATION_MESSAGE} from "../../../user/validators";
 
 @Component({
   selector: 'app-registration',
@@ -34,11 +34,12 @@ export class RegisterComponent {
   private router = inject(Router);
 
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
+  protected readonly PASSWORD_VALIDATION_MESSAGE = PASSWORD_VALIDATION_MESSAGE;
 
   protected registerForm = this.fb.group({
     username: ['', [Validators.required, usernameValidator]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
+    password: ['', [Validators.required, passwordValidator]],
     name: ['', Validators.required],
     birthdate: ['', Validators.required],
   });
