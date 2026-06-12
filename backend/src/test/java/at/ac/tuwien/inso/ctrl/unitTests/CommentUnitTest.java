@@ -84,11 +84,19 @@ class CommentUnitTests {
   void getCommentsForPost_shouldReturnOnlyTopLevelComments() {
     String postId = "post-1";
     User currentUser = buildUser("alice");
+    User topLevelAuthor = buildUser("bob");
+    User replyAuthor = buildUser("charlie");
+
     Comment topLevel = buildComment("c-1", null);
+    topLevel.setUser(topLevelAuthor);
+
     Comment reply = buildComment("c-2", topLevel);
+    reply.setUser(replyAuthor);
 
     when(postRepository.existsById(postId)).thenReturn(true);
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(topLevel, reply));
+    when(blockService.inBlockedRelationship(currentUser, topLevelAuthor)).thenReturn(false);
+    when(blockService.inBlockedRelationship(currentUser, replyAuthor)).thenReturn(false);
     when(commentMapper.toResponse(eq(topLevel), any())).thenReturn(mock(CommentResponse.class));
 
     List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
