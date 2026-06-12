@@ -35,7 +35,8 @@ public class CommentsController {
    * @return a flat list of {@link CommentResponse} objects (replies are nested inside each comment)
    */
   @GetMapping("/posts/{postId}/comments")
-  public List<CommentResponse> getComments(@PathVariable String postId, @AuthenticationPrincipal User currentUser) {
+  public List<CommentResponse> getComments(
+      @PathVariable String postId, @AuthenticationPrincipal User currentUser) {
     return commentService.getCommentsForPost(postId, currentUser);
   }
 

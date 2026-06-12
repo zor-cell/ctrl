@@ -11,13 +11,12 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -43,10 +42,16 @@ public class CommentServiceImpl implements CommentService {
 
     List<Comment> all =
         commentRepository.findByPost_PostId(postId).stream()
-            .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(currentUser, c.getUser()))
-            .filter(c -> c.getParentComment() == null || (
-                c.getParentComment().getUser() != null &&
-                !blockService.inBlockedRelationship(currentUser, c.getParentComment().getUser())))
+            .filter(
+                c ->
+                    c.getUser() != null
+                        && !blockService.inBlockedRelationship(currentUser, c.getUser()))
+            .filter(
+                c ->
+                    c.getParentComment() == null
+                        || (c.getParentComment().getUser() != null
+                            && !blockService.inBlockedRelationship(
+                                currentUser, c.getParentComment().getUser())))
             .toList();
 
     // Group replies by their parent's commentId

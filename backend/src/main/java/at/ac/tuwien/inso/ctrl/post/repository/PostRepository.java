@@ -3,11 +3,10 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import at.ac.tuwien.inso.ctrl.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -163,10 +162,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
                       AND (p.user_id IS NOT NULL OR NOT EXISTS (
-                              SELECT 1 
-                                  FROM blocked_relation br 
+                              SELECT 1
+                                  FROM blocked_relation br
                                   WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
-                                  OR 
+                                  OR
                                   (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
           )
           ( --interaction candidates
@@ -268,10 +267,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
                 AND (p.user_id IS NOT NULL OR NOT EXISTS (
-                      SELECT 1 
-                            FROM blocked_relation br 
+                      SELECT 1
+                            FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
-                            OR 
+                            OR
                             (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
@@ -299,10 +298,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
             AND (p.user_id IS NOT NULL OR NOT EXISTS (
-                      SELECT 1 
-                            FROM blocked_relation br 
+                      SELECT 1
+                            FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
-                            OR 
+                            OR
                             (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
             AND pt.topic_id = ANY(ARRAY[:topicList])
           ORDER BY p.created_at DESC
@@ -335,10 +334,10 @@ public interface PostRepository extends JpaRepository<Post, String> {
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
                 AND (p.user_id IS NOT NULL OR NOT EXISTS (
-                      SELECT 1 
-                            FROM blocked_relation br 
+                      SELECT 1
+                            FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
-                            OR 
+                            OR
                             (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
               ORDER BY totalScore DESC
               LIMIT 200

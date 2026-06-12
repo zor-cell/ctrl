@@ -1,7 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
-import at.ac.tuwien.inso.ctrl.comments.service.CommentService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -18,13 +17,12 @@ import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.BlockedRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,11 +39,14 @@ public class BlockService {
   private final SourceVoteRepository sourceVoteRepository;
 
   public void blockUser(User user, String username) {
-    User blockedUser = userRepository.findByUsername(username)
-        .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    User blockedUser =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-    if (blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(user,blockedUser)) {
-      throw new ResourceAlreadyExistsException("User is already blocked", user.getUsername(), username);
+    if (blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(user, blockedUser)) {
+      throw new ResourceAlreadyExistsException(
+          "User is already blocked", user.getUsername(), username);
     }
 
     if (followService.isFollowing(user, blockedUser)) {
@@ -60,42 +61,51 @@ public class BlockService {
       friendshipService.unfriend(user, username);
     }
 
-    BlockedRelation blockedRelation = BlockedRelation.builder()
-        .since(LocalDateTime.now())
-        .id(new BlockedRelationId(user.getId(), blockedUser.getId()))
-        .blockedUser(blockedUser)
-        .user(user).build();
+    BlockedRelation blockedRelation =
+        BlockedRelation.builder()
+            .since(LocalDateTime.now())
+            .id(new BlockedRelationId(user.getId(), blockedUser.getId()))
+            .blockedUser(blockedUser)
+            .user(user)
+            .build();
 
     blockedRelationRepository.save(blockedRelation);
 
     removeBlockedUserContent(user, blockedUser);
-
-
   }
 
   private void removeBlockedUserContent(User user, User blockedUser) {
     List<Post> posts = postRepository.findPostsByUser(user);
 
-    posts.forEach(post -> {
-      List<Comment> comments = commentRepository.findCommentsByUserAndPost(blockedUser, post);
+    posts.forEach(
+        post -> {
+          List<Comment> comments = commentRepository.findCommentsByUserAndPost(blockedUser, post);
 
-      comments.forEach(c -> {
-        Comment comment =
-            commentRepository
-                .findById(c.getCommentId())
-                .orElseThrow(
-                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+          comments.forEach(
+              c -> {
+                Comment comment =
+                    commentRepository
+                        .findById(c.getCommentId())
+                        .orElseThrow(
+                            () ->
+                                new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND, "Comment not found"));
 
-        commentRepository.delete(comment);
-        //commentService.deleteComment(comment.getCommentId(), blockedUser.getUsername());
-      });
+                commentRepository.delete(comment);
+                // commentService.deleteComment(comment.getCommentId(), blockedUser.getUsername());
+              });
 
-      postVoteRepository.findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString())).ifPresent(postVoteRepository::delete);
-      if (post.getSource() != null) {
-        sourceVoteRepository.findById(new SourceVoteId(post.getSource().getSourceId(), blockedUser.getId().toString())).ifPresent(sourceVoteRepository::delete);
-      }
-
-    });
+          postVoteRepository
+              .findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString()))
+              .ifPresent(postVoteRepository::delete);
+          if (post.getSource() != null) {
+            sourceVoteRepository
+                .findById(
+                    new SourceVoteId(
+                        post.getSource().getSourceId(), blockedUser.getId().toString()))
+                .ifPresent(sourceVoteRepository::delete);
+          }
+        });
   }
 
   public boolean inBlockedRelationship(User user, User user2) {
@@ -111,8 +121,10 @@ public class BlockService {
   }
 
   public void unblockUser(User currentUser, String username) {
-    User blockedUser = userRepository.findByUsername(username)
-        .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    User blockedUser =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
     BlockedRelationId relationId = new BlockedRelationId(currentUser.getId(), blockedUser.getId());
     if (!blockedRelationRepository.existsById(relationId)) {

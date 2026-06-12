@@ -3,7 +3,6 @@ package at.ac.tuwien.inso.ctrl.search.service;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostPreviewResponse;
-import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
@@ -21,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,12 +88,10 @@ public class SearchService {
       return Collections.emptyList();
     }
 
-    //filterComments(user, posts);
+    // filterComments(user, posts);
 
     return posts.stream().map(postMapper::toPostPreviewResponse).toList();
   }
-
-
 
   /** Searches for users based on username matching with optional relationship filters. */
   @Transactional(readOnly = true)

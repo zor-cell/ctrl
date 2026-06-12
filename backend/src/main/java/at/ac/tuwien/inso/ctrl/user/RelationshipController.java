@@ -106,7 +106,8 @@ public class RelationshipController {
 
   @GetMapping("/block")
   @ResponseStatus(HttpStatus.OK)
-  public List<BlockedResponse> getBlockedUsers(@AuthenticationPrincipal User currentUser, @RequestParam(required = false) String q) {
+  public List<BlockedResponse> getBlockedUsers(
+      @AuthenticationPrincipal User currentUser, @RequestParam(required = false) String q) {
     return blockService.getBlockedUsers(currentUser, q);
   }
 }
