@@ -131,3 +131,7 @@
     </div>
   }
 </div>
+
+<app-post-detail-dialog
+  [postId]="selectedPostId()"
+  (dismissed)="onDialogDismissed()" />

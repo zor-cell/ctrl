@@ -13,7 +13,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -35,7 +35,6 @@ import { PostStateService } from '../../services/post-state.service';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     AvatarModule,
     ButtonModule,
     TagModule,
@@ -51,6 +50,8 @@ import { PostStateService } from '../../services/post-state.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostDetailViewComponent implements OnChanges {
+  private readonly router = inject(Router);
+
   private readonly postService  = inject(PostService);
   private readonly userService  = inject(UserService);
   private readonly cdr          = inject(ChangeDetectorRef);
@@ -60,7 +61,7 @@ export class PostDetailViewComponent implements OnChanges {
   @Output() readonly shareClicked  = new EventEmitter<void>();
   @Output() readonly closeClicked  = new EventEmitter<void>();
 
-  @ViewChild(PostShareDialogComponent) private shareDialog!: PostShareDialogComponent;
+  @ViewChild(PostShareDialogComponent) private readonly shareDialog!: PostShareDialogComponent;
   @ViewChild('commentsComponent') protected commentsComponent?: PostCommentComponent;
 
   protected readonly post    = signal<DetailedPostResponse | null>(null);
@@ -282,4 +283,15 @@ export class PostDetailViewComponent implements OnChanges {
     try   { return new URL(url).hostname.replace(/^www\./, ''); }
     catch { return url; }
   }
+
+  protected goToUser(): void {
+    const p = this.post();
+    if (!p) return;
+    if (p.isExternal) {
+      window.open(p.userProfileUrl!);
+    } else {
+      this.router.navigate(['/profile', p.username]);
+    }
+  }
+
 }
