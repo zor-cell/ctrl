@@ -29,6 +29,8 @@ import { FollowBadgeComponent } from '../../../feed/components/follow-badge/foll
 import { PostShareDialogComponent } from '../post-detail-share/post-share-dialog.component';
 import { PostCommentComponent} from '../post-detail-comment/post-comment.component';
 import { PostStateService } from '../../services/post-state.service';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-post-detail-view',
@@ -57,6 +59,7 @@ export class PostDetailViewComponent implements OnChanges {
   private readonly userService  = inject(UserService);
   private readonly cdr          = inject(ChangeDetectorRef);
   private readonly postState    = inject(PostStateService);
+  private readonly mediaCache   = inject(MediaCacheService);
 
   @Input() postId: string | null = null;
   @Output() readonly shareClicked  = new EventEmitter<void>();
@@ -74,10 +77,10 @@ export class PostDetailViewComponent implements OnChanges {
   private readonly _postId = signal<string | null>(null);
 
   protected readonly postVote   = computed(() =>
-      this.postState.voteMap()[this._postId() ?? '']?.userVote  ?? null
+    this.postState.voteMap()[this._postId() ?? '']?.userVote  ?? null
   );
   protected readonly sourceVote = computed(() =>
-      this.postState.voteMap()[this._postId() ?? '']?.sourceVote ?? null
+    this.postState.voteMap()[this._postId() ?? '']?.sourceVote ?? null
   );
 
   protected readonly postUpvotes   = signal(0);
@@ -113,6 +116,11 @@ export class PostDetailViewComponent implements OnChanges {
     this.post.set(null);
     try {
       const post = await this.postService.getPostById(postId);
+
+      // Resolve signed/cached URLs from the garage container
+      if (post.mediaUrl)           post.mediaUrl           = await this.resolveMedia(post.mediaUrl)           ?? post.mediaUrl;
+      if (post.userProfilePicture) post.userProfilePicture = await this.resolveMedia(post.userProfilePicture) ?? post.userProfilePicture;
+
       this.post.set(post);
 
       const sourceVoteFromDetail = (post.source as { userVote?: 'up' | 'down' | null })?.userVote ?? null;
@@ -129,6 +137,12 @@ export class PostDetailViewComponent implements OnChanges {
       this.loading.set(false);
       this.cdr.markForCheck();
     }
+  }
+
+  private resolveMedia(url: string | null | undefined): Promise<string | null> {
+    if (!url) return Promise.resolve(null);
+    const kind = /\.(mp4|webm|mov)(\?|#|$)/i.test(url) ? 'video' : 'image';
+    return firstValueFrom(this.mediaCache.resolveMediaUrl(url, kind, 'high')).catch(() => null);
   }
 
   private reset(): void {
@@ -223,11 +237,11 @@ export class PostDetailViewComponent implements OnChanges {
   }
 
   private calcOptimisticVote(
-      upvotes: number,
-      downvotes: number,
-      currentVote: 'up' | 'down' | null,
-      voteType: VoteType,
-      isSameVote: boolean,
+    upvotes: number,
+    downvotes: number,
+    currentVote: 'up' | 'down' | null,
+    voteType: VoteType,
+    isSameVote: boolean,
   ): { upvotes: number; downvotes: number; userVote: VoteType | null } {
     if (isSameVote) {
       if (voteType === 'up') upvotes = Math.max(0, upvotes - 1);
