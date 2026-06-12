@@ -1,59 +1,52 @@
-<div class="flex justify-content-center mt-4">
-    <p-card header="Neues Topic erstellen" styleClass="w-full md:w-30rem shadow-3">
-        <form [formGroup]="topicForm" (ngSubmit)="onSubmit()" class="flex flex-column gap-4">
+<div class="profile-layout">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Create New Topic</h2>
+        </div>
 
-            <!-- Feld: Name -->
-            <div class="flex flex-column gap-2">
-                <label for="name" class="font-semibold text-color">Name <span class="text-red-500">*</span></label>
-                <!-- Icon links vom Input -->
-                <div class="p-input-icon-left w-full">
-                    <i class="pi pi-hashtag"></i>
-                    <input
-                            id="name"
-                            type="text"
-                            pInputText
-                            formControlName="name"
-                            placeholder="z.B. software-engineering"
-                            class="w-full"
-                            [maxlength]="255" />
-                </div>
+        <form [formGroup]="topicForm" (ngSubmit)="onSubmit()">
+            <!-- Topic Name -->
+            <div style="margin-bottom: 1.5rem;">
+                <p-floatlabel variant="on">
+                    <input pInputText id="name" formControlName="name" fluid />
+                    <label for="name">Topic Name</label>
+                </p-floatlabel>
 
-                <!-- Moderne Angular v19 @if Syntax für Form-Validierung -->
                 @if (topicForm.controls.name.invalid && topicForm.controls.name.touched) {
-                    <small class="p-error">
+                    <p-message severity="error" size="small" variant="simple">
                         @if (topicForm.controls.name.hasError('required')) {
-                            Der Topic-Name ist ein Pflichtfeld.
+                            Topic Name is required.
                         }
                         @if (topicForm.controls.name.hasError('maxlength')) {
-                            Der Name darf maximal 255 Zeichen lang sein.
+                            Topic Name cannot exceed 255 characters.
                         }
-                    </small>
+                    </p-message>
                 }
             </div>
 
-            <!-- Feld: Emoji -->
-            <div class="flex flex-column gap-2">
-                <label for="emoji" class="font-semibold text-color">Emoji (Optional)</label>
-                <input
-                        id="emoji"
-                        type="text"
-                        pInputText
-                        formControlName="emoji"
-                        placeholder="z.B. 🚀"
-                        class="w-full"
-                        [maxlength]="255" />
+            <!-- Emoji -->
+            <div style="margin-bottom: 1.5rem;">
+                <p-floatlabel variant="on">
+                    <input pInputText id="emoji" formControlName="emoji" fluid />
+                    <label for="emoji">Emoji (Optional)</label>
+                </p-floatlabel>
+
+                @if (topicForm.controls.emoji.invalid && topicForm.controls.emoji.touched) {
+                    <p-message severity="error" size="small" variant="simple">
+                        Emoji cannot exceed 255 characters.
+                    </p-message>
+                }
             </div>
 
-            <!-- Aktionen -->
-            <div class="flex justify-content-end mt-3">
+            <!-- Actions -->
+            <div class="input-action-group" style="justify-content: end;">
                 <p-button
                         type="submit"
-                        label="Erstellen"
+                        label="Create Topic"
                         icon="pi pi-check"
-                        [loading]="isSubmitting()"
-                        [disabled]="topicForm.invalid || isSubmitting()" />
+                        [disabled]="topicForm.invalid"
+                />
             </div>
-
         </form>
-    </p-card>
+    </div>
 </div>

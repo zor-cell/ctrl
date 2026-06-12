@@ -1,11 +1,11 @@
 package at.ac.tuwien.inso.ctrl.post.scheduler;
 
-import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
-import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
