@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
@@ -11,6 +10,7 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

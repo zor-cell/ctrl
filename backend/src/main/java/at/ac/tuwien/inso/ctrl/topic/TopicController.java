@@ -3,9 +3,8 @@ package at.ac.tuwien.inso.ctrl.topic;
 import at.ac.tuwien.inso.ctrl.topic.dto.TopicCreateRequest;
 import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
 import at.ac.tuwien.inso.ctrl.topic.service.TopicService;
-import java.util.List;
-
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

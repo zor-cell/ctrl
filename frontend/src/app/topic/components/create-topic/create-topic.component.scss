@@ -1,0 +1,41 @@
+.profile-layout {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.form-container {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.06);
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--surface-border);
+  padding-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.input-action-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+// Stellt sicher, dass das Margin für die p-messages korrekt aussieht
+::ng-deep p-message {
+  display: block;
+  margin-top: 0.5rem;
+}

@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.topic.service.impl;
 
+import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.topic.dto.TopicCreateRequest;
 import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
@@ -10,15 +11,14 @@ import at.ac.tuwien.inso.ctrl.topic.service.TopicService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class TopicServiceImpl implements TopicService {
   private final TopicRepository topicRepository;
   private final TopicMapper topicMapper;
+  private final EmbeddingService embeddingService;
 
   @Override
   public List<TopicResponse> getAvailableTopics() {
@@ -33,10 +33,11 @@ public class TopicServiceImpl implements TopicService {
       throw new InvalidRequestException("Topic already exists");
     }
 
-    Topic topic = Topic.builder()
-            .name(request.name())
-            .emoji(request.emoji())
-            .build();
+    String context = request.name() + ": " + request.description();
+    float[] embedding = embeddingService.embedText(context);
+
+    Topic topic =
+        Topic.builder().name(request.name()).emoji(request.emoji()).embedding(embedding).build();
 
     Topic savedTopic = topicRepository.save(topic);
     return topicMapper.toTopicResponse(savedTopic);
