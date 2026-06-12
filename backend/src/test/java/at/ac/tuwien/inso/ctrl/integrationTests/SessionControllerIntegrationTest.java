@@ -98,7 +98,8 @@ public class SessionControllerIntegrationTest {
   }
 
   @Test
-  public void handleHeartbeat_shouldReturnOk_WhenLimitWasAlreadyExceeded() throws Exception {
+  public void handleHeartbeat_shouldReturnTooManyRequests_WhenLimitWasAlreadyExceeded()
+      throws Exception {
     SessionConfig config =
         SessionConfig.builder()
             .user(existingUser)
@@ -121,7 +122,7 @@ public class SessionControllerIntegrationTest {
         .perform(
             post(sessionEndpoint + "/heartbeat")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
-        .andExpect(status().isOk());
+        .andExpect(status().isTooManyRequests());
   }
 
   @Test
@@ -227,7 +228,8 @@ public class SessionControllerIntegrationTest {
   }
 
   @Test
-  public void handleHeartbeat_shouldReturnOk_WhenPostLimitAlreadyExceeded() throws Exception {
+  public void handleHeartbeat_shouldReturnTooManyRequests_WhenPostLimitAlreadyExceeded()
+      throws Exception {
     SessionConfig config =
         SessionConfig.builder()
             .user(existingUser)
@@ -250,7 +252,7 @@ public class SessionControllerIntegrationTest {
         .perform(
             post(sessionEndpoint + "/heartbeat")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + validJwtToken))
-        .andExpect(status().isOk());
+        .andExpect(status().isTooManyRequests());
   }
 
   @Test

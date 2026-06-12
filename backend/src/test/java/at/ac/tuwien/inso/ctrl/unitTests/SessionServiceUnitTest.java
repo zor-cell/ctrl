@@ -78,14 +78,9 @@ public class SessionServiceUnitTest {
         .thenReturn(Optional.of(defaultConfig));
     when(sessionRepository.findTopByUserOrderByStartDesc(testUser))
         .thenReturn(Optional.of(oldSession));
-    when(sessionRepository.getDailyStats(eq(testUser), any(LocalDateTime.class)))
-        .thenReturn(statsMock);
-    when(statsMock.getTotalSeconds()).thenReturn(0L);
-    when(statsMock.getTotalPostsViewed()).thenReturn(0L);
 
-    boolean result = sessionService.handleHeartbeat(now, testUser);
+    sessionService.handleHeartbeat(now, testUser);
 
-    assertFalse(result);
     verify(sessionRepository).save(sessionHistoryCaptor.capture());
     SessionHistory savedSession = sessionHistoryCaptor.getValue();
     assertEquals(now, savedSession.getStart());
@@ -103,13 +98,9 @@ public class SessionServiceUnitTest {
         .thenReturn(Optional.of(defaultConfig));
     when(sessionRepository.findTopByUserOrderByStartDesc(testUser))
         .thenReturn(Optional.of(recentSession));
-    when(sessionRepository.getDailyStats(eq(testUser), any(LocalDateTime.class)))
-        .thenReturn(statsMock);
-    when(statsMock.getTotalSeconds()).thenReturn(0L);
 
-    boolean result = sessionService.handleHeartbeat(now, testUser);
+    sessionService.handleHeartbeat(now, testUser);
 
-    assertFalse(result);
     verify(sessionRepository).save(sessionHistoryCaptor.capture());
     SessionHistory savedSession = sessionHistoryCaptor.getValue();
     assertEquals(recentStart, savedSession.getStart());
@@ -124,13 +115,9 @@ public class SessionServiceUnitTest {
     when(sessionConfigRepository.findByUserId(testUser.getId()))
         .thenReturn(Optional.of(defaultConfig));
     when(sessionRepository.findTopByUserOrderByStartDesc(testUser)).thenReturn(Optional.empty());
-    when(sessionRepository.getDailyStats(eq(testUser), any(LocalDateTime.class)))
-        .thenReturn(statsMock);
-    when(statsMock.getTotalSeconds()).thenReturn(2000L); // Over 30 min (1800s)
 
-    boolean result = sessionService.handleHeartbeat(now, testUser);
+    sessionService.handleHeartbeat(now, testUser);
 
-    assertTrue(result);
     verify(sessionConfigRepository).save(sessionConfigCaptor.capture());
     assertNull(sessionConfigCaptor.getValue().getLastSnooze());
   }
