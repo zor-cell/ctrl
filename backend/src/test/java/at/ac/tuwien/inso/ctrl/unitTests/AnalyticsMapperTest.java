@@ -153,6 +153,43 @@ public class AnalyticsMapperTest {
   }
 
   @Nested
+  class ToSessionIntervalDtoMap {
+
+    @Test
+    void shouldReturnEmptyMap_whenNoSessions() {
+      var result = mapper.toSessionIntervalDtoMap(List.of());
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldSplitSessionsAtMidnightAndGroupByDate() {
+      var result =
+          mapper.toSessionIntervalDtoMap(
+              List.of(
+                  session(LocalDateTime.of(2026, 4, 27, 23, 30), 60),
+                  session(LocalDateTime.of(2026, 4, 28, 10, 0), 30)));
+
+      assertThat(result).containsOnlyKeys(LocalDate.of(2026, 4, 27), LocalDate.of(2026, 4, 28));
+
+      assertThat(result.get(LocalDate.of(2026, 4, 27))).hasSize(1);
+      assertThat(result.get(LocalDate.of(2026, 4, 27)).get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
+      assertThat(result.get(LocalDate.of(2026, 4, 27)).get(0).endTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+
+      assertThat(result.get(LocalDate.of(2026, 4, 28))).hasSize(2);
+      assertThat(result.get(LocalDate.of(2026, 4, 28)).get(0).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+      assertThat(result.get(LocalDate.of(2026, 4, 28)).get(0).endTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 30));
+      assertThat(result.get(LocalDate.of(2026, 4, 28)).get(1).startTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 10, 0));
+      assertThat(result.get(LocalDate.of(2026, 4, 28)).get(1).endTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 28, 10, 30));
+    }
+  }
+
+  @Nested
   class SplitSessionAtMidnight {
 
     @Test
@@ -234,6 +271,30 @@ public class AnalyticsMapperTest {
       assertThat(result[0]).isZero();
       assertThat(result[1]).isZero();
       assertThat(result[2]).isZero();
+      assertThat(result[4]).isZero();
+      assertThat(result[5]).isZero();
+      assertThat(result[6]).isZero();
+    }
+
+    @Test
+    void shouldReturnOnesAndTwosForTenDayWindow() {
+      int[] result = mapper.calculateContributingDays(10);
+      assertThat(result[0]).isEqualTo(1); // Monday
+      assertThat(result[1]).isEqualTo(2); // Tuesday
+      assertThat(result[2]).isEqualTo(2); // Wednesday
+      assertThat(result[3]).isEqualTo(2); // Thursday
+      assertThat(result[4]).isEqualTo(1); // Friday
+      assertThat(result[5]).isEqualTo(1); // Saturday
+      assertThat(result[6]).isEqualTo(1); // Sunday
+    }
+
+    @Test
+    void shouldReturnAllZeros_whenZeroDays() {
+      int[] result = mapper.calculateContributingDays(0);
+      assertThat(result[0]).isZero();
+      assertThat(result[1]).isZero();
+      assertThat(result[2]).isZero();
+      assertThat(result[3]).isZero();
       assertThat(result[4]).isZero();
       assertThat(result[5]).isZero();
       assertThat(result[6]).isZero();

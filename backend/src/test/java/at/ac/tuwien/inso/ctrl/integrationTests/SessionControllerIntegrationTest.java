@@ -43,7 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @AutoConfigureMockMvc
 public class SessionControllerIntegrationTest {
-
   @Autowired private MockMvc mockMvc;
 
   @Autowired private UserRepository userRepository;
@@ -112,7 +111,7 @@ public class SessionControllerIntegrationTest {
     SessionHistory history =
         SessionHistory.builder()
             .user(existingUser)
-            .start(LocalDateTime.now().minusMinutes(15))
+            .start(LocalDateTime.now(TestConfig.FIXED_CLOCK).minusMinutes(15))
             .seconds(900L)
             .postsViewed(0)
             .build();
@@ -139,7 +138,7 @@ public class SessionControllerIntegrationTest {
     SessionHistory history =
         SessionHistory.builder()
             .user(existingUser)
-            .start(LocalDateTime.now().minusMinutes(10))
+            .start(LocalDateTime.now(TestConfig.FIXED_CLOCK).minusMinutes(10))
             .seconds(599L)
             .postsViewed(0)
             .build();
@@ -242,7 +241,7 @@ public class SessionControllerIntegrationTest {
     SessionHistory history =
         SessionHistory.builder()
             .user(existingUser)
-            .start(LocalDateTime.now().minusMinutes(5))
+            .start(LocalDateTime.now(TestConfig.FIXED_CLOCK).minusMinutes(5))
             .seconds(300L) // 5 Minuten verbracht
             .postsViewed(100)
             .build();
@@ -269,7 +268,7 @@ public class SessionControllerIntegrationTest {
     SessionHistory history =
         SessionHistory.builder()
             .user(existingUser)
-            .start(LocalDateTime.now().minusMinutes(5))
+            .start(LocalDateTime.now(TestConfig.FIXED_CLOCK).minusMinutes(5))
             .seconds(300L)
             .postsViewed(100)
             .build();

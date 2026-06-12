@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -19,6 +20,7 @@ public class CtrlApplication {
   }
 
   @Bean
+  @ConditionalOnMissingBean
   Clock clock() {
     return Clock.system(ZoneId.of("Europe/Vienna"));
   }
