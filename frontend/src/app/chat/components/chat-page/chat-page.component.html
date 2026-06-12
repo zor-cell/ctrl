@@ -235,12 +235,18 @@
         </div>
       </header>
 
-      <div class="message-list" #messageList>
+      <div class="message-list" #messageList (scroll)="onMessageListScroll()">
         @if (loadingMessages()) {
           <p class="message-empty">Loading messages</p>
-        } @else if (messages().length === 0) {
-          <p class="message-empty">No messages yet</p>
         } @else {
+          @if (loadingOlderMessages()) {
+            <p class="message-page-loader">Loading older messages</p>
+          }
+
+          @if (messages().length === 0) {
+            <p class="message-empty">No messages yet</p>
+          }
+
           @for (message of messages(); track message.messageId) {
             @if (message.system) {
               <div class="message-system">
@@ -318,21 +324,25 @@
                           </span>
                         </div>
 
-                        @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
+                        @if (sharedPostHasMediaSlot(sharedPost)) {
                           <div class="shared-post-media">
-                            @if (sharedPost.post.mediaKind === 'video') {
-                              <video
-                                [src]="mediaUrl"
-                                muted
-                                playsinline
-                                preload="metadata"
-                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                            @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
+                              @if (sharedPost.post.mediaKind === 'video') {
+                                <video
+                                  [src]="mediaUrl"
+                                  muted
+                                  playsinline
+                                  preload="metadata"
+                                  (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                              } @else {
+                                <img
+                                  [src]="mediaUrl"
+                                  alt=""
+                                  loading="lazy"
+                                  (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                              }
                             } @else {
-                              <img
-                                [src]="mediaUrl"
-                                alt=""
-                                loading="lazy"
-                                (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                              <div class="shared-post-media-placeholder" aria-hidden="true"></div>
                             }
                           </div>
                         }

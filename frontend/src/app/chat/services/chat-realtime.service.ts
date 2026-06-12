@@ -308,10 +308,11 @@ export class ChatRealtimeService {
           }),
         connectHeaders: {
           Authorization: `Bearer ${token}`,
+          'heart-beat': '0,0',
         },
         reconnectDelay: 5000,
-        heartbeatIncoming: 5000,
-        heartbeatOutgoing: 5000,
+        heartbeatIncoming: 0,
+        heartbeatOutgoing: 0,
         onConnect: () => {
           if (!this.isActiveConnection(generation, sockJsClient)) {
             return;

@@ -8,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -28,7 +29,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "messages")
+@Table(
+    name = "messages",
+    indexes = {
+      @Index(name = "idx_messages_chat_date", columnList = "chat_id, date"),
+      @Index(
+          name = "idx_messages_chat_from_system_date",
+          columnList = "chat_id, from_user_id, system, date")
+    })
 public class Message {
   @Id
   @Column(name = "message_id", nullable = false, unique = true)

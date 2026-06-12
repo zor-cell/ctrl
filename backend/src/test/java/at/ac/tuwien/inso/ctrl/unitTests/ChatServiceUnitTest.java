@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -123,6 +125,65 @@ class ChatServiceUnitTest {
             ResponseStatusException.class,
             () -> chatService.markChatAsRead(alice, chat.getChatId()));
     assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+  }
+
+  @Test
+  void getChats_loadsActiveChatsWithDetailsInSingleRepositoryCall() {
+    Chat chat = directChat(alice, bob);
+    when(chatRepository.findActiveChatsForUserWithDetails(alice.getId())).thenReturn(List.of(chat));
+    stubResponseMappers();
+
+    var response = chatService.getChats(alice);
+
+    assertEquals(1, response.size());
+    verify(chatRepository).findActiveChatsForUserWithDetails(alice.getId());
+    verify(chatMemberRepository, never()).findChatIdsForUser(any());
+    verify(chatRepository, never()).findByChatIdWithDetails(any());
+  }
+
+  @Test
+  void getMessages_loadsLatestPageAndReturnsAscendingMessages() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Message olderMessage = message(chat, bob, false);
+    olderMessage.setDate(LocalDateTime.parse("2026-06-12T10:00:00"));
+    Message newerMessage = message(chat, alice, false);
+    newerMessage.setDate(LocalDateTime.parse("2026-06-12T10:01:00"));
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 30)))
+        .thenReturn(List.of(newerMessage.getMessageId(), olderMessage.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(
+            List.of(newerMessage.getMessageId(), olderMessage.getMessageId())))
+        .thenReturn(List.of(newerMessage, olderMessage));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(
+        List.of(olderMessage.getMessageId(), newerMessage.getMessageId()),
+        response.stream().map(ChatMessageResponse::messageId).toList());
+    verify(messageRepository).findLatestMessageIds(chat, PageRequest.of(0, 30));
+    verify(messageRepository, never()).findByChatOrderByDateAsc(any());
+  }
+
+  @Test
+  void getMessages_withBeforeCursorLoadsOlderPage() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    LocalDateTime before = LocalDateTime.parse("2026-06-12T10:02:00");
+    Message olderMessage = message(chat, bob, false);
+    olderMessage.setDate(LocalDateTime.parse("2026-06-12T10:01:00"));
+    when(messageRepository.findMessageIdsBefore(chat, before, PageRequest.of(0, 15)))
+        .thenReturn(List.of(olderMessage.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(List.of(olderMessage.getMessageId())))
+        .thenReturn(List.of(olderMessage));
+
+    List<ChatMessageResponse> response =
+        chatService.getMessages(alice, chat.getChatId(), "2026-06-12T10:02:00Z", 15);
+
+    assertEquals(
+        List.of(olderMessage.getMessageId()),
+        response.stream().map(ChatMessageResponse::messageId).toList());
+    verify(messageRepository).findMessageIdsBefore(chat, before, PageRequest.of(0, 15));
+    verify(messageRepository, never()).findLatestMessageIds(any(), any());
   }
 
   // ---------------------------------------------------------------------------
@@ -241,6 +302,11 @@ class ChatServiceUnitTest {
 
     assertEquals("hello there", response.content());
     verify(messageRepository).save(any(Message.class));
+    verify(messageRepository)
+        .countPersonalMessagesByUsers(eq(chat), eq(Set.of(alice.getId(), bob.getId())));
+    verify(messageRepository)
+        .countUnreadMessagesByUsers(eq(chat), eq(Set.of(alice.getId(), bob.getId())));
+    verify(messageRepository, never()).findTopByChatOrderByDateDesc(chat);
     verify(chatMessageBroadcaster, atLeastOnce())
         .publishMessageEvent(any(), eq(chat.getChatId()), any());
   }

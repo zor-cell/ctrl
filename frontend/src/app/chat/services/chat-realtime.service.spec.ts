@@ -86,6 +86,12 @@ describe('ChatRealtimeService', () => {
 
     expect(lastClientConfig?.['brokerURL']).toBeUndefined();
     expect(lastClientConfig?.['webSocketFactory']).toEqual(expect.any(Function));
+    expect(lastClientConfig?.['connectHeaders']).toEqual({
+      Authorization: 'Bearer test-token',
+      'heart-beat': '0,0',
+    });
+    expect(lastClientConfig?.['heartbeatIncoming']).toBe(0);
+    expect(lastClientConfig?.['heartbeatOutgoing']).toBe(0);
     expect(service.getCurrentConnectionStatus()).toBe('SOCKJS');
   });
 
