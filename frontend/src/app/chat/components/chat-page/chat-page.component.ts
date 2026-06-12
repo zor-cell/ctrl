@@ -72,7 +72,7 @@ interface ParsedSharedPost {
   note: string;
 }
 
-type GroupConfirmationAction = 'delete' | 'leave';
+type GroupConfirmationAction = 'delete' | 'leave' | 'deleteDirect';
 
 @Component({
   selector: 'app-chat-page',
@@ -145,17 +145,28 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly sharedPostMediaUrls = signal<Record<string, string>>({});
   private readonly failedSharedPostMediaUrls = signal<Record<string, true>>({});
   private readonly pendingSharedPostMediaKeys = new Set<string>();
-  protected readonly groupConfirmationTitle = computed(() =>
-    this.groupConfirmationAction() === 'delete' ? 'Delete group?' : 'Leave group?'
-  );
-  protected readonly groupConfirmationMessage = computed(() =>
-    this.groupConfirmationAction() === 'delete'
-      ? 'This will permanently delete the group for everyone. Are you sure you want to continue?'
-      : 'You will lose access to this group chat. Are you sure you want to leave?'
-  );
-  protected readonly groupConfirmationButtonLabel = computed(() =>
-    this.groupConfirmationAction() === 'delete' ? 'Delete group' : 'Leave group'
-  );
+  protected readonly groupConfirmationTitle = computed(() => {
+    const action = this.groupConfirmationAction();
+    if (action === 'delete') return 'Delete group?';
+    if (action === 'deleteDirect') return 'Delete chat?';
+    return 'Leave group?';
+  });
+  protected readonly groupConfirmationMessage = computed(() => {
+    const action = this.groupConfirmationAction();
+    if (action === 'delete') {
+      return 'This will permanently delete the group for everyone. Are you sure you want to continue?';
+    }
+    if (action === 'deleteDirect') {
+      return 'This will remove the chat from your chat list. Are you sure you want to continue?';
+    }
+    return 'You will lose access to this group chat. Are you sure you want to leave?';
+  });
+  protected readonly groupConfirmationButtonLabel = computed(() => {
+    const action = this.groupConfirmationAction();
+    if (action === 'delete') return 'Delete group';
+    if (action === 'deleteDirect') return 'Delete chat';
+    return 'Leave group';
+  });
   private pendingSharedPost:
     | {
         username?: string;
@@ -558,6 +569,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.groupConfirmationAction.set('leave');
   }
 
+  protected requestDeleteDirectChatForSelf(): void {
+    const chat = this.selectedChat();
+    if (!chat || chat.groupChat) {
+      return;
+    }
+
+    this.groupConfirmationAction.set('deleteDirect');
+  }
+
   protected onGroupConfirmationVisibilityChange(visible: boolean): void {
     if (!visible) {
       this.closeGroupConfirmation();
@@ -581,6 +601,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     if (action === 'leave') {
       this.leaveGroup();
+      return;
+    }
+
+    if (action === 'deleteDirect') {
+      this.deleteDirectChatForSelf();
     }
   }
 
@@ -842,10 +867,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.groupActionInProgress.set(true);
     this.chatService.leaveChat(chat.chatId)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.groupActionInProgress.set(false))
+      )
       .subscribe({
         next: () => {
+          this.groupConfirmationAction.set(null);
           this.removeChatFromState(chat.chatId);
         },
         error: () => this.notificationService.showError('Failed to delete chat'),

@@ -22,15 +22,26 @@
             [style]="{ width: '42px', height: '42px' }"
           />
           <div class="post-meta">
-            <a class="post-username post-username--link"
-               [routerLink]="['/profile', post.username]">
-              {{ post.username }}
-            </a>
+            @if (post.isExternal) {
+              <span
+                class="post-username post-username--external"
+                pTooltip="This is an external user"
+                tooltipPosition="bottom">
+                {{ post.username }}
+              </span>
+            } @else {
+              <a class="post-username post-username--link"
+                 [routerLink]="['/profile', post.username]">
+                {{ post.username }}
+              </a>
+            }
             <span class="post-info">
               {{ timeAgo(post.createdAt) }}
             </span>
           </div>
-          <app-follow-badge [username]="post.username" />
+          @if (!post.isExternal) {
+            <app-follow-badge [username]="post.username" />
+          }
         </div>
 
         <div class="post-header-right">
