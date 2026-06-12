@@ -1,6 +1,6 @@
-package at.ac.tuwien.inso.ctrl.algorithm.service;
+package at.ac.tuwien.inso.ctrl.topic.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
+import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
 import java.util.List;
 
 /** Provides available post topics. */

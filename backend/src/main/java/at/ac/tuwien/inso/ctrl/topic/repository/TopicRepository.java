@@ -1,6 +1,6 @@
-package at.ac.tuwien.inso.ctrl.algorithm.repository;
+package at.ac.tuwien.inso.ctrl.topic.repository;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

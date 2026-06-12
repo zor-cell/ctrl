@@ -2,7 +2,7 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;

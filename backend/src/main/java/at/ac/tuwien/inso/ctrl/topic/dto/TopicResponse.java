@@ -1,3 +1,3 @@
-package at.ac.tuwien.inso.ctrl.algorithm.dto.response;
+package at.ac.tuwien.inso.ctrl.topic.dto;
 
 public record TopicResponse(String topicId, String name, String emoji) {}
