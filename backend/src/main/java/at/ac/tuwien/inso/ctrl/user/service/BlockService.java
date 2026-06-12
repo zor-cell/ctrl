@@ -83,7 +83,9 @@ public class BlockService {
       });
 
       postVoteRepository.findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString())).ifPresent(postVoteRepository::delete);
-      sourceVoteRepository.findById(new SourceVoteId(post.getSource().getSourceId(), blockedUser.getId().toString())).ifPresent(sourceVoteRepository::delete);
+      if (post.getSource() != null) {
+        sourceVoteRepository.findById(new SourceVoteId(post.getSource().getSourceId(), blockedUser.getId().toString())).ifPresent(sourceVoteRepository::delete);
+      }
 
     });
   }
