@@ -1,21 +1,24 @@
-.profile-layout {
+.management-layout {
   display: flex;
   justify-content: center;
   padding: 2rem 1rem;
 }
 
-.form-container {
+.table-container {
   background: var(--surface-card);
   border: 1px solid var(--surface-border);
   border-radius: var(--border-radius);
   padding: 2rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 1000px;
   box-shadow: 0 2px 4px -1px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.06);
 }
 
-.form-header {
-  margin-bottom: 2rem;
+.header-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--surface-border);
   padding-bottom: 1rem;
 
@@ -27,14 +30,26 @@
   }
 }
 
-.input-action-group {
+.dialog-form {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
 }
 
-// Stellt sicher, dass das Margin für die p-messages korrekt aussieht
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
 ::ng-deep p-message {
   display: block;
   margin-top: 0.5rem;
