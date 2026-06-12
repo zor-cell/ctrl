@@ -1388,6 +1388,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.relationshipService.block(this.username()).subscribe({
         next: () => {
           this.notificationService.showSuccess(`Blocked ${this.username()}`);
+          this.router.navigate(['/followed'], { queryParams: { tab: 'blocked' } });
           },
         error: () => {
           this.notificationService.showError(`Failed to block ${this.username()}`);

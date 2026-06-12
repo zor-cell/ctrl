@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { Tabs, TabList, Tab } from 'primeng/tabs';
@@ -53,9 +53,9 @@ import {BlockedListComponent} from '../blocked-list/blocked-list.component';
 export class FollowedPageComponent implements OnInit, OnDestroy {
   protected relationshipService: RelationshipService = inject(RelationshipService);
   private eventBus = inject(FriendRequestEventBusService);
-  private router: Router = inject(Router);
+  private route: ActivatedRoute = inject(ActivatedRoute);
 
-  activeTab = signal<string>('friends');
+  activeTab = signal<string>(this.route.snapshot.queryParamMap.get('tab') ?? 'friends');
   showRequestsDialog = signal<boolean>(false);
   showSearchDialog = signal<boolean>(false);
   searchQuery = signal<string>('');
@@ -76,6 +76,13 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadInitialData();
+
+    this.route.queryParamMap.pipe(takeUntil(this._destroy$)).subscribe(params => {
+      const tab = params.get('tab');
+      if (tab === 'friends' || tab === 'followed' || tab === 'blocked') {
+        this.activeTab.set(tab);
+      }
+    });
 
     this.eventBus.state$.pipe(takeUntil(this._destroy$)).subscribe((state) => {
       console.log(state);
