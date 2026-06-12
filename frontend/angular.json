@@ -4,7 +4,7 @@
   "cli": {
     "packageManager": "npm",
     "analytics": false,
-    "schematicCollections": ["@cypress/schematic", "angular-eslint", "@schematics/angular"]
+    "schematicCollections": ["angular-eslint", "@schematics/angular"]
   },
   "newProjectRoot": "projects",
   "projects": {

@@ -52,6 +52,7 @@ interface ShareTarget {
   interactionCount: number;
   lastActivityTime: number;
 }
+import {SessionStateService} from "../../../session/session-state.service";
 
 @Component({
   selector: 'app-feed',
@@ -82,6 +83,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected userService = inject(UserService);
   private readonly feedService = inject(FeedService);
   postService = inject(PostService);
+  protected sessionState = inject(SessionStateService);
 
   readonly viewTracking = inject(ViewTrackingService);
 
@@ -335,6 +337,9 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+
+        this.sessionState.resetLimit();
+
         this.isLoading.set(false);
         this.isRefreshing.set(false);
         this.scrollFeedToTop();
@@ -342,6 +347,9 @@ export class FeedComponent implements OnInit, OnDestroy {
       error: () => {
         this.isLoading.set(false);
         this.isRefreshing.set(false);
+
+        this.publicPosts.set([]);
+        this.privatePosts.set([]);
       },
     });
   }

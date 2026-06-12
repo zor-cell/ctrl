@@ -15,7 +15,7 @@ type SliderField = 'weightInteraction' | 'weightRecency' | 'weightExploration' |
   'weightSourceQuality' | 'weightPopularity' | 'weightTopic';
 
 @Component({
-  selector: 'app-config',
+  selector: 'app-algorithm-config',
   imports: [
     Slider,
     ReactiveFormsModule,

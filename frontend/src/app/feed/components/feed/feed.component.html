@@ -19,6 +19,12 @@
         <p-tabpanel value="public">
           <div class="posts-list">
 
+          @if (sessionState.isLimitActive()) {
+              <div class="empty-state">
+                  <i class="pi pi-lock"></i>
+                  <p>Session Limit Reached</p>
+              </div>
+          } @else {
             <!-- Skeleton Loader -->
             @if (isLoading()) {
               @for (i of skeletonItems; track i) {
@@ -48,10 +54,10 @@
             <!-- Real posts -->
             @if (!isLoading()) {
               @if (publicPosts().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-inbox"></i>
-                  <p>No public posts yet.</p>
-                </div>
+                  <div class="empty-state">
+                      <i class="pi pi-inbox"></i>
+                      <p>No public posts yet.</p>
+                  </div>
               }
               @for (post of publicPosts(); track post.postId) {
                 <section
@@ -63,7 +69,7 @@
                 </section>
               }
             }
-
+          }
           </div>
         </p-tabpanel>
 
@@ -71,6 +77,12 @@
         <p-tabpanel value="private">
           <div class="posts-list">
 
+              @if (sessionState.isLimitActive()) {
+                  <div class="empty-state">
+                      <i class="pi pi-lock"></i>
+                      <p>Session Limit Reached</p>
+                  </div>
+              } @else {
             <!-- Skeleton Loader -->
             @if (isLoading()) {
               @for (i of skeletonItems; track i) {
@@ -100,10 +112,17 @@
             <!-- Real posts -->
             @if (!isLoading()) {
               @if (privatePosts().length === 0) {
-                <div class="empty-state">
-                  <i class="pi pi-inbox"></i>
-                  <p>No private posts yet.</p>
-                </div>
+                  @if (sessionState.isLimitActive()) {
+                      <div class="empty-state">
+                          <i class="pi pi-lock"></i>
+                          <p>Session Limit Reached</p>
+                      </div>
+                  } @else {
+                      <div class="empty-state">
+                          <i class="pi pi-inbox"></i>
+                          <p>No private posts yet.</p>
+                      </div>
+                  }
               }
               @for (post of privatePosts(); track post.postId) {
                 <section
@@ -115,7 +134,7 @@
                 </section>
               }
             }
-
+              }
           </div>
         </p-tabpanel>
 
@@ -212,7 +231,7 @@
       } @else {
         <img
           [src]="post.videoImageRef[0]"
-          [alt]="post.caption"
+          [alt]="(post.caption | slice:0:50) + (post.caption?.length > 50 ? '...' : '')"
           class="post-image"
           loading="lazy"
         />
@@ -422,5 +441,5 @@
   [style]="{ width: '90vw', maxWidth: '520px' }"
   styleClass="algorithm-config-dialog"
 >
-  <app-config />
+  <app-algorithm-config/>
 </p-dialog>
