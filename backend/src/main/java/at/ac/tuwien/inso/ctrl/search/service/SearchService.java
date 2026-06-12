@@ -96,22 +96,7 @@ public class SearchService {
     return posts.stream().map(postMapper::toPostPreviewResponse).toList();
   }
 
-//  private void filterComments(User user, List<Post> posts) {
-//    for (Post post : posts) {
-//      if (post.getComments() == null || post.getComments().isEmpty()) {
-//        continue;
-//      }
-//
-//      Set<Comment> comments = post.getComments().stream()
-//          .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-//          .filter(c -> c.getParentComment() == null || (
-//              c.getParentComment().getUser() != null &&
-//                  !blockService.inBlockedRelationship(user, c.getParentComment().getUser())))
-//          .collect(Collectors.toSet());
-//      post.setComments(comments);
-//
-//    }
-//  }
+
 
   /** Searches for users based on username matching with optional relationship filters. */
   @Transactional(readOnly = true)

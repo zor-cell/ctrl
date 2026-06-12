@@ -176,11 +176,29 @@ public class PostServiceImpl implements PostService {
   public List<PostResponse> getPostsForUser(String username) {
     User user = fetchUser(username);
     LabelContext ctx = labelingService.buildContext(user);
-    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+    List<Post> posts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username);
+    filterComments(user, posts);
+    return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
         .toList();
   }
 
+  private void filterComments(User user, List<Post> posts) {
+    for (Post post : posts) {
+      if (post.getComments() == null || post.getComments().isEmpty()) {
+        continue;
+      }
+
+      Set<Comment> comments = post.getComments().stream()
+          .filter(c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+          .filter(c -> c.getParentComment() == null || (
+              c.getParentComment().getUser() != null &&
+                  !blockService.inBlockedRelationship(user, c.getParentComment().getUser())))
+          .collect(Collectors.toSet());
+      post.setComments(comments);
+
+    }
+  }
   @Override
   @Transactional(readOnly = true)
   public List<PostResponse> getProfilePostsForUser(String profileUsername, User viewer) {
@@ -196,6 +214,9 @@ public class PostServiceImpl implements PostService {
             ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
             : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
                 profileUsername);
+
+
+    filterComments(viewer, posts);
 
     return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
