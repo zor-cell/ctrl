@@ -17,7 +17,7 @@
 
         <!-- PUBLIC TAB -->
         <p-tabpanel value="public">
-          <div class="posts-list" [class.blurred-lock]="sessionState.isLimitActive() && publicPosts().length > 0">
+          <div class="posts-list">
 
           @if (sessionState.isLimitActive()) {
               <div class="empty-state">

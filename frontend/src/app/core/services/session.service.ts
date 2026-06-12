@@ -39,7 +39,7 @@ export class SessionService {
     if (this.heartbeat$) return;
 
     if (this.authService.isAuthenticated()) {
-      this.heartbeat$ = timer(0, this.INTERVAL_MS).pipe(
+      this.heartbeat$ = timer(this.INTERVAL_MS, this.INTERVAL_MS).pipe(
         switchMap(() => this.sendHeartbeat()),
         retry({ count: 3, delay: 5000 }),
       ).subscribe();

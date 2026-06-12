@@ -34,13 +34,9 @@ public class SessionService {
   private int SNOOZE_DURATION_MINUTES = 5;
 
   @Transactional
-  public boolean handleHeartbeat(LocalDateTime timestamp, User user) {
+  public void handleHeartbeat(LocalDateTime timestamp, User user) {
     SessionConfig config = getOrCreateConfig(user);
-    LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-
     SessionHistory session = getOrCreateLastSession(user);
-    DailySessionStatsProjection oldStats = sessionRepository.getDailyStats(user, startOfDay);
-    boolean wasAlreadyExceeded = isExceeded(config, oldStats);
 
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
     // otherwise compute and save the new duration
@@ -57,20 +53,11 @@ public class SessionService {
       sessionRepository.save(newSession);
     }
 
-    if (wasAlreadyExceeded) {
-      if (config.getLastSnooze() != null && !isSnoozed(config)) {
-        // snooze time limit reached, reset the snooze timestamp
-        config.setLastSnooze(null);
-        sessionConfigRepository.save(config);
-        return true;
-      }
-
-      return false;
+    if (config.getLastSnooze() != null && !isSnoozed(config)) {
+      // snooze time limit reached, reset the snooze timestamp
+      config.setLastSnooze(null);
+      sessionConfigRepository.save(config);
     }
-
-    // check if this heartbeat crossed the limit threshold
-    DailySessionStatsProjection newStats = sessionRepository.getDailyStats(user, startOfDay);
-    return isExceeded(config, newStats);
   }
 
   @Transactional

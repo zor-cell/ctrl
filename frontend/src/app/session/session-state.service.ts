@@ -11,6 +11,7 @@ export class SessionStateService {
   public limitMessage = signal<string>('');
 
   public resetLimit() {
+    localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
     this.isLimitActive.set(false);
   }
 
@@ -30,7 +31,6 @@ export class SessionStateService {
 
     if(withSnooze) {
       this.resetLimit();
-      localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
     } else {
       localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
     }

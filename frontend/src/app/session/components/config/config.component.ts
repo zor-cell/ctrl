@@ -21,9 +21,7 @@ import {ConfirmDialog} from "primeng/confirmdialog";
     ReactiveFormsModule,
     ToggleSwitch,
     Tooltip,
-    Slider,
-    Message,
-    ConfirmDialog
+    Slider
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
@@ -32,7 +30,6 @@ import {ConfirmDialog} from "primeng/confirmdialog";
 export class SessionConfigComponent implements OnInit {
   private readonly configService = inject(SessionConfigService);
   private readonly fb = inject(NonNullableFormBuilder);
-  private confirmationService = inject(ConfirmationService);
 
   protected isLoading = signal<boolean>(true);
 
