@@ -51,6 +51,7 @@ import { PostStateService } from '../../services/post-state.service';
 })
 export class PostDetailViewComponent implements OnChanges {
   private readonly router = inject(Router);
+  private readonly relativeTimeNow = signal(Date.now());
 
   private readonly postService  = inject(PostService);
   private readonly userService  = inject(UserService);
@@ -269,13 +270,20 @@ export class PostDetailViewComponent implements OnChanges {
 
   protected timeAgo(createdAt: string): string {
     const normalized = createdAt.endsWith('Z') ? createdAt : createdAt + 'Z';
-    const diffMs  = Date.now() - new Date(normalized).getTime();
+    const date = new Date(normalized);
+    const diffMs = this.relativeTimeNow() - date.getTime();
     const minutes = Math.floor(diffMs / 60_000);
-    if (minutes < 1)  return 'just now';
+    if (minutes < 1) return 'just now';
     if (minutes < 60) return `${minutes} min ago`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24)   return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 4) return `${weeks}w ago`;
+    const months = Math.floor(days / 30);
+    if (months < 6) return `${months}mo ago`;
+    return date.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   protected getDomain(url: string | null): string {
