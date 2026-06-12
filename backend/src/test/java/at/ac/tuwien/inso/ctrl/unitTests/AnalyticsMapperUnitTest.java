@@ -42,19 +42,19 @@ public class AnalyticsMapperUnitTest {
 
     LocalDateTime time2025_12_24_23_47 = LocalDateTime.of(2025, 12, 24, 23, 47);
     long min1 = 31L;
-    session1 = SessionHistory.builder().minutes(min1).start(time2025_12_24_23_47).build();
+    session1 = SessionHistory.builder().seconds(min1 * 60).start(time2025_12_24_23_47).build();
 
     LocalDateTime time2025_12_27_22_15 = LocalDateTime.of(2025, 12, 27, 22, 15);
     long min2 = 231L;
-    session2 = SessionHistory.builder().minutes(min2).start(time2025_12_27_22_15).build();
+    session2 = SessionHistory.builder().seconds(min2 * 60).start(time2025_12_27_22_15).build();
 
     LocalDateTime time2025_12_31_23_23 = LocalDateTime.of(2025, 12, 31, 23, 23);
     long min3 = 62L;
-    session3 = SessionHistory.builder().minutes(min3).start(time2025_12_31_23_23).build();
+    session3 = SessionHistory.builder().seconds(min3 * 60).start(time2025_12_31_23_23).build();
 
     LocalDateTime time2025_12_27_12_23 = LocalDateTime.of(2025, 12, 27, 12, 23);
     long min4 = 29L;
-    session4 = SessionHistory.builder().minutes(min4).start(time2025_12_27_12_23).build();
+    session4 = SessionHistory.builder().seconds(min4 * 60).start(time2025_12_27_12_23).build();
   }
 
   // ********************************************************************************
@@ -67,56 +67,147 @@ public class AnalyticsMapperUnitTest {
 
   // toLastWeekDayDetailResponseList
   @Test
-  public void toLastWeekDayDetailResponseList_withNoSession_returnsCorrectList() {
-    List<LastWeekDayDetailResponse> res = this.mapper.toLastWeekDayDetailResponseList(List.of());
+  public void toLastWeekDayDetailResponseList_withSingleSession_returnsWeekOfThatSession() {
+    List<LastWeekDayDetailResponse> res =
+        this.mapper.toLastWeekDayDetailResponseList(List.of(session1));
 
     assertEquals(7, res.size());
 
-    LocalDate date2025_12_25 = LocalDate.of(2025, 12, 25);
-    LocalDate date2025_12_26 = LocalDate.of(2025, 12, 26);
-    LocalDate date2025_12_27 = LocalDate.of(2025, 12, 27);
-    LocalDate date2025_12_28 = LocalDate.of(2025, 12, 28);
-    LocalDate date2025_12_29 = LocalDate.of(2025, 12, 29);
-    LocalDate date2025_12_30 = LocalDate.of(2025, 12, 30);
-    LocalDate date2025_12_31 = LocalDate.of(2025, 12, 31);
-
-    assertAll(
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_25))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_26))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_27))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_28))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_29))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_30))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_31))),
-        () -> assertTrue(res.stream().allMatch(i -> i.sessions().isEmpty())));
-  }
-
-  @Test
-  public void toLastWeekDayDetailResponseList_withBleedingSessions_returnsCorrectList() {
-    List<LastWeekDayDetailResponse> res = this.mapper.toLastWeekDayDetailResponseList(List.of());
-
-    assertEquals(7, res.size());
-
+    LocalDate date2025_12_22 = LocalDate.of(2025, 12, 22);
+    LocalDate date2025_12_23 = LocalDate.of(2025, 12, 23);
     LocalDate date2025_12_24 = LocalDate.of(2025, 12, 24);
     LocalDate date2025_12_25 = LocalDate.of(2025, 12, 25);
     LocalDate date2025_12_26 = LocalDate.of(2025, 12, 26);
     LocalDate date2025_12_27 = LocalDate.of(2025, 12, 27);
     LocalDate date2025_12_28 = LocalDate.of(2025, 12, 28);
-    LocalDate date2025_12_29 = LocalDate.of(2025, 12, 29);
-    LocalDate date2025_12_30 = LocalDate.of(2025, 12, 30);
-    LocalDate date2025_12_31 = LocalDate.of(2025, 12, 31);
-    LocalDate date2026_1_1 = LocalDate.of(2026, 1, 1);
 
     assertAll(
-        () -> assertTrue(res.stream().noneMatch(i -> i.date().equals(date2025_12_24))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_22))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_23))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_24))),
         () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_25))),
         () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_26))),
         () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_27))),
         () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_28))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_29))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_30))),
-        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_31))),
-        () -> assertTrue(res.stream().noneMatch(i -> i.date().equals(date2026_1_1))));
+        () ->
+            assertEquals(
+                1,
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_24))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .size()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_23))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_22))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_26))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_27))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_28))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_25))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .getFirst()
+                    .endTime()
+                    .equals(LocalDateTime.of(2025, 12, 25, 0, 18))));
+  }
+
+  @Test
+  public void toLastWeekDayDetailResponseList_withBleedingSessions_returnsCorrectList() {
+    List<LastWeekDayDetailResponse> res =
+        this.mapper.toLastWeekDayDetailResponseList(List.of(session1, session2, session4));
+
+    assertEquals(7, res.size());
+
+    LocalDate date2025_12_22 = LocalDate.of(2025, 12, 22);
+    LocalDate date2025_12_23 = LocalDate.of(2025, 12, 23);
+    LocalDate date2025_12_24 = LocalDate.of(2025, 12, 24);
+    LocalDate date2025_12_25 = LocalDate.of(2025, 12, 25);
+    LocalDate date2025_12_26 = LocalDate.of(2025, 12, 26);
+    LocalDate date2025_12_27 = LocalDate.of(2025, 12, 27);
+    LocalDate date2025_12_28 = LocalDate.of(2025, 12, 28);
+    LocalDate date2025_12_31 = LocalDate.of(2025, 12, 31);
+
+    assertAll(
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_22))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_23))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_24))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_25))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_26))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_27))),
+        () -> assertTrue(res.stream().anyMatch(i -> i.date().equals(date2025_12_28))),
+        () -> assertTrue(res.stream().noneMatch(i -> i.date().equals(date2025_12_31))),
+        () ->
+            assertEquals(
+                2,
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_27))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .size()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_22))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_23))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()),
+        () ->
+            assertTrue(
+                res.stream()
+                    .filter(i -> i.date().equals(date2025_12_26))
+                    .findFirst()
+                    .orElseThrow()
+                    .sessions()
+                    .isEmpty()));
   }
 
   // toSessionIntervalDtoMap

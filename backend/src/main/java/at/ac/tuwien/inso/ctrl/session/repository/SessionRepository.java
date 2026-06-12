@@ -42,18 +42,20 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           )
           SELECT
             d.day,
-            COALESCE(SUM(sh.minutes), 0) AS totalMinutes,
+            COALESCE(SUM(sh.seconds), 0) AS totalSeconds,
             COUNT(sh.session_id) AS sessionCount
           FROM days d
           LEFT JOIN session_history sh ON DATE(sh.started_at) = d.day
             AND sh.user_id = :userId
-            AND sh.minutes IS NOT NULL
+            AND sh.seconds IS NOT NULL
           GROUP BY d.day
           ORDER BY d.day
           """,
       nativeQuery = true)
-  List<DailySummary> findLastWeekSummary(
-      @Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+  List<DailySummary> findSummaries(
+      @Param("userId") UUID userId,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to);
 
   @Query(
       value =
@@ -68,27 +70,27 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           daily_totals AS (
             SELECT
               DATE(started_at) AS day,
-              COALESCE(SUM(minutes), 0) AS totalMinutes,
+              COALESCE(SUM(seconds), 0) AS totalSeconds,
               COUNT(*) AS sessionCount
             FROM session_history
             WHERE user_id = :userId
               AND started_at >= CAST(:from AS timestamp)
               AND started_at < CAST(:to AS timestamp)
-              AND minutes IS NOT NULL
+              AND seconds IS NOT NULL
             GROUP BY DATE(started_at)
           ),
           filled AS (
             SELECT
               dr.day,
               EXTRACT(ISODOW FROM dr.day)::int      AS dayOfWeek,
-              COALESCE(dt.totalMinutes, 0)          AS totalMinutes,
+              COALESCE(dt.totalSeconds, 0)          AS totalSeconds,
               COALESCE(dt.sessionCount, 0)          AS sessionCount
             FROM date_range dr
             LEFT JOIN daily_totals dt ON dr.day = dt.day
           )
           SELECT
             dayOfWeek,
-            COALESCE(AVG(totalMinutes), 0)   AS avgMinutes,
+            COALESCE(AVG(totalSeconds), 0)   AS avgSeconds,
             COALESCE(AVG(sessionCount), 0)   AS avgSessionCount,
             COUNT(day)::int                  AS daysInPeriod
           FROM filled
@@ -114,7 +116,7 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           WHERE user_id = :userId
             AND started_at >= :from
             AND started_at < :to
-            AND minutes IS NOT NULL
+            AND seconds IS NOT NULL
           ORDER BY started_at
           """,
       nativeQuery = true)

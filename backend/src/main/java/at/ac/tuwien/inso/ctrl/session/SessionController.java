@@ -2,7 +2,6 @@ package at.ac.tuwien.inso.ctrl.session;
 
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
-import at.ac.tuwien.inso.ctrl.session.dto.SessionStateDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
@@ -18,14 +17,11 @@ public class SessionController {
   private final SessionService sessionService;
 
   @PostMapping("/heartbeat")
-  public SessionStateDto handleHeartbeat(@AuthenticationPrincipal User user) {
+  public void handleHeartbeat(@AuthenticationPrincipal User user) {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways
-    SessionStateDto sessionState = sessionService.handleHeartbeat(LocalDateTime.now(), user);
-    if (sessionState.limitReached()) {
-      sessionService.verifyLimitsAndThrow(user);
-    }
-    return sessionState;
+    sessionService.handleHeartbeat(LocalDateTime.now(), user);
+    sessionService.verifyLimitsAndThrow(user);
   }
 
   @GetMapping("/config")

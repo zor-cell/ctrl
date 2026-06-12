@@ -4,7 +4,6 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
-import at.ac.tuwien.inso.ctrl.session.dto.SessionStateDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionConfig;
 import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
@@ -37,18 +36,17 @@ public class SessionService {
   private int SNOOZE_DURATION_MINUTES = 5;
 
   @Transactional
-  public SessionStateDto handleHeartbeat(LocalDateTime timestamp, User user) {
+  public void handleHeartbeat(LocalDateTime timestamp, User user) {
     SessionConfig config = getOrCreateConfig(user);
     SessionHistory session = getOrCreateLastSession(user);
-    LocalDateTime trackingStart = LocalDate.now(clock).atStartOfDay();
 
     // if the last heartbeat is more than 3 minutes ago, start a new Session,
     // otherwise compute and save the new duration
     if (session
         .getStart()
         .plusSeconds(session.getSeconds() + MAX_TIME_BETWEEN_HEARTBEATS * 60)
-        .isAfter(LocalDateTime.now())) {
-      long duration = Duration.between(session.getStart(), LocalDateTime.now()).toSeconds();
+        .isAfter(LocalDateTime.now(clock))) {
+      long duration = Duration.between(session.getStart(), LocalDateTime.now(clock)).toSeconds();
       session.setSeconds(duration);
       sessionRepository.save(session);
     } else {
@@ -62,14 +60,6 @@ public class SessionService {
       config.setLastSnooze(null);
       sessionConfigRepository.save(config);
     }
-
-    // check if this heartbeat crossed the limit threshold
-    DailySessionStatsProjection updatedStats = sessionRepository.getDailyStats(user, trackingStart);
-    boolean limitReached =
-        updatedStats.getTotalSeconds() >= config.getTimeLimitMinutes()
-            || updatedStats.getTotalPostsViewed() >= config.getPostLimit();
-    return new SessionStateDto(
-        updatedStats.getTotalSeconds(), updatedStats.getTotalPostsViewed(), limitReached);
   }
 
   @Transactional
@@ -80,7 +70,7 @@ public class SessionService {
           "Snooze cannot be applied because of session configuration");
     }
 
-    config.setLastSnooze(LocalDateTime.now());
+    config.setLastSnooze(LocalDateTime.now(clock));
     sessionConfigRepository.save(config);
   }
 
@@ -96,7 +86,7 @@ public class SessionService {
       User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
     DailySessionStatsProjection stats =
-        sessionRepository.getDailyStats(currentUser, LocalDate.now().atStartOfDay());
+        sessionRepository.getDailyStats(currentUser, LocalDate.now(clock).atStartOfDay());
 
     boolean isAlreadyExceeded = isExceeded(config, stats);
     if (isAlreadyExceeded) {
@@ -129,7 +119,7 @@ public class SessionService {
     if (latest.isEmpty()) {
       SessionHistory newSession =
           SessionHistory.builder()
-              .start(LocalDateTime.now())
+              .start(LocalDateTime.now(clock))
               .seconds(0L)
               .user(user)
               .postsViewed(0)
@@ -166,7 +156,7 @@ public class SessionService {
     }
 
     DailySessionStatsProjection stats =
-        sessionRepository.getDailyStats(user, LocalDate.now().atStartOfDay());
+        sessionRepository.getDailyStats(user, LocalDate.now(clock).atStartOfDay());
     if (stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L) {
       throw new SessionLimitExceededException(
           "Your configured daily time limit of %s minute%s was exceeded"
@@ -184,7 +174,10 @@ public class SessionService {
   private boolean isSnoozed(SessionConfig config) {
     return config.isAllowSnooze()
         && config.getLastSnooze() != null
-        && config.getLastSnooze().plusMinutes(SNOOZE_DURATION_MINUTES).isAfter(LocalDateTime.now());
+        && config
+            .getLastSnooze()
+            .plusMinutes(SNOOZE_DURATION_MINUTES)
+            .isAfter(LocalDateTime.now(clock));
   }
 
   private boolean isExceeded(SessionConfig config, DailySessionStatsProjection stats) {

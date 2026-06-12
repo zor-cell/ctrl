@@ -8,7 +8,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
-import { AverageDayDetailResponse, AverageWeekDayResponse, LastWeekDayDetailResponse, LastWeekDayResponse } from '../../dto/analytics.dto';
+import { AverageDayDetailResponse, AverageWeekDayResponse, WeekDayDetailResponse, WeekDayResponse } from '../../dto/analytics.dto';
 import { SessionConfigService } from '../../../session/session-config.service';
 import { SessionConfig } from '../../../session/dto/SessionConfig';
 import { UserService } from '../../../user/user.service';
@@ -91,17 +91,17 @@ export class AnalyticsComponent implements OnInit {
         } else if (this.focusedWeek() === 1) {
           return 'Last Week';
         } else {
-          const start = (this.cache()['overview-days']?.[this.focusedWeek()].at(0) as LastWeekDayResponse)?.date;
-          const end = (this.cache()['overview-days']?.[this.focusedWeek()].at(6) as LastWeekDayResponse)?.date;
+          const start = (this.cache()['overview-days']?.[this.focusedWeek()].at(0) as WeekDayResponse)?.date;
+          const end = (this.cache()['overview-days']?.[this.focusedWeek()].at(6) as WeekDayResponse)?.date;
           return start && end ? `${start} - ${end}` : '';
         }
       case 'overview-average':
         return 'Average Week across the last ' +
           ((this.cache()['overview-average']?.[0] as AverageWeekDayResponse[])?.reduce((sum, item) => sum + item.daysInPeriod, 0) ?? 0) + ' days';
       case 'detailed-days':
-        return (this.cache()['detailed-days']?.[this.focusedWeek()].at(this.focusedDay()) as LastWeekDayDetailResponse)?.title ?? '';
+        return (this.cache()['detailed-days']?.[this.focusedWeek()].at(this.focusedDay()) as WeekDayDetailResponse)?.title ?? '';
       case 'detailed-average':
-        return (this.cache()['detailed-average']?.[this.focusedWeek()].at(this.focusedDay()) as AverageDayDetailResponse)?.title ?? '';
+        return 'Average ' + (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse)?.title + ' across the last ' + (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse)?.daysInPeriod + ' weeks';
     }
   });
 
@@ -125,7 +125,7 @@ export class AnalyticsComponent implements OnInit {
       case 'overview-average':
         return false;
       case 'detailed-days':
-        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() / 7) - 1 && this.focusedDay() > 0;
+        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() / 7) - 1 || this.focusedDay() > 0;
       case 'detailed-average':
         return this.focusedDay() > 0;
     }
@@ -134,7 +134,7 @@ export class AnalyticsComponent implements OnInit {
   sessionConfig = signal<SessionConfig>({
     timeLimitMinutes: 120,
     postLimit: 0,
-    isForcedCutoff: true
+    allowSnooze: true
   });
 
   ngOnInit(): void {
@@ -178,9 +178,33 @@ export class AnalyticsComponent implements OnInit {
     this.viewMode.set('overview');
   }
 
-  protected switchTimeMode(mode: TimeMode): void {
-    const offset = new Date().getDay() + 2
-    this.focusedDay.update(d => mode === 'average' ? (d + 7 - offset) % 7 : (d + offset) % 7);
-    this.timeMode.set(mode);
+  nextButtonClick(): void {
+    if (this.viewMode() === 'overview') {
+      this.focusedWeek.update(w => Math.max(w - 1, 0));
+      return;
+    }
+
+    if (this.focusedDay() === 6) {
+      this.focusedWeek.update(w => Math.max(w - 1, 0));
+      this.focusedDay.set(0);
+      return;
+    }
+
+    this.focusedDay.update(d => Math.min(d + 1, 6));
+  }
+
+  previousButtonClick(): void {
+    if (this.viewMode() === 'overview') {
+      this.focusedWeek.update(w => w + 1);
+      return;
+    }
+
+    if (this.focusedDay() === 0) {
+      this.focusedWeek.update(w => w + 1);
+      this.focusedDay.set(6);
+      return;
+    }
+
+    this.focusedDay.update(d => Math.max(d - 1, 0));
   }
 }

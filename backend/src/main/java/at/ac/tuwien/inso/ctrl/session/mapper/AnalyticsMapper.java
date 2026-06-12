@@ -33,7 +33,8 @@ public class AnalyticsMapper {
   private final Clock clock;
 
   public LastWeekDayResponse toLastWeekDayDto(DailySummary day) {
-    return new LastWeekDayResponse(day.getDay(), day.getTotalMinutes(), day.getSessionCount());
+    return new LastWeekDayResponse(
+        day.getDay(), Math.round(day.getTotalSeconds() / 60.0), day.getSessionCount());
   }
 
   public List<LastWeekDayResponse> toLastWeekDayList(List<DailySummary> days) {
@@ -43,7 +44,7 @@ public class AnalyticsMapper {
   public AverageDayResponse toAverageDayResponse(DayOfWeekAverage day) {
     return new AverageDayResponse(
         day.getDayOfWeek() - 1,
-        day.getAvgMinutes(),
+        Math.round(day.getAvgSeconds() / 60.0),
         day.getAvgSessionCount(),
         day.getDaysInPeriod());
   }
@@ -54,26 +55,27 @@ public class AnalyticsMapper {
 
   public List<LastWeekDayDetailResponse> toLastWeekDayDetailResponseList(
       List<SessionHistory> sessions) {
-
     Map<LocalDate, List<SessionIntervalDto>> sessionMap = this.toSessionIntervalDtoMap(sessions);
 
-    LocalDate weekAgo = LocalDate.now(clock).minusDays(7); // 7 days excluding today
-    return weekAgo
-        .datesUntil(LocalDate.now(clock))
+    LocalDate earliest = sessionMap.keySet().stream().min(LocalDate::compareTo).orElseThrow();
+    LocalDate monday = earliest.with(DayOfWeek.MONDAY);
+    LocalDate sunday = monday.plusDays(6);
+
+    return monday
+        .datesUntil(sunday.plusDays(1))
         .map(
-            date -> {
-              return new LastWeekDayDetailResponse(
-                  date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.ENGLISH)),
-                  date,
-                  sessionMap.getOrDefault(date, List.of()));
-            })
+            date ->
+                new LastWeekDayDetailResponse(
+                    date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.ENGLISH)),
+                    date,
+                    sessionMap.getOrDefault(date, List.of())))
         .toList();
   }
 
   public Map<LocalDate, List<SessionIntervalDto>> toSessionIntervalDtoMap(
       List<SessionHistory> sessions) {
     return sessions.stream()
-        .map(s -> new SessionIntervalDto(s.getStart(), s.getStart().plusMinutes(s.getMinutes())))
+        .map(s -> new SessionIntervalDto(s.getStart(), s.getStart().plusSeconds(s.getSeconds())))
         .flatMap(this::splitSessionAtMidnight)
         .map(s -> Map.entry(s.startTime().toLocalDate(), s))
         .collect(
@@ -135,7 +137,7 @@ public class AnalyticsMapper {
     List<SessionIntervalDto> intervals =
         sessions.stream()
             .map(
-                s -> new SessionIntervalDto(s.getStart(), s.getStart().plusMinutes(s.getMinutes())))
+                s -> new SessionIntervalDto(s.getStart(), s.getStart().plusSeconds(s.getSeconds())))
             .flatMap(this::splitSessionAtMidnight)
             .toList();
 

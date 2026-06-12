@@ -1,7 +1,7 @@
 import {
-  LastWeekDayDetailResponse,
+  WeekDayDetailResponse,
   AverageDayDetailResponse,
-  LastWeekDayResponse,
+  WeekDayResponse,
   AverageWeekDayResponse,
 } from '../../dto/analytics.dto';
 
@@ -12,9 +12,9 @@ export type DatasetKey =
   | 'detailed-average';
 
 export interface DatasetMap {
-  'overview-days': LastWeekDayResponse[];
+  'overview-days': WeekDayResponse[];
   'overview-average': AverageWeekDayResponse[];
-  'detailed-days': LastWeekDayDetailResponse[];
+  'detailed-days': WeekDayDetailResponse[];
   'detailed-average': AverageDayDetailResponse[];
 }
 

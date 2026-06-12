@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
@@ -19,6 +20,6 @@ public class CtrlApplication {
 
   @Bean
   Clock clock() {
-    return Clock.systemDefaultZone();
+    return Clock.system(ZoneId.of("Europe/Vienna"));
   }
 }

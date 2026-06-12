@@ -2,9 +2,9 @@ import { Injectable } from '@angular/core';
 import { ChartData, ChartOptions, TooltipItem, ChartEvent, ActiveElement } from 'chart.js';
 import {
   SessionIntervalDto,
-  LastWeekDayDetailResponse,
+  WeekDayDetailResponse,
   AverageDayDetailResponse,
-  LastWeekDayResponse,
+  WeekDayResponse,
   AverageWeekDayResponse,
 } from '../../dto/analytics.dto';
 import { DatasetKey, DatasetResponse } from './analytics.types';
@@ -47,7 +47,7 @@ export class AnalyticsChartService {
     switch (key) {
       case 'overview-days':
         return this.buildBarChartData(
-          (data as LastWeekDayResponse[]),
+          (data as WeekDayResponse[]),
           d => d.totalMinutes,
           d => this.dayNames[(new Date(d.date).getDay() + 6) % 7]
         );
@@ -63,7 +63,7 @@ export class AnalyticsChartService {
         );
       }
       case 'detailed-days': {
-        const day = (data as LastWeekDayDetailResponse[])[focusedDayIndex];
+        const day = (data as WeekDayDetailResponse[])[focusedDayIndex];
         const sessions = day.sessions.map(s => this.mapSessionDtoToSession(s));
         return this.buildTimelineChartData(sessions);
       }
@@ -90,7 +90,7 @@ export class AnalyticsChartService {
     switch (key) {
       case 'overview-days':
         return this.buildOverviewChartOptions(
-          (data as LastWeekDayResponse[]),
+          (data as WeekDayResponse[]),
           d => d.totalMinutes,
           d => d.sessionCount,
           onBarClick!,
@@ -209,6 +209,7 @@ export class AnalyticsChartService {
       },
       scales: {
         y: {
+          suggestedMax: lineHeight * 2,
           display: false,
         },
       },

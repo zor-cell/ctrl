@@ -40,7 +40,7 @@ public class AnalyticsMapperTest {
   private SessionHistory session(LocalDateTime start, int minutes) {
     SessionHistory s = new SessionHistory();
     s.setStart(start);
-    s.setMinutes((long) minutes);
+    s.setSeconds((long) minutes * 60);
     return s;
   }
 
@@ -49,22 +49,26 @@ public class AnalyticsMapperTest {
 
     @Test
     void shouldReturnExactlySevenEntries() {
-      List<LastWeekDayDetailResponse> result = mapper.toLastWeekDayDetailResponseList(List.of());
+      List<LastWeekDayDetailResponse> result =
+          mapper.toLastWeekDayDetailResponseList(
+              List.of(session(LocalDateTime.of(2026, 4, 27, 10, 0), 30)));
       assertThat(result).hasSize(7);
     }
 
     @Test
     void shouldCoverCorrectDateRange() {
-      List<LastWeekDayDetailResponse> result = mapper.toLastWeekDayDetailResponseList(List.of());
+      List<LastWeekDayDetailResponse> result =
+          mapper.toLastWeekDayDetailResponseList(
+              List.of(session(LocalDateTime.of(2026, 4, 27, 10, 0), 30)));
       List<LocalDate> expected =
           List.of(
-              LocalDate.of(2026, 4, 24),
-              LocalDate.of(2026, 4, 25),
-              LocalDate.of(2026, 4, 26),
               LocalDate.of(2026, 4, 27),
               LocalDate.of(2026, 4, 28),
               LocalDate.of(2026, 4, 29),
-              LocalDate.of(2026, 4, 30));
+              LocalDate.of(2026, 4, 30),
+              LocalDate.of(2026, 5, 1),
+              LocalDate.of(2026, 5, 2),
+              LocalDate.of(2026, 5, 3));
       for (int i = 0; i < 7; i++) {
         assertThat(result.get(i).date()).isEqualTo(expected.get(i));
       }
@@ -291,7 +295,7 @@ public class AnalyticsMapperTest {
     }
 
     @Test
-    void shouldLabelEntriesWithCorrectDayOfWeekNames() {
+    void shouldLabelEntriesWithCorrectDayOfWeekIndex() {
       List<AverageDayDetailResponse> result = mapper.toAverageDayDetailResponseList(List.of(), 56);
       List<Integer> labels = result.stream().map(AverageDayDetailResponse::dayOfWeek).toList();
       assertThat(labels).containsExactly(0, 1, 2, 3, 4, 5, 6);
@@ -330,8 +334,8 @@ public class AnalyticsMapperTest {
             }
 
             @Override
-            public Double getAvgMinutes() {
-              return 7.5;
+            public Double getAvgSeconds() {
+              return 450.0; // 7.5 min -> rounded to 8
             }
 
             @Override
@@ -347,7 +351,7 @@ public class AnalyticsMapperTest {
 
       AverageDayResponse result = mapper.toAverageDayResponse(day);
       assertThat(result.dayOfWeek()).isEqualTo(3);
-      assertThat(result.avgTotalMinutes()).isEqualTo(7.5);
+      assertThat(result.avgTotalMinutes()).isEqualTo(8.0);
       assertThat(result.avgSessionCount()).isEqualTo(2.5);
       assertThat(result.daysInPeriod()).isEqualTo(8);
     }
@@ -358,12 +362,12 @@ public class AnalyticsMapperTest {
           new DayOfWeekAverage() {
             @Override
             public Integer getDayOfWeek() {
-              return 1;
+              return 1; // Monday
             }
 
             @Override
-            public Double getAvgMinutes() {
-              return 0.75;
+            public Double getAvgSeconds() {
+              return 45.0; // 0.75 min -> rounded to 1
             }
 
             @Override
@@ -378,7 +382,7 @@ public class AnalyticsMapperTest {
           };
 
       AverageDayResponse result = mapper.toAverageDayResponse(day);
-      assertThat(result.avgTotalMinutes()).isEqualTo(0.75);
+      assertThat(result.avgTotalMinutes()).isEqualTo(1.0);
       assertThat(result.avgSessionCount()).isEqualTo(0.25);
     }
   }

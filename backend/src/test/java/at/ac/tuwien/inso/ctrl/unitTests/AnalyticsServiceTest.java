@@ -65,39 +65,38 @@ public class AnalyticsServiceTest {
   private SessionHistory session(LocalDateTime start, int minutes) {
     SessionHistory s = new SessionHistory();
     s.setStart(start);
-    s.setMinutes((long) minutes);
+    s.setSeconds((long) minutes * 60);
     return s;
   }
 
   @Nested
-  class GetLastWeek {
+  class GetWeek {
 
     @Test
     void shouldCallRepositoryWithCorrectUserId() {
       User user = testUser();
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
-          .thenReturn(List.of());
+      when(sessionRepository.findSummaries(eq(user.getId()), any(), any())).thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayList(any())).thenReturn(List.of());
 
-      analyticsService.getLastWeek(user);
+      analyticsService.getWeek(user, 0);
 
-      ArgumentCaptor<LocalDate> fromCaptor = ArgumentCaptor.forClass(LocalDate.class);
-      ArgumentCaptor<LocalDate> toCaptor = ArgumentCaptor.forClass(LocalDate.class);
+      ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
       verify(sessionRepository)
-          .findLastWeekSummary(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
-      assertThat(fromCaptor.getValue()).isEqualTo(LocalDate.of(2026, 4, 24));
-      assertThat(toCaptor.getValue()).isEqualTo(LocalDate.of(2026, 5, 1));
+          .findSummaries(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
+      assertThat(fromCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 4, 27, 0, 0));
+      assertThat(toCaptor.getValue())
+          .isEqualTo(LocalDateTime.of(2026, 5, 3, 23, 59, 59, 999_999_999));
     }
 
     @Test
     void shouldPassRepositoryResultToMapper() {
       User user = testUser();
       List<DailySummary> summaries = List.of();
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
-          .thenReturn(summaries);
+      when(sessionRepository.findSummaries(eq(user.getId()), any(), any())).thenReturn(summaries);
       when(analyticsMapper.toLastWeekDayList(summaries)).thenReturn(List.of());
 
-      analyticsService.getLastWeek(user);
+      analyticsService.getWeek(user, 0);
 
       verify(analyticsMapper).toLastWeekDayList(summaries);
     }
@@ -106,55 +105,63 @@ public class AnalyticsServiceTest {
     void shouldReturnMapperOutput() {
       User user = testUser();
       List<LastWeekDayResponse> mapperOutput =
-          List.of(new LastWeekDayResponse(LocalDate.of(2026, 4, 24), 0L, 0L));
-      when(sessionRepository.findLastWeekSummary(eq(user.getId()), any(), any()))
-          .thenReturn(List.of());
+          List.of(new LastWeekDayResponse(LocalDate.of(2026, 4, 27), 0L, 0L));
+      when(sessionRepository.findSummaries(eq(user.getId()), any(), any())).thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayList(any())).thenReturn(mapperOutput);
 
-      List<LastWeekDayResponse> result = analyticsService.getLastWeek(user);
+      List<LastWeekDayResponse> result = analyticsService.getWeek(user, 0);
 
       assertThat(result).isEqualTo(mapperOutput);
+    }
+
+    @Test
+    void shouldShiftWindowBackByOneWeekWhenWeeksAgoIsOne() {
+      User user = testUser();
+      when(sessionRepository.findSummaries(eq(user.getId()), any(), any())).thenReturn(List.of());
+      when(analyticsMapper.toLastWeekDayList(any())).thenReturn(List.of());
+
+      analyticsService.getWeek(user, 1);
+
+      ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      verify(sessionRepository)
+          .findSummaries(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
+      assertThat(fromCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 4, 20, 0, 0));
+      assertThat(toCaptor.getValue())
+          .isEqualTo(LocalDateTime.of(2026, 4, 26, 23, 59, 59, 999_999_999));
     }
   }
 
   @Nested
-  class GetLastWeekDetails {
+  class GetWeekDetails {
 
     @Test
-    void shouldCallRepositoryWithCorrectUser() {
+    void shouldCallRepositoryWithCorrectUserId() {
       User user = testUser();
-      when(sessionRepository.findSessionsForLastWeek(eq(user), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(List.of());
 
-      analyticsService.getLastWeekDetails(user);
+      analyticsService.getWeekDetails(user, 0);
 
-      verify(sessionRepository).findSessionsForLastWeek(eq(user), any(), any());
-    }
-
-    @Test
-    void shouldCallRepositoryWithCorrectDateRange() {
-      User user = testUser();
-      when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(List.of());
-      when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(List.of());
-
-      analyticsService.getLastWeekDetails(user);
-
-      ArgumentCaptor<LocalDateTime> startCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-      ArgumentCaptor<LocalDateTime> endCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
       verify(sessionRepository)
-          .findSessionsForLastWeek(eq(user), startCaptor.capture(), endCaptor.capture());
-      assertThat(startCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 4, 24, 0, 0));
-      assertThat(endCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
+          .findSessionsForPeriod(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
+      assertThat(fromCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 4, 27, 0, 0));
+      assertThat(toCaptor.getValue())
+          .isEqualTo(LocalDateTime.of(2026, 5, 3, 23, 59, 59, 999_999_999));
     }
 
     @Test
     void shouldPassRepositoryResultToMapper() {
       User user = testUser();
       List<SessionHistory> sessions = List.of(session(LocalDateTime.of(2026, 4, 27, 10, 0), 30));
-      when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(sessions);
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(sessions);
       when(analyticsMapper.toLastWeekDayDetailResponseList(sessions)).thenReturn(List.of());
 
-      analyticsService.getLastWeekDetails(user);
+      analyticsService.getWeekDetails(user, 0);
 
       verify(analyticsMapper).toLastWeekDayDetailResponseList(sessions);
     }
@@ -163,12 +170,31 @@ public class AnalyticsServiceTest {
     void shouldReturnMapperOutput() {
       User user = testUser();
       List<LastWeekDayDetailResponse> mapperOutput = List.of();
-      when(sessionRepository.findSessionsForLastWeek(any(), any(), any())).thenReturn(List.of());
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
       when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(mapperOutput);
 
-      List<LastWeekDayDetailResponse> result = analyticsService.getLastWeekDetails(user);
+      List<LastWeekDayDetailResponse> result = analyticsService.getWeekDetails(user, 0);
 
       assertThat(result).isEqualTo(mapperOutput);
+    }
+
+    @Test
+    void shouldShiftWindowBackByOneWeekWhenWeeksAgoIsOne() {
+      User user = testUser();
+      when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
+          .thenReturn(List.of());
+      when(analyticsMapper.toLastWeekDayDetailResponseList(any())).thenReturn(List.of());
+
+      analyticsService.getWeekDetails(user, 1);
+
+      ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+      verify(sessionRepository)
+          .findSessionsForPeriod(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
+      assertThat(fromCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 4, 20, 0, 0));
+      assertThat(toCaptor.getValue())
+          .isEqualTo(LocalDateTime.of(2026, 4, 26, 23, 59, 59, 999_999_999));
     }
   }
 
@@ -177,24 +203,6 @@ public class AnalyticsServiceTest {
 
     @Test
     void shouldCallRepositoryWithCorrectUserId() {
-      User user = testUser();
-      user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
-      when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
-          .thenReturn(List.of());
-      when(analyticsMapper.toAverageDayResponseList(any())).thenReturn(List.of());
-
-      analyticsService.getAverageWeek(user);
-
-      ArgumentCaptor<LocalDate> fromCaptor = ArgumentCaptor.forClass(LocalDate.class);
-      ArgumentCaptor<LocalDate> toCaptor = ArgumentCaptor.forClass(LocalDate.class);
-      verify(sessionRepository)
-          .findDayOfWeekAverages(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
-      assertThat(fromCaptor.getValue()).isEqualTo(LocalDate.of(2026, 3, 6));
-      assertThat(toCaptor.getValue()).isEqualTo(LocalDate.of(2026, 5, 1));
-    }
-
-    @Test
-    void shouldCallRepositoryWithCorrectDaysParameter() {
       User user = testUser();
       user.setCreatedAt(LocalDateTime.of(2023, 1, 1, 0, 0).toInstant(ZoneOffset.UTC));
       when(sessionRepository.findDayOfWeekAverages(eq(user.getId()), any(), any()))
@@ -290,12 +298,6 @@ public class AnalyticsServiceTest {
 
       analyticsService.getAverageWeekDetails(user);
 
-      ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-      ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-      verify(sessionRepository)
-          .findSessionsForPeriod(eq(user.getId()), fromCaptor.capture(), toCaptor.capture());
-      assertThat(fromCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 3, 6, 0, 0));
-      assertThat(toCaptor.getValue()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
       verify(analyticsMapper).toAverageDayDetailResponseList(sessions, 56L);
     }
 

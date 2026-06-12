@@ -1,4 +1,3 @@
-import { ConfirmationService } from "primeng/api";
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Button } from "primeng/button";
 import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
@@ -8,8 +7,7 @@ import { SessionConfigService } from "../../session-config.service";
 import { SessionConfig } from "../../dto/SessionConfig";
 import { ToggleSwitch } from "primeng/toggleswitch";
 import { Slider } from "primeng/slider";
-import { UsageComponent } from '../usage/usage.component';
-import { Divider } from 'primeng/divider';
+import { ConfirmationService } from "primeng/api";
 
 @Component({
   selector: 'app-session-config',
@@ -21,9 +19,7 @@ import { Divider } from 'primeng/divider';
     ReactiveFormsModule,
     ToggleSwitch,
     Tooltip,
-    Slider,
-    UsageComponent,
-    Divider
+    Slider
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',

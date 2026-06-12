@@ -1,4 +1,4 @@
-export interface LastWeekDayResponse {
+export interface WeekDayResponse {
   date: string;
   totalMinutes: number;
   sessionCount: number;
@@ -9,7 +9,7 @@ export interface SessionIntervalDto {
   endTime: string;
 }
 
-export interface LastWeekDayDetailResponse extends DetailedDay {
+export interface WeekDayDetailResponse extends DetailedDay {
   date: string;
   sessions: SessionIntervalDto[];
 }

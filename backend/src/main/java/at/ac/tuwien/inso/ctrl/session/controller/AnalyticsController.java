@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,14 +18,16 @@ public class AnalyticsController {
 
   private final AnalyticsService analyticsService;
 
-  @GetMapping("/last-week")
-  public List<LastWeekDayResponse> getLastWeekSessions(@AuthenticationPrincipal User user) {
-    return analyticsService.getLastWeek(user);
+  @GetMapping("/week/{weeksAgo}")
+  public List<LastWeekDayResponse> getLastWeekSessions(
+      @AuthenticationPrincipal User user, @PathVariable int weeksAgo) {
+    return analyticsService.getWeek(user, weeksAgo);
   }
 
-  @GetMapping("/last-week/detailed")
-  public List<LastWeekDayDetailResponse> getDaySessionDetail(@AuthenticationPrincipal User user) {
-    return analyticsService.getLastWeekDetails(user);
+  @GetMapping("/week/detailed/{weeksAgo}")
+  public List<LastWeekDayDetailResponse> getDaySessionDetail(
+      @AuthenticationPrincipal User user, @PathVariable int weeksAgo) {
+    return analyticsService.getWeekDetails(user, weeksAgo);
   }
 
   @GetMapping("/weekly-average")

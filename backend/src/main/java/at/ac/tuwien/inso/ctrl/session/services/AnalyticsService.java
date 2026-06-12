@@ -9,7 +9,9 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,20 +30,33 @@ public class AnalyticsService {
   private int avgTimeframeInWeeks;
 
   @Transactional
-  public List<LastWeekDayResponse> getLastWeek(User user) {
-    LocalDate today = LocalDate.now(clock);
-    List<DailySummary> days =
-        sessionRepository.findLastWeekSummary(user.getId(), today.minusDays(7), today);
+  public List<LastWeekDayResponse> getWeek(User user, int weeksAgo) {
+    LocalDateTime today = LocalDateTime.now(clock);
+
+    LocalDateTime targetWeek = today.minusWeeks(weeksAgo);
+
+    LocalDateTime weekStart = targetWeek.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+
+    LocalDateTime weekEnd =
+        weekStart.plusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
+
+    List<DailySummary> days = sessionRepository.findSummaries(user.getId(), weekStart, weekEnd);
     return analyticsMapper.toLastWeekDayList(days);
   }
 
   @Transactional
-  public List<LastWeekDayDetailResponse> getLastWeekDetails(User user) {
+  public List<LastWeekDayDetailResponse> getWeekDetails(User user, int weeksAgo) {
+    LocalDateTime today = LocalDateTime.now(clock);
+
+    LocalDateTime targetWeek = today.minusWeeks(weeksAgo);
+
+    LocalDateTime weekStart = targetWeek.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+
+    LocalDateTime weekEnd =
+        weekStart.plusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
+
     List<SessionHistory> sessions =
-        sessionRepository.findSessionsForLastWeek(
-            user,
-            LocalDate.now(clock).minusDays(7).atStartOfDay(),
-            LocalDate.now(clock).atStartOfDay());
+        sessionRepository.findSessionsForPeriod(user.getId(), weekStart, weekEnd);
     return analyticsMapper.toLastWeekDayDetailResponseList(sessions);
   }
 

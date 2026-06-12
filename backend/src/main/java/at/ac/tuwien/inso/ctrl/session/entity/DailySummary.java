@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public interface DailySummary {
   LocalDate getDay();
 
-  Long getTotalMinutes();
+  Long getTotalSeconds();
 
   Long getSessionCount();
 }
