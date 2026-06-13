@@ -161,7 +161,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       )
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
-                      AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                      AND (p.user_id IS NULL OR NOT EXISTS (
                               SELECT 1
                                   FROM blocked_relation br
                                   WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
@@ -266,7 +266,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
-                AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
@@ -297,7 +297,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
           WHERE p.is_removed = false
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
-            AND (p.user_id IS NOT NULL OR NOT EXISTS (
+            AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
@@ -333,7 +333,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
-                AND (p.user_id IS NOT NULL OR NOT EXISTS (
+                AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br
                             WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
