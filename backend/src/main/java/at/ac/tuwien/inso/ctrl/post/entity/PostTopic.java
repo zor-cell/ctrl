@@ -1,6 +1,6 @@
 package at.ac.tuwien.inso.ctrl.post.entity;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

@@ -31,6 +31,12 @@ export const routes: Routes = [
       import('./user/components/business-verification/business-verification.component').then(m => m.BusinessVerificationComponent),
   },
   {
+    path: 'topics',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./topic/components/topic-management/topic-management.component').then(m => m.TopicManagement),
+  },
+  {
     path: 'post',
     canActivate: [authGuard],
     loadComponent: () =>

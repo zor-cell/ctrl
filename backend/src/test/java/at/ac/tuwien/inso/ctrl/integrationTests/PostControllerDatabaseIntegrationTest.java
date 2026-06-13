@@ -15,8 +15,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
@@ -24,6 +22,8 @@ import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;

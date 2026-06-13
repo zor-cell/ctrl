@@ -1,8 +1,8 @@
-package at.ac.tuwien.inso.ctrl.algorithm.config;
+package at.ac.tuwien.inso.ctrl.topic.config;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

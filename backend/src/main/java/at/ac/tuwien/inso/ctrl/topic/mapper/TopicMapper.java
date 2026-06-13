@@ -1,7 +1,7 @@
-package at.ac.tuwien.inso.ctrl.algorithm.mapper;
+package at.ac.tuwien.inso.ctrl.topic.mapper;
 
-import at.ac.tuwien.inso.ctrl.algorithm.dto.response.TopicResponse;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.dto.TopicResponse;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

@@ -2,11 +2,11 @@ package at.ac.tuwien.inso.ctrl.algorithm.service;
 
 import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.algorithm.mapper.AlgorithmMapper;
 import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.embedding.VectorUtils;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.util.HashSet;

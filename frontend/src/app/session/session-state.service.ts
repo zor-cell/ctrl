@@ -16,13 +16,14 @@ export class SessionStateService {
   }
 
   public triggerLimitModal(message: string) {
+    this.isLimitActive.set(true);
+
     const dontShowModal = localStorage.getItem(SessionStateService.LIMIT_DISMISSED_KEY) === 'true';
     if(dontShowModal) {
       return;
     }
 
     this.limitMessage.set(message);
-    this.isLimitActive.set(true);
     this.showModal.set(true);
   }
 
