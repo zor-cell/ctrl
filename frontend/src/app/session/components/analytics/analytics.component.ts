@@ -95,13 +95,24 @@ export class AnalyticsComponent implements OnInit {
           const end = (this.cache()['overview-days']?.[this.focusedWeek()].at(6) as WeekDayResponse)?.date;
           return start && end ? `${start} - ${end}` : '';
         }
-      case 'overview-average':
-        return 'Average Week across the last ' +
-          ((this.cache()['overview-average']?.[0] as AverageWeekDayResponse[])?.reduce((sum, item) => sum + item.daysInPeriod, 0) ?? 0) + ' days';
+      case 'overview-average': {
+        const days = ((this.cache()['overview-average']?.[0] as AverageWeekDayResponse[])?.reduce((sum, item) => sum + item.daysInPeriod, 0) ?? 0);
+        if (days === 0) {
+          return 'No sessions to average about yet';
+        }
+        return 'Average Week across the last ' + days + ' days';
+      }
       case 'detailed-days':
         return (this.cache()['detailed-days']?.[this.focusedWeek()].at(this.focusedDay()) as WeekDayDetailResponse)?.title ?? '';
-      case 'detailed-average':
-        return 'Average ' + (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse)?.title + ' across the last ' + (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse)?.daysInPeriod + ' weeks';
+      case 'detailed-average': {
+        const detailedAverage = (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse);
+        if (detailedAverage.daysInPeriod === 0) {
+          return 'No sessions on ' + detailedAverage.title + '\'s so far!';
+        } else if (detailedAverage.daysInPeriod === 1) {
+          return 'Average ' + detailedAverage.title + ' across the last week';
+        }
+        return 'Average ' + detailedAverage.title + ' across the last ' + detailedAverage.daysInPeriod + ' weeks';
+      }
     }
   });
 

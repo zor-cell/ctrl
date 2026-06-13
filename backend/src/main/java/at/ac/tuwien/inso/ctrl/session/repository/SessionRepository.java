@@ -21,11 +21,12 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
 
   @Query(
       """
-              SELECT
-              COALESCE(SUM(s.seconds), 0) AS totalSeconds,
-              COALESCE(SUM(s.postsViewed), 0) AS totalPostsViewed
-              FROM SessionHistory s
-              WHERE s.user = :user AND s.start >= :trackingStart
+          SELECT
+            COALESCE(SUM(s.seconds), 0) AS totalSeconds,
+            COALESCE(SUM(s.postsViewed), 0) AS totalPostsViewed
+          FROM SessionHistory s
+          WHERE s.user = :user
+            AND FUNCTION('TIMESTAMPADD', SECOND, s.seconds, s.start) > :trackingStart
       """)
   DailySessionStatsProjection getDailyStats(
       @Param("user") User user, @Param("trackingStart") LocalDateTime trackingStart);
@@ -43,19 +44,19 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           SELECT
             d.day,
             COALESCE(SUM(sh.seconds), 0) AS totalSeconds,
-            COUNT(sh.session_id) AS sessionCount
+            COUNT(sh.session_id)         AS sessionCount
           FROM days d
-          LEFT JOIN session_history sh ON DATE(sh.started_at) = d.day
-            AND sh.user_id = :userId
+          LEFT JOIN session_history sh
+            ON sh.user_id = :userId
             AND sh.seconds IS NOT NULL
+            AND sh.started_at < (d.day + INTERVAL '1 day')
+            AND (sh.started_at + (sh.seconds || ' seconds')::interval) > d.day::timestamp
           GROUP BY d.day
           ORDER BY d.day
           """,
       nativeQuery = true)
   List<DailySummary> findSummaries(
-      @Param("userId") UUID userId,
-      @Param("from") LocalDateTime from,
-      @Param("to") LocalDateTime to);
+      @Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
   @Query(
       value =
@@ -69,30 +70,30 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
           ),
           daily_totals AS (
             SELECT
-              DATE(started_at) AS day,
-              COALESCE(SUM(seconds), 0) AS totalSeconds,
-              COUNT(*) AS sessionCount
-            FROM session_history
-            WHERE user_id = :userId
-              AND started_at >= CAST(:from AS timestamp)
-              AND started_at < CAST(:to AS timestamp)
-              AND seconds IS NOT NULL
-            GROUP BY DATE(started_at)
+              d.day,
+              COALESCE(SUM(sh.seconds), 0) AS totalSeconds,
+              COUNT(sh.session_id)         AS sessionCount
+            FROM date_range d
+            LEFT JOIN session_history sh
+              ON sh.user_id = :userId
+              AND sh.seconds IS NOT NULL
+              AND sh.started_at < (d.day + INTERVAL '1 day')
+              AND (sh.started_at + (sh.seconds || ' seconds')::interval) > d.day::timestamp
+            GROUP BY d.day
           ),
           filled AS (
             SELECT
-              dr.day,
-              EXTRACT(ISODOW FROM dr.day)::int      AS dayOfWeek,
-              COALESCE(dt.totalSeconds, 0)          AS totalSeconds,
-              COALESCE(dt.sessionCount, 0)          AS sessionCount
-            FROM date_range dr
-            LEFT JOIN daily_totals dt ON dr.day = dt.day
+              day,
+              EXTRACT(ISODOW FROM day)::int AS dayOfWeek,
+              totalSeconds,
+              sessionCount
+            FROM daily_totals
           )
           SELECT
             dayOfWeek,
-            COALESCE(AVG(totalSeconds), 0)   AS avgSeconds,
-            COALESCE(AVG(sessionCount), 0)   AS avgSessionCount,
-            COUNT(day)::int                  AS daysInPeriod
+            COALESCE(AVG(totalSeconds), 0)  AS avgSeconds,
+            COALESCE(AVG(sessionCount), 0)  AS avgSessionCount,
+            COUNT(day)::int                 AS daysInPeriod
           FROM filled
           GROUP BY dayOfWeek
           ORDER BY dayOfWeek
@@ -102,21 +103,13 @@ public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
       @Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
   @Query(
-      "SELECT s FROM SessionHistory s WHERE s.user = :user AND s.start >= :weekAgo AND s.start <"
-          + " :tomorrow")
-  List<SessionHistory> findSessionsForLastWeek(
-      @Param("user") User user,
-      @Param("weekAgo") LocalDateTime weekAgo,
-      @Param("tomorrow") LocalDateTime tomorrow);
-
-  @Query(
       value =
           """
           SELECT * FROM session_history
           WHERE user_id = :userId
-            AND started_at >= :from
-            AND started_at < :to
             AND seconds IS NOT NULL
+            AND started_at < :to
+            AND (started_at + (seconds || ' seconds')::interval) > :from
           ORDER BY started_at
           """,
       nativeQuery = true)

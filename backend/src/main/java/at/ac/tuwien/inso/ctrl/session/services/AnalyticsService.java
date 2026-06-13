@@ -31,14 +31,13 @@ public class AnalyticsService {
 
   @Transactional
   public List<LastWeekDayResponse> getWeek(User user, int weeksAgo) {
-    LocalDateTime today = LocalDateTime.now(clock);
+    LocalDate today = LocalDate.now(clock);
 
-    LocalDateTime targetWeek = today.minusWeeks(weeksAgo);
+    LocalDate targetWeek = today.minusWeeks(weeksAgo);
 
-    LocalDateTime weekStart = targetWeek.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+    LocalDate weekStart = targetWeek.with(DayOfWeek.MONDAY);
 
-    LocalDateTime weekEnd =
-        weekStart.plusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
+    LocalDate weekEnd = weekStart.plusDays(7);
 
     List<DailySummary> days = sessionRepository.findSummaries(user.getId(), weekStart, weekEnd);
     return analyticsMapper.toLastWeekDayList(days);
