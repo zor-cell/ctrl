@@ -39,6 +39,10 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
       @Param("follower") User follower, @Param("followed") User followed);
 
   @Modifying
+  @Query("DELETE FROM FollowRelation fr WHERE fr.follower = :user OR fr.followed = :user")
+  int deleteAllByUser(@Param("user") User user);
+
+  @Modifying
   @Query(
       """
       DELETE FROM FollowRelation fr

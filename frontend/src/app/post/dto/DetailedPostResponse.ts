@@ -6,6 +6,7 @@ export interface DetailedPostResponse {
   userId: string;
   username: string;
   userProfilePicture: string;
+  userDeleted: boolean;
   sourceId: string | null;
   source: SourceResponse | null;
   caption: string;

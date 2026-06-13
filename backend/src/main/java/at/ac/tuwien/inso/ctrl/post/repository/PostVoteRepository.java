@@ -11,4 +11,6 @@ public interface PostVoteRepository extends JpaRepository<PostVote, PostVoteId> 
   Optional<PostVote> findById(PostVoteId id);
 
   List<PostVote> findByIdUserIdAndIdPostIdIn(String userId, List<String> postIds);
+
+  List<PostVote> findByIdUserId(String userId);
 }

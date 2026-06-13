@@ -8,6 +8,7 @@ public record DetailedPostResponse(
     String userId,
     String username,
     String userProfilePicture,
+    boolean userDeleted,
     String sourceId,
     SourceResponse source,
     String caption,

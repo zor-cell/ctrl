@@ -137,12 +137,22 @@
       />
       <div class="comment-body">
         <div class="comment-header">
-          <a
-            class="comment-username account-link"
-            [routerLink]="['/profile', report.profileResponse.username]"
-          >
-            {{ report.profileResponse.username }}
-          </a>
+          @if (report.profileResponse.deleted) {
+            <span
+              class="comment-username account-link account-link--disabled"
+              pTooltip="The user has deleted their account"
+              tooltipPosition="bottom"
+            >
+              {{ report.profileResponse.username }}
+            </span>
+          } @else {
+            <a
+              class="comment-username account-link"
+              [routerLink]="['/profile', report.profileResponse.username]"
+            >
+              {{ report.profileResponse.username }}
+            </a>
+          }
           <span class="comment-time">{{ timeAgo(report.reportedAt) }}</span>
         </div>
         <p class="comment-content">{{ report.profileResponse.bio || 'No bio yet.' }}</p>

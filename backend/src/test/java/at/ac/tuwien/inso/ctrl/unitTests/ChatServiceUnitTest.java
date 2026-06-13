@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -65,6 +66,7 @@ class ChatServiceUnitTest {
 
   private static final String EMOJI_THUMBS_UP = "👍";
   private static final String EMOJI_HEART = "❤️";
+  private static final String EMOJI_FIRE = "🔥";
 
   @Mock private ChatRepository chatRepository;
   @Mock private ChatMemberRepository chatMemberRepository;
@@ -113,6 +115,20 @@ class ChatServiceUnitTest {
         assertThrows(
             ResponseStatusException.class, () -> chatService.getChat(alice, chat.getChatId()));
     assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+  }
+
+  @Test
+  void getChat_whenStoredGroupOwnerIsDeleted_treatsActiveMembersAsOwners() {
+    User deletedOwner = createUser("deletedOwner");
+    deletedOwner.setDeleted(true);
+    Chat chat = groupChat(deletedOwner, deletedOwner, alice, bob);
+    stubChatMembership(chat, true);
+    stubResponseMappers();
+
+    var response = chatService.getChat(alice, chat.getChatId());
+
+    assertTrue(response.owner());
+    assertEquals(Set.of(alice.getId(), bob.getId()), Set.copyOf(response.ownerIds()));
   }
 
   @Test
@@ -351,13 +367,14 @@ class ChatServiceUnitTest {
     when(messageRepository.findById(message.getMessageId())).thenReturn(Optional.of(message));
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.empty());
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of());
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
     verify(reactionRepository).save(any(Reaction.class));
-    verify(reactionRepository, never()).delete(any(Reaction.class));
+    verify(reactionRepository, never()).deleteAllByUserIdAndMessageId(any(), any());
     verify(chatMessageBroadcaster, atLeastOnce())
         .publishMessageEvent(any(), eq(chat.getChatId()), any());
   }
@@ -372,17 +389,18 @@ class ChatServiceUnitTest {
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
     Reaction existing = reaction(message, alice, EMOJI_THUMBS_UP);
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.of(existing));
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of(existing));
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
-    verify(reactionRepository).delete(existing);
+    verify(reactionRepository).deleteAllByUserIdAndMessageId(alice.getId(), message.getMessageId());
     verify(reactionRepository, never()).save(any(Reaction.class));
   }
 
   @Test
-  void reactToMessage_withDifferentEmoji_updatesReaction() {
+  void reactToMessage_withDifferentEmoji_replacesExistingReaction() {
     Chat chat = directChat(alice, bob);
     stubChatMembership(chat, true);
     stubResponseMappers();
@@ -390,15 +408,15 @@ class ChatServiceUnitTest {
     when(messageRepository.findById(message.getMessageId())).thenReturn(Optional.of(message));
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
-    Reaction existing = reaction(message, alice, EMOJI_HEART);
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.of(existing));
+    Reaction existing = reaction(message, alice, EMOJI_FIRE);
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of(existing));
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
-    assertEquals(EMOJI_THUMBS_UP, existing.getContent());
-    verify(reactionRepository).save(existing);
-    verify(reactionRepository, never()).delete(any(Reaction.class));
+    verify(reactionRepository).deleteAllByUserIdAndMessageId(alice.getId(), message.getMessageId());
+    verify(reactionRepository).save(any(Reaction.class));
   }
 
   // ---------------------------------------------------------------------------
@@ -556,7 +574,7 @@ class ChatServiceUnitTest {
 
   private Reaction reaction(Message message, User from, String emoji) {
     return Reaction.builder()
-        .id(new ReactionId(from.getId(), message.getMessageId()))
+        .id(new ReactionId(from.getId(), message.getMessageId(), emoji))
         .message(message)
         .fromUser(from)
         .content(emoji)

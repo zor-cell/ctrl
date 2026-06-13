@@ -178,8 +178,13 @@
         [style]="{ width: '42px', height: '42px' }"
       />
       <div class="post-meta">
-        @if (post.isExternal) {
-          <span class="post-username">{{ post.username }}</span>
+        @if (post.isExternal || post.userDeleted) {
+          <span
+            class="post-username"
+            [pTooltip]="post.userDeleted ? 'The user has deleted their account' : ''"
+            tooltipPosition="bottom">
+            {{ post.username }}
+          </span>
         } @else {
           <a class="post-username post-username--link"
              [routerLink]="['/profile', post.username]">
@@ -188,7 +193,9 @@
         }
         <span class="post-info">{{ timeAgo(post.createdAt) }}</span>
       </div>
-      <app-follow-badge [username]="post.username" [isExternal]="post.isExternal" />
+      @if (!post.userDeleted) {
+        <app-follow-badge [username]="post.username" [isExternal]="post.isExternal" />
+      }
     </div>
 
     <!-- Labels + Why Button -->

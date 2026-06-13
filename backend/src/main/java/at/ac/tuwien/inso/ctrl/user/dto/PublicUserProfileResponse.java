@@ -9,5 +9,6 @@ public record PublicUserProfileResponse(
     String bio,
     String profilePicture,
     boolean isVerified,
+    boolean deleted,
     boolean canSeePrivatePosts,
     boolean wasReportedByUser) {}

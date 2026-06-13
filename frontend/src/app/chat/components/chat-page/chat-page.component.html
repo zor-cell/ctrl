@@ -156,7 +156,10 @@
           class="avatar avatar-large avatar-button"
           [class.avatar-button--group]="chat.groupChat"
           [class.avatar-button--direct]="!chat.groupChat"
+          [class.avatar-button--disabled]="!chat.groupChat && isDeletedParticipant(otherParticipant(chat))"
           (click)="chat.groupChat ? openMembersDialog() : openDirectChatProfile(chat)"
+          [pTooltip]="chat.groupChat ? '' : directChatProfileTooltip(chat)"
+          tooltipPosition="bottom"
           [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'">
           @if (chat.groupChat && groupImageUrl(chat)) {
             <img [src]="groupImageUrl(chat)" alt="" />
@@ -175,7 +178,10 @@
           <button
             type="button"
             class="chat-header-copy chat-header-link"
-            (click)="openDirectChatProfile(chat)">
+            [class.chat-header-link--disabled]="isDeletedParticipant(otherParticipant(chat))"
+            (click)="openDirectChatProfile(chat)"
+            [pTooltip]="directChatProfileTooltip(chat)"
+            tooltipPosition="bottom">
             <h2>{{ chatDisplayName(chat) }}</h2>
             @if (directChatSubtitle(chat); as subtitle) {
               <p>{{ subtitle }}</p>
@@ -211,7 +217,9 @@
               aria-label="Delete group for everyone">
               <i class="pi pi-trash"></i>
             </button>
-          } @else if (chat.groupChat) {
+          }
+
+          @if (chat.groupChat && (!chat.owner || hasMultipleGroupOwners(chat))) {
             <button
               type="button"
               class="header-icon-button leave-group-button"
@@ -221,7 +229,9 @@
               aria-label="Leave group">
               <i class="pi pi-sign-out"></i>
             </button>
-          } @else {
+          }
+
+          @if (!chat.groupChat) {
             <button
               type="button"
               class="header-icon-button delete-direct-button"
@@ -270,6 +280,7 @@
               <div
                 class="message-stack"
                 [class.message-stack--own]="isOwnMessage(message)"
+                [class.message-stack--reaction-open]="isMoreReactionPickerOpen(message)"
                 tabindex="0"
                 (mouseenter)="setHoveredMessage(message.messageId)"
                 (mouseleave)="clearHoveredMessage(message.messageId)"
@@ -278,6 +289,7 @@
                 (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
                 <div
                   class="reaction-bar"
+                  (click)="$event.stopPropagation()"
                   [class.reaction-bar--visible]="
                     reactionPickerMessageId() === message.messageId
                     || hoveredMessageId() === message.messageId
@@ -286,12 +298,36 @@
                     <button
                       type="button"
                       class="reaction-bar-item"
+                      [class.reaction-bar-item--active]="hasReactedWith(message, emoji)"
                       (click)="toggleReaction(message, emoji)"
                       [attr.aria-label]="'React with ' + emoji">
                       {{ emoji }}
                     </button>
                   }
+                  <button
+                    type="button"
+                    class="reaction-bar-item reaction-bar-item--more"
+                    (click)="toggleMoreReactionPicker(message, $event)"
+                    aria-label="Choose another emoji"
+                    pTooltip="Choose another emoji"
+                    tooltipPosition="top">
+                    <i class="pi pi-plus"></i>
+                  </button>
                 </div>
+                @if (isMoreReactionPickerOpen(message)) {
+                  <div class="emoji-picker emoji-picker--message" (click)="$event.stopPropagation()">
+                    @for (emoji of moreReactionEmojis; track emoji) {
+                      <button
+                        type="button"
+                        class="emoji-picker-item"
+                        [class.emoji-picker-item--active]="hasReactedWith(message, emoji)"
+                        (click)="toggleReaction(message, emoji)"
+                        [attr.aria-label]="'React with ' + emoji">
+                        {{ emoji }}
+                      </button>
+                    }
+                  </div>
+                }
 
                 <div class="message-bubble">
                   <div class="message-meta">
@@ -325,15 +361,22 @@
                         </div>
 
                         @if (sharedPostHasMediaSlot(sharedPost)) {
-                          <div class="shared-post-media">
+                          <div
+                            class="shared-post-media"
+                            [class.shared-post-media--video]="sharedPost.post.mediaKind === 'video'">
                             @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
                               @if (sharedPost.post.mediaKind === 'video') {
-                                <video
-                                  [src]="mediaUrl"
-                                  muted
-                                  playsinline
-                                  preload="metadata"
-                                  (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                                <div class="shared-post-video-preview">
+                                  <video
+                                    [src]="sharedPostVideoPreviewUrl(mediaUrl)"
+                                    muted
+                                    playsinline
+                                    preload="metadata"
+                                    (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                                  <span class="shared-post-video-play" aria-hidden="true">
+                                    <i class="pi pi-play"></i>
+                                  </span>
+                                </div>
                               } @else {
                                 <img
                                   [src]="mediaUrl"
@@ -383,7 +426,9 @@
                         class="reaction-chip"
                         [class.reaction-chip--active]="reaction.reactedByCurrentUser"
                         (click)="toggleReaction(message, reaction.emoji)"
-                        [attr.aria-label]="'React with ' + reaction.emoji">
+                        [attr.aria-label]="'React with ' + reaction.emoji"
+                        [pTooltip]="reactionTooltip(reaction)"
+                        tooltipPosition="top">
                         <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
                         <span class="reaction-chip-count">{{ reaction.count }}</span>
                       </button>
@@ -399,57 +444,68 @@
       </div>
 
       <form class="message-composer" (ngSubmit)="sendMessage()">
-        <div class="composer-main">
-          @if (sharedPostDraft(); as sharedPost) {
-            <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
-              @if (sharedPost.mediaUrl) {
-                <div class="composer-shared-post-media">
-                  @if (sharedPost.mediaKind === 'video') {
-                    <video
-                      [src]="sharedPost.mediaUrl"
-                      muted
-                      playsinline
-                      preload="metadata"></video>
-                  } @else {
-                    <img
-                      [src]="sharedPost.mediaUrl"
-                      [alt]="sharedPost.caption"
-                      loading="lazy" />
-                  }
+        @if (isDirectChatReadOnly(chat)) {
+          <p class="message-composer-notice">This user has deleted their account.</p>
+        } @else {
+          <div class="composer-main">
+            @if (sharedPostDraft(); as sharedPost) {
+              <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
+                @if (sharedPost.mediaUrl) {
+                  <div
+                    class="composer-shared-post-media"
+                    [class.composer-shared-post-media--video]="sharedPost.mediaKind === 'video'">
+                    @if (sharedPost.mediaKind === 'video') {
+                      <div class="shared-post-video-preview">
+                        <video
+                          [src]="sharedPostVideoPreviewUrl(sharedPost.mediaUrl)"
+                          muted
+                          playsinline
+                          preload="metadata"></video>
+                        <span class="shared-post-video-play" aria-hidden="true">
+                          <i class="pi pi-play"></i>
+                        </span>
+                      </div>
+                    } @else {
+                      <img
+                        [src]="sharedPost.mediaUrl"
+                        [alt]="sharedPost.caption"
+                        loading="lazy" />
+                    }
+                  </div>
+                }
+
+                <div class="composer-shared-post-copy">
+                  <span>Shared post from @{{ sharedPost.username }}</span>
+                  <p>{{ sharedPost.caption }}</p>
                 </div>
-              }
 
-              <div class="composer-shared-post-copy">
-                <span>Shared post from @{{ sharedPost.username }}</span>
-                <p>{{ sharedPost.caption }}</p>
-              </div>
+                <button
+                  type="button"
+                  class="composer-shared-post-remove"
+                  (click)="clearSharedPostDraft()"
+                  aria-label="Remove shared post">
+                  <i class="pi pi-times"></i>
+                </button>
+              </article>
+            }
 
-              <button
-                type="button"
-                class="composer-shared-post-remove"
-                (click)="clearSharedPostDraft()"
-                aria-label="Remove shared post">
-                <i class="pi pi-times"></i>
-              </button>
-            </article>
-          }
+            <textarea
+              pTextarea
+              rows="1"
+              [placeholder]="messagePlaceholder(chat)"
+              [ngModel]="messageText()"
+              (ngModelChange)="messageText.set($event)"
+              (keydown)="sendMessageOnEnter($event)"
+              name="message"></textarea>
+          </div>
 
-          <textarea
-            pTextarea
-            rows="1"
-            [placeholder]="sharedPostDraft() ? 'Add a message...' : 'Write a message...'"
-            [ngModel]="messageText()"
-            (ngModelChange)="messageText.set($event)"
-            (keydown)="sendMessageOnEnter($event)"
-            name="message"></textarea>
-        </div>
-
-        <p-button
-          type="submit"
-          icon="pi pi-send"
-          [rounded]="true"
-          [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
-          aria-label="Send message" />
+          <p-button
+            type="submit"
+            icon="pi pi-send"
+            [rounded]="true"
+            [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
+            aria-label="Send message" />
+        }
       </form>
     } @else {
       <div class="no-chat">

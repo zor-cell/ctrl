@@ -22,10 +22,11 @@
             [style]="{ width: '42px', height: '42px' }"
           />
           <div class="post-meta">
-            @if (post.isExternal) {
+            @if (post.isExternal || post.userDeleted) {
               <span
-                class="post-username post-username--external"
-                pTooltip="This is an external user"
+                class="post-username"
+                [class.post-username--external]="post.isExternal"
+                [pTooltip]="post.userDeleted ? 'The user has deleted their account' : 'This is an external user'"
                 tooltipPosition="bottom">
                 {{ post.username }}
               </span>
@@ -39,7 +40,7 @@
               {{ timeAgo(post.createdAt) }}
             </span>
           </div>
-          @if (!post.isExternal) {
+          @if (!post.isExternal && !post.userDeleted) {
             <app-follow-badge [username]="post.username" />
           }
         </div>
@@ -108,8 +109,17 @@
             />
             <div class="comment-body">
               <div class="comment-header">
-                <a class="comment-username comment-username--link"
-                   [routerLink]="['/profile', comment.username]">{{ comment.username }}</a>
+                @if (comment.userDeleted) {
+                  <span
+                    class="comment-username"
+                    pTooltip="The user has deleted their account"
+                    tooltipPosition="bottom">
+                    {{ comment.username }}
+                  </span>
+                } @else {
+                  <a class="comment-username comment-username--link"
+                     [routerLink]="['/profile', comment.username]">{{ comment.username }}</a>
+                }
                 <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
                 @if (comment.edited) {
                   <span class="comment-edited">edited</span>
@@ -172,8 +182,17 @@
                   />
                   <div class="comment-body">
                     <div class="comment-header">
-                      <a class="comment-username comment-username--link"
-                         [routerLink]="['/profile', reply.username]">{{ reply.username }}</a>
+                      @if (reply.userDeleted) {
+                        <span
+                          class="comment-username"
+                          pTooltip="The user has deleted their account"
+                          tooltipPosition="bottom">
+                          {{ reply.username }}
+                        </span>
+                      } @else {
+                        <a class="comment-username comment-username--link"
+                           [routerLink]="['/profile', reply.username]">{{ reply.username }}</a>
+                      }
                       <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
                       @if (reply.edited) {
                         <span class="comment-edited">edited</span>

@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class PostMapper {
+  private static final String DELETED_USER_LABEL = "Deleted user";
+  private static final String DELETED_COMMENT_CONTENT = "This comment was deleted.";
+
   public PostResponse toResponse(Post post) {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<LabelResponse> labelIds = List.of();
@@ -35,7 +38,8 @@ public class PostMapper {
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
-        post.getUser().getUsername(),
+        post.getUser().isDeleted() ? DELETED_USER_LABEL : post.getUser().getUsername(),
+        post.getUser().isDeleted(),
         sourceId,
         toSourceResponse(post.getSource(), false),
         post.getCaption(),
@@ -76,7 +80,8 @@ public class PostMapper {
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
-        post.getUser().getUsername(),
+        post.getUser().isDeleted() ? DELETED_USER_LABEL : post.getUser().getUsername(),
+        post.getUser().isDeleted(),
         sourceId,
         toSourceResponse(post.getSource(), false),
         post.getCaption(),
@@ -97,6 +102,7 @@ public class PostMapper {
       boolean wasReported,
       Map<String, Boolean> commentsReportedByUser,
       boolean sourceWasReported) {
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -104,11 +110,11 @@ public class PostMapper {
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String avatarUrl =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<String> labelIds = List.of();
     List<String> topicIds =
@@ -133,6 +139,7 @@ public class PostMapper {
         userId,
         username,
         avatarUrl,
+        deletedUser,
         sourceId,
         toSourceResponse(post.getSource(), sourceWasReported),
         post.getCaption(),
@@ -152,6 +159,7 @@ public class PostMapper {
   }
 
   public PostPreviewResponse toPostPreviewResponse(Post post) {
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -159,11 +167,11 @@ public class PostMapper {
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String avatarUrl =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
     return new PostPreviewResponse(
         post.getPostId(),
@@ -172,6 +180,7 @@ public class PostMapper {
         userId,
         username,
         avatarUrl,
+        deletedUser,
         post.isPublic(),
         post.isExternalPost(),
         userProfileUrl);
@@ -210,12 +219,20 @@ public class PostMapper {
   }
 
   private CommentResponse toCommentResponse(Comment comment, boolean wasReportedByUser) {
+    boolean deletedUser = comment.getUser().isDeleted();
     return new CommentResponse(
         comment.getCommentId(),
-        comment.getUser().getUsername(),
-        comment.getContent(),
+        deletedUser ? DELETED_USER_LABEL : comment.getUser().getUsername(),
+        deletedUser,
+        Boolean.TRUE.equals(comment.getIsRemoved())
+            ? DELETED_COMMENT_CONTENT
+            : comment.getContent(),
         comment.getCreatedAt(),
         comment.getParentComment() == null ? null : comment.getParentComment().getCommentId(),
         wasReportedByUser);
+  }
+
+  private boolean isDeletedInternalAuthor(Post post) {
+    return !post.isExternalPost() && post.getUser().isDeleted();
   }
 }

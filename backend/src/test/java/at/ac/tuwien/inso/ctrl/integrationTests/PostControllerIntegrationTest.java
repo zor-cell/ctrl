@@ -247,6 +247,7 @@ public class PostControllerIntegrationTest {
         postId,
         user.getId(),
         user.getUsername(),
+        false,
         null,
         null,
         caption,

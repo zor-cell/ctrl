@@ -38,7 +38,12 @@
         <!-- Header with Author -->
         <ng-template pTemplate="header">
           <div class="post-header">
-            <button class="post-author" (click)="goToUser()">
+            <button
+              class="post-author"
+              [class.post-author--disabled]="post.value().userDeleted"
+              [pTooltip]="post.value().userDeleted ? 'The user has deleted their account' : ''"
+              tooltipPosition="bottom"
+              (click)="goToUser()">
               @if (profilePic.hasValue()) {
                 <img [src]="profilePic.value()!" style="width:40px;height:40px;border-radius:50%" [alt]="'user'"/>
               }

@@ -95,6 +95,10 @@ $radius: 16px;
   }
 }
 
+.post-author--disabled {
+  cursor: default;
+}
+
 .post-media {
   width: 100%;
   max-height: 500px;

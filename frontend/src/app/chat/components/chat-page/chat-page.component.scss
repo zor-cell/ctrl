@@ -481,6 +481,15 @@ $chat-viewport-offset: 72px;
       opacity: 0.9;
     }
   }
+
+  &--disabled {
+    cursor: help;
+    opacity: 0.72;
+
+    &:hover {
+      opacity: 0.72;
+    }
+  }
 }
 
 .field-error {
@@ -555,6 +564,14 @@ $chat-viewport-offset: 72px;
     outline: 2px solid var(--p-primary-color);
     outline-offset: 3px;
   }
+
+  &--disabled {
+    cursor: help;
+
+    &:hover h2 {
+      color: inherit;
+    }
+  }
 }
 
 .message-list {
@@ -617,6 +634,10 @@ $chat-viewport-offset: 72px;
   &--own {
     margin-left: auto;
   }
+
+  &--reaction-open {
+    z-index: 20;
+  }
 }
 
 .message-row--shared-post {
@@ -676,6 +697,16 @@ $chat-viewport-offset: 72px;
   &:hover {
     transform: scale(1.15);
     background: var(--p-surface-100);
+  }
+
+  &--active {
+    background: color-mix(in srgb, var(--p-primary-color) 14%, var(--p-content-background));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-primary-color) 45%, $border);
+  }
+
+  &--more {
+    color: var(--p-text-muted-color);
+    font-size: 0.95rem;
   }
 }
 
@@ -766,17 +797,60 @@ $chat-viewport-offset: 72px;
 }
 
 .shared-post-media {
+  position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-bottom: 1px solid $border;
   background: var(--p-content-hover-background);
 
-  img,
-  video {
+  img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+}
+
+.shared-post-media--video,
+.composer-shared-post-media--video {
+  background:
+    radial-gradient(circle at center, rgb(51 65 85 / 0.78), rgb(15 23 42 / 0.96)),
+    linear-gradient(135deg, #111827, #020617);
+}
+
+.shared-post-video-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #020617;
+    object-fit: cover;
+  }
+}
+
+.shared-post-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgb(255 255 255 / 0.42);
+  border-radius: 999px;
+  background: rgb(15 23 42 / 0.68);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.28);
+  color: #fff;
+  font-size: 1rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+
+  i {
+    margin-left: 0.12rem;
   }
 }
 
@@ -938,6 +1012,21 @@ $chat-viewport-offset: 72px;
   box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
 }
 
+.emoji-picker--message {
+  position: absolute;
+  top: 2.65rem;
+  left: 0;
+  z-index: 25;
+  width: min(19rem, calc(100vw - 2rem));
+  max-height: min(14rem, calc(100vh - 12rem));
+  overflow-y: auto;
+}
+
+.message-stack--own .emoji-picker--message {
+  left: auto;
+  right: 0;
+}
+
 .emoji-picker-item {
   display: grid;
   place-items: center;
@@ -951,6 +1040,11 @@ $chat-viewport-offset: 72px;
 
   &:hover {
     background: var(--p-surface-100);
+  }
+
+  &--active {
+    background: color-mix(in srgb, var(--p-primary-color) 14%, var(--p-content-background));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-primary-color) 45%, $border);
   }
 }
 
@@ -1005,6 +1099,14 @@ $chat-viewport-offset: 72px;
   min-width: 0;
 }
 
+.message-composer-notice {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .message-composer textarea {
   width: 100%;
   min-height: 2.75rem;
@@ -1028,17 +1130,23 @@ $chat-viewport-offset: 72px;
 }
 
 .composer-shared-post-media {
+  position: relative;
   min-height: 5rem;
   overflow: hidden;
   border-right: 1px solid $border;
   background: var(--p-content-background);
 
-  img,
-  video {
+  img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .shared-post-video-play {
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 0.82rem;
   }
 }
 
@@ -1116,6 +1224,7 @@ $chat-viewport-offset: 72px;
   &--owner {
     background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
   }
+
 }
 
 .member-profile-button {
@@ -1138,6 +1247,7 @@ $chat-viewport-offset: 72px;
     background: var(--p-content-hover-background);
     outline: none;
   }
+
 }
 
 .member-remove-button {

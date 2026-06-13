@@ -1,10 +1,97 @@
+.account-actions {
+  display: grid;
+  gap: 1rem;
+}
+
 .account-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
+  gap: 1rem;
+  padding: 0.75rem 0;
 }
 
 .item-details {
   display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--p-text-color);
+}
+
+.item-details span {
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+}
+
+.account-item--danger {
+  border-top: 1px solid var(--border);
+}
+
+.account-item--logout {
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .delete-account-dialog {
+  font-family: inherit;
+}
+
+:host ::ng-deep .delete-account-dialog .p-dialog-header {
+  padding: 1.5rem 1.5rem 0.75rem;
+}
+
+:host ::ng-deep .delete-account-dialog .p-dialog-title {
+  color: var(--text-color, #334155);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:host ::ng-deep .delete-account-dialog .p-dialog-content {
+  padding: 0.75rem 1.5rem 1.5rem;
+}
+
+.delete-account-confirmation {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.delete-account-confirmation p {
+  margin: 0;
+  color: var(--text-color-secondary, #64748b);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.delete-account-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.text-button,
+.danger-button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.75rem 1rem;
+}
+
+.text-button {
+  background: transparent;
+  color: var(--p-text-muted-color);
+}
+
+.danger-button {
+  background: #dc2626;
+  color: #fff;
+}
+
+.text-button:disabled,
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }

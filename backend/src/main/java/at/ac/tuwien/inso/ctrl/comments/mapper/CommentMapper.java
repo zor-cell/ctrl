@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CommentMapper {
+  private static final String DELETED_USER_LABEL = "Deleted user";
+  private static final String DELETED_COMMENT_CONTENT = "This comment was deleted.";
 
   public CommentResponse toResponse(
       Comment comment,
@@ -23,12 +25,15 @@ public class CommentMapper {
     return new CommentResponse(
         comment.getCommentId(),
         comment.getUser().getId(),
-        comment.getUser().getUsername(),
-        comment.getUser().getProfilePicture(),
+        comment.getUser().isDeleted() ? DELETED_USER_LABEL : comment.getUser().getUsername(),
+        comment.getUser().isDeleted() ? null : comment.getUser().getProfilePicture(),
         comment.getCreatedAt().toString(),
-        comment.getContent(),
+        Boolean.TRUE.equals(comment.getIsRemoved())
+            ? DELETED_COMMENT_CONTENT
+            : comment.getContent(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null,
         comment.isEdited(),
+        comment.getUser().isDeleted(),
         nestedReplies,
         commentsReportedByUser != null
             && Boolean.TRUE.equals(commentsReportedByUser.get(comment.getCommentId())));
