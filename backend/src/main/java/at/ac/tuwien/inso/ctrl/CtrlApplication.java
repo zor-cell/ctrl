@@ -1,8 +1,12 @@
 package at.ac.tuwien.inso.ctrl;
 
+import java.time.Clock;
+import java.time.ZoneId;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -13,5 +17,11 @@ public class CtrlApplication {
 
   public static void main(String[] args) {
     SpringApplication.run(CtrlApplication.class, args);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  Clock clock() {
+    return Clock.system(ZoneId.of("Europe/Vienna"));
   }
 }

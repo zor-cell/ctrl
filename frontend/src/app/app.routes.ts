@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
-import {adminGuard, authGuard} from './auth/auth.guard';
-import {LoginComponent} from "./auth/components/login/login.component";
-import {RegisterComponent} from "./auth/components/registration/register.component";
-import {EmailVerificationComponent} from './auth/components/email-verification/email-verification.component';
-import {PasswordResetComponent} from './auth/components/password-reset/password-reset.component';
-import {ForgotPasswordComponent} from './auth/components/forgot-password/forgot-password.component';
+import { adminGuard, authGuard } from './auth/auth.guard';
+import { LoginComponent } from "./auth/components/login/login.component";
+import { RegisterComponent } from "./auth/components/registration/register.component";
+import { EmailVerificationComponent } from './auth/components/email-verification/email-verification.component';
+import { PasswordResetComponent } from './auth/components/password-reset/password-reset.component';
+import { ForgotPasswordComponent } from './auth/components/forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -29,6 +29,12 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () =>
       import('./user/components/business-verification/business-verification.component').then(m => m.BusinessVerificationComponent),
+  },
+  {
+    path: 'topics',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./topic/components/topic-management/topic-management.component').then(m => m.TopicManagement),
   },
   {
     path: 'post',

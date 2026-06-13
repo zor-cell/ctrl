@@ -1,0 +1,37 @@
+<div class="analytics-container">
+    <div class="chart-controls">
+      <h3> {{ this.title() }}</h3>
+      <div class="transparentButton">
+        <p-button (onClick)="this.goBack()" icon="pi pi-arrow-left" [style.visibility]="this.viewMode() === 'detailed' ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+      <div class="underline-select-button">
+        <p-selectButton
+          [options]="this.timeModeOptions"
+          [ngModel]="timeMode()"
+          (ngModelChange)="this.timeMode.set($event)"
+          optionLabel="label"
+          optionValue="value"
+        />
+      </div>
+    </div>
+
+    <div class="chart-wrapper">
+      <div class="transparentButton">
+        <p-button (onClick)="this.previousButtonClick()" icon="pi pi-arrow-left" [style.visibility]="previousButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+      @if (loading()[activeKey()]) {
+        <p-skeleton height="350px" borderRadius="12px" />
+      } @else {
+        <p-chart
+          type="bar"
+          [data]="chartData()"
+          [options]="chartOptions()"
+          height="350px"
+          styleClass="animate-fadein"
+        />
+      }
+      <div class="transparentButton">
+        <p-button (onClick)="this.nextButtonClick()" icon="pi pi-arrow-right" [style.visibility]="nextButtonVisible() ? 'visible' : 'hidden'" styleClass="transparentButton"></p-button>
+      </div>
+    </div>
+</div>

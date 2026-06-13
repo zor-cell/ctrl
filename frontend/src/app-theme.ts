@@ -1,4 +1,4 @@
-import {definePreset} from "@primeuix/themes";
+import { definePreset } from "@primeuix/themes";
 import Aura from "@primeuix/themes/aura";
 
 export const Noir = definePreset(Aura, {
@@ -37,6 +37,13 @@ export const Noir = definePreset(Aura, {
           focusBackground: '{zinc.700}',
           color: '#ffffff',
           focusColor: '#ffffff'
+        },
+        accents: {
+          indigo: '#6366f1',
+          teal: '#14b8a6',
+          amber: '#f59e0b',
+          rose: '#f43f5e',
+          violet: '#8b5cf6',
         }
       },
       dark: {
@@ -51,6 +58,13 @@ export const Noir = definePreset(Aura, {
           focusBackground: 'rgba(250, 250, 250, .24)',
           color: 'rgba(255,255,255,.87)',
           focusColor: 'rgba(255,255,255,.87)'
+        },
+        accents: {
+          indigo: '#6366f1',
+          teal: '#14b8a6',
+          amber: '#f59e0b',
+          rose: '#f43f5e',
+          violet: '#8b5cf6',
         }
       }
     }

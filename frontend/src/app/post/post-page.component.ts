@@ -27,7 +27,7 @@ import {ContentTypeEnum} from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
-import { TopicResponse } from './dto/TopicResponse';
+import { TopicResponse } from '../topic/dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
 import { PostDetailDialogComponent } from './post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';

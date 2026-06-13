@@ -1,4 +1,4 @@
-import {Injectable, signal} from "@angular/core";
+import { Injectable, signal } from "@angular/core";
 
 @Injectable({
   providedIn: 'root',
@@ -16,20 +16,21 @@ export class SessionStateService {
   }
 
   public triggerLimitModal(message: string) {
+    this.isLimitActive.set(true);
+
     const dontShowModal = localStorage.getItem(SessionStateService.LIMIT_DISMISSED_KEY) === 'true';
-    if(dontShowModal) {
+    if (dontShowModal) {
       return;
     }
 
     this.limitMessage.set(message);
-    this.isLimitActive.set(true);
     this.showModal.set(true);
   }
 
   public closeModal(withSnooze: boolean) {
     this.showModal.set(false);
 
-    if(withSnooze) {
+    if (withSnooze) {
       this.resetLimit();
     } else {
       localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');

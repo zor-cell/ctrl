@@ -11,7 +11,7 @@ import {SessionStateService} from "../session/session-state.service";
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.token();
-  const publicEndpoints = ['/api/auth/', '/api/topics'];
+  const publicEndpoints = ['/api/auth/'];
 
   if (!token || !authService.validateSession()) {
     return next(req);

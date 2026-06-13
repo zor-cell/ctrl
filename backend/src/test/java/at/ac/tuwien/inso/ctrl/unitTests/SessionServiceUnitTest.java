@@ -17,7 +17,9 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionConfigRepository;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -37,7 +38,7 @@ public class SessionServiceUnitTest {
   @Mock private SessionConfigRepository sessionConfigRepository;
   @Mock private SessionMapper sessionMapper;
 
-  @InjectMocks private SessionService sessionService;
+  private SessionService sessionService;
 
   @Captor private ArgumentCaptor<SessionHistory> sessionHistoryCaptor;
   @Captor private ArgumentCaptor<SessionConfig> sessionConfigCaptor;
@@ -46,8 +47,14 @@ public class SessionServiceUnitTest {
   private SessionConfig defaultConfig;
   private DailySessionStatsProjection statsMock;
 
+  private static final Clock FIXED_CLOCK =
+      Clock.fixed(LocalDateTime.of(2026, 5, 1, 12, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
+
   @BeforeEach
   void setUp() {
+    sessionService =
+        new SessionService(sessionRepository, sessionConfigRepository, sessionMapper, FIXED_CLOCK);
+
     // Set @Value properties that are normally injected by Spring
     ReflectionTestUtils.setField(sessionService, "MAX_TIME_BETWEEN_HEARTBEATS", 3L);
     ReflectionTestUtils.setField(sessionService, "SNOOZE_DURATION_MINUTES", 5);
@@ -69,7 +76,7 @@ public class SessionServiceUnitTest {
 
   @Test
   void handleHeartbeat_StartsNewSession_WhenLastSessionIsTooOld() {
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(FIXED_CLOCK);
     LocalDateTime oldStart = now.minusMinutes(10); // Older than max 3 minutes
     SessionHistory oldSession =
         SessionHistory.builder().start(oldStart).seconds(10L).user(testUser).build();
@@ -89,7 +96,7 @@ public class SessionServiceUnitTest {
 
   @Test
   void handleHeartbeat_ContinuesSession_WhenWithinTimeframe() {
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(FIXED_CLOCK);
     LocalDateTime recentStart = now.minusMinutes(1); // Within max 3 minutes
     SessionHistory recentSession =
         SessionHistory.builder().start(recentStart).seconds(0L).user(testUser).build();
@@ -109,7 +116,7 @@ public class SessionServiceUnitTest {
 
   @Test
   void handleHeartbeat_ResetsSnooze_WhenTimeIsExceededAndSnoozeExpired() {
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(FIXED_CLOCK);
     defaultConfig.setLastSnooze(now.minusMinutes(10)); // Snooze expired (limit is 5)
 
     when(sessionConfigRepository.findByUserId(testUser.getId()))
@@ -187,7 +194,7 @@ public class SessionServiceUnitTest {
 
   @Test
   void verifyLimitsAndThrow_DoesNotThrow_WhenSnoozeIsActive() {
-    defaultConfig.setLastSnooze(LocalDateTime.now());
+    defaultConfig.setLastSnooze(LocalDateTime.now(FIXED_CLOCK));
     when(sessionConfigRepository.findByUserId(testUser.getId()))
         .thenReturn(Optional.of(defaultConfig));
 
@@ -224,7 +231,7 @@ public class SessionServiceUnitTest {
 
   @Test
   void verifyLimitsAndThrow_DoesNotThrow_WhenPostLimitExceededButSnoozeIsActive() {
-    defaultConfig.setLastSnooze(LocalDateTime.now());
+    defaultConfig.setLastSnooze(LocalDateTime.now(FIXED_CLOCK));
     when(sessionConfigRepository.findByUserId(testUser.getId()))
         .thenReturn(Optional.of(defaultConfig));
 

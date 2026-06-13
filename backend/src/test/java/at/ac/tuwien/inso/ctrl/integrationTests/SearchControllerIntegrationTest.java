@@ -7,8 +7,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostPreviewResponse;
@@ -16,6 +14,8 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;

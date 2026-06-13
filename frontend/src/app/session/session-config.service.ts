@@ -1,10 +1,10 @@
-import {inject, Injectable} from '@angular/core';
-import {environment} from "../../environments/environment";
-import {HttpClient} from "@angular/common/http";
-import {NotificationService} from "../core/services/notification.service";
-import {tap} from "rxjs";
-import {SessionConfig} from "./dto/SessionConfig";
-import {SessionConfigUpdateResponse} from "./dto/SessionConfigUpdateResponse";
+import { inject, Injectable } from '@angular/core';
+import { environment } from "../../environments/environment";
+import { HttpClient } from "@angular/common/http";
+import { NotificationService } from "../core/services/notification.service";
+import { tap } from "rxjs";
+import { SessionConfig } from "./dto/SessionConfig";
+import { SessionConfigUpdateResponse } from "./dto/SessionConfigUpdateResponse";
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +21,7 @@ export class SessionConfigService {
   public updateConfig(updateConfigRequest: SessionConfig) {
     return this.httpClient.put<SessionConfigUpdateResponse>(this.baseUri + '/config', updateConfigRequest).pipe(
       tap(config => {
-        if(config.appliedImmediately) {
+        if (config.appliedImmediately) {
           this.notificationService.showSuccess('Configuration saved');
         } else {
           this.notificationService.showSuccess('Configuration saved. Changes will take effect tomorrow at midnight');

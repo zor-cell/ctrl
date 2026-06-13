@@ -12,6 +12,7 @@ import at.ac.tuwien.inso.ctrl.session.repository.SessionConfigRepository;
 import at.ac.tuwien.inso.ctrl.session.repository.SessionRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ public class SessionService {
   private final SessionRepository sessionRepository;
   private final SessionConfigRepository sessionConfigRepository;
   private final SessionMapper sessionMapper;
+  private final Clock clock;
 
   @Value("${application.session.max-time-between-heartbeats:3}")
   private long MAX_TIME_BETWEEN_HEARTBEATS;
@@ -43,8 +45,8 @@ public class SessionService {
     if (session
         .getStart()
         .plusSeconds(session.getSeconds() + MAX_TIME_BETWEEN_HEARTBEATS * 60)
-        .isAfter(LocalDateTime.now())) {
-      long duration = Duration.between(session.getStart(), LocalDateTime.now()).toSeconds();
+        .isAfter(LocalDateTime.now(clock))) {
+      long duration = Duration.between(session.getStart(), LocalDateTime.now(clock)).toSeconds();
       session.setSeconds(duration);
       sessionRepository.save(session);
     } else {
@@ -68,7 +70,7 @@ public class SessionService {
           "Snooze cannot be applied because of session configuration");
     }
 
-    config.setLastSnooze(LocalDateTime.now());
+    config.setLastSnooze(LocalDateTime.now(clock));
     sessionConfigRepository.save(config);
   }
 
@@ -84,7 +86,7 @@ public class SessionService {
       User currentUser, SessionConfigDto sessionConfigDto) {
     SessionConfig config = getOrCreateConfig(currentUser);
     DailySessionStatsProjection stats =
-        sessionRepository.getDailyStats(currentUser, LocalDate.now().atStartOfDay());
+        sessionRepository.getDailyStats(currentUser, LocalDate.now(clock).atStartOfDay());
 
     boolean isAlreadyExceeded = isExceeded(config, stats);
     if (isAlreadyExceeded) {
@@ -117,7 +119,7 @@ public class SessionService {
     if (latest.isEmpty()) {
       SessionHistory newSession =
           SessionHistory.builder()
-              .start(LocalDateTime.now())
+              .start(LocalDateTime.now(clock))
               .seconds(0L)
               .user(user)
               .postsViewed(0)
@@ -154,7 +156,7 @@ public class SessionService {
     }
 
     DailySessionStatsProjection stats =
-        sessionRepository.getDailyStats(user, LocalDate.now().atStartOfDay());
+        sessionRepository.getDailyStats(user, LocalDate.now(clock).atStartOfDay());
     if (stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L) {
       throw new SessionLimitExceededException(
           "Your configured daily time limit of %s minute%s was exceeded"
@@ -172,7 +174,10 @@ public class SessionService {
   private boolean isSnoozed(SessionConfig config) {
     return config.isAllowSnooze()
         && config.getLastSnooze() != null
-        && config.getLastSnooze().plusMinutes(SNOOZE_DURATION_MINUTES).isAfter(LocalDateTime.now());
+        && config
+            .getLastSnooze()
+            .plusMinutes(SNOOZE_DURATION_MINUTES)
+            .isAfter(LocalDateTime.now(clock));
   }
 
   private boolean isExceeded(SessionConfig config, DailySessionStatsProjection stats) {
