@@ -4,8 +4,6 @@ import at.ac.tuwien.inso.ctrl.comments.dto.request.CreateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.request.UpdateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.List;
 
 public interface CommentService {

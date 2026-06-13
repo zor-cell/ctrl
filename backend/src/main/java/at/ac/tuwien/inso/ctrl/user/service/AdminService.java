@@ -2,12 +2,11 @@ package at.ac.tuwien.inso.ctrl.user.service;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
-import at.ac.tuwien.inso.ctrl.report.dto.ReportAction;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
-import at.ac.tuwien.inso.ctrl.report.entity.Report;
-import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
@@ -15,9 +14,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import at.ac.tuwien.inso.ctrl.user.entity.User;
-import java.io.IOException;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +30,11 @@ public class AdminService {
   }
 
   private void suspendAccount(String username) {
-    User user = userRepository.findByUsername(username).orElseThrow(
-        () -> new UsernameNotFoundException("User not found with username: " + username)
-    );
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(
+                () -> new UsernameNotFoundException("User not found with username: " + username));
 
     user.setSuspended(true);
     userRepository.save(user);
@@ -55,13 +53,8 @@ public class AdminService {
 
       context.setVariable("type", ContentTypeEnum.ACCOUNT.name());
 
-
-
       String htmlContent = templateEngine.process("actionNotificationTemplate", context);
-      gmailEmailService.sendHtmlEmail(
-          email,
-          "An action has been taken against you",
-          htmlContent);
+      gmailEmailService.sendHtmlEmail(email, "An action has been taken against you", htmlContent);
     } catch (MailException e) {
       throw new CommunicationException("Failed to send email.");
     } catch (MessagingException me) {

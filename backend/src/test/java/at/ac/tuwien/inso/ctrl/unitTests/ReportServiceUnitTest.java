@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -142,7 +141,16 @@ public class ReportServiceUnitTest {
     Mockito.when(commentMapper.toResponse(Mockito.eq(comment), Mockito.anyMap(), Map.of()))
         .thenReturn(
             new CommentResponse(
-                "comment-1", null, "commentUser", null, null, "content", null, false, List.of(), false));
+                "comment-1",
+                null,
+                "commentUser",
+                null,
+                null,
+                "content",
+                null,
+                false,
+                List.of(),
+                false));
 
     List<ReportedCommentResponse> responses =
         reportService.getReportedComments(ReportStatus.CREATED, 0, 10);
@@ -199,14 +207,36 @@ public class ReportServiceUnitTest {
         .thenReturn(List.of(reportWithReportedUser, reportWithFallbackUser));
     Mockito.when(commentRepository.findAllById(Mockito.anyList()))
         .thenReturn(List.of(commentWithReportedUser, commentWithFallbackUser));
-    Mockito.when(commentMapper.toResponse(Mockito.eq(commentWithReportedUser), Mockito.anyMap(), Map.of()))
+    Mockito.when(
+            commentMapper.toResponse(
+                Mockito.eq(commentWithReportedUser), Mockito.anyMap(), Map.of()))
         .thenReturn(
             new CommentResponse(
-                "comment-2", null, "commentUser", null, null, "content", null, false, List.of(), false));
-    Mockito.when(commentMapper.toResponse(Mockito.eq(commentWithFallbackUser), Mockito.anyMap(), Map.of()))
+                "comment-2",
+                null,
+                "commentUser",
+                null,
+                null,
+                "content",
+                null,
+                false,
+                List.of(),
+                false));
+    Mockito.when(
+            commentMapper.toResponse(
+                Mockito.eq(commentWithFallbackUser), Mockito.anyMap(), Map.of()))
         .thenReturn(
             new CommentResponse(
-                "comment-3", null, "commentUser", null, null, "content", null, false, List.of(), false));
+                "comment-3",
+                null,
+                "commentUser",
+                null,
+                null,
+                "content",
+                null,
+                false,
+                List.of(),
+                false));
 
     List<ReportedCommentResponse> responses =
         reportService.getReportedComments(ReportStatus.CREATED, 0, 10);

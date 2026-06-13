@@ -192,7 +192,8 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer) || viewer.getRole() == Role.ADMIN;
+            || friendRelationRepository.existsByUsers(profileOwner, viewer)
+            || viewer.getRole() == Role.ADMIN;
 
     List<Post> posts =
         canSeePrivatePosts
@@ -289,8 +290,9 @@ public class PostServiceImpl implements PostService {
 
     if (!post.isPublic()) {
       if (post.getUser() != null
-          && !post.getUser().getUsername().equals(username)
-          && !friendRelationRepository.existsByUsers(user, post.getUser()) || user.getRole() == Role.ADMIN) {
+              && !post.getUser().getUsername().equals(username)
+              && !friendRelationRepository.existsByUsers(user, post.getUser())
+          || user.getRole() == Role.ADMIN) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
@@ -315,8 +317,11 @@ public class PostServiceImpl implements PostService {
                             reportService.wasReportedByUser(
                                 user, ContentTypeEnum.COMMENT, comment.getCommentId())));
 
-    boolean sourceWasReported = reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
+    boolean sourceWasReported =
+        reportService.wasReportedByUser(
+            user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
 
-    return this.postMapper.toDetailedPostResponse(post, toMap, wasReported, commentsReportedByUser, sourceWasReported);
+    return this.postMapper.toDetailedPostResponse(
+        post, toMap, wasReported, commentsReportedByUser, sourceWasReported);
   }
 }

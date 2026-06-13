@@ -14,18 +14,18 @@ import at.ac.tuwien.inso.ctrl.comments.service.impl.CommentServiceImpl;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
-import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -67,7 +67,8 @@ class CommentUnitTests {
 
     ResponseStatusException ex =
         assertThrows(
-            ResponseStatusException.class, () -> commentService.getCommentsForPost(postId, userDetails ));
+            ResponseStatusException.class,
+            () -> commentService.getCommentsForPost(postId, userDetails));
 
     assertEquals(expectedStatus, ex.getStatusCode());
   }
@@ -101,7 +102,8 @@ class CommentUnitTests {
 
     when(postRepository.existsById(postId)).thenReturn(true);
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(topLevel, reply));
-    when(commentMapper.toResponse(eq(topLevel), any(), anyMap())).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(eq(topLevel), any(), anyMap()))
+        .thenReturn(mock(CommentResponse.class));
 
     List<CommentResponse> result = commentService.getCommentsForPost(postId, userDetails);
 
@@ -342,7 +344,8 @@ class CommentUnitTests {
 
     when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
     when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    when(commentMapper.toResponse(any(), eq(Map.of()), anyMap())).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(any(), eq(Map.of()), anyMap()))
+        .thenReturn(mock(CommentResponse.class));
 
     commentService.updateComment(commentId, request, username);
 

@@ -31,8 +31,7 @@ public record FeedPostResponse(
       Integer upvotes,
       Integer downvotes,
       String userVote, // "up", "down" or null,
-      boolean wasReportedByUser
-      ) {}
+      boolean wasReportedByUser) {}
 
   public record CommentResponse(
       String commentId,

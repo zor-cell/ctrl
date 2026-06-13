@@ -90,8 +90,6 @@ public class ReportServiceImp implements ReportService {
     reportRepository.save(newReport);
   }
 
-
-
   @Override
   public List<ReportedPostResponse> getReportedPosts(
       ReportStatus reportStatus, int page, int postsPerPage) {
@@ -148,7 +146,8 @@ public class ReportServiceImp implements ReportService {
                 return null;
               }
 
-              CommentResponse commentResponse = commentMapper.toResponse(comment, repliesByParent, Map.of());
+              CommentResponse commentResponse =
+                  commentMapper.toResponse(comment, repliesByParent, Map.of());
               String reportedByUsername =
                   report.getFromUser() != null ? report.getFromUser().getUsername() : null;
               String reportedUsername =

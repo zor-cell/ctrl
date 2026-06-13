@@ -57,7 +57,9 @@ public class FeedMapper {
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
                             sourceVotes.get(post.getSource().getSourceId()),
-                            sourceReportedByUser != null && Boolean.TRUE.equals(sourceReportedByUser.get(post.getSource().getSourceId()))))
+                            sourceReportedByUser != null
+                                && Boolean.TRUE.equals(
+                                    sourceReportedByUser.get(post.getSource().getSourceId()))))
                 .toList()
             : List.of();
 
@@ -84,7 +86,8 @@ public class FeedMapper {
         sources,
         comments,
         recommendedPost.getExplanation(),
-        postReportedByUser != null && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())));
+        postReportedByUser != null
+            && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())));
   }
 
   public FeedPostResponse toFeedPostResponse(
@@ -113,7 +116,8 @@ public class FeedMapper {
                             s.getUrl(),
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
-                            sourceVotes.get(post.getSource().getSourceId()), false))
+                            sourceVotes.get(post.getSource().getSourceId()),
+                            false))
                 .toList()
             : List.of();
 

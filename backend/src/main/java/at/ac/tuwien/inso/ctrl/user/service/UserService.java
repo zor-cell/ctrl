@@ -78,8 +78,11 @@ public class UserService {
     boolean canSeePrivatePosts =
         currentUser != null
             && (user.getId().equals(currentUser.getId())
-                || friendRelationRepository.existsByUsers(user, currentUser) || currentUser.getRole() == Role.ADMIN);
-    boolean wasReportedByUser = reportService.wasReportedByUser(currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
+                || friendRelationRepository.existsByUsers(user, currentUser)
+                || currentUser.getRole() == Role.ADMIN);
+    boolean wasReportedByUser =
+        reportService.wasReportedByUser(
+            currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
     return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts, wasReportedByUser);
   }
 

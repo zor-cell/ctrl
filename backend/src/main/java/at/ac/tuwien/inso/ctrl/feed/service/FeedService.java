@@ -60,9 +60,10 @@ public class FeedService {
         postIds.isEmpty()
             ? Map.of()
             : postIds.stream()
-                .collect(Collectors.toMap(id -> id,
-                    id -> reportService.wasReportedByUser(
-                        user, ContentTypeEnum.POST, id)));
+                .collect(
+                    Collectors.toMap(
+                        id -> id,
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.POST, id)));
 
     Map<String, String> postVotes =
         userId
@@ -87,8 +88,7 @@ public class FeedService {
                 .collect(
                     Collectors.toMap(
                         id -> id,
-                        id ->
-                            reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, id)));
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, id)));
 
     Map<String, String> sourceVotes =
         userId

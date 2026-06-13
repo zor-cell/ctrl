@@ -95,7 +95,8 @@ public class PostMapper {
       Post post,
       PostVote postVote,
       boolean wasReported,
-      Map<String, Boolean> commentsReportedByUser, boolean sourceWasReported) {
+      Map<String, Boolean> commentsReportedByUser,
+      boolean sourceWasReported) {
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -118,7 +119,11 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(comment -> toCommentResponse(comment, commentsReportedByUser.getOrDefault(comment.getCommentId(), false)))
+            .map(
+                comment ->
+                    toCommentResponse(
+                        comment,
+                        commentsReportedByUser.getOrDefault(comment.getCommentId(), false)))
             .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;

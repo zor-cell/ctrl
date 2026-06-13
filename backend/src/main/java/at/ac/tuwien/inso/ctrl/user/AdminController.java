@@ -1,9 +1,7 @@
 package at.ac.tuwien.inso.ctrl.user;
 
-import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationResponse;
-import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.AdminService;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import java.util.List;

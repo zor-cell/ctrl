@@ -49,13 +49,13 @@ public class CommentServiceImpl implements CommentService {
         all.isEmpty()
             ? Map.of()
             : all.stream()
-            .distinct()
-            .collect(
-                Collectors.toMap(
-                    Comment::getCommentId,
-                    comment ->
-                        reportService.wasReportedByUser(
-                            user, ContentTypeEnum.COMMENT, comment.getCommentId())));
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        Comment::getCommentId,
+                        comment ->
+                            reportService.wasReportedByUser(
+                                user, ContentTypeEnum.COMMENT, comment.getCommentId())));
 
     // Group replies by their parent's commentId
     Map<String, List<Comment>> repliesByParent =
