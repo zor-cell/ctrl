@@ -61,6 +61,16 @@ public class BlockService {
       friendshipService.unfriend(user, username);
     }
 
+    friendshipService.getIncomingRequests(user).stream()
+        .filter(r -> r.username().equals(blockedUser.getUsername()))
+        .findAny()
+        .ifPresent(r -> friendshipService.cancelSentRequest(blockedUser, user.getUsername()));
+
+    friendshipService.getSentRequests(user).stream().filter(r -> r.username().equals(blockedUser.getUsername()))
+        .findAny()
+        .ifPresent(r -> friendshipService.cancelSentRequest(user, blockedUser.getUsername()));
+
+
     BlockedRelation blockedRelation =
         BlockedRelation.builder()
             .since(LocalDateTime.now())
