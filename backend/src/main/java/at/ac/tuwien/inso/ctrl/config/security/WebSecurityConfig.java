@@ -45,7 +45,6 @@ public class WebSecurityConfig {
                     .requestMatchers(
                         "/api/auth/**",
                         "/api/labels",
-                        "/api/topics/**",
                         "/actuator/health",
                         "/api/feed/**",
                         "/api/files/media",

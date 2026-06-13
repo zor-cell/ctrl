@@ -24,4 +24,11 @@ export class TopicService {
         this.notificationService.showSuccess('Topic created');
       }));
   }
+
+  public updateTopic(topicId: string, topic: TopicCreateRequest) {
+    return this.httpClient.put<TopicResponse>(`${this.baseUri}/${topicId}`, topic).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Topic updated');
+      }));
+  }
 }

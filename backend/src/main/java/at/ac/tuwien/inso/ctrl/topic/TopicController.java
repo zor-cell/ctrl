@@ -27,4 +27,13 @@ public class TopicController {
   public TopicResponse createTopic(@Valid @RequestBody TopicCreateRequest request) {
     return topicService.createTopic(request);
   }
+
+  @PutMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public TopicResponse updateTopic(
+          @PathVariable String id,
+          @Valid @RequestBody TopicCreateRequest request
+  ) {
+    return topicService.updateTopic(id, request);
+  }
 }

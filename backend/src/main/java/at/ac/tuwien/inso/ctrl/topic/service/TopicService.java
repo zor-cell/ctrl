@@ -9,4 +9,6 @@ public interface TopicService {
   List<TopicResponse> getAvailableTopics();
 
   TopicResponse createTopic(TopicCreateRequest request);
+
+  TopicResponse updateTopic(String id, TopicCreateRequest request);
 }

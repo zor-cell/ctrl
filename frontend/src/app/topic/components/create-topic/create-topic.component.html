@@ -3,31 +3,47 @@
 <div class="management-layout">
     <div class="table-container">
 
-        <!-- Toolbar -->
         <div class="header-toolbar">
-            <h2>Topics verwalten</h2>
+            <h2>Manage Topics</h2>
             <p-button
-                    label="Neues Topic"
+                    label="New Topic"
                     icon="pi pi-plus"
-                    (onClick)="openCreateDialog()" />
+                    (onClick)="openDialog()" />
         </div>
 
-        <!-- Data Table -->
         <p-table
                 [value]="topics()"
                 [loading]="isLoading()"
                 [paginator]="true"
+                size="small"
                 [rows]="10"
-                [rowsPerPageOptions]="[10, 25, 50]"
-                styleClass="p-datatable-striped">
+                [rowsPerPageOptions]="[10, 25]"
+                sortField="name"
+                [sortOrder]="1"
+        >
 
             <ng-template pTemplate="header">
                 <tr>
                     <th style="width: 5rem; text-align: center;">Icon</th>
                     <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-                    <th pSortableColumn="description">Beschreibung <p-sortIcon field="description" /></th>
-                    <!-- Da createdAt im UML Diagramm existiert, eignet es sich hervorragend für die Tabelle -->
-                    <th pSortableColumn="createdAt">Erstellt am <p-sortIcon field="createdAt" /></th>
+                    <th pSortableColumn="createdAt">Created At <p-sortIcon field="createdAt" /></th>
+                    <th style="width: 6rem; text-align: center;">Actions</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th>
+                        <p-columnFilter
+                                type="text"
+                                field="name"
+                                placeholder="Filter Name"
+                                ariaLabel="Filter Name"
+                                filterOn="input"
+                                [showMenu]="false"
+                                [showClearButton]="false">
+                        </p-columnFilter>
+                    </th>
+                    <th></th>
+                    <th></th>
                 </tr>
             </ng-template>
 
@@ -41,15 +57,22 @@
                         }
                     </td>
                     <td style="font-weight: 600;">{{ topic.name }}</td>
-                    <td>{{ topic.description || '-' }}</td>
                     <td>{{ topic.createdAt | date:'dd.MM.yyyy HH:mm' }}</td>
+                    <td style="text-align: center;">
+                        <p-button
+                                icon="pi pi-pencil"
+                                severity="secondary"
+                                [rounded]="true"
+                                [text]="true"
+                                (onClick)="openDialog(topic)" />
+                    </td>
                 </tr>
             </ng-template>
 
             <ng-template pTemplate="emptymessage">
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">
-                        Es wurden noch keine Topics angelegt.
+                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                        No topics could be loaded
                     </td>
                 </tr>
             </ng-template>
@@ -58,9 +81,8 @@
     </div>
 </div>
 
-<!-- Erstellungs-Dialog -->
 <p-dialog
-        header="Neues Topic erstellen"
+        [header]="dialogTitle()"
         [modal]="true"
         [(visible)]="isDialogOpen"
         [style]="{ width: '30rem' }">
@@ -74,31 +96,36 @@
             </p-floatlabel>
             @if (topicForm.controls.name.invalid && topicForm.controls.name.touched) {
                 <p-message severity="error" size="small" variant="simple">
-                    Pflichtfeld (max. 255 Zeichen)
+                    Topic Name is required
                 </p-message>
             }
         </div>
 
         <div class="form-field">
             <p-floatlabel variant="on">
-                <input pInputText id="emoji" formControlName="emoji" fluid />
+                <input pInputText id="emoji" formControlName="emoji" fluid placeholder="Win + . or Cmd + Ctrl + Space" />
                 <label for="emoji">Emoji (Optional)</label>
             </p-floatlabel>
+            @if (topicForm.controls.emoji.errors?.['invalidEmoji'] && topicForm.controls.emoji.touched) {
+                <p-message severity="error" size="small" variant="simple">
+                    Please provide a valid emoji
+                </p-message>
+            }
         </div>
 
         <div class="form-field">
             <p-floatlabel variant="on">
                 <textarea pTextarea id="description" formControlName="description" rows="3" fluid></textarea>
-                <label for="description">Beschreibung (Optional)</label>
+                <label for="description">Description (Optional, for semantic embedding)</label>
             </p-floatlabel>
         </div>
 
         <div class="input-action-group">
-            <p-button label="Abbrechen" severity="secondary" (onClick)="isDialogOpen.set(false)" />
+            <p-button label="Cancel" severity="secondary" (onClick)="isDialogOpen.set(false)" />
             <p-button
-                    label="Erstellen"
+                    [label]="editingTopicId() ? 'Save' : 'Create'"
                     type="submit"
-                    icon="pi pi-check"
+                    [icon]="editingTopicId() ? 'pi pi-save' : 'pi pi-check'"
                     [loading]="isSubmitting()"
                     [disabled]="topicForm.invalid || isSubmitting()" />
         </div>

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { finalize } from 'rxjs/operators';
@@ -17,6 +17,7 @@ import { Message } from "primeng/message";
 import { TopicService } from '../../topic.service';
 import { TopicResponse } from '../../dto/TopicResponse';
 import { TopicCreateRequest } from '../../dto/TopicCreateRequest';
+import {emojiValidator} from "../validators";
 
 @Component({
   selector: 'app-topic-management',
@@ -48,11 +49,15 @@ export class CreateTopicComponent implements OnInit {
   public isDialogOpen = signal<boolean>(false);
   public isSubmitting = signal<boolean>(false);
 
+  // --- Edit State ---
+  public editingTopicId = signal<string | null>(null);
+  public dialogTitle = computed(() => this.editingTopicId() ? 'Edit Topic' : 'Create Topic');
+
   // --- Form ---
   public topicForm = this.fb.group({
-    name: ['', [Validators.required, Validators.maxLength(255)]],
-    emoji: ['', [Validators.maxLength(255)]],
-    description: ['', [Validators.maxLength(255)]] // Achtung: Setzt DB-Update voraus!
+    name: ['', [Validators.required]],
+    emoji: ['', [emojiValidator()]],
+    description: ['']
   });
 
   ngOnInit(): void {
@@ -69,8 +74,21 @@ export class CreateTopicComponent implements OnInit {
       });
   }
 
-  public openCreateDialog(): void {
+  // Kombinierte Methode für Create und Edit
+  public openDialog(topic?: TopicResponse): void {
     this.topicForm.reset();
+
+    if (topic) {
+      this.editingTopicId.set(topic.topicId);
+      this.topicForm.patchValue({
+        name: topic.name,
+        emoji: topic.emoji,
+        description: '' // Backend sendet es nicht mit, muss leer/neu eingegeben werden für das Embedding
+      });
+    } else {
+      this.editingTopicId.set(null);
+    }
+
     this.isDialogOpen.set(true);
   }
 
@@ -82,21 +100,29 @@ export class CreateTopicComponent implements OnInit {
 
     this.isSubmitting.set(true);
     const request = this.topicForm.getRawValue() as TopicCreateRequest;
+    const currentId = this.editingTopicId();
 
-    this.topicService.createTopic(request)
+    // RxJS Observable basierend auf Modus auswählen
+    const request$ = currentId
+      ? this.topicService.updateTopic(currentId, request)
+      : this.topicService.createTopic(request);
+
+    request$
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
         next: (response) => {
           this.messageService.add({
             severity: 'success',
             summary: 'Erfolgreich',
-            detail: `Das Topic '${response.name}' wurde erstellt.`
+            detail: currentId
+              ? `Das Topic '${response.name}' wurde aktualisiert.`
+              : `Das Topic '${response.name}' wurde erstellt.`
           });
 
           this.isDialogOpen.set(false);
-          this.loadTopics(); // Daten in der Tabelle aktualisieren
+          this.loadTopics();
         },
-        error: (err) => this.showError(err.error?.message || 'Das Topic existiert bereits oder ein Fehler ist aufgetreten.')
+        error: (err) => this.showError(err.error?.message || 'Ein Fehler ist aufgetreten.')
       });
   }
 
