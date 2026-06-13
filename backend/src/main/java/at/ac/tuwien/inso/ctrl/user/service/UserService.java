@@ -75,7 +75,7 @@ public class UserService {
     boolean canSeePrivatePosts =
         currentUser != null
             && (user.getId().equals(currentUser.getId())
-                || friendRelationRepository.existsByUsers(user, currentUser));
+                || friendRelationRepository.existsByUsers(user, currentUser) || currentUser.getRole() == Role.ADMIN);
     return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
   }
 
