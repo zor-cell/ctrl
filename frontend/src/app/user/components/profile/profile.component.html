@@ -130,6 +130,11 @@
         <label for="newPassword">New Password</label>
       </p-floatlabel>
     </div>
+    @if (passwordForm.controls.newPassword.invalid && passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.dirty) {
+      <p-message severity="error" size="small" variant="simple">
+        {{ PASSWORD_VALIDATION_MESSAGE }}
+      </p-message>
+    }
 
     <div>
       <p-floatlabel variant="on">

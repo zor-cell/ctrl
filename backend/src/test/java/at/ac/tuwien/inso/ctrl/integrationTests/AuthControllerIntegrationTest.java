@@ -511,7 +511,7 @@ public class AuthControllerIntegrationTest {
     passwordResetRepository.save(passwordReset);
 
     String validRequest =
-        "{\"token\": \"" + passwordReset.getToken() + "\"," + "\"password\": \"newPassword\"}";
+        "{\"token\": \"" + passwordReset.getToken() + "\"," + "\"password\": \"$newPassword03\"}";
 
     mockMvc
         .perform(post(resetPasswordEndpoint).contentType("application/json").content(validRequest))
@@ -526,7 +526,7 @@ public class AuthControllerIntegrationTest {
     Optional<User> updatedUserOpt = userRepository.findById(existingUser.getId());
     assertTrue(updatedUserOpt.isPresent());
     User updatedUser = updatedUserOpt.get();
-    assertTrue(passwordEncoder.matches("newPassword", updatedUser.getPassword()));
+    assertTrue(passwordEncoder.matches("$newPassword03", updatedUser.getPassword()));
   }
 
   @Test
