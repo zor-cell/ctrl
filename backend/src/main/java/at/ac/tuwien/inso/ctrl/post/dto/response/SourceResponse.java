@@ -8,4 +8,5 @@ public record SourceResponse(
     Integer upvotes,
     Integer downvotes,
     LocalDateTime createdAt,
-    List<SingleSourceResponse> singleSources) {}
+    List<SingleSourceResponse> singleSources,
+    boolean wasReportedByUser) {}

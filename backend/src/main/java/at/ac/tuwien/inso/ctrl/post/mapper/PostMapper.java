@@ -37,7 +37,7 @@ public class PostMapper {
         post.getUser().getId(),
         post.getUser().getUsername(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -78,7 +78,7 @@ public class PostMapper {
         post.getUser().getId(),
         post.getUser().getUsername(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -92,10 +92,10 @@ public class PostMapper {
   }
 
   public DetailedPostResponse toDetailedPostResponse(
-      Post post, 
-      PostVote postVote, 
-      boolean wasReported, 
-      Map<String, Boolean> commentsReportedByUser) {
+      Post post,
+      PostVote postVote,
+      boolean wasReported,
+      Map<String, Boolean> commentsReportedByUser, boolean sourceWasReported) {
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -129,7 +129,7 @@ public class PostMapper {
         username,
         avatarUrl,
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), sourceWasReported),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -172,7 +172,7 @@ public class PostMapper {
         userProfileUrl);
   }
 
-  private SourceResponse toSourceResponse(Source source) {
+  private SourceResponse toSourceResponse(Source source, boolean sourceWasReported) {
     if (source == null) {
       return null;
     }
@@ -190,7 +190,8 @@ public class PostMapper {
         source.getUpvotes(),
         source.getDownvotes(),
         source.getCreatedAt(),
-        singleSources);
+        singleSources,
+        sourceWasReported);
   }
 
   private SingleSourceResponse toSingleSourceResponse(SingleSource source) {

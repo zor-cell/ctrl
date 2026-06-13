@@ -109,7 +109,8 @@ public class ReportMapper {
         source.getSingleSources().stream()
             .sorted(Comparator.comparing(SingleSource::getTitle).reversed())
             .map(this::toSingleSourceResponse)
-            .toList());
+            .toList(),
+        false);
   }
 
   private SingleSourceResponse toSingleSourceResponse(SingleSource source) {

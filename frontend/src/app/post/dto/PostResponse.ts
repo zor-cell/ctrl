@@ -43,5 +43,6 @@ export interface SourceResponse {
   upvotes: number;
   downvotes: number;
   createdAt: string;
+  wasReportedByUser: boolean;
   singleSources: SingleSourceResponse[];
 }
