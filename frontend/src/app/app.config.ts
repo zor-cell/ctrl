@@ -3,10 +3,14 @@ import { provideRouter } from '@angular/router';
 import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
-import {Noir} from "../app-theme";
-import {provideHttpClient, withInterceptors} from "@angular/common/http";
-import {authInterceptor, errorInterceptor} from "./core/interceptors";
-import {MessageService} from "primeng/api";
+import { Noir } from "../app-theme";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { authInterceptor, errorInterceptor } from "./core/interceptors";
+import { MessageService } from "primeng/api";
+import { Chart } from 'chart.js';
+import Annotation from 'chartjs-plugin-annotation';
+
+Chart.register(Annotation);
 
 export const appConfig: ApplicationConfig = {
   providers: [

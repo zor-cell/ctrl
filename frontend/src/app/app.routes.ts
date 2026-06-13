@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
-import {adminGuard, authGuard} from './auth/auth.guard';
-import {LoginComponent} from "./auth/components/login/login.component";
-import {RegisterComponent} from "./auth/components/registration/register.component";
-import {EmailVerificationComponent} from './auth/components/email-verification/email-verification.component';
-import {PasswordResetComponent} from './auth/components/password-reset/password-reset.component';
-import {ForgotPasswordComponent} from './auth/components/forgot-password/forgot-password.component';
+import { adminGuard, authGuard } from './auth/auth.guard';
+import { LoginComponent } from "./auth/components/login/login.component";
+import { RegisterComponent } from "./auth/components/registration/register.component";
+import { EmailVerificationComponent } from './auth/components/email-verification/email-verification.component';
+import { PasswordResetComponent } from './auth/components/password-reset/password-reset.component';
+import { ForgotPasswordComponent } from './auth/components/forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },

@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,12 +16,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SessionController {
   private final SessionService sessionService;
+  private final Clock clock;
 
   @PostMapping("/heartbeat")
   public void handleHeartbeat(@AuthenticationPrincipal User user) {
     // timestamp is generated here to better test the service, shouldn't make a
     // difference anyways
-    sessionService.handleHeartbeat(LocalDateTime.now(), user);
+    sessionService.handleHeartbeat(LocalDateTime.now(clock), user);
     sessionService.verifyLimitsAndThrow(user);
   }
 
