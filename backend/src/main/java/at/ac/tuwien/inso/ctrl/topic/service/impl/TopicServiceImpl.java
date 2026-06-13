@@ -39,12 +39,11 @@ public class TopicServiceImpl implements TopicService {
     float[] embedding = embeddingService.embedText(context);
 
     String emoji = request.emoji();
-    if(emoji == null || emoji.isBlank()) {
+    if (emoji == null || emoji.isBlank()) {
       emoji = "🏷️";
     }
 
-    Topic topic =
-        Topic.builder().name(request.name()).emoji(emoji).embedding(embedding).build();
+    Topic topic = Topic.builder().name(request.name()).emoji(emoji).embedding(embedding).build();
 
     Topic savedTopic = topicRepository.save(topic);
     return topicMapper.toTopicResponse(savedTopic);
