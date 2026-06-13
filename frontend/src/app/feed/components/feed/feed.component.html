@@ -173,7 +173,7 @@
 
     <!-- Labels + Why Button -->
     <div class="post-header-right">
-      @if (post.labelIds.length > 0) {
+      @if (post.labelIds.length > 0 || post.wasReportedByUser) {
         <div class="post-labels">
           @for (label of post.labelIds; track label) {
             <p-tag
@@ -181,6 +181,15 @@
               severity="secondary"
               class="post-label"
               [pTooltip]="label[1]"
+              tooltipPosition="bottom"
+            />
+          }
+          @if (post.wasReportedByUser) {
+            <p-tag
+              [value]="'reported'"
+              severity="danger"
+              class="post-label"
+              [pTooltip]="'You reported this post'"
               tooltipPosition="bottom"
             />
           }
@@ -252,7 +261,19 @@
         >
           <i class="pi pi-times"></i>
         </button>
+
+
+        @if (post.sourceIds[0].wasReportedByUser) {
+          <p-tag
+            [value]="'reported'"
+            severity="danger"
+            class="post-label"
+            [pTooltip]="'You reported this source'"
+            tooltipPosition="bottom"
+          />
+        }
       </div>
+
       <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
         <i class="pi pi-flag"></i>
       </button>

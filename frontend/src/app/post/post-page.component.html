@@ -31,6 +31,15 @@
           {{ username() }}
           @if (!canEditProfile()) {
             <app-follow-badge [username]="username()" />
+            @if (publicProfile()?.wasReportedByUser) {
+              <p-tag
+                [value]="'reported'"
+                severity="secondary"
+                class="post-label"
+                [pTooltip]="'This account has been reported'"
+                tooltipPosition="bottom"
+              />
+            }
           }
         </h1>
         <div class="profile-bio">

@@ -13,6 +13,7 @@ export interface DetailedPostResponse {
   isPublic: boolean;
   isExternal: boolean;
   userProfileUrl: string | null;
+  wasReportedByUser: boolean;
   isAiGenerated: boolean;
   labelIds: string[];
   topicIds: string[];

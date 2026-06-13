@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ReportRepository extends JpaRepository<Report, String> {
   List<Report> findByContentTypeAndStatus(
@@ -30,4 +32,6 @@ public interface ReportRepository extends JpaRepository<Report, String> {
       ExternalAuthor externalAuthorReported, ReportStatus reportStatus);
 
   List<Report> findAllByContentIdAndContentType(String id, ContentTypeEnum type);
+
+  boolean existsReportByFromUserAndContentTypeAndContentId(User user, ContentTypeEnum type, String contentId);
 }

@@ -19,7 +19,9 @@ public class FeedMapper {
   public FeedPostResponse toFeedPostResponse(
       RecommendedPost recommendedPost,
       Map<String, String> postVotes,
+      Map<String, Boolean> postReportedByUser,
       Map<String, String> sourceVotes,
+      Map<String, Boolean> sourceReportedByUser,
       Set<PostLabelType> computedLabels) {
 
     Post post = recommendedPost.getPost();
@@ -54,7 +56,8 @@ public class FeedMapper {
                             s.getUrl(),
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
-                            sourceVotes.get(post.getSource().getSourceId())))
+                            sourceVotes.get(post.getSource().getSourceId()),
+                            sourceReportedByUser != null && Boolean.TRUE.equals(sourceReportedByUser.get(post.getSource().getSourceId()))))
                 .toList()
             : List.of();
 
@@ -80,7 +83,8 @@ public class FeedMapper {
         labels,
         sources,
         comments,
-        recommendedPost.getExplanation());
+        recommendedPost.getExplanation(),
+        postReportedByUser != null && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())));
   }
 
   public FeedPostResponse toFeedPostResponse(
@@ -109,7 +113,7 @@ public class FeedMapper {
                             s.getUrl(),
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
-                            sourceVotes.get(post.getSource().getSourceId())))
+                            sourceVotes.get(post.getSource().getSourceId()), false))
                 .toList()
             : List.of();
 
@@ -135,7 +139,8 @@ public class FeedMapper {
         labels,
         sources,
         comments,
-        null);
+        null,
+        false);
   }
 
   public FeedPostResponse.CommentResponse toCommentResponse(Comment comment) {

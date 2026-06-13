@@ -9,6 +9,9 @@ import at.ac.tuwien.inso.ctrl.comments.service.CommentService;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -30,15 +33,29 @@ public class CommentServiceImpl implements CommentService {
   private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final CommentMapper commentMapper;
+  private final ReportRepository reportRepository;
+  private final ReportService reportService;
 
   @Override
   @Transactional(readOnly = true)
-  public List<CommentResponse> getCommentsForPost(String postId) {
+  public List<CommentResponse> getCommentsForPost(String postId, User user) {
     if (!postRepository.existsById(postId)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found");
     }
 
     List<Comment> all = commentRepository.findByPost_PostId(postId);
+
+    Map<String, Boolean> commentsReportedByUser =
+        all.isEmpty()
+            ? Map.of()
+            : all.stream()
+            .distinct()
+            .collect(
+                Collectors.toMap(
+                    Comment::getCommentId,
+                    comment ->
+                        reportService.wasReportedByUser(
+                            user, ContentTypeEnum.COMMENT, comment.getCommentId())));
 
     // Group replies by their parent's commentId
     Map<String, List<Comment>> repliesByParent =
@@ -49,7 +66,7 @@ public class CommentServiceImpl implements CommentService {
     // Return only top-level comments; replies are nested inside recursively
     return all.stream()
         .filter(c -> c.getParentComment() == null)
-        .map(c -> commentMapper.toResponse(c, repliesByParent))
+        .map(c -> commentMapper.toResponse(c, repliesByParent, commentsReportedByUser))
         .toList();
   }
 
@@ -95,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
             .build();
 
     commentRepository.save(comment);
-    return commentMapper.toResponse(comment, Map.of());
+    return commentMapper.toResponse(comment, Map.of(), Map.of());
   }
 
   @Override
@@ -117,7 +134,7 @@ public class CommentServiceImpl implements CommentService {
     comment.setEdited(true);
 
     commentRepository.save(comment);
-    return commentMapper.toResponse(comment, Map.of());
+    return commentMapper.toResponse(comment, Map.of(), Map.of());
   }
 
   @Override

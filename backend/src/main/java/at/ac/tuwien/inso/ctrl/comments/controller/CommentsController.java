@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.comments.dto.request.CreateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.request.UpdateCommentRequest;
 import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.comments.service.CommentService;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +35,8 @@ public class CommentsController {
    * @return a flat list of {@link CommentResponse} objects (replies are nested inside each comment)
    */
   @GetMapping("/posts/{postId}/comments")
-  public List<CommentResponse> getComments(@PathVariable String postId) {
-    return commentService.getCommentsForPost(postId);
+  public List<CommentResponse> getComments(@PathVariable String postId, @AuthenticationPrincipal User user) {
+    return commentService.getCommentsForPost(postId, user);
   }
 
   /**

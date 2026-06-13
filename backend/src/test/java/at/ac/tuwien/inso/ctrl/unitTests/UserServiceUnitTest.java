@@ -124,15 +124,16 @@ public class UserServiceUnitTest {
             testUser.getBio(),
             "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
             false,
-            true);
+            true,
+            false);
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
-    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
+    when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
     verify(userRepository).findByUsername("testUser");
-    verify(userMapper).toPublicUserProfileResponse(testUser, true);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
   }
 
   @Test

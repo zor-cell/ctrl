@@ -8,4 +8,5 @@ export interface PostComment {
   parentCommentId: string | null;
   edited: boolean;
   replies?: PostComment[];
+  wasReportedByUser: boolean;
 }

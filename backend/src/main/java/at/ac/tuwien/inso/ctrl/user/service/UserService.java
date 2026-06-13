@@ -11,6 +11,8 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
@@ -50,6 +52,7 @@ public class UserService {
   private final EmailVerificationService emailVerificationService;
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetRepository passwordResetRepository;
+  private final ReportService reportService;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -76,7 +79,8 @@ public class UserService {
         currentUser != null
             && (user.getId().equals(currentUser.getId())
                 || friendRelationRepository.existsByUsers(user, currentUser) || currentUser.getRole() == Role.ADMIN);
-    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
+    boolean wasReportedByUser = reportService.wasReportedByUser(currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
+    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts, wasReportedByUser);
   }
 
   @Transactional

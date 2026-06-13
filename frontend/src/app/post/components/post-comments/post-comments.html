@@ -18,6 +18,15 @@
                 @if (comment.edited) {
                   <span class="comment-edited">edited</span>
                 }
+                @if (comment.wasReportedByUser) {
+                  <p-tag
+                    [value]="'reported'"
+                    severity="secondary"
+                    class="post-label"
+                    [pTooltip]="'This comment has been reported'"
+                    tooltipPosition="bottom"
+                  />
+                }
               </div>
 
               @if (editingCommentId() === comment.commentId) {
@@ -78,6 +87,15 @@
                       @if (reply.edited) {
                         <span class="comment-edited">edited</span>
                       }
+                      @if (reply.wasReportedByUser) {
+                        <p-tag
+                          [value]="'reported'"
+                          severity="secondary"
+                          class="post-label"
+                          [pTooltip]="'This comment has been reported'"
+                          tooltipPosition="bottom"
+                        />
+                      }
                     </div>
 
                     @if (editingCommentId() === reply.commentId) {
@@ -99,6 +117,7 @@
                       </div>
                     } @else {
                       <p class="comment-content">{{ reply.content }}</p>
+
                       @if (isOwnComment(reply)) {
                         <div class="comment-actions">
                           <button

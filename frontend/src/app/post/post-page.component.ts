@@ -35,6 +35,7 @@ import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
 import {AuthService} from '../auth/auth.service';
+import {Tag} from 'primeng/tag';
 
 @Component({
   selector: 'app-post-page',
@@ -49,6 +50,7 @@ import {AuthService} from '../auth/auth.service';
     PostDetailDialogComponent,
     ReportComponent,
     FollowBadgeComponent,
+    Tag,
   ],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
@@ -62,8 +64,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
   protected readonly userService = inject(UserService);
-  private readonly avatarInput =
-    viewChild<ElementRef<HTMLInputElement>>('avatarInput');
+  private readonly avatarInput = viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
   protected readonly isAdmin = computed(() => this.authService.isAdmin());
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
@@ -95,17 +96,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly rel = inject(RelationshipService);
 
   protected readonly username = computed(
-    () =>
-      this.publicProfile()?.username
-      ?? this.userService.user()?.username
-      ?? 'Unknown user',
+    () => this.publicProfile()?.username ?? this.userService.user()?.username ?? 'Unknown user',
   );
   protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
-  protected readonly currentProfilePicture = computed(
-    () =>
-      this.removeProfilePicture()
-        ? null
-        : this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
+  protected readonly currentProfilePicture = computed(() =>
+    this.removeProfilePicture()
+      ? null
+      : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
@@ -123,18 +120,19 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly usernameEmpty = computed(() => this.usernameDraftTrimmed().length === 0);
   protected readonly usernameInvalid = computed(
-    () => !this.usernameEmpty()
-      && (this.usernameDraftTrimmed().length < 3
-        || !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
+    () =>
+      !this.usernameEmpty() &&
+      (this.usernameDraftTrimmed().length < 3 ||
+        !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
   );
   protected readonly canSaveProfile = computed(
     () =>
-      !this.updatingProfile()
-      && !this.bioTooLong()
-      && !this.usernameEmpty()
-      && !this.usernameInvalid()
-      && !this.checkingUsername()
-      && this.usernameAvailable() !== false,
+      !this.updatingProfile() &&
+      !this.bioTooLong() &&
+      !this.usernameEmpty() &&
+      !this.usernameInvalid() &&
+      !this.checkingUsername() &&
+      this.usernameAvailable() !== false,
   );
   protected readonly postsCountLabel = computed(() => {
     const count = this.myPosts().length;
@@ -161,9 +159,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       ? 'Public posts will appear here.'
       : 'Your posts will appear here after you create them.';
   });
-  protected readonly isVerifiedUser = computed(
-    () => this.userService.user()?.isVerified ?? false,
-  );
+  protected readonly isVerifiedUser = computed(() => this.userService.user()?.isVerified ?? false);
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
   protected readonly ContentTypeEnum = ContentTypeEnum;
@@ -175,7 +171,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
     this.loadTopics();
 
-    this.routeParamsSubscription = this.route.paramMap.subscribe(params => {
+    this.routeParamsSubscription = this.route.paramMap.subscribe((params) => {
       this.loadProfileForRoute(params.get('username'));
     });
 
@@ -275,7 +271,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.usernameCheckTimeout = setTimeout(() => {
       const username = this.usernameDraftTrimmed();
       this.userService.isUsernameAvailable(username).subscribe({
-        next: available => {
+        next: (available) => {
           if (this.usernameDraftTrimmed() === username) {
             this.usernameAvailable.set(available);
             this.checkingUsername.set(false);
@@ -312,15 +308,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.updatingProfile.set(true);
-    this.userService.updateUser({
-      name: user.name,
-      email: user.email,
-      bio: this.profileBioDraft().trim(),
-      birthdate: user.birthdate,
-    }, false).subscribe({
-      next: () => this.saveUsernameIfNeeded(),
-      error: () => this.updatingProfile.set(false),
-    });
+    this.userService
+      .updateUser(
+        {
+          name: user.name,
+          email: user.email,
+          bio: this.profileBioDraft().trim(),
+          birthdate: user.birthdate,
+        },
+        false,
+      )
+      .subscribe({
+        next: () => this.saveUsernameIfNeeded(),
+        error: () => this.updatingProfile.set(false),
+      });
   }
 
   protected openAvatarPicker() {
@@ -336,9 +337,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     if (!file.type.startsWith('image/')) {
-      this.notificationService.showWarning(
-        'Please choose an image as profile picture.',
-      );
+      this.notificationService.showWarning('Please choose an image as profile picture.');
       input.value = '';
       return;
     }
@@ -360,9 +359,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected topicLabelById(topicId: string): string {
-    return (
-      this.topicOptions().find(option => option.value === topicId)?.label ?? topicId
-    );
+    return this.topicOptions().find((option) => option.value === topicId)?.label ?? topicId;
   }
 
   protected openPost(post: PostResponse) {
@@ -398,8 +395,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
       next: () => {
         this.revokePostMediaObjectUrl(post.postId);
         this.revokePostCardMediaUrl(post.postId);
-        this.myPosts.update(posts =>
-          posts.filter(currentPost => currentPost.postId !== post.postId),
+        this.myPosts.update((posts) =>
+          posts.filter((currentPost) => currentPost.postId !== post.postId),
         );
 
         this.closePost();
@@ -476,8 +473,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private loadMyPosts() {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
-      next: posts => {
-        console.log(posts)
+      next: (posts) => {
+        console.log(posts);
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -541,8 +538,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
     });
 
     this.postService.getProfilePostsForUser(username).subscribe({
-      next: posts => {
-        console.log(posts)
+      next: (posts) => {
+        console.log(posts);
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -561,8 +558,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private loadTopics() {
     this.loadingTopics.set(true);
     this.postService.getTopics().subscribe({
-      next: topics => {
-        this.topicOptions.set(topics.map(topic => this.toTopicOption(topic)));
+      next: (topics) => {
+        this.topicOptions.set(topics.map((topic) => this.toTopicOption(topic)));
         this.loadingTopics.set(false);
       },
       error: () => {
@@ -589,10 +586,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.userService.updateUsername(
-      { newUsername: this.usernameDraftTrimmed() },
-      false,
-    ).subscribe({
+    this.userService.updateUsername({ newUsername: this.usernameDraftTrimmed() }, false).subscribe({
       next: () => this.saveProfilePictureIfNeeded(),
       error: () => this.updatingProfile.set(false),
     });
@@ -600,16 +594,14 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected deleteAccount() {
     if (!this.username()) {
-      return
+      return;
     }
 
-    this.authService.requestAccountDeletion(this.username()).subscribe(
-      {
-        next: () => this.loadPublicProfile(),
-        error: () => this.notificationService.showError('Failed to delete account. Please try again later.'),
-      }
-    );
-
+    this.authService.requestAccountDeletion(this.username()).subscribe({
+      next: () => this.loadPublicProfile(),
+      error: () =>
+        this.notificationService.showError('Failed to delete account. Please try again later.'),
+    });
   }
 
   private saveProfilePictureIfNeeded() {
@@ -646,7 +638,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPostMedia(posts: PostResponse[]): void {
     this.revokePostCardMediaUrls();
-    posts.forEach(post => this.loadPostCardMedia(post));
+    posts.forEach((post) => this.loadPostCardMedia(post));
   }
 
   private loadPostCardMedia(post: PostResponse): void {
@@ -655,19 +647,16 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
+    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe((url) => {
       if (url) {
         this.setPostCardMediaUrl(post.postId, url);
       }
     });
   }
 
-  private resolveVerifiedMediaUrl(
-    mediaRef: string,
-    kind: PreviewKind,
-  ): Observable<string | null> {
+  private resolveVerifiedMediaUrl(mediaRef: string, kind: PreviewKind): Observable<string | null> {
     return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', 'normal').pipe(
-      switchMap(url => {
+      switchMap((url) => {
         if (!url) {
           return of(null);
         }
@@ -683,7 +672,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private verifyImageLoads(url: string): Observable<string | null> {
-    return new Observable(observer => {
+    return new Observable((observer) => {
       const image = new Image();
       image.decoding = 'async';
       image.onload = () => {
@@ -707,17 +696,15 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(
-      post.mediaRef,
-      postMediaKind(post.mediaRef),
-      'high',
-    ).subscribe({
-      next: objectUrl => {
-        if (objectUrl) {
-          this.setPostMediaObjectUrl(post.postId, objectUrl);
-        }
-      },
-    });
+    this.mediaCacheService
+      .resolveMediaUrl(post.mediaRef, postMediaKind(post.mediaRef), 'high')
+      .subscribe({
+        next: (objectUrl) => {
+          if (objectUrl) {
+            this.setPostMediaObjectUrl(post.postId, objectUrl);
+          }
+        },
+      });
   }
 
   private loadProfilePicture(url: string | null | undefined): void {
@@ -734,7 +721,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.mediaCacheService.resolveMediaUrl(url, 'image', 'high').subscribe({
-      next: objectUrl => {
+      next: (objectUrl) => {
         if (objectUrl) {
           this.replaceProfilePictureObjectUrl(objectUrl);
         }
@@ -763,11 +750,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
     this.revokePostMediaObjectUrl(postId);
-    this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+    this.postMediaObjectUrls.update((urls) => ({ ...urls, [postId]: objectUrl }));
   }
 
   private revokePostMediaObjectUrl(postId: string): void {
-    this.postMediaObjectUrls.update(urls => {
+    this.postMediaObjectUrls.update((urls) => {
       const remaining = { ...urls };
       delete remaining[postId];
       return remaining;
@@ -780,11 +767,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private setPostCardMediaUrl(postId: string, objectUrl: string): void {
     this.revokePostCardMediaUrl(postId);
-    this.postCardMediaUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+    this.postCardMediaUrls.update((urls) => ({ ...urls, [postId]: objectUrl }));
   }
 
   private revokePostCardMediaUrl(postId: string): void {
-    this.postCardMediaUrls.update(urls => {
+    this.postCardMediaUrls.update((urls) => {
       const remaining = { ...urls };
       delete remaining[postId];
       return remaining;

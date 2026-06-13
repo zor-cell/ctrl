@@ -7,6 +7,7 @@ export interface CommentResponse {
   createdAt: string;
   parentCommentId: string | null;
   edited?: boolean;
+  wasReportedByUser: boolean;
   replies?: CommentResponse[];
 }
 

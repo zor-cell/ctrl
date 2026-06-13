@@ -9,6 +9,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
@@ -69,7 +70,7 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
@@ -90,7 +91,11 @@ public class PostMapper {
         post.getCreatedAt());
   }
 
-  public DetailedPostResponse toDetailedPostResponse(Post post, PostVote postVote) {
+  public DetailedPostResponse toDetailedPostResponse(
+      Post post, 
+      PostVote postVote, 
+      boolean wasReported, 
+      Map<String, Boolean> commentsReportedByUser) {
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -113,7 +118,7 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, commentsReportedByUser.getOrDefault(comment.getCommentId(), false)))
             .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
@@ -130,6 +135,7 @@ public class PostMapper {
         post.isPublic(),
         post.isExternalPost(),
         userProfileUrl,
+        wasReported,
         post.isAiGenerated(),
         labelIds,
         topicIds,
@@ -197,12 +203,13 @@ public class PostMapper {
         source.getDate());
   }
 
-  private CommentResponse toCommentResponse(Comment comment) {
+  private CommentResponse toCommentResponse(Comment comment, boolean wasReportedByUser) {
     return new CommentResponse(
         comment.getCommentId(),
         comment.getUser().getUsername(),
         comment.getContent(),
         comment.getCreatedAt(),
-        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId());
+        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId(),
+        wasReportedByUser);
   }
 }

@@ -7,6 +7,7 @@ import at.ac.tuwien.inso.ctrl.report.dto.ReportedCommentResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedPostResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.ReportedSourceResponse;
 import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
@@ -27,4 +28,6 @@ public interface ReportService {
       ReportStatus reportStatus, int page, int postsPerPage);
 
   List<ReportedSourceResponse> getReportedSources(ReportStatus status, int page, int postsPerPage);
+
+  boolean wasReportedByUser(User user, ContentTypeEnum type, String contentId);
 }

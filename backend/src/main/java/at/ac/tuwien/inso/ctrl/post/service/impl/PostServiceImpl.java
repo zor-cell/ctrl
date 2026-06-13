@@ -15,6 +15,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
@@ -25,6 +26,8 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.dto.Role;
@@ -37,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -65,6 +69,7 @@ public class PostServiceImpl implements PostService {
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
   private final LabelingService labelingService;
+  private final ReportService reportService;
 
   @Override
   @Transactional
@@ -285,7 +290,7 @@ public class PostServiceImpl implements PostService {
     if (!post.isPublic()) {
       if (post.getUser() != null
           && !post.getUser().getUsername().equals(username)
-          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+          && !friendRelationRepository.existsByUsers(user, post.getUser()) || user.getRole() == Role.ADMIN) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
@@ -296,6 +301,20 @@ public class PostServiceImpl implements PostService {
 
     PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
 
-    return this.postMapper.toDetailedPostResponse(post, toMap);
+    boolean wasReported = reportService.wasReportedByUser(user, ContentTypeEnum.POST, postId);
+
+    Map<String, Boolean> commentsReportedByUser =
+        post.getComments().isEmpty()
+            ? Map.of()
+            : post.getComments().stream()
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        Comment::getCommentId,
+                        comment ->
+                            reportService.wasReportedByUser(
+                                user, ContentTypeEnum.COMMENT, comment.getCommentId())));
+
+    return this.postMapper.toDetailedPostResponse(post, toMap, wasReported, commentsReportedByUser);
   }
 }

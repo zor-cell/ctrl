@@ -47,6 +47,15 @@
                 <span class="timestamp">{{ timeAgo(post.value().createdAt) }}</span>
               </div>
             </button>
+            @if (this.post.value().wasReportedByUser) {
+              <p-tag
+                [value]="'reported'"
+                severity="secondary"
+                class="post-label"
+                [pTooltip]="'This post has been reported'"
+                tooltipPosition="bottom"
+              />
+            }
           </div>
         </ng-template>
 

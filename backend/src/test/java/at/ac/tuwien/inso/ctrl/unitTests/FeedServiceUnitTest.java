@@ -75,7 +75,9 @@ public class FeedServiceUnitTest {
     when(feedMapper.toFeedPostResponse(
             eq(recommendedPost),
             eq(Map.of("post-1", "UPVOTE")),
+            eq(Map.of("post-1", false)),
             eq(Map.of("source-1", "DOWNVOTE")),
+            eq(Map.of("source-1", false)),
             eq(labels)))
         .thenReturn(expectedResponse);
 
@@ -156,13 +158,17 @@ public class FeedServiceUnitTest {
         .toFeedPostResponse(
             eq(recPost1),
             eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("post-1", false)),
             eq(Map.of("source-2", "UPVOTE")),
+            eq(Map.of("source-2", false)),
             eq(labels1));
     verify(feedMapper)
         .toFeedPostResponse(
             eq(recPost2),
             eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("post-1", false)),
             eq(Map.of("source-2", "UPVOTE")),
+            eq(Map.of("source-2", false)),
             eq(labels2));
   }
 
