@@ -358,9 +358,14 @@ public class PostServiceImpl implements PostService {
                             reportService.wasReportedByUser(
                                 user, ContentTypeEnum.COMMENT, comment.getCommentId())));
 
-    boolean sourceWasReported =
-        reportService.wasReportedByUser(
-            user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
+    boolean sourceWasReported;
+    if (post.getSource() != null) {
+      sourceWasReported =
+          reportService.wasReportedByUser(
+              user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
+    } else {
+      sourceWasReported = false;
+    }
 
     return this.postMapper.toDetailedPostResponse(
         post, toMap, wasReported, commentsReportedByUser, sourceWasReported);
