@@ -16,6 +16,8 @@ import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
@@ -54,6 +56,8 @@ public class UserServiceUnitTest {
   @Mock private RelationshipMapper socialMapper;
 
   @Mock private PasswordEncoder passwordEncoder;
+
+  @Mock private ReportService reportService;
 
   @Mock private JwtService jwtService;
 
@@ -127,6 +131,9 @@ public class UserServiceUnitTest {
             true,
             false);
     when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(reportService.wasReportedByUser(
+            testUser, ContentTypeEnum.ACCOUNT, String.valueOf(testUser.getId())))
+        .thenReturn(false);
     when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);

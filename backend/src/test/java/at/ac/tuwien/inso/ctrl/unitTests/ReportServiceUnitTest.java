@@ -138,7 +138,8 @@ public class ReportServiceUnitTest {
                 Mockito.any()))
         .thenReturn(List.of(validReport, missingReport));
     Mockito.when(commentRepository.findAllById(Mockito.anyList())).thenReturn(List.of(comment));
-    Mockito.when(commentMapper.toResponse(Mockito.eq(comment), Mockito.anyMap(), Map.of()))
+    Mockito.when(
+            commentMapper.toResponse(Mockito.eq(comment), Mockito.anyMap(), Mockito.eq(Map.of())))
         .thenReturn(
             new CommentResponse(
                 "comment-1",
@@ -209,7 +210,7 @@ public class ReportServiceUnitTest {
         .thenReturn(List.of(commentWithReportedUser, commentWithFallbackUser));
     Mockito.when(
             commentMapper.toResponse(
-                Mockito.eq(commentWithReportedUser), Mockito.anyMap(), Map.of()))
+                Mockito.eq(commentWithReportedUser), Mockito.anyMap(), Mockito.eq(Map.of())))
         .thenReturn(
             new CommentResponse(
                 "comment-2",
@@ -224,7 +225,7 @@ public class ReportServiceUnitTest {
                 false));
     Mockito.when(
             commentMapper.toResponse(
-                Mockito.eq(commentWithFallbackUser), Mockito.anyMap(), Map.of()))
+                Mockito.eq(commentWithFallbackUser), Mockito.anyMap(), Mockito.eq(Map.of())))
         .thenReturn(
             new CommentResponse(
                 "comment-3",
