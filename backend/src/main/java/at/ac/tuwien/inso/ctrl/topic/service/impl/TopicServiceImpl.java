@@ -48,11 +48,15 @@ public class TopicServiceImpl implements TopicService {
   @Override
   @Transactional
   public TopicResponse updateTopic(String id, TopicCreateRequest request) {
-    Topic existingTopic = topicRepository.findById(id)
+    Topic existingTopic =
+        topicRepository
+            .findById(id)
             .orElseThrow(() -> new InvalidRequestException("Topic does not exist"));
 
-    topicRepository.findByNameIgnoreCase(request.name())
-            .ifPresent(topic -> {
+    topicRepository
+        .findByNameIgnoreCase(request.name())
+        .ifPresent(
+            topic -> {
               if (!topic.getTopicId().equals(id)) {
                 throw new InvalidRequestException("Topic name already exists");
               }

@@ -31,9 +31,7 @@ public class TopicController {
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   public TopicResponse updateTopic(
-          @PathVariable String id,
-          @Valid @RequestBody TopicCreateRequest request
-  ) {
+      @PathVariable String id, @Valid @RequestBody TopicCreateRequest request) {
     return topicService.updateTopic(id, request);
   }
 }
