@@ -23,7 +23,7 @@ import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { ReportComponent } from '../report/components/report/report.component';
-import { ContentTypeEnum } from '../report/dto/report';
+import {ContentTypeEnum} from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
@@ -43,6 +43,8 @@ import {Friend} from '../user/dto/Relationship';
 import {Chat, ChatParticipant} from '../chat/models/chat.models';
 import {ChatService} from '../chat/services/chat.service';
 import {Message} from 'primeng/message';
+import {ConfirmationService} from 'primeng/api';
+import {ConfirmDialog} from 'primeng/confirmdialog';
 
 type ProfileFriendStatus =
   | 'NONE'
@@ -87,13 +89,16 @@ interface ShareTarget {
     FollowBadgeComponent,
     Tag,
     Message,
+    ConfirmDialog,
   ],
+  providers: [ConfirmationService],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostPageComponent implements OnDestroy, OnInit {
   private readonly router = inject(Router);
+  private confirmationService = inject(ConfirmationService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
@@ -162,11 +167,10 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly profileActionUsername = computed(() => this.publicProfile()?.username ?? null);
   protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
-  protected readonly currentProfilePicture = computed(
-    () =>
-      this.removeProfilePicture()
-        ? null
-        : this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
+  protected readonly currentProfilePicture = computed(() =>
+    this.removeProfilePicture()
+      ? null
+      : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
@@ -287,18 +291,30 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
   protected readonly ContentTypeEnum = ContentTypeEnum;
-  protected readonly publicProfileMenuItems = computed(() => [
-    {
-      label: 'Report',
-      icon: 'pi pi-flag',
-      command: () => this.openReportDialog(),
-    },
-    {
-      label: 'Block',
-      icon: 'pi pi-ban',
-      command: () => this.openBlockConfirmation(),
-    },
-  ]);
+  protected readonly publicProfileMenuItems = computed(() => {
+    const items = [
+      {
+        label: 'Report',
+        icon: 'pi pi-flag',
+        command: () => this.openReportDialog(),
+      },
+      {
+        label: 'Block',
+        icon: 'pi pi-ban',
+        command: () => this.openBlockConfirmation(),
+      },
+    ];
+
+    if (this.isAdmin()) {
+      items.push({
+        label: 'Remove',
+        icon: 'pi pi-trash',
+        command: () => this.deleteAccount(),
+      });
+    }
+
+    return items;
+  });
 
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
@@ -1231,10 +1247,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.authService.requestAccountDeletion(this.username()).subscribe({
-      next: () => this.loadPublicProfile(),
-      error: () =>
-        this.notificationService.showError('Failed to delete account. Please try again later.'),
+    this.confirmationService.confirm({
+      message: 'Are you sure you want remove this account?',
+      header: 'Confirm Remove',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.authService.requestAccountDeletion(this.username()).subscribe({
+          next: () => this.loadPublicProfile(),
+          error: () =>
+            this.notificationService.showError('Failed to delete account. Please try again later.'),
+        });
+      },
     });
   }
 

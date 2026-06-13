@@ -77,7 +77,6 @@ public class UserService {
       throw new UsernameNotFoundException("User not found");
     }
 
-
     if (blockService.inBlockedRelationship(currentUser, user)) {
       throw new UsernameNotFoundException("User not found");
     }

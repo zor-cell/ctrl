@@ -1220,6 +1220,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         scoreExploration: 0,
         totalScore: 0,
       },
+      wasReportedByUser: false,
     };
   }
 

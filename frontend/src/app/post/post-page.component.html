@@ -1,3 +1,4 @@
+<p-confirmDialog></p-confirmDialog>
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
@@ -139,16 +140,6 @@
           (onClick)="publicProfileMenu.toggle($event)"
         />
       </div>
-        @if(isAdmin()) {
-          <div class="post-profile-card__actions">
-            <p-button
-              icon="pi pi-trash"
-              severity="danger"
-              [rounded]="true"
-              (onClick)="deleteAccount()"
-            />
-          </div>
-        }
     }
     </header>
 

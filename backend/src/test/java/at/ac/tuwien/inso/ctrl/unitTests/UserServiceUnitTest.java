@@ -139,14 +139,14 @@ public class UserServiceUnitTest {
         .thenReturn(false);
     when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
     when(blockService.inBlockedRelationship(testUser, testUser)).thenReturn(false);
-    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
+    when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
     verify(userRepository).findByUsername("testUser");
     verify(blockService).inBlockedRelationship(testUser, testUser);
-    verify(userMapper).toPublicUserProfileResponse(testUser, true);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
     verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
   }
 
