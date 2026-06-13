@@ -27,6 +27,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -186,7 +187,7 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            || friendRelationRepository.existsByUsers(profileOwner, viewer) || viewer.getRole() == Role.ADMIN;
 
     List<Post> posts =
         canSeePrivatePosts
