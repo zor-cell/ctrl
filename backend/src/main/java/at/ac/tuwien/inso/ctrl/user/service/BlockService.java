@@ -66,10 +66,10 @@ public class BlockService {
         .findAny()
         .ifPresent(r -> friendshipService.cancelSentRequest(blockedUser, user.getUsername()));
 
-    friendshipService.getSentRequests(user).stream().filter(r -> r.username().equals(blockedUser.getUsername()))
+    friendshipService.getSentRequests(user).stream()
+        .filter(r -> r.username().equals(blockedUser.getUsername()))
         .findAny()
         .ifPresent(r -> friendshipService.cancelSentRequest(user, blockedUser.getUsername()));
-
 
     BlockedRelation blockedRelation =
         BlockedRelation.builder()
