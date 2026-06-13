@@ -80,6 +80,16 @@
           (onClick)="openReportDialog()"
         />
       </div>
+        @if(isAdmin()) {
+          <div class="post-profile-card__actions">
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [rounded]="true"
+              (onClick)="deleteAccount()"
+            />
+          </div>
+        }
     }
     </header>
 

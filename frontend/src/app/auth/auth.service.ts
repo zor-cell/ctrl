@@ -18,6 +18,7 @@ import {CustomJwtPayload} from "./dto/CustomJwtPayload";
 export class AuthService {
   private readonly TOKEN_KEY = 'AUTH_TOKEN';
   private readonly baseUri = environment.apiUrl + '/auth';
+  private readonly adminBaseUri = environment.apiUrl + '/admin';
   private readonly httpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
   private readonly mediaCacheService = inject(MediaCacheService);
@@ -53,6 +54,14 @@ export class AuthService {
       return false;
     }
   });
+
+  public requestAccountDeletion(username: string) {
+    return this.httpClient.delete(this.adminBaseUri + "/" + username).pipe(
+      tap(() => {
+        this.notificationService.showSuccess('Account successfully removed');
+      }),
+    )
+  }
 
   public register(registerRequest: RegisterRequest) {
     return this.httpClient.post<void>(this.baseUri + '/register', registerRequest).pipe(

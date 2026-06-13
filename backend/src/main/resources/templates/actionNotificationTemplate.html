@@ -167,7 +167,7 @@
                 <span th:if="${type == 'SOURCE'}">source has been removed.</span>
                 <span th:if="${type == 'POST'}">post has been removed.</span>
                 <span th:if="${type == 'COMMENT'}">comment has been removed.</span></p>
-            <p style="margin: 0 0 8px; color: #f0f0f5;">Reason: <span th:text="${reasonLabel}">Violation of community guidelines</span></p>
+            <p th:if="${reasonLabel != null and reasonLabel != ''}" style="margin: 0 0 8px; color: #f0f0f5;">Reason: <span th:text="${reasonLabel}">Violation of community guidelines</span></p>
             </div>
     </div>
 </div>

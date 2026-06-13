@@ -34,6 +34,7 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+import {AuthService} from '../auth/auth.service';
 
 @Component({
   selector: 'app-post-page',
@@ -55,6 +56,7 @@ import {RelationshipService} from '../user/relationship.service';
 })
 export class PostPageComponent implements OnDestroy, OnInit {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
   private readonly mediaCacheService = inject(MediaCacheService);
@@ -63,6 +65,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private readonly avatarInput =
     viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
+  protected readonly isAdmin = computed(() => this.authService.isAdmin());
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
   protected readonly reportDialogVisible = signal(false);
@@ -593,6 +596,19 @@ export class PostPageComponent implements OnDestroy, OnInit {
       next: () => this.saveProfilePictureIfNeeded(),
       error: () => this.updatingProfile.set(false),
     });
+  }
+
+  protected deleteAccount() {
+    if (!this.username()) {
+      return
+    }
+
+    this.authService.requestAccountDeletion(this.username()).subscribe(
+      {
+        error: () => this.notificationService.showError('Failed to delete account. Please try again later.'),
+      }
+    );
+
   }
 
   private saveProfilePictureIfNeeded() {
