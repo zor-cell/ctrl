@@ -116,8 +116,6 @@ class CommentUnitTests {
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(topLevel, reply));
     when(blockService.inBlockedRelationship(currentUser, topLevelAuthor)).thenReturn(false);
     when(blockService.inBlockedRelationship(currentUser, replyAuthor)).thenReturn(false);
-    when(commentMapper.toResponse(eq(topLevel), any(), any()))
-        .thenReturn(mock(CommentResponse.class));
     when(commentMapper.toResponse(eq(topLevel), any(), anyMap()))
         .thenReturn(mock(CommentResponse.class));
 
