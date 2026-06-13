@@ -36,8 +36,8 @@ public class CommentsController {
    */
   @GetMapping("/posts/{postId}/comments")
   public List<CommentResponse> getComments(
-      @PathVariable String postId, @AuthenticationPrincipal User user) {
-    return commentService.getCommentsForPost(postId, user);
+      @PathVariable String postId, @AuthenticationPrincipal User currentUser) {
+    return commentService.getCommentsForPost(postId, currentUser);
   }
 
   /**

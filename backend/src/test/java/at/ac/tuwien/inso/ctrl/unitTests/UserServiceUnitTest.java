@@ -29,6 +29,7 @@ import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
@@ -70,6 +71,8 @@ public class UserServiceUnitTest {
   @Mock private FileStorageService fileStorageService;
 
   @Mock private FollowService followService;
+
+  @Mock private BlockService blockService;
 
   @InjectMocks private UserService userService;
 
@@ -135,11 +138,15 @@ public class UserServiceUnitTest {
             testUser, ContentTypeEnum.ACCOUNT, String.valueOf(testUser.getId())))
         .thenReturn(false);
     when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
+    when(blockService.inBlockedRelationship(testUser, testUser)).thenReturn(false);
+    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
     verify(userRepository).findByUsername("testUser");
+    verify(blockService).inBlockedRelationship(testUser, testUser);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true);
     verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
   }
 
@@ -149,6 +156,18 @@ public class UserServiceUnitTest {
 
     assertThrows(
         UsernameNotFoundException.class, () -> userService.getPublicProfile("missing", testUser));
+  }
+
+  @Test
+  void getPublicProfile_whenUserIsBlocked_throwsUsernameNotFoundException() {
+    User otherUser = createUser("otherUser");
+    when(userRepository.findByUsername("otherUser")).thenReturn(Optional.of(otherUser));
+    when(blockService.inBlockedRelationship(testUser, otherUser)).thenReturn(true);
+
+    assertThrows(
+        UsernameNotFoundException.class, () -> userService.getPublicProfile("otherUser", testUser));
+    verify(userRepository).findByUsername("otherUser");
+    verify(blockService).inBlockedRelationship(testUser, otherUser);
   }
 
   @Test

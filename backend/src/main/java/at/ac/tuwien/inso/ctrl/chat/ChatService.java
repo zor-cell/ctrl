@@ -9,26 +9,33 @@ import at.ac.tuwien.inso.ctrl.chat.dto.ChatResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.CreateChatRequest;
 import at.ac.tuwien.inso.ctrl.chat.dto.MessageReactionResponse;
 import at.ac.tuwien.inso.ctrl.chat.dto.SendMessageRequest;
+import at.ac.tuwien.inso.ctrl.chat.dto.SharedPostResponse;
 import at.ac.tuwien.inso.ctrl.chat.entity.Chat;
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMember;
 import at.ac.tuwien.inso.ctrl.chat.entity.ChatMemberId;
 import at.ac.tuwien.inso.ctrl.chat.entity.Message;
 import at.ac.tuwien.inso.ctrl.chat.entity.Reaction;
 import at.ac.tuwien.inso.ctrl.chat.entity.ReactionId;
+import at.ac.tuwien.inso.ctrl.chat.entity.Shared;
 import at.ac.tuwien.inso.ctrl.chat.entity.SystemEventType;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.chat.repository.SharedRepository;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -42,6 +49,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +60,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class ChatService {
 
+  private static final int MAX_GROUP_MEMBERS = 50;
+  private static final int DEFAULT_MESSAGE_PAGE_SIZE = 30;
+  private static final int MAX_MESSAGE_PAGE_SIZE = 100;
   private static final Pattern GROUP_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9._]+$");
   private static final Set<String> ALLOWED_REACTION_EMOJIS =
       Set.of("👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥");
@@ -60,6 +71,8 @@ public class ChatService {
   private final ChatMemberRepository chatMemberRepository;
   private final MessageRepository messageRepository;
   private final ReactionRepository reactionRepository;
+  private final SharedRepository sharedRepository;
+  private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
@@ -119,6 +132,10 @@ public class ChatService {
           "Group name may only contain letters, numbers, dots and underscores");
     }
 
+    if (groupChat && invitedUsers.size() + 1 > MAX_GROUP_MEMBERS) {
+      throw new InvalidRequestException("Group chats can have at most 50 members");
+    }
+
     Chat chat =
         Chat.builder()
             .chatId(UUID.randomUUID())
@@ -150,9 +167,25 @@ public class ChatService {
 
   @Transactional
   public List<ChatMessageResponse> getMessages(User currentUser, UUID chatId) {
+    return getMessages(currentUser, chatId, null, DEFAULT_MESSAGE_PAGE_SIZE);
+  }
+
+  @Transactional
+  public List<ChatMessageResponse> getMessages(
+      User currentUser, UUID chatId, String before, Integer limit) {
     Chat chat = requireChatMember(currentUser, chatId);
+    LocalDateTime beforeCursor = parseMessageCursor(before);
+    PageRequest page = PageRequest.of(0, normalizeMessagePageSize(limit));
+    List<UUID> messageIds =
+        beforeCursor == null
+            ? messageRepository.findLatestMessageIds(chat, page)
+            : messageRepository.findMessageIdsBefore(chat, beforeCursor, page);
+
     List<ChatMessageResponse> messages =
-        messageRepository.findByChatOrderByDateAsc(chat).stream()
+        loadMessagesByIds(messageIds).stream()
+            .sorted(
+                Comparator.comparing(
+                    Message::getDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .map(message -> toMessageResponse(message, currentUser))
             .toList();
     markChatAsRead(currentUser, chat);
@@ -160,25 +193,35 @@ public class ChatService {
   }
 
   @Transactional
+  public void markChatAsRead(User currentUser, UUID chatId) {
+    Chat chat = requireChatMember(currentUser, chatId);
+    markChatAsRead(currentUser, chat);
+  }
+
+  @Transactional
   public ChatMessageResponse sendMessage(
       User currentUser, UUID chatId, SendMessageRequest request) {
     Chat chat = requireChatMember(currentUser, chatId);
     String content = trimToNull(request.content());
-    if (content == null) {
-      throw new InvalidRequestException("Message content must not be blank");
+    String postIdToShare = trimToNull(request.postIdToShare());
+    if (content == null && postIdToShare == null) {
+      throw new InvalidRequestException("Message content or shared post must be present");
     }
 
+    Shared shared = postIdToShare == null ? null : createSharedPost(currentUser, postIdToShare);
     Message message =
         Message.builder()
             .messageId(UUID.randomUUID())
             .chat(chat)
             .fromUser(currentUser)
-            .content(content)
+            .content(content == null ? "" : content)
             .date(LocalDateTime.now())
+            .shared(shared)
             .build();
 
-    ChatMessageResponse response = toMessageResponse(messageRepository.save(message), currentUser);
-    broadcastChatEvents(chat, response, "MESSAGE");
+    Message savedMessage = messageRepository.save(message);
+    ChatMessageResponse response = toMessageResponse(savedMessage, currentUser);
+    broadcastChatEvents(chat, savedMessage, "MESSAGE");
     return response;
   }
 
@@ -215,7 +258,11 @@ public class ChatService {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the group owner can delete it");
     }
 
+    List<String> activeMemberUsernames =
+        activeMembers(chat).stream().map(member -> member.getUser().getUsername()).toList();
     chatRepository.delete(chat);
+    activeMemberUsernames.forEach(
+        username -> chatMessageBroadcaster.publishChatRemoved(username, chatId));
   }
 
   @Transactional
@@ -233,6 +280,11 @@ public class ChatService {
 
     if (newMembers.isEmpty()) {
       throw new InvalidRequestException("All selected users are already members");
+    }
+
+    int activeMemberCount = activeMembers(chat).size();
+    if (activeMemberCount + newMembers.size() > MAX_GROUP_MEMBERS) {
+      throw new InvalidRequestException("Group chats can have at most 50 members");
     }
 
     LocalDateTime now = LocalDateTime.now();
@@ -285,9 +337,9 @@ public class ChatService {
               .build());
     }
 
-    ChatMessageResponse response =
-        toMessageResponse(requireMessageWithReactions(messageId), currentUser);
-    broadcastChatEvents(chat, response, "MESSAGE_UPDATE");
+    Message updatedMessage = requireMessageWithReactions(messageId);
+    ChatMessageResponse response = toMessageResponse(updatedMessage, currentUser);
+    broadcastChatEvents(chat, updatedMessage, "MESSAGE_UPDATE");
     return response;
   }
 
@@ -320,13 +372,14 @@ public class ChatService {
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Chat member", memberId.toString()));
 
-    createGroupSystemMessage(
-        chat, currentUser, SystemEventType.MEMBER_REMOVED, List.of(removedMember));
-
     int deletedRows = chatMemberRepository.deleteByChatIdAndUserId(chatId, memberId);
     if (deletedRows == 0) {
       throw new NotFoundException("Chat member", memberId.toString());
     }
+
+    chatMessageBroadcaster.publishChatRemoved(removedMember.getUsername(), chatId);
+    createGroupSystemMessage(
+        chat, currentUser, SystemEventType.MEMBER_REMOVED, List.of(removedMember));
 
     return toChatResponse(reloadChatDetails(chatId), currentUser);
   }
@@ -340,12 +393,14 @@ public class ChatService {
         throw new InvalidRequestException("Group owners must delete the group instead of leaving");
       }
 
-      createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
       chatMemberRepository.deleteByChatIdAndUserId(chatId, currentUser.getId());
+      createGroupSystemMessage(chat, currentUser, SystemEventType.MEMBER_LEFT, List.of());
+      chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
       return;
     }
 
     markMemberLeft(chatId, currentUser.getId());
+    chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
   }
 
   private List<User> resolveInvitedUsers(User currentUser, List<String> usernames) {
@@ -390,11 +445,41 @@ public class ChatService {
         .max(Comparator.comparing(this::latestActivityAt));
   }
 
+  private List<Message> loadMessagesByIds(List<UUID> messageIds) {
+    if (messageIds.isEmpty()) {
+      return List.of();
+    }
+
+    return messageRepository.findMessagesWithDetailsByIds(messageIds);
+  }
+
+  private int normalizeMessagePageSize(Integer limit) {
+    if (limit == null) {
+      return DEFAULT_MESSAGE_PAGE_SIZE;
+    }
+
+    return Math.min(Math.max(limit, 1), MAX_MESSAGE_PAGE_SIZE);
+  }
+
+  private LocalDateTime parseMessageCursor(String before) {
+    String trimmedBefore = trimToNull(before);
+    if (trimmedBefore == null) {
+      return null;
+    }
+
+    try {
+      return OffsetDateTime.parse(trimmedBefore).toLocalDateTime();
+    } catch (DateTimeParseException ignored) {
+      try {
+        return LocalDateTime.parse(trimmedBefore);
+      } catch (DateTimeParseException ex) {
+        throw new InvalidRequestException("Invalid message pagination cursor");
+      }
+    }
+  }
+
   private List<Chat> loadChatsForUser(User currentUser) {
-    return chatMemberRepository.findChatIdsForUser(currentUser.getId()).stream()
-        .map(chatRepository::findByChatIdWithDetails)
-        .flatMap(Optional::stream)
-        .toList();
+    return chatRepository.findActiveChatsForUserWithDetails(currentUser.getId());
   }
 
   private Chat reloadChatDetails(UUID chatId) {
@@ -460,17 +545,38 @@ public class ChatService {
     return chat;
   }
 
-  private void broadcastChatEvents(Chat chat, ChatMessageResponse message, String eventType) {
-    chatMessageBroadcaster.publishMessageEvent(
-        chat.getChatId(), new ChatRealtimePayload(eventType, chat.getChatId(), message));
-
+  private void broadcastChatEvents(Chat chat, Message message, String eventType) {
     Chat chatWithMembers =
         chatRepository
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
+    List<ChatMember> activeMembers = activeMembers(chatWithMembers);
+    Map<UUID, Long> personalMessageCounts =
+        countPersonalMessagesByUser(chatWithMembers, activeMembers);
+    Map<UUID, Long> unreadMessageCounts = countUnreadMessagesByUser(chatWithMembers, activeMembers);
+    Message summaryLastMessage =
+        "MESSAGE_UPDATE".equals(eventType)
+            ? messageRepository.findTopByChatOrderByDateDesc(chatWithMembers).orElse(null)
+            : message;
 
-    for (ChatMember member : chatWithMembers.getMembers()) {
-      ChatResponse summary = toChatResponse(chatWithMembers, member.getUser());
+    for (ChatMember member : activeMembers) {
+      UUID memberId = member.getUser().getId();
+      ChatMessageResponse messageForMember = toMessageResponse(message, member.getUser());
+      ChatMessageResponse lastMessageForMember =
+          summaryLastMessage == null
+              ? null
+              : toMessageResponse(summaryLastMessage, member.getUser());
+      chatMessageBroadcaster.publishMessageEvent(
+          member.getUser().getUsername(),
+          chat.getChatId(),
+          new ChatRealtimePayload(eventType, chat.getChatId(), messageForMember));
+      ChatResponse summary =
+          toChatResponse(
+              chatWithMembers,
+              member.getUser(),
+              lastMessageForMember,
+              personalMessageCounts.getOrDefault(memberId, 0L),
+              unreadMessageCounts.getOrDefault(memberId, 0L));
       chatMessageBroadcaster.publishChatSummary(member.getUser().getUsername(), summary);
     }
   }
@@ -521,6 +627,21 @@ public class ChatService {
             .map(message -> toMessageResponse(message, currentUser))
             .orElse(null);
 
+    return toChatResponse(
+        chat,
+        currentUser,
+        lastMessage,
+        countPersonalMessages(chat, currentUser),
+        countUnreadMessages(chat, currentUser));
+  }
+
+  private ChatResponse toChatResponse(
+      Chat chat,
+      User currentUser,
+      ChatMessageResponse lastMessage,
+      long personalMessageCount,
+      long unreadCount) {
+
     User groupOwner = resolveGroupOwner(chat);
     ChatParticipantResponse groupOwnerResponse =
         groupOwner != null ? toParticipantResponse(groupOwner) : null;
@@ -538,7 +659,42 @@ public class ChatService {
         groupOwner != null ? groupOwner.getId() : null,
         groupOwnerResponse,
         groupOwner != null && groupOwner.getId().equals(currentUser.getId()),
-        countUnreadMessages(chat, currentUser));
+        personalMessageCount,
+        unreadCount);
+  }
+
+  private Map<UUID, Long> countPersonalMessagesByUser(Chat chat, List<ChatMember> members) {
+    Set<UUID> userIds = activeMemberIds(members);
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return messageRepository.countPersonalMessagesByUsers(chat, userIds).stream()
+        .collect(
+            Collectors.toMap(
+                MessageRepository.UserMessageCount::getUserId,
+                MessageRepository.UserMessageCount::getMessageCount));
+  }
+
+  private Map<UUID, Long> countUnreadMessagesByUser(Chat chat, List<ChatMember> members) {
+    Set<UUID> userIds = activeMemberIds(members);
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return messageRepository.countUnreadMessagesByUsers(chat, userIds).stream()
+        .collect(
+            Collectors.toMap(
+                MessageRepository.UserMessageCount::getUserId,
+                MessageRepository.UserMessageCount::getMessageCount));
+  }
+
+  private Set<UUID> activeMemberIds(List<ChatMember> members) {
+    return members.stream().map(member -> member.getUser().getId()).collect(Collectors.toSet());
+  }
+
+  private long countPersonalMessages(Chat chat, User currentUser) {
+    return messageRepository.countPersonalMessages(chat, currentUser);
   }
 
   private long countUnreadMessages(Chat chat, User currentUser) {
@@ -600,7 +756,84 @@ public class ChatService {
         message.isSystem(),
         message.getSystemEvent() != null ? message.getSystemEvent().name() : null,
         systemTargets,
-        toReactionResponses(message, currentUser));
+        toReactionResponses(message, currentUser),
+        toSharedPostResponse(message.getShared(), currentUser));
+  }
+
+  private Shared createSharedPost(User currentUser, String postId) {
+    Post post =
+        postRepository.findById(postId).orElseThrow(() -> new NotFoundException("Post", postId));
+    if (!canViewPost(post, currentUser)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot share this post");
+    }
+
+    return sharedRepository.save(
+        Shared.builder()
+            .sharedId(UUID.randomUUID())
+            .post(post)
+            .sharedBy(currentUser)
+            .createdAt(LocalDateTime.now())
+            .build());
+  }
+
+  private SharedPostResponse toSharedPostResponse(Shared shared, User currentUser) {
+    if (shared == null) {
+      return null;
+    }
+
+    Post post = shared.getPost();
+    boolean externalPost = post.isExternalPost();
+    String username =
+        externalPost ? post.getExternalAuthor().getDisplayName() : post.getUser().getUsername();
+    UUID profileUserId = externalPost ? null : post.getUser().getId();
+    String profilePicture = externalPost ? null : post.getUser().getProfilePicture();
+    String profileUsername = externalPost ? null : post.getUser().getUsername();
+    boolean publicPost = externalPost || post.isPublic();
+    boolean removed = Boolean.TRUE.equals(post.getIsRemoved());
+    boolean canView = canViewPost(post, currentUser);
+    String mediaRef = canView ? post.getMediaRef() : null;
+    String unavailableReason = removed ? "REMOVED" : canView ? null : "PRIVATE";
+
+    return new SharedPostResponse(
+        shared.getSharedId(),
+        post.getPostId(),
+        username,
+        profileUserId,
+        profilePicture,
+        canView ? post.getCaption() : null,
+        mediaRef,
+        canView ? mediaKind(mediaRef) : null,
+        shared.getCreatedAt(),
+        canView,
+        publicPost,
+        profileUsername,
+        unavailableReason);
+  }
+
+  private boolean canViewPost(Post post, User currentUser) {
+    if (Boolean.TRUE.equals(post.getIsRemoved())) {
+      return false;
+    }
+
+    if (post.isExternalPost() || post.isPublic()) {
+      return true;
+    }
+
+    User owner = post.getUser();
+    if (owner == null || currentUser == null) {
+      return false;
+    }
+
+    return owner.getId().equals(currentUser.getId())
+        || friendRelationRepository.existsByUsers(owner, currentUser);
+  }
+
+  private String mediaKind(String mediaRef) {
+    if (mediaRef == null || mediaRef.isBlank()) {
+      return null;
+    }
+
+    return mediaRef.toLowerCase().matches(".*\\.(mp4|webm|ogg|mov)(\\?.*)?$") ? "video" : "image";
   }
 
   private void createGroupSystemMessage(
@@ -626,7 +859,12 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     Chat reloadedChat = reloadChatDetails(chat.getChatId());
-    broadcastChatEvents(reloadedChat, toMessageResponse(savedMessage, actor), "MESSAGE");
+    Message reloadedMessage =
+        messageRepository
+            .findWithDetailsByMessageId(savedMessage.getMessageId())
+            .orElseThrow(
+                () -> new NotFoundException("Message", savedMessage.getMessageId().toString()));
+    broadcastChatEvents(reloadedChat, reloadedMessage, "MESSAGE");
   }
 
   private List<ChatParticipantResponse> resolveSystemTargets(Message message) {

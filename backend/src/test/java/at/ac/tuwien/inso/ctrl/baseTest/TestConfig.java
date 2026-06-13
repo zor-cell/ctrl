@@ -5,7 +5,9 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
 import com.google.api.services.gmail.Gmail;
+import java.util.Arrays;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +30,9 @@ public class TestConfig {
   @Bean
   public EmbeddingService embeddingService() {
     EmbeddingService mockService = Mockito.mock(EmbeddingService.class);
-    // Return a simple embedding vector for any text
-    when(mockService.embedText(any(String.class))).thenReturn(new float[768]);
+    float[] embedding = new float[EmbeddingModelConfig.MODEL_DIMENSIONS];
+    Arrays.fill(embedding, 1.0f);
+    when(mockService.embedText(any(String.class))).thenReturn(embedding);
     return mockService;
   }
 }

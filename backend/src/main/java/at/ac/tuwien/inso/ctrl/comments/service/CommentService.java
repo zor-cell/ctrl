@@ -9,7 +9,7 @@ import java.util.List;
 public interface CommentService {
 
   /** Returns all comments for the given post, with replies nested inside each top-level comment. */
-  List<CommentResponse> getCommentsForPost(String postId, User user);
+  List<CommentResponse> getCommentsForPost(String postId, User currentUser);
 
   /**
    * Creates a new comment (or reply) on the given post authored by {@code username}. Throws if

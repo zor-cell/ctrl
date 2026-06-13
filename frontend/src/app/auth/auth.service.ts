@@ -11,6 +11,7 @@ import {EmailVerificationRequest} from './dto/EmailVerificationRequest';
 import {EmailVerificationPageData} from './dto/EmailVerificationPageData';
 import {jwtDecode} from "jwt-decode";
 import {CustomJwtPayload} from "./dto/CustomJwtPayload";
+import {SessionStateService} from "../session/session-state.service";
 
 @Injectable({
   providedIn: 'root',
@@ -101,6 +102,7 @@ export class AuthService {
 
   public logout() {
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
     this._token.set(null);
     this.mediaCacheService.clear();
   }

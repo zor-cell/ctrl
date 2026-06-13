@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
 
 public interface PostService {
@@ -50,10 +51,10 @@ public interface PostService {
    * Returns profile posts for the given user.
    *
    * @param profileUsername the profile owner
-   * @param viewerUsername the currently authenticated user
+   * @param viewer the currently authenticated user
    * @return posts ordered from newest to oldest
    */
-  List<PostResponse> getProfilePostsForUser(String profileUsername, String viewerUsername);
+  List<PostResponse> getProfilePostsForUser(String profileUsername, User viewer);
 
   /**
    * Deletes a post created by the authenticated user.

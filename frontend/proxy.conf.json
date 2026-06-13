@@ -10,6 +10,11 @@
     "changeOrigin": true,
     "ws": true
   },
+  "/ws-sockjs": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  },
   "/garage-s3": {
     "target": "http://localhost:3900",
     "secure": false,

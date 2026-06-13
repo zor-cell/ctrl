@@ -7,7 +7,7 @@ import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {UserService} from "../user/user.service";
 import {MediaCacheService} from '../core/services/media-cache.service';
-import {ChatUnreadService} from '../chat/chat-unread.service';
+import {ChatUnreadService} from '../chat/services/chat-unread.service';
 
 @Component({
   selector: 'app-navigation',

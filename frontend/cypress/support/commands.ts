@@ -50,8 +50,8 @@ declare global {
 }
 
 Cypress.Commands.add('login', (email?: string, password?: string) => {
-  const testEmail = email || cy.env('TEST_USER');
-  const testPassword = password || cy.env('TEST_PASSWORD');
+  const testEmail = email || Cypress.env('TEST_USER');
+  const testPassword = password || Cypress.env('TEST_PASSWORD');
 
   cy.request({
     method: 'POST',
@@ -67,4 +67,3 @@ Cypress.Commands.add('login', (email?: string, password?: string) => {
 });
 
 export {};
-

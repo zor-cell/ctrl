@@ -14,10 +14,16 @@ import {firstValueFrom} from 'rxjs';
 export class FollowBadgeComponent {
   readonly username = input.required<string>();
   readonly isExternal = input(false);
+  readonly appearance = input<'compact' | 'action'>('compact');
 
   private readonly rel = inject(RelationshipService);
   private readonly userService = inject(UserService);
   readonly busy = signal(false);
+
+  readonly actionMode = computed(() => this.appearance() === 'action');
+  readonly buttonStyleClass = computed(() =>
+    this.actionMode() ? 'follow-btn follow-btn--action' : 'follow-btn'
+  );
 
   readonly hide = computed(() =>
     this.isExternal() || this.username() === this.userService.user()?.username

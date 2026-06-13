@@ -3,7 +3,7 @@ import {Router} from '@angular/router';
 import {Button} from 'primeng/button';
 import {AuthService} from '../../../auth/auth.service';
 import {UserService} from '../../user.service';
-import {ChatSessionService} from '../../../chat/chat-session.service';
+import {ChatSessionService} from '../../../chat/services/chat-session.service';
 import {ViewTrackingService} from '../../../post/services/view-tracking.service';
 
 @Component({

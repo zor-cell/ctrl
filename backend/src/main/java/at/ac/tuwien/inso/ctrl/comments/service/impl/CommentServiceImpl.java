@@ -14,6 +14,7 @@ import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -33,17 +34,30 @@ public class CommentServiceImpl implements CommentService {
   private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final CommentMapper commentMapper;
+  private final BlockService blockService;
   private final ReportRepository reportRepository;
   private final ReportService reportService;
 
   @Override
   @Transactional(readOnly = true)
-  public List<CommentResponse> getCommentsForPost(String postId, User user) {
+  public List<CommentResponse> getCommentsForPost(String postId, User currentUser) {
     if (!postRepository.existsById(postId)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found");
     }
 
-    List<Comment> all = commentRepository.findByPost_PostId(postId);
+    List<Comment> all =
+        commentRepository.findByPost_PostId(postId).stream()
+            .filter(
+                c ->
+                    c.getUser() != null
+                        && !blockService.inBlockedRelationship(currentUser, c.getUser()))
+            .filter(
+                c ->
+                    c.getParentComment() == null
+                        || (c.getParentComment().getUser() != null
+                            && !blockService.inBlockedRelationship(
+                                currentUser, c.getParentComment().getUser())))
+            .toList();
 
     Map<String, Boolean> commentsReportedByUser =
         all.isEmpty()
@@ -55,7 +69,7 @@ public class CommentServiceImpl implements CommentService {
                         Comment::getCommentId,
                         comment ->
                             reportService.wasReportedByUser(
-                                user, ContentTypeEnum.COMMENT, comment.getCommentId())));
+                                currentUser, ContentTypeEnum.COMMENT, comment.getCommentId())));
 
     // Group replies by their parent's commentId
     Map<String, List<Comment>> repliesByParent =

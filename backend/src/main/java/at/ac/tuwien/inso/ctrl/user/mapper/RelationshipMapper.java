@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user.mapper;
 
+import at.ac.tuwien.inso.ctrl.user.dto.BlockedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
@@ -33,6 +34,14 @@ public class RelationshipMapper {
     }
 
     return new FollowedResponse(user.getId(), user.getUsername(), user.getProfilePicture());
+  }
+
+  public BlockedResponse toBlockedResponse(User user) {
+    if (user == null) {
+      return null;
+    }
+
+    return new BlockedResponse(user.getId(), user.getUsername(), user.getProfilePicture());
   }
 
   public FriendRequestResponse toIncomingFriendRequestResponse(FriendRequest request) {

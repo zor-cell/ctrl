@@ -13,6 +13,8 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: CREATE EXTENSION IF NOT EXISTS vector;
+      maximum-pool-size: 2
+      minimum-idle: 0
 
   sql:
     init:

@@ -6,6 +6,7 @@ import {firstValueFrom, map, switchMap} from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 import { MediaCacheKind, MediaCacheService } from '../../core/services/media-cache.service';
+import { previewMediaUrl } from '../../core/utils/media-preview-url.utils';
 
 @Injectable({ providedIn: 'root' })
 export class FeedService {
@@ -94,9 +95,10 @@ export class FeedService {
         post.userProfilePic = await this.resolveMedia(post.userProfilePic, 'image', 'high') ?? '';
         post.videoImageRef = (
           await Promise.all(
-            post.videoImageRef.map(mediaUrl =>
-              this.resolveMedia(mediaUrl, this.mediaKind(mediaUrl), 'normal')
-            )
+            post.videoImageRef.map(async mediaUrl => {
+              const resolvedMediaUrl = await this.resolveMedia(mediaUrl, this.mediaKind(mediaUrl), 'normal');
+              return previewMediaUrl(resolvedMediaUrl);
+            })
           )
         ).filter((mediaUrl): mediaUrl is string => mediaUrl !== null);
       })

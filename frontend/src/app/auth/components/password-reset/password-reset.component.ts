@@ -3,12 +3,11 @@ import {PasswordResetRequest} from '../../dto/PasswordResetRequest';
 import {ActivatedRoute, Router} from '@angular/router';
 import {NotificationService} from '../../../core/services/notification.service';
 import {PasswordResetService} from '../../password-reset-service';import {Button} from 'primeng/button';
-
-
 import {FloatLabel} from 'primeng/floatlabel';
 import {Message} from 'primeng/message';
 import {AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Password} from 'primeng/password';
+import {passwordValidator, PASSWORD_VALIDATION_MESSAGE} from "../../../user/validators";
 
 
 @Component({
@@ -28,10 +27,12 @@ export class PasswordResetComponent implements OnInit {
     password: '',
   };
 
+  protected readonly PASSWORD_VALIDATION_MESSAGE = PASSWORD_VALIDATION_MESSAGE;
+
   protected readonly submitting = signal(false);
   resetEmailForm = this.fb.group(
     {
-      password: ['', [Validators.required]],
+      password: ['', [Validators.required, passwordValidator]],
       confirmPassword: ['', Validators.required],
     },
     {

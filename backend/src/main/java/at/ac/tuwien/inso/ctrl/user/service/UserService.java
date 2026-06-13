@@ -48,6 +48,7 @@ public class UserService {
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
   private final FileStorageService fileStorageService;
+  private final BlockService blockService;
   private final FollowService followService;
   private final EmailVerificationService emailVerificationService;
   private final EmailVerificationRepository emailVerificationRepository;
@@ -66,12 +67,18 @@ public class UserService {
   }
 
   public PublicUserProfileResponse getPublicProfile(String username, User currentUser) {
+
     User user =
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     if (user.isSuspended()) {
+      throw new UsernameNotFoundException("User not found");
+    }
+
+
+    if (blockService.inBlockedRelationship(currentUser, user)) {
       throw new UsernameNotFoundException("User not found");
     }
 

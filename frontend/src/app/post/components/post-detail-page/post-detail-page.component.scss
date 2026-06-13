@@ -39,15 +39,10 @@ $radius: 16px;
   gap: 1.5rem;
 }
 
-// Back button - positioned absolutely to the left, doesn't affect centering
-.back-button-outside {
-  position: absolute;
-  left: -160px; // Position to the left of the centered content
-  top: 1.5rem;
+.post-detail-toolbar {
   display: flex;
   align-items: center;
-  padding-top: 0.75rem;
-  width: 150px;
+  margin-bottom: 0.75rem;
 }
 
 // Post card - centered

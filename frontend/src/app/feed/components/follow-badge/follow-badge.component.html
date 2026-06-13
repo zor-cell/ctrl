@@ -1,25 +1,42 @@
 @if (!hide()) {
   @switch (status()) {
     @case ('NOT_FOLLOWING') {
-      <p-button label="Follow" size="small" [rounded]="true" [outlined]="true"
-                [loading]="busy()" (onClick)="follow()" styleClass="follow-btn"  />
+      <p-button label="Follow" size="small" severity="secondary"
+                [icon]="actionMode() ? 'pi pi-plus' : undefined"
+                [rounded]="!actionMode()" [outlined]="!actionMode()"
+                [loading]="busy()" (onClick)="follow()" [styleClass]="buttonStyleClass()"  />
     }
     @case ('PENDING_REQUEST_SENT') {
-      <p-button label="Requested" size="small" [rounded]="true"
-                severity="secondary" [loading]="busy()" (onClick)="cancelRequest()" styleClass="follow-btn"  />
+      @if (actionMode()) {
+        <p-button label="Request Sent" size="small" [rounded]="true"
+                  severity="secondary" [disabled]="true" [styleClass]="buttonStyleClass()" />
+      } @else {
+        <p-button label="Requested" size="small" [rounded]="true"
+                  severity="secondary" [loading]="busy()" (onClick)="cancelRequest()" [styleClass]="buttonStyleClass()"  />
+      }
     }
     @case ('PENDING_REQUEST_INCOMING') {
       <p-button label="Accept" size="small" [rounded]="true"
-                severity="info" [loading]="busy()" (onClick)="acceptRequest()" styleClass="follow-btn"  />
+                severity="info" [loading]="busy()" (onClick)="acceptRequest()" [styleClass]="buttonStyleClass()"  />
     }
     @case ('FOLLOWED') {
-      <p-button label="Following" size="small" [rounded]="true"
-                severity="secondary" [loading]="busy()" (onClick)="unfollow()" styleClass="follow-btn"  />
+      @if (actionMode()) {
+        <p-button label="Following" size="small" [rounded]="true"
+                  severity="secondary" [loading]="busy()" (onClick)="unfollow()" [styleClass]="buttonStyleClass()" />
+      } @else {
+        <p-button label="Following" size="small" [rounded]="true"
+                  severity="secondary" [loading]="busy()" (onClick)="unfollow()" [styleClass]="buttonStyleClass()"  />
+      }
     }
     @case ('FRIEND') {
-      <p-button label="Friends" size="small" [rounded]="true"
-                severity="success" styleClass="follow-btn"
-                [loading]="busy()" (onClick)="unfriend()" />
+      @if (actionMode()) {
+        <p-button label="Friend" size="small" [rounded]="true"
+                  severity="success" [disabled]="true" [styleClass]="buttonStyleClass()" />
+      } @else {
+        <p-button label="Friends" size="small" [rounded]="true"
+                  severity="success" [styleClass]="buttonStyleClass()"
+                  [loading]="busy()" (onClick)="unfriend()" />
+      }
     }
   }
 }
