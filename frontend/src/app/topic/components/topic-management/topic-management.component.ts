@@ -35,10 +35,10 @@ import {emojiValidator} from "../validators";
     DatePipe
   ],
   providers: [MessageService],
-  templateUrl: './create-topic.component.html',
-  styleUrl: './create-topic.component.scss',
+  templateUrl: './topic-management.component.html',
+  styleUrl: './topic-management.component.scss',
 })
-export class CreateTopicComponent implements OnInit {
+export class TopicManagement implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly topicService = inject(TopicService);
   private readonly messageService = inject(MessageService);

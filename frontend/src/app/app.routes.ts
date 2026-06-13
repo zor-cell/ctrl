@@ -34,7 +34,7 @@ export const routes: Routes = [
     path: 'topics',
     canActivate: [adminGuard],
     loadComponent: () =>
-      import('./topic/components/create-topic/create-topic.component').then(m => m.CreateTopicComponent),
+      import('./topic/components/topic-management/topic-management.component').then(m => m.TopicManagement),
   },
   {
     path: 'post',
