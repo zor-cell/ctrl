@@ -89,17 +89,13 @@ public class SessionRepositoryTest {
 
     @Test
     void shouldReturnExactlySevenRowsWhenNoSessionsExist() {
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       assertThat(result).hasSize(7);
     }
 
     @Test
     void shouldReturnRowsInAscendingDateOrder() {
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       assertThat(result).hasSize(7);
       IntStream.range(0, 6)
           .forEach(i -> assertThat(result.get(i).getDay()).isBefore(result.get(i + 1).getDay()));
@@ -108,9 +104,7 @@ public class SessionRepositoryTest {
     @Test
     void shouldReturnZeroTotalSecondsAndZeroSessionCountForDayWithNoSessions() {
       session(targetUser, LocalDateTime.of(2024, 2, 29, 12, 0), 30);
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var dayWithNoSession =
           result.stream().filter(r -> !r.getDay().equals(LocalDate.of(2024, 2, 29))).toList();
       assertAll(
@@ -126,9 +120,7 @@ public class SessionRepositoryTest {
       session(targetUser, targetDay.atTime(10, 0), 10); // 600 s
       session(targetUser, targetDay.atTime(11, 0), 20); // 1200 s
       session(targetUser, targetDay.atTime(12, 0), 30); // 1800 s
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var dayResult =
           result.stream().filter(r -> r.getDay().equals(targetDay)).findFirst().orElseThrow();
       assertAll(
@@ -139,9 +131,7 @@ public class SessionRepositoryTest {
     @Test
     void shouldIncludeSessionOnFirstDayOfWindow() {
       session(targetUser, WEEK_AGO.atTime(12, 0), 30);
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var firstDay =
           result.stream().filter(r -> r.getDay().equals(WEEK_AGO)).findFirst().orElseThrow();
       assertThat(firstDay.getSessionCount()).isEqualTo(1L);
@@ -150,27 +140,21 @@ public class SessionRepositoryTest {
     @Test
     void shouldExcludeSessionOnToday() {
       session(targetUser, TODAY.atTime(12, 0), 30);
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       assertThat(result).allMatch(r -> r.getSessionCount() == 0L);
     }
 
     @Test
     void shouldExcludeSessionOneSecondBeforeWindow() {
       session(targetUser, WEEK_AGO.atStartOfDay().minusSeconds(1), 0);
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       assertThat(result).allMatch(r -> r.getSessionCount() == 0L);
     }
 
     @Test
     void shouldExcludeSessionsWithNullSeconds() {
       sessionNullSeconds(targetUser, WEEK_AGO.plusDays(1).atTime(12, 0));
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var dayResult =
           result.stream()
               .filter(r -> r.getDay().equals(WEEK_AGO.plusDays(1)))
@@ -183,18 +167,14 @@ public class SessionRepositoryTest {
     void shouldNotIncludeOtherUsersSessions() {
       IntStream.range(0, 7)
           .forEach(i -> session(otherUser, WEEK_AGO.plusDays(i).atTime(12, 0), 30));
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       assertThat(result).allMatch(r -> r.getSessionCount() == 0L);
     }
 
     @Test
     void shouldCountBleedingSessionForBothDaysItOverlaps() {
       session(targetUser, LocalDateTime.of(2024, 2, 29, 23, 50), 20); // ends 2024-03-01 00:10
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var feb29 =
           result.stream()
               .filter(r -> r.getDay().equals(LocalDate.of(2024, 2, 29)))
@@ -211,10 +191,9 @@ public class SessionRepositoryTest {
 
     @Test
     void shouldNotCountSessionEndingExactlyAtMidnightForNextDay() {
-      session(targetUser, LocalDateTime.of(2024, 2, 29, 23, 50), 10); // ends exactly 2024-03-01 00:00
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      session(
+          targetUser, LocalDateTime.of(2024, 2, 29, 23, 50), 10); // ends exactly 2024-03-01 00:00
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var mar01 =
           result.stream()
               .filter(r -> r.getDay().equals(LocalDate.of(2024, 3, 1)))
@@ -226,9 +205,7 @@ public class SessionRepositoryTest {
     @Test
     void shouldCountSessionStartingExactlyAtMidnightForCurrentDay() {
       session(targetUser, LocalDateTime.of(2024, 3, 1, 0, 0), 10);
-      var result =
-          sessionRepository.findSummaries(
-              targetUser.getId(), WEEK_AGO, TODAY);
+      var result = sessionRepository.findSummaries(targetUser.getId(), WEEK_AGO, TODAY);
       var mar01 =
           result.stream()
               .filter(r -> r.getDay().equals(LocalDate.of(2024, 3, 1)))
@@ -330,8 +307,7 @@ public class SessionRepositoryTest {
       IntStream.range(0, 56)
           .forEach(i -> session(otherUser, FIFTY_SIX_DAYS_AGO.plusDays(i).atTime(12, 0), 30));
       var result =
-          sessionRepository.findDayOfWeekAverages(
-              targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
+          sessionRepository.findDayOfWeekAverages(targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
       assertThat(result).allMatch(r -> r.getAvgSeconds() == 0.0);
     }
 
@@ -339,21 +315,18 @@ public class SessionRepositoryTest {
     void shouldCountBleedingSessionForBothDaysItOverlaps() {
       session(targetUser, LocalDateTime.of(2024, 1, 10, 23, 50), 20); // ends 2024-01-11 00:10
       var result =
-          sessionRepository.findDayOfWeekAverages(
-              targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
-      var wed =
-          result.stream().filter(r -> r.getDayOfWeek() == 3).findFirst().orElseThrow();
+          sessionRepository.findDayOfWeekAverages(targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
+      var wed = result.stream().filter(r -> r.getDayOfWeek() == 3).findFirst().orElseThrow();
       assertThat(wed.getAvgSeconds()).isGreaterThan(0.0);
     }
 
     @Test
     void shouldCountSessionForCurrentDayWhenEndingExactlyAtMidnight() {
-      session(targetUser, LocalDateTime.of(2024, 1, 10, 23, 50), 10); // ends exactly 2024-01-11 00:00
+      session(
+          targetUser, LocalDateTime.of(2024, 1, 10, 23, 50), 10); // ends exactly 2024-01-11 00:00
       var result =
-          sessionRepository.findDayOfWeekAverages(
-              targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
-      var wed =
-          result.stream().filter(r -> r.getDayOfWeek() == 3).findFirst().orElseThrow();
+          sessionRepository.findDayOfWeekAverages(targetUser.getId(), FIFTY_SIX_DAYS_AGO, TODAY);
+      var wed = result.stream().filter(r -> r.getDayOfWeek() == 3).findFirst().orElseThrow();
       assertThat(wed.getAvgSeconds()).isGreaterThan(0.0);
     }
 
@@ -366,8 +339,7 @@ public class SessionRepositoryTest {
       var result =
           sessionRepository.findDayOfWeekAverages(
               targetUser.getId(), LocalDate.of(2024, 2, 20), TODAY);
-      var tue =
-          result.stream().filter(r -> r.getDayOfWeek() == 2).findFirst().orElseThrow();
+      var tue = result.stream().filter(r -> r.getDayOfWeek() == 2).findFirst().orElseThrow();
       assertThat(tue.getDaysInPeriod()).isEqualTo(3);
       assertThat(tue.getAvgSeconds()).isEqualTo(2400.0); // (3600 + 3600 + 0) / 3
     }
@@ -499,9 +471,7 @@ public class SessionRepositoryTest {
       var result =
           sessionRepository.findSessionsForPeriod(
               targetUser.getId(), FIFTY_SIX_DAYS_AGO.atStartOfDay(), TODAY.atStartOfDay());
-      assertThat(result)
-          .extracting(SessionHistory::getSessionId)
-          .contains(s.getSessionId());
+      assertThat(result).extracting(SessionHistory::getSessionId).contains(s.getSessionId());
     }
 
     @Test
@@ -514,9 +484,7 @@ public class SessionRepositoryTest {
       var result =
           sessionRepository.findSessionsForPeriod(
               targetUser.getId(), FIFTY_SIX_DAYS_AGO.atStartOfDay(), TODAY.atStartOfDay());
-      assertThat(result)
-          .extracting(SessionHistory::getSessionId)
-          .contains(s.getSessionId());
+      assertThat(result).extracting(SessionHistory::getSessionId).contains(s.getSessionId());
     }
 
     @Test

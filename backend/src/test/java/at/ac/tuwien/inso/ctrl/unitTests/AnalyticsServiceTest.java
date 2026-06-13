@@ -425,8 +425,7 @@ public class AnalyticsServiceTest {
       user.setCreatedAt(LocalDateTime.of(2026, 5, 1, 0, 0).toInstant(ZoneOffset.UTC));
       when(sessionRepository.findSessionsForPeriod(eq(user.getId()), any(), any()))
           .thenReturn(List.of());
-      when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong()))
-          .thenReturn(List.of());
+      when(analyticsMapper.toAverageDayDetailResponseList(any(), anyLong())).thenReturn(List.of());
 
       analyticsService.getAverageWeekDetails(user);
 
