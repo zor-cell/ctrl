@@ -67,6 +67,11 @@ public class UserService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+    if (user.isSuspended()) {
+      throw new UsernameNotFoundException("User not found");
+    }
+
     boolean canSeePrivatePosts =
         currentUser != null
             && (user.getId().equals(currentUser.getId())

@@ -605,6 +605,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.authService.requestAccountDeletion(this.username()).subscribe(
       {
+        next: () => this.loadPublicProfile(),
         error: () => this.notificationService.showError('Failed to delete account. Please try again later.'),
       }
     );
