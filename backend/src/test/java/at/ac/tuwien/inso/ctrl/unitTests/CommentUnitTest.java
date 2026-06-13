@@ -15,6 +15,7 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,7 @@ class CommentUnitTests {
   @Mock private PostRepository postRepository;
   @Mock private UserRepository userRepository;
   @Mock private CommentMapper commentMapper;
+  @Mock private BlockService blockService;
 
   @InjectMocks private CommentServiceImpl commentService;
 
@@ -45,11 +47,13 @@ class CommentUnitTests {
   @ParameterizedTest
   @MethodSource("invalidGetCommentsInputs")
   void getCommentsForPost_shouldThrow_whenInputIsInvalid(String postId, HttpStatus expectedStatus) {
+    User currentUser = buildUser("alice");
     when(postRepository.existsById(postId)).thenReturn(false);
 
     ResponseStatusException ex =
         assertThrows(
-            ResponseStatusException.class, () -> commentService.getCommentsForPost(postId));
+            ResponseStatusException.class,
+            () -> commentService.getCommentsForPost(postId, currentUser));
 
     assertEquals(expectedStatus, ex.getStatusCode());
   }
@@ -64,10 +68,11 @@ class CommentUnitTests {
   @ParameterizedTest
   @MethodSource("validGetCommentsInputs")
   void getCommentsForPost_shouldNotThrow_whenInputIsValid(String postId) {
+    User currentUser = buildUser("alice");
     when(postRepository.existsById(postId)).thenReturn(true);
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of());
 
-    assertDoesNotThrow(() -> commentService.getCommentsForPost(postId));
+    assertDoesNotThrow(() -> commentService.getCommentsForPost(postId, currentUser));
   }
 
   static Stream<Arguments> validGetCommentsInputs() {
@@ -78,14 +83,23 @@ class CommentUnitTests {
   @Test
   void getCommentsForPost_shouldReturnOnlyTopLevelComments() {
     String postId = "post-1";
+    User currentUser = buildUser("alice");
+    User topLevelAuthor = buildUser("bob");
+    User replyAuthor = buildUser("charlie");
+
     Comment topLevel = buildComment("c-1", null);
+    topLevel.setUser(topLevelAuthor);
+
     Comment reply = buildComment("c-2", topLevel);
+    reply.setUser(replyAuthor);
 
     when(postRepository.existsById(postId)).thenReturn(true);
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(topLevel, reply));
+    when(blockService.inBlockedRelationship(currentUser, topLevelAuthor)).thenReturn(false);
+    when(blockService.inBlockedRelationship(currentUser, replyAuthor)).thenReturn(false);
     when(commentMapper.toResponse(eq(topLevel), any())).thenReturn(mock(CommentResponse.class));
 
-    List<CommentResponse> result = commentService.getCommentsForPost(postId);
+    List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
 
     assertEquals(1, result.size());
     // Mapper must only be called for top-level comment, not for the reply
@@ -93,12 +107,31 @@ class CommentUnitTests {
   }
 
   @Test
+  void getCommentsForPost_shouldExcludeCommentsFromBlockedUsers() {
+    String postId = "post-1";
+    User currentUser = buildUser("alice");
+    User blockedAuthor = buildUser("bob");
+    Comment blockedComment = buildComment("c-1", null);
+    blockedComment.setUser(blockedAuthor);
+
+    when(postRepository.existsById(postId)).thenReturn(true);
+    when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(blockedComment));
+    when(blockService.inBlockedRelationship(currentUser, blockedAuthor)).thenReturn(true);
+
+    List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
+
+    assertTrue(result.isEmpty());
+    verify(commentMapper, never()).toResponse(any(), any());
+  }
+
+  @Test
   void getCommentsForPost_shouldReturnEmptyList_whenNoCommentsExist() {
     String postId = "post-1";
+    User currentUser = buildUser("alice");
     when(postRepository.existsById(postId)).thenReturn(true);
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of());
 
-    List<CommentResponse> result = commentService.getCommentsForPost(postId);
+    List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
 
     assertNotNull(result);
     assertTrue(result.isEmpty());

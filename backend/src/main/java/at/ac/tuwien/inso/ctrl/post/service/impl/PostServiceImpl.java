@@ -15,6 +15,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
@@ -30,6 +31,7 @@ import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
@@ -55,6 +57,7 @@ public class PostServiceImpl implements PostService {
   private final TopicRepository topicRepository;
   private final UserRepository userRepository;
   private final SourceService sourceService;
+  private final BlockService blockService;
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
@@ -173,9 +176,33 @@ public class PostServiceImpl implements PostService {
   public List<PostResponse> getPostsForUser(String username) {
     User user = fetchUser(username);
     LabelContext ctx = labelingService.buildContext(user);
-    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+    List<Post> posts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username);
+    filterComments(user, posts);
+    return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
         .toList();
+  }
+
+  private void filterComments(User user, List<Post> posts) {
+    for (Post post : posts) {
+      if (post.getComments() == null || post.getComments().isEmpty()) {
+        continue;
+      }
+
+      Set<Comment> comments =
+          post.getComments().stream()
+              .filter(
+                  c ->
+                      c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+              .filter(
+                  c ->
+                      c.getParentComment() == null
+                          || (c.getParentComment().getUser() != null
+                              && !blockService.inBlockedRelationship(
+                                  user, c.getParentComment().getUser())))
+              .collect(Collectors.toSet());
+      post.setComments(comments);
+    }
   }
 
   @Override
@@ -193,6 +220,8 @@ public class PostServiceImpl implements PostService {
             ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
             : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
                 profileUsername);
+
+    filterComments(viewer, posts);
 
     return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
@@ -288,6 +317,19 @@ public class PostServiceImpl implements PostService {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
+
+    Set<Comment> comments =
+        post.getComments().stream()
+            .filter(
+                c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+            .filter(
+                c ->
+                    c.getParentComment() == null
+                        || (c.getParentComment().getUser() != null
+                            && !blockService.inBlockedRelationship(
+                                user, c.getParentComment().getUser())))
+            .collect(Collectors.toSet());
+    post.setComments(comments);
 
     List<PostVote> userVote =
         this.postVoteRepository.findByIdUserIdAndIdPostIdIn(

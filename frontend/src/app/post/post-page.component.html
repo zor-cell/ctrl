@@ -117,12 +117,12 @@
             }
           }
         }
+        <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
         <p-button
-          icon="pi pi-flag"
-          ariaLabel="Report profile"
+          icon="pi pi-ellipsis-v"
           severity="secondary"
           [rounded]="true"
-          (onClick)="openReportDialog()"
+          (onClick)="publicProfileMenu.toggle($event)"
         />
       </div>
     }
@@ -427,6 +427,43 @@
         severity="danger"
         [loading]="deletingPost()"
         (onClick)="confirmPostDeletion()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  header="Block user?"
+  [visible]="blockDialogVisible()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!blockingUser()"
+  [style]="{ width: 'min(28rem, 92vw)' }"
+  (visibleChange)="!$event && cancelBlockConfirmation()"
+>
+  <div class="delete-confirmation">
+    <p>
+      Are you sure you want to block this user?
+    </p>
+    <p-message severity="warn">
+      This action will end the friend or follow relationship if one exists.
+      Interactions of the user with your posts will be permanently deleted.
+    </p-message>
+    <div class="delete-confirmation__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="blockingUser()"
+        (onClick)="cancelBlockConfirmation()"
+      />
+      <p-button
+        label="Block"
+        icon="pi pi-ban"
+        severity="danger"
+        [loading]="blockingUser()"
+        (onClick)="confirmBlockUser()"
       />
     </div>
   </div>

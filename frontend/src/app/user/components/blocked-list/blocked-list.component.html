@@ -1,0 +1,48 @@
+<div class="followed-list">
+  <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
+
+  @if (blocked().length === 0) {
+    @if (searchQuery()) {
+      <div class="empty-state">
+        <p>No users match your search. Try a different search term or clear the search.</p>
+      </div>
+    } @else {
+    <div class="empty-state">
+        <p>You have not blocked anyone yet.</p>
+    </div>
+    }
+  } @else {
+    <div class="list-container">
+      @for (user of blocked(); track user.id) {
+        <div class="followed-item">
+          <button
+            type="button"
+            class="profile-avatar"
+            (click)="navigateToProfile(user.username)">
+            @if (hasProfilePicture(user)) {
+              <img
+                [src]="profilePictureUrl(user)"
+                alt=""
+                class="profile-avatar__image"
+                (error)="markProfilePictureFailed(user)"
+              />
+            } @else {
+              <span class="profile-avatar__initial">{{ getInitial(user) }}</span>
+            }
+          </button>
+
+          <div class="followed-info">
+            <span class="username">&#64;{{ user.username }}</span>
+          </div>
+
+          <p-button
+            icon="pi pi-ellipsis-v"
+            severity="secondary"
+            text
+            (onClick)="openMenu($event, user.username)" />
+        </div>
+      }
+    </div>
+  }
+</div>
+

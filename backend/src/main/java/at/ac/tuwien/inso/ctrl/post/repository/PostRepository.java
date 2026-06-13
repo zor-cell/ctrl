@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -160,6 +161,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       )
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
+                      AND (p.user_id IS NULL OR NOT EXISTS (
+                              SELECT 1
+                                  FROM blocked_relation br
+                                  WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                                  OR
+                                  (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
           )
           ( --interaction candidates
             SELECT pp.post_id FROM public_posts pp
@@ -259,6 +266,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
               LIMIT 200
@@ -284,6 +297,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
           WHERE p.is_removed = false
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
+            AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
             AND pt.topic_id = ANY(ARRAY[:topicList])
           ORDER BY p.created_at DESC
           LIMIT :pageSize OFFSET :offset
@@ -314,6 +333,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
               ORDER BY totalScore DESC
               LIMIT 200
           """,
@@ -379,4 +404,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
             """,
       nativeQuery = true)
   Integer findUpvotePercentile95();
+
+  List<Post> findPostsByUser(User user);
 }

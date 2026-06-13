@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.FriendshipService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ public class RelationshipController {
 
   private final FollowService followService;
   private final FriendshipService friendshipService;
+  private final BlockService blockService;
 
   @GetMapping("/friends")
   public List<FriendResponse> getFriends(
@@ -88,5 +90,24 @@ public class RelationshipController {
   @GetMapping("/friend-requests/count")
   public ResponseEntity<Long> getPendingRequestCount(@AuthenticationPrincipal User currentUser) {
     return ResponseEntity.ok(friendshipService.getPendingRequestCount(currentUser));
+  }
+
+  @PostMapping("/block/{username}")
+  @ResponseStatus(HttpStatus.CREATED)
+  public void block(@AuthenticationPrincipal User currentUser, @PathVariable String username) {
+    blockService.blockUser(currentUser, username);
+  }
+
+  @DeleteMapping("/block/{username}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void unblock(@AuthenticationPrincipal User currentUser, @PathVariable String username) {
+    blockService.unblockUser(currentUser, username);
+  }
+
+  @GetMapping("/block")
+  @ResponseStatus(HttpStatus.OK)
+  public List<BlockedResponse> getBlockedUsers(
+      @AuthenticationPrincipal User currentUser, @RequestParam(required = false) String q) {
+    return blockService.getBlockedUsers(currentUser, q);
   }
 }

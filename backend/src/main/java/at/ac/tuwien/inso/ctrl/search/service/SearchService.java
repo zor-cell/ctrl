@@ -14,6 +14,7 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +32,7 @@ public class SearchService {
   private final PostRepository postRepository;
   private final UserRepository userRepository;
   private final PostMapper postMapper;
+  private final BlockService blockService;
   private final FollowService followService;
   private final FriendRequestRepository friendRequestRepository;
   private final RelationshipMapper relationshipMapper;
@@ -59,6 +61,7 @@ public class SearchService {
               topicIdsArray,
               request.postsPerPage(),
               request.page() * request.postsPerPage());
+
     } else if (hasQuery && !hasTopics) {
       posts =
           postRepository.searchPostsBySimilarity(
@@ -85,6 +88,8 @@ public class SearchService {
       return Collections.emptyList();
     }
 
+    // filterComments(user, posts);
+
     return posts.stream().map(postMapper::toPostPreviewResponse).toList();
   }
 
@@ -105,6 +110,7 @@ public class SearchService {
         userRepository.findByUsernameContainingIgnoreCaseAndFilterSuspended(searchTerm);
 
     return allUsers.stream()
+        .filter(user -> !blockService.inBlockedRelationship(currentUser, user))
         .filter(user -> !user.getId().equals(currentUser.getId()))
         .filter(user -> !request.excludeFriends() || !friendIds.contains(user.getId()))
         .filter(user -> !request.excludeFollowed() || !followedIds.contains(user.getId()))
