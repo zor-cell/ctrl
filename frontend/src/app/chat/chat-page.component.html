@@ -462,6 +462,7 @@
 <app-post-detail-dialog
   [postId]="selectedChatPostId()"
   (dismissed)="selectedChatPostId.set(null)"
+  (postDeleted)="onChatPostDeleted($event)"
 />
 
 <p-dialog

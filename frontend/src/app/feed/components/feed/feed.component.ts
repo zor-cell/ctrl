@@ -307,6 +307,11 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
+  onPostDeleted(postId: string): void {
+    this.removePostFromFeed(postId);
+    this.onCommentsDialogDismissed();
+  }
+
   isVideo(url: string): boolean {
     return /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url);
   }

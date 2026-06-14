@@ -31,6 +31,7 @@ import { PostShareDialogComponent } from '../post-detail-share/post-share-dialog
 import { PostCommentComponent} from '../post-detail-comment/post-comment.component';
 import { PostStateService } from '../../services/post-state.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -57,13 +58,15 @@ export class PostDetailViewComponent implements OnChanges {
   private readonly router = inject(Router);
   private readonly relativeTimeNow = signal(Date.now());
 
-  private readonly postService  = inject(PostService);
-  private readonly userService  = inject(UserService);
-  private readonly cdr          = inject(ChangeDetectorRef);
-  private readonly postState    = inject(PostStateService);
-  private readonly mediaCache   = inject(MediaCacheService);
+  private readonly postService   = inject(PostService);
+  private readonly userService   = inject(UserService);
+  private readonly cdr           = inject(ChangeDetectorRef);
+  private readonly postState     = inject(PostStateService);
+  private readonly mediaCache    = inject(MediaCacheService);
+  private readonly notification  = inject(NotificationService);
 
   @Input() postId: string | null = null;
+  @Output() readonly postDeleted   = new EventEmitter<string>();
   @Output() readonly shareClicked  = new EventEmitter<void>();
   @Output() readonly closeClicked  = new EventEmitter<void>();
 
@@ -295,9 +298,11 @@ export class PostDetailViewComponent implements OnChanges {
     try {
       await firstValueFrom(this.postService.deletePost(post.postId));
       this.deleteConfirmVisible.set(false);
-      this.closeClicked.emit();
+      this.notification.showSuccess('Your post has been deleted.', 'Post deleted');
+      this.postDeleted.emit(post.postId);
     } catch (err) {
       console.error('Post-delete failed:', err);
+      this.notification.showError(err as never, 'Delete failed');
     } finally {
       this.deleteInProgress.set(false);
       this.cdr.markForCheck();

@@ -21,7 +21,8 @@ import { PostDetailViewComponent } from "../post-detail-view/post-detail-view.co
 })
 export class PostDetailDialogComponent implements OnChanges {
   @Input() postId: string | null = null;
-  @Output() readonly dismissed = new EventEmitter<void>();
+  @Output() readonly dismissed   = new EventEmitter<void>();
+  @Output() readonly postDeleted = new EventEmitter<string>();
 
   protected readonly dialogVisible = signal(false);
 
@@ -39,5 +40,10 @@ export class PostDetailDialogComponent implements OnChanges {
       this.dialogVisible.set(false);
       this.dismissed.emit();
     }
+  }
+
+  protected onPostDeleted(postId: string): void {
+    this.dialogVisible.set(false);
+    this.postDeleted.emit(postId);
   }
 }

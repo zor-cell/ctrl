@@ -983,6 +983,51 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.selectedChatPostId.set(postId);
   }
 
+  protected onChatPostDeleted(postId: string): void {
+    this.selectedChatPostId.set(null);
+
+    // Mark the deleted post as REMOVED in all chat messages so the
+    // "Post no longer available" placeholder is shown immediately.
+    this.messages.update(messages =>
+      messages.map(message => {
+        // New backend format: message.sharedPost object
+        if (message.sharedPost) {
+          const resolvedId = this.resolveSharedPostId(message.sharedPost.postId);
+          if (resolvedId === postId) {
+            return {
+              ...message,
+              sharedPost: {
+                ...message.sharedPost,
+                canView: false,
+                unavailableReason: 'REMOVED' as const,
+              },
+            };
+          }
+        }
+
+        // Legacy format: postId encoded inside message.content string
+        if (message.content.startsWith(SHARED_POST_PREFIX)) {
+          const parsed = this.parseSharedPostContent(message.content);
+          if (parsed && this.resolveSharedPostId(parsed.post.postId) === postId) {
+            const updatedPost: SharedPostPayload = {
+              ...parsed.post,
+              canView: false,
+              unavailableReason: 'REMOVED' as const,
+            };
+            const encoded = encodeURIComponent(JSON.stringify(updatedPost));
+            const note = parsed.note ? ` ${parsed.note}` : '';
+            return {
+              ...message,
+              content: `${SHARED_POST_PREFIX}${encoded}${SHARED_POST_SUFFIX}${note}`,
+            };
+          }
+        }
+
+        return message;
+      })
+    );
+  }
+
   protected sharedPostProfileRoute(sharedPost: ParsedSharedPost): string[] | null {
     const profileUsername = this.sharedPostProfileUsername(sharedPost.post);
     return profileUsername ? ['/profile', profileUsername] : null;
