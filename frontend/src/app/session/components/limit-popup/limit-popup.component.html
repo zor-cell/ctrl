@@ -17,6 +17,15 @@
             You will not be able to see any more posts until tomorrow.
         </div>
 
+        <div class="popup-options">
+            <p-checkbox
+                    [(ngModel)]="dontShowAgain"
+                    [binary]="true"
+                    inputId="dontShowAgainCheck">
+            </p-checkbox>
+            <label for="dontShowAgainCheck">Don't show this popup again today</label>
+        </div>
+
         <div class="popup-actions">
             <p-button
                     label="I understand"

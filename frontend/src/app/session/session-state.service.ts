@@ -31,13 +31,17 @@ export class SessionStateService {
     this.showModal.set(true);
   }
 
-  public closeModal(withSnooze: boolean) {
+  public closeModal(withSnooze: boolean, dontShowAgain: boolean = false) {
     this.showModal.set(false);
 
     if (withSnooze) {
       this.resetLimit();
     } else {
-      localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
+      if (dontShowAgain) {
+        localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
+      } else {
+        localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
+      }
     }
 
     this.userDecision$.next(withSnooze);

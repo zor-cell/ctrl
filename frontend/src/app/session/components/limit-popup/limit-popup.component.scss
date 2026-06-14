@@ -17,6 +17,14 @@
   gap: 1rem;
 }
 
+.popup-options {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+
+  align-items: center;
+}
+
 .popup-actions {
   display: flex;
   justify-content: space-between;
