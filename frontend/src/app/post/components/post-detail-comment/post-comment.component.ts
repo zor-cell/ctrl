@@ -17,6 +17,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { DialogModule } from 'primeng/dialog';
 
 import { CommentResponse } from '../../dto/PostResponse';
 import { CommentService } from '../../../feed/services/comment.service';
@@ -36,6 +37,7 @@ import { ContentTypeEnum } from '../../../report/dto/report';
     TextareaModule,
     ProgressSpinnerModule,
     ReportComponent,
+    DialogModule,
   ],
   templateUrl: './post-comment.component.html',
   styleUrl: './post-comment.component.scss',
@@ -61,6 +63,15 @@ export class PostCommentComponent implements OnChanges {
   protected readonly reportCommentVisible     = signal(false);
   protected readonly selectedCommentForReport = signal<CommentResponse | null>(null);
   protected readonly ContentTypeEnum          = ContentTypeEnum;
+
+  // ─── Delete confirm ───────────────────────────────────
+  protected readonly deleteConfirmVisible    = signal(false);
+  protected readonly deleteCommentInProgress = signal(false);
+  private pendingDeleteCommentId: string | null = null;
+
+  /** Two-way binding shim for p-dialog [(visible)] */
+  protected get deleteConfirmVisibleModel(): boolean { return this.deleteConfirmVisible(); }
+  protected set deleteConfirmVisibleModel(v: boolean) { this.deleteConfirmVisible.set(v); }
 
   // ─── Lifecycle ────────────────────────────────────────
 
@@ -130,9 +141,9 @@ export class PostCommentComponent implements OnChanges {
     this.submitting.set(true);
     try {
       const created = await this.commentService.addComment(
-          this.postId,
-          text,
-          this.replyingTo()?.commentId ?? null,
+        this.postId,
+        text,
+        this.replyingTo()?.commentId ?? null,
       );
       this.comments.update(c => [...c, created]);
       this.newComment = '';
@@ -173,16 +184,28 @@ export class PostCommentComponent implements OnChanges {
 
   // ─── Delete ───────────────────────────────────────────
 
-  protected async onDeleteComment(commentId: string): Promise<void> {
-    if (!confirm('Delete this comment?')) return;
+  protected openDeleteConfirm(commentId: string): void {
+    this.pendingDeleteCommentId = commentId;
+    this.deleteConfirmVisible.set(true);
+  }
+
+  protected async confirmDeleteComment(): Promise<void> {
+    const commentId = this.pendingDeleteCommentId;
+    if (!commentId || this.deleteCommentInProgress()) return;
+    this.deleteCommentInProgress.set(true);
     try {
       await this.commentService.deleteComment(commentId);
       this.comments.update(c =>
-          c.filter(x => x.commentId !== commentId && x.parentCommentId !== commentId),
+        c.filter(x => x.commentId !== commentId && x.parentCommentId !== commentId),
       );
+      this.deleteConfirmVisible.set(false);
+      this.pendingDeleteCommentId = null;
       this.cdr.markForCheck();
     } catch (err) {
       console.error('Failed to delete comment:', err);
+    } finally {
+      this.deleteCommentInProgress.set(false);
+      this.cdr.markForCheck();
     }
   }
 

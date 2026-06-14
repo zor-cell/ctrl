@@ -52,7 +52,7 @@
                 <button class="comment-action-btn edit-btn" (click)="startEdit(comment)">
                   <i class="pi pi-pencil"></i>
                 </button>
-                <button class="comment-action-btn delete-btn" (click)="onDeleteComment(comment.commentId)">
+                <button class="comment-action-btn delete-btn" (click)="openDeleteConfirm(comment.commentId)">
                   <i class="pi pi-trash"></i>
                 </button>
               } @else {
@@ -98,7 +98,7 @@
                       <button class="comment-action-btn edit-btn" (click)="startEdit(reply)">
                         <i class="pi pi-pencil"></i>
                       </button>
-                      <button class="comment-action-btn delete-btn" (click)="onDeleteComment(reply.commentId)">
+                      <button class="comment-action-btn delete-btn" (click)="openDeleteConfirm(reply.commentId)">
                         <i class="pi pi-trash"></i>
                       </button>
                     } @else {
@@ -146,6 +146,26 @@
     />
   </div>
 </div>
+
+<!-- Delete confirmation dialog -->
+<p-dialog
+  [(visible)]="deleteConfirmVisibleModel"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  header="Delete comment"
+  styleClass="pdv-confirm-dialog"
+>
+  <p class="pdv-confirm-text">Are you sure you want to delete this comment? This action cannot be undone..</p>
+  <ng-template pTemplate="footer">
+    <button class="action-btn" (click)="deleteConfirmVisible.set(false)">Cancel</button>
+    <button class="action-btn delete-confirm-btn delete-confirm-btn--solid" (click)="confirmDeleteComment()" [disabled]="deleteCommentInProgress()">
+      <i class="pi pi-trash"></i>
+      {{ deleteCommentInProgress() ? 'Will be deleted…' : 'Delete' }}
+    </button>
+  </ng-template>
+</p-dialog>
 
 <!-- Report Comment Dialog -->
 <app-report

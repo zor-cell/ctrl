@@ -178,3 +178,49 @@ $radius-sm:  10px;
   border-radius: $radius-sm;
   font-size: 0.9rem;
 }
+
+// ─── Delete Confirm Dialog ─────────────────────────────
+:host ::ng-deep .pdv-confirm-dialog {
+  width: min(420px, 90vw);
+
+  .p-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 0;
+  }
+}
+
+.pdv-confirm-text {
+  padding: 8px;
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--p-text-color);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-confirm-btn {
+  border-color: transparent;
+  color: #888;
+  &:hover { color: #e05858; border-color: transparent; background: transparent; }
+
+  &--solid {
+    border-color: #e05858;
+    color: #e05858;
+    &:hover { background: #e05858; color: #fff; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}

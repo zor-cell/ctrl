@@ -152,12 +152,39 @@
         <i class="pi pi-send"></i>
       </button>
     </div>
-    @if (!isOwnPost()) {
-      <button class="action-btn flag-btn" (click)="reportPostVisible.set(true)" pTooltip="Report Post" tooltipPosition="top">
-        <i class="pi pi-flag"></i>
-      </button>
-    }
+    <div class="post-actions-right">
+      @if (isOwnPost()) {
+        <button class="action-btn delete-btn" (click)="deleteConfirmVisible.set(true)" pTooltip="Delete post" tooltipPosition="top" aria-label="Delete post">
+          <i class="pi pi-trash"></i>
+        </button>
+      }
+      @if (!isOwnPost()) {
+        <button class="action-btn flag-btn" (click)="reportPostVisible.set(true)" pTooltip="Report Post" tooltipPosition="top">
+          <i class="pi pi-flag"></i>
+        </button>
+      }
+    </div>
   </div>
+
+  <!-- Delete confirmation dialog -->
+  <p-dialog
+    [(visible)]="deleteConfirmVisibleModel"
+    [modal]="true"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Delete post"
+    styleClass="pdv-confirm-dialog"
+  >
+    <p class="pdv-confirm-text">Are you sure you want to delete this post? This action cannot be undone.</p>
+    <ng-template pTemplate="footer">
+      <button class="action-btn" (click)="deleteConfirmVisible.set(false)">Cancel</button>
+      <button class="action-btn delete-btn delete-btn--solid" (click)="deletePost()" [disabled]="deleteInProgress()">
+        <i class="pi pi-trash"></i>
+        {{ deleteInProgress() ? 'Will be deleted…' : 'Delete' }}
+      </button>
+    </ng-template>
+  </p-dialog>
 
   <div class="comments-divider"></div>
 

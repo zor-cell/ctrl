@@ -19,6 +19,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { DialogModule } from 'primeng/dialog';
 
 import { DetailedPostResponse } from '../../dto/DetailedPostResponse';
 import { PostService, VoteType } from '../../post.service';
@@ -46,6 +47,7 @@ import { firstValueFrom } from 'rxjs';
     FollowBadgeComponent,
     PostShareDialogComponent,
     PostCommentComponent,
+    DialogModule,
   ],
   templateUrl: './post-detail-view.component.html',
   styleUrl: './post-detail-view.component.scss',
@@ -93,6 +95,14 @@ export class PostDetailViewComponent implements OnChanges {
   protected readonly reportPostVisible   = signal(false);
   protected readonly reportSourceVisible = signal(false);
   protected readonly ContentTypeEnum     = ContentTypeEnum;
+
+  // ─── Delete ───────────────────────────────────────────────────────────────
+  protected readonly deleteConfirmVisible = signal(false);
+  protected readonly deleteInProgress     = signal(false);
+
+  /** Two-way binding shim for p-dialog [(visible)] */
+  protected get deleteConfirmVisibleModel(): boolean { return this.deleteConfirmVisible(); }
+  protected set deleteConfirmVisibleModel(v: boolean) { this.deleteConfirmVisible.set(v); }
 
   // ─── Share ────────────────────────────────────────────────────────────────
   protected readonly shareDialogVisible = signal(false);
@@ -274,6 +284,24 @@ export class PostDetailViewComponent implements OnChanges {
 
   protected isOwnPost(): boolean {
     return this.post()?.username === this.userService.user()?.username;
+  }
+
+  // ─── Delete ───────────────────────────────────────────────────────────────
+
+  protected async deletePost(): Promise<void> {
+    const post = this.post();
+    if (!post || this.deleteInProgress()) return;
+    this.deleteInProgress.set(true);
+    try {
+      await firstValueFrom(this.postService.deletePost(post.postId));
+      this.deleteConfirmVisible.set(false);
+      this.closeClicked.emit();
+    } catch (err) {
+      console.error('Post-delete failed:', err);
+    } finally {
+      this.deleteInProgress.set(false);
+      this.cdr.markForCheck();
+    }
   }
 
   // ─── Utilities ────────────────────────────────────────────────────────────
