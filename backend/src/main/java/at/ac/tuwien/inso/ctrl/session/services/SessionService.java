@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.session.services;
 
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.SessionLimitExceededException;
+import at.ac.tuwien.inso.ctrl.session.dto.DailyUsageResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
 import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
@@ -121,6 +122,13 @@ public class SessionService {
         savedConfig.getPostLimit(),
         sessionConfigDto.allowSnooze(),
         changesAppliedImmediately);
+  }
+
+  public DailyUsageResponse getDailyUsage(User currentUser) {
+    DailySessionStatsProjection stats =
+        sessionRepository.getDailyStats(currentUser, LocalDate.now(clock).atStartOfDay());
+
+    return new DailyUsageResponse(stats.getTotalSeconds() / 60, stats.getTotalPostsViewed());
   }
 
   public SessionHistory getOrCreateLastSession(User user) {

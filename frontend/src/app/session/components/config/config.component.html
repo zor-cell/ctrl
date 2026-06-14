@@ -64,26 +64,34 @@
                 </p-button>
 
             </form>
-
-            @if (sessionState.isLimitActive() && configForm.get('allowSnooze')?.value) {
-                <div class="snooze-banner">
-                    <div class="snooze-banner-content">
-                        <i class="pi pi-exclamation-circle snooze-icon"></i>
-                        <div class="snooze-text">
-                            <span class="snooze-title">Daily limit reached</span>
-                            <span class="snooze-description">Since snooze is configured you can extends your session by 5 minutes</span>
-                        </div>
-                    </div>
-
-                    <p-button
-                            label="Snooze"
-                            icon="pi pi-clock"
-                            size="small"
-                            severity="secondary"
-                            (onClick)="triggerManualSnooze()">
-                    </p-button>
-                </div>
-            }
         }
+    </div>
+
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Current Session</h2>
+        </div>
+
+        @if (sessionState.isLimitActive() && configForm.get('allowSnooze')?.value) {
+            <div class="snooze-banner">
+                <div class="snooze-banner-content">
+                    <i class="pi pi-exclamation-circle snooze-icon"></i>
+                    <div class="snooze-text">
+                        <span class="snooze-title">Daily limit reached</span>
+                        <span class="snooze-description">Since snooze is configured you can extend your session by 5 minutes</span>
+                    </div>
+                </div>
+
+                <p-button
+                        label="Snooze"
+                        icon="pi pi-clock"
+                        size="small"
+                        severity="secondary"
+                        (onClick)="triggerManualSnooze()">
+                </p-button>
+            </div>
+        }
+
+        <app-usage></app-usage>
     </div>
 </div>

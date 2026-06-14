@@ -1,0 +1,41 @@
+@if (isLoading()) {
+    <div class="loading-spinner" style="display: flex; justify-content: center; padding: 2rem;">
+        <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
+    </div>
+} @else {
+    <div class="usage-wrapper">
+        <div class="usage-header">
+            <h3> Today's Statistics </h3>
+            <span routerLink="/settings" [queryParams]="{ tab: 'analytics' }"> See detailed statistics ></span>
+        </div>
+        <div class="bar-wrapper">
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span>Time Spent</span>
+                    <span>{{ usage()!.elapsedMinutes }} / {{ sessionConfig()!.timeLimitMinutes }} min</span>
+                </div>
+                <div class="progress-track">
+                    <div
+                            class="progress-fill time"
+                            [class.exceeded]="usage()!.elapsedMinutes > sessionConfig()!.timeLimitMinutes"
+                            [style.width.%]="Math.min((usage()!.elapsedMinutes / sessionConfig()!.timeLimitMinutes) * 100, 100)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span>Posts Viewed</span>
+                    <span>{{ usage()!.seenPosts }} / {{ sessionConfig()!.postLimit }}</span>
+                </div>
+                <div class="progress-track">
+                    <div
+                            class="progress-fill posts"
+                            [class.exceeded]="usage()!.seenPosts > sessionConfig()!.postLimit"
+                            [style.width.%]="Math.min((usage()!.seenPosts / sessionConfig()!.postLimit) * 100, 100)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

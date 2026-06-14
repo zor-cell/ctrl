@@ -1,5 +1,6 @@
-package at.ac.tuwien.inso.ctrl.session;
+package at.ac.tuwien.inso.ctrl.session.controller;
 
+import at.ac.tuwien.inso.ctrl.session.dto.DailyUsageResponse;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigDto;
 import at.ac.tuwien.inso.ctrl.session.dto.SessionConfigUpdateResponseDto;
 import at.ac.tuwien.inso.ctrl.session.services.SessionService;
@@ -40,5 +41,10 @@ public class SessionController {
   @PostMapping("/snooze")
   public void snooze(@AuthenticationPrincipal User user) {
     sessionService.snooze(user);
+  }
+
+  @GetMapping("/usage")
+  public DailyUsageResponse getDailyUsage(@AuthenticationPrincipal User user) {
+    return sessionService.getDailyUsage(user);
   }
 }

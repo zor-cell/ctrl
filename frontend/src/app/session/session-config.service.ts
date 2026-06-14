@@ -2,9 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from "../../environments/environment";
 import { HttpClient } from "@angular/common/http";
 import { NotificationService } from "../core/services/notification.service";
-import { tap } from "rxjs";
+import {tap} from "rxjs";
 import { SessionConfig } from "./dto/SessionConfig";
 import { SessionConfigUpdateResponse } from "./dto/SessionConfigUpdateResponse";
+import {Usage} from "./dto/usage";
 
 @Injectable({
   providedIn: 'root',
@@ -32,5 +33,9 @@ export class SessionConfigService {
 
   public snooze() {
     return this.httpClient.post<void>(this.baseUri + '/snooze', {});
+  }
+
+  public getDailyUsage() {
+    return this.httpClient.get<Usage>(`${this.baseUri}/usage`);
   }
 }

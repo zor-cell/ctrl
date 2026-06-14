@@ -9,7 +9,7 @@ import {ToggleSwitch} from "primeng/toggleswitch";
 import {Slider} from "primeng/slider";
 import {ConfirmationService} from "primeng/api";
 import {SessionStateService} from "../../session-state.service";
-import {Message} from "primeng/message";
+import {UsageComponent} from "../usage/usage.component";
 
 @Component({
   selector: 'app-session-config',
@@ -22,7 +22,7 @@ import {Message} from "primeng/message";
     ToggleSwitch,
     Tooltip,
     Slider,
-    Message
+    UsageComponent
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
