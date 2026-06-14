@@ -88,12 +88,13 @@ public class SessionService {
     DailySessionStatsProjection stats =
         sessionRepository.getDailyStats(currentUser, LocalDate.now(clock).atStartOfDay());
 
-    boolean timeLimitChanged = !config.getTimeLimitMinutes().equals(sessionConfigDto.timeLimitMinutes());
+    boolean timeLimitChanged =
+        !config.getTimeLimitMinutes().equals(sessionConfigDto.timeLimitMinutes());
     boolean postLimitChanged = !config.getPostLimit().equals(sessionConfigDto.postLimit());
     boolean limitsChanged = timeLimitChanged || postLimitChanged;
 
     boolean changesAppliedImmediately = true;
-    if(limitsChanged) {
+    if (limitsChanged) {
       if (isExceeded(config, stats)) {
         // limits are stored and only take effect on the next day
         config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
@@ -109,7 +110,7 @@ public class SessionService {
       }
     }
 
-    //allow snooze updates should always be made instantly
+    // allow snooze updates should always be made instantly
     config.setAllowSnooze(sessionConfigDto.allowSnooze());
     config.setNextAllowSnooze(null);
 

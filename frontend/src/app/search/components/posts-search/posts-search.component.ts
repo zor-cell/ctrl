@@ -266,7 +266,7 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
 
           this.sessionState.resetLimit();
         },
-        error: err => {
+        error: () => {
           //this.notificationService.showError(err);
           this.isSearching.set(false);
         }

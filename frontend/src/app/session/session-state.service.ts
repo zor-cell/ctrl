@@ -31,7 +31,7 @@ export class SessionStateService {
     this.showModal.set(true);
   }
 
-  public closeModal(withSnooze: boolean, dontShowAgain: boolean = false) {
+  public closeModal(withSnooze: boolean, dontShowAgain = false) {
     this.showModal.set(false);
 
     if (withSnooze) {
