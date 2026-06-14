@@ -69,25 +69,25 @@ public class PostServiceImpl implements PostService {
   @Transactional
   public PostResponse createPost(CreatePostRequest request, String username) {
     var user =
-            userRepository
-                    .findByUsername(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     Source source = sourceService.createSource(request.source());
 
     var post =
-            Post.builder()
-                    .postId(UUID.randomUUID().toString())
-                    .user(user)
-                    .source(source)
-                    .caption(request.caption())
-                    .mediaRef(request.mediaRef())
-                    .isPublic(resolveIsPublic(request, user.isVerified()))
-                    .isAiGenerated(Boolean.TRUE.equals(request.isAiGenerated()))
-                    .upvotes(INITIAL_VOTE_COUNT)
-                    .downvotes(INITIAL_VOTE_COUNT)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        Post.builder()
+            .postId(UUID.randomUUID().toString())
+            .user(user)
+            .source(source)
+            .caption(request.caption())
+            .mediaRef(request.mediaRef())
+            .isPublic(resolveIsPublic(request, user.isVerified()))
+            .isAiGenerated(Boolean.TRUE.equals(request.isAiGenerated()))
+            .upvotes(INITIAL_VOTE_COUNT)
+            .downvotes(INITIAL_VOTE_COUNT)
+            .createdAt(LocalDateTime.now())
+            .build();
     post.setPostTopics(buildPostTopics(post, request.topicIds()));
 
     float[] embedding = createEmbedding(post);
@@ -112,19 +112,19 @@ public class PostServiceImpl implements PostService {
     Optional<PostVote> existingVote = postVoteRepository.findById(voteId);
 
     VoteResponse response =
-            voteManager.processVote(
-                    post,
-                    existingVote,
-                    newVoteType,
-                    /* createVote */ () ->
-                            postVoteRepository.save(
-                                    PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
-                    /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
-                    /* updateVote */ () -> {
-                      existingVote.get().setVoteType(newVoteType);
-                      postVoteRepository.save(existingVote.get());
-                    },
-                    /* saveEntity */ () -> postRepository.save(post));
+        voteManager.processVote(
+            post,
+            existingVote,
+            newVoteType,
+            /* createVote */ () ->
+                postVoteRepository.save(
+                    PostVote.builder().id(voteId).post(post).voteType(newVoteType).build()),
+            /* deleteVote */ () -> postVoteRepository.delete(existingVote.get()),
+            /* updateVote */ () -> {
+              existingVote.get().setVoteType(newVoteType);
+              postVoteRepository.save(existingVote.get());
+            },
+            /* saveEntity */ () -> postRepository.save(post));
 
     // mark post as seen if not already recorded
     seenPostRepository.upsertView(user.getId(), postId, 0L);
@@ -162,10 +162,10 @@ public class PostServiceImpl implements PostService {
     }
 
     return normalizedRef.endsWith(".jpg")
-            || normalizedRef.endsWith(".jpeg")
-            || normalizedRef.endsWith(".png")
-            || normalizedRef.endsWith(".webp")
-            || normalizedRef.endsWith(".gif");
+        || normalizedRef.endsWith(".jpeg")
+        || normalizedRef.endsWith(".png")
+        || normalizedRef.endsWith(".webp")
+        || normalizedRef.endsWith(".gif");
   }
 
   @Transactional(readOnly = true)
@@ -173,8 +173,8 @@ public class PostServiceImpl implements PostService {
     User user = fetchUser(username);
     LabelContext ctx = labelingService.buildContext(user);
     return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
-            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
-            .toList();
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .toList();
   }
 
   @Override
@@ -184,27 +184,27 @@ public class PostServiceImpl implements PostService {
     LabelContext ctx = labelingService.buildContext(viewer);
 
     boolean canSeePrivatePosts =
-            profileOwner.getId().equals(viewer.getId())
-                    || friendRelationRepository.existsByUsers(profileOwner, viewer);
+        profileOwner.getId().equals(viewer.getId())
+            || friendRelationRepository.existsByUsers(profileOwner, viewer);
 
     List<Post> posts =
-            canSeePrivatePosts
-                    ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
-                    : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
-                    profileUsername);
+        canSeePrivatePosts
+            ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
+            : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+                profileUsername);
 
     return posts.stream()
-            .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
-            .toList();
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .toList();
   }
 
   @Override
   @Transactional
   public void deletePost(String postId, String username) {
     Post post =
-            postRepository
-                    .findByPostIdAndUserUsername(postId, username)
-                    .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        postRepository
+            .findByPostIdAndUserUsername(postId, username)
+            .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
     seenPostRepository.deleteByPostId(postId);
     postRepository.delete(post);
@@ -238,38 +238,38 @@ public class PostServiceImpl implements PostService {
 
     if (topics.size() != uniqueTopicIds.size()) {
       Set<String> foundTopicIds =
-              topics.stream().map(Topic::getTopicId).collect(Collectors.toSet());
+          topics.stream().map(Topic::getTopicId).collect(Collectors.toSet());
       String missingTopicIds =
-              uniqueTopicIds.stream()
-                      .filter(topicId -> !foundTopicIds.contains(topicId))
-                      .sorted()
-                      .collect(Collectors.joining(", "));
+          uniqueTopicIds.stream()
+              .filter(topicId -> !foundTopicIds.contains(topicId))
+              .sorted()
+              .collect(Collectors.joining(", "));
       throw new ResourceNotFoundException("Topics not found: " + missingTopicIds);
     }
 
     return topics.stream()
-            .map(topic -> createPostTopic(post, topic))
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+        .map(topic -> createPostTopic(post, topic))
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   private PostTopic createPostTopic(Post post, Topic topic) {
     return PostTopic.builder()
-            .id(new PostTopicId(post.getPostId(), topic.getTopicId()))
-            .post(post)
-            .topic(topic)
-            .build();
+        .id(new PostTopicId(post.getPostId(), topic.getTopicId()))
+        .post(post)
+        .topic(topic)
+        .build();
   }
 
   private Post fetchPost(String postId) {
     return postRepository
-            .findById(postId)
-            .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
+        .findById(postId)
+        .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
   }
 
   private User fetchUser(String username) {
     return userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        .findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
   }
 
   @Override
@@ -283,20 +283,20 @@ public class PostServiceImpl implements PostService {
 
     if (!post.isPublic()) {
       if (post.getUser() != null
-              && !post.getUser().getUsername().equals(username)
-              && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+          && !post.getUser().getUsername().equals(username)
+          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
 
     List<PostVote> userVote =
-            this.postVoteRepository.findByIdUserIdAndIdPostIdIn(
-                    user.getId().toString(), List.of(postId.toString()));
+        this.postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            user.getId().toString(), List.of(postId.toString()));
 
     PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
 
     LabelContext ctx = labelingService.buildContext(user);
     return this.postMapper.toDetailedPostResponse(
-            post, toMap, labelingService.computeLabels(post, ctx));
+        post, toMap, labelingService.computeLabels(post, ctx));
   }
 }

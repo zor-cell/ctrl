@@ -31,8 +31,13 @@ public class Shared {
   private UUID sharedId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "post_id", referencedColumnName = "post_id", nullable = true,
-          foreignKey = @ForeignKey(foreignKeyDefinition =
+  @JoinColumn(
+      name = "post_id",
+      referencedColumnName = "post_id",
+      nullable = true,
+      foreignKey =
+          @ForeignKey(
+              foreignKeyDefinition =
                   "FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE SET NULL"))
   private Post post;
 
