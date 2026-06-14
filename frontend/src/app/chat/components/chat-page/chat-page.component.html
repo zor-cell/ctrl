@@ -675,6 +675,9 @@
                   @if (isFriendParticipant(participant)) {
                     <span class="friend-badge">Friend</span>
                   }
+                  @if (isBlockedParticipant(participant)) {
+                    <span class="blocked-badge">Blocked</span>
+                  }
                 </span>
                 <span class="row-subtitle">&#64;{{ participant.username }}</span>
               </span>

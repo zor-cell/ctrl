@@ -1222,7 +1222,7 @@ $chat-viewport-offset: 72px;
   border-radius: 10px;
 
   &--owner {
-    background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+    background: var(--p-content-hover-background);
   }
 
 }
@@ -1259,7 +1259,7 @@ $chat-viewport-offset: 72px;
 
   &:hover,
   &:focus-visible {
-    background: var(--p-content-hover-background);
+    background: transparent;
     outline: none;
   }
 
@@ -1275,11 +1275,11 @@ $chat-viewport-offset: 72px;
 
 .member-profile-popover {
   position: absolute;
-  left: 0.75rem;
-  top: calc(100% + 0.45rem);
+  left: 3.75rem;
+  top: calc(100% + 0.25rem);
   z-index: 30;
-  width: min(18rem, calc(100vw - 4rem));
-  padding: 0.7rem 0.8rem;
+  width: min(15rem, calc(100vw - 5rem));
+  padding: 0.6rem 0.7rem;
   border: 1px solid $border;
   border-radius: 8px;
   background: var(--p-content-background);
@@ -1292,14 +1292,14 @@ $chat-viewport-offset: 72px;
   transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
 
   p {
-    margin: 0 0 0.45rem;
-    font-size: 0.85rem;
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
     line-height: 1.3;
   }
 
   a {
     color: var(--p-primary-color);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-decoration: none;
 
@@ -1364,6 +1364,18 @@ $chat-viewport-offset: 72px;
   border: 1px solid var(--p-primary-color);
   border-radius: 999px;
   color: var(--p-primary-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.blocked-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--p-text-muted-color);
+  border-radius: 999px;
+  color: var(--p-text-muted-color);
   font-size: 0.7rem;
   font-weight: 700;
   vertical-align: middle;
