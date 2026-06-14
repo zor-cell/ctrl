@@ -77,3 +77,43 @@ $color-interaction:   #6366f1; // indigo
 .slider-temp {
   @include slider-color($color-interaction);
 }
+
+
+.snooze-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background-color: var(--orange-50);
+  border: 1px solid var(--orange-200);
+  border-radius: var(--border-radius);
+  gap: 1rem;
+
+  .snooze-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .snooze-icon {
+      font-size: 1.75rem;
+      color: var(--orange-500);
+    }
+
+    .snooze-text {
+      display: flex;
+      flex-direction: column;
+
+      .snooze-title {
+        font-weight: bold;
+        color: var(--orange-900);
+        margin-bottom: 0.25rem;
+      }
+
+      .snooze-description {
+        font-size: 0.875rem;
+        color: var(--orange-700);
+      }
+    }
+  }
+}

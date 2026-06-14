@@ -66,17 +66,23 @@
             </form>
 
             @if (sessionState.isLimitActive() && configForm.get('allowSnooze')?.value) {
-                <p-message>
-                    You have reached your daily limit. Since snoozing is allowed, you can manually extend your session for 5 minutes.
+                <div class="snooze-banner">
+                    <div class="snooze-banner-content">
+                        <i class="pi pi-exclamation-circle snooze-icon"></i>
+                        <div class="snooze-text">
+                            <span class="snooze-title">Daily limit reached</span>
+                            <span class="snooze-description">Since snooze is configured you can extends your session by 5 minutes</span>
+                        </div>
+                    </div>
 
                     <p-button
                             label="Snooze"
                             icon="pi pi-clock"
                             size="small"
-                            severity="info"
+                            severity="secondary"
                             (onClick)="triggerManualSnooze()">
                     </p-button>
-                </p-message>
+                </div>
             }
         }
     </div>
