@@ -66,66 +66,66 @@
             (onClick)="openCreateDialog()"
           />
         </div>
-    } @else if (publicProfileMode()) {
-      <div class="post-profile-card__actions">
-        @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
-          <app-follow-badge
-            class="post-profile-card__follow-action"
-            [username]="actionUsername"
-            [isExternal]="publicProfileFriendStatus() !== 'NONE'"
-            appearance="action"
-          />
-          @switch (publicProfileFriendStatus()) {
-            @case ('FRIEND') {
-              <p-button
-                label="Remove Friend"
-                icon="pi pi-user-minus"
-                severity="secondary"
-                size="small"
-                [loading]="friendActionBusy()"
-                (onClick)="removeProfileFriend()"
-              />
-            }
-            @case ('PENDING_REQUEST_INCOMING') {
-              <p-button
-                label="Accept Request"
-                icon="pi pi-user-plus"
-                severity="info"
-                size="small"
-                [loading]="friendActionBusy()"
-                (onClick)="acceptProfileFriendRequest()"
-              />
-            }
-            @case ('PENDING_REQUEST_SENT') {
-              <p-button
-                label="Cancel Request"
-                icon="pi pi-times"
-                severity="secondary"
-                size="small"
-                [loading]="friendActionBusy()"
-                (onClick)="cancelProfileFriendRequest()"
-              />
-            }
-            @default {
-              <p-button
-                label="Add Friend"
-                icon="pi pi-user-plus"
-                size="small"
-                [loading]="friendActionBusy()"
-                (onClick)="sendProfileFriendRequest()"
-              />
+      } @else if (publicProfileMode()) {
+        <div class="post-profile-card__actions">
+          @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
+            <app-follow-badge
+              class="post-profile-card__follow-action"
+              [username]="actionUsername"
+              [isExternal]="publicProfileFriendStatus() !== 'NONE'"
+              appearance="action"
+            />
+            @switch (publicProfileFriendStatus()) {
+              @case ('FRIEND') {
+                <p-button
+                  label="Remove Friend"
+                  icon="pi pi-user-minus"
+                  severity="secondary"
+                  size="small"
+                  [loading]="friendActionBusy()"
+                  (onClick)="removeProfileFriend()"
+                />
+              }
+              @case ('PENDING_REQUEST_INCOMING') {
+                <p-button
+                  label="Accept Request"
+                  icon="pi pi-user-plus"
+                  severity="info"
+                  size="small"
+                  [loading]="friendActionBusy()"
+                  (onClick)="acceptProfileFriendRequest()"
+                />
+              }
+              @case ('PENDING_REQUEST_SENT') {
+                <p-button
+                  label="Cancel Request"
+                  icon="pi pi-times"
+                  severity="secondary"
+                  size="small"
+                  [loading]="friendActionBusy()"
+                  (onClick)="cancelProfileFriendRequest()"
+                />
+              }
+              @default {
+                <p-button
+                  label="Add Friend"
+                  icon="pi pi-user-plus"
+                  size="small"
+                  [loading]="friendActionBusy()"
+                  (onClick)="sendProfileFriendRequest()"
+                />
+              }
             }
           }
-        }
-        <p-button
-          icon="pi pi-flag"
-          ariaLabel="Report profile"
-          severity="secondary"
-          [rounded]="true"
-          (onClick)="openReportDialog()"
-        />
-      </div>
-    }
+          <p-button
+            icon="pi pi-flag"
+            ariaLabel="Report profile"
+            severity="secondary"
+            [rounded]="true"
+            (onClick)="openReportDialog()"
+          />
+        </div>
+      }
     </header>
 
     <section class="my-posts-section" aria-labelledby="my-posts-title">
@@ -323,6 +323,7 @@
 <app-post-detail-dialog
   [postId]="selectedPost()?.postId ?? null"
   (dismissed)="closePost()"
+  (postDeleted)="onPostDeletedFromDialog($event)"
 />
 
 

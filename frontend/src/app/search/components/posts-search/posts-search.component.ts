@@ -331,6 +331,11 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
     this.selectedPostId.set(null);
   }
 
+  onPostDeleted(postId: string): void {
+    this.selectedPostId.set(null);
+    this.searchResults.update(results => results.filter(p => p.postId !== postId));
+  }
+
   /**
    * Check if a topic is selected
    */

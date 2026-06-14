@@ -590,6 +590,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.selectedPost.set(null);
   }
 
+  protected onPostDeletedFromDialog(postId: string): void {
+    this.revokePostMediaObjectUrl(postId);
+    this.revokePostCardMediaUrl(postId);
+    this.myPosts.update(posts => posts.filter(p => p.postId !== postId));
+    this.selectedPost.set(null);
+  }
+
   protected requestPostDeletion(post: PostResponse) {
     this.postPendingDeletion.set(post);
   }
