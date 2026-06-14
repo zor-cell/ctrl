@@ -74,9 +74,9 @@ public class ChatService {
       "All remaining members are now group owners.";
   private static final Set<String> ALLOWED_REACTION_EMOJIS =
       Set.of(
-          "👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥", "👏", "🙏", "💯", "✨", "😄",
-          "😁", "🥳", "😍", "🤔", "😎", "😭", "😅", "🙌", "💪", "✅", "👀", "🤯", "😬",
-          "🤝", "😴", "🤮", "🤩", "😇", "😱", "🤗", "😤", "🫶", "💀");
+          "👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥", "👏", "🙏", "💯", "✨", "😄", "😁", "🥳",
+          "😍", "🤔", "😎", "😭", "😅", "🙌", "💪", "✅", "👀", "🤯", "😬", "🤝", "😴", "🤮", "🤩",
+          "😇", "😱", "🤗", "😤", "🫶", "💀");
 
   private final ChatRepository chatRepository;
   private final ChatMemberRepository chatMemberRepository;

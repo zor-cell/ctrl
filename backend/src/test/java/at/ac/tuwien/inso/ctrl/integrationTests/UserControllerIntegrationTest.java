@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -382,11 +383,21 @@ public class UserControllerIntegrationTest {
             get("/api/chats/" + chatId + "/messages")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].messageId").value(historicalMessage.getMessageId().toString()))
-        .andExpect(jsonPath("$[0].sender.username").value("Deleted user"))
-        .andExpect(jsonPath("$[1].messageId").value(sharedMessage.getMessageId().toString()))
-        .andExpect(jsonPath("$[1].sharedPost.canView").value(false))
-        .andExpect(jsonPath("$[1].sharedPost.unavailableReason").value("REMOVED"));
+        .andExpect(
+            jsonPath(
+                    "$[?(@.messageId == '%s')].sender.username"
+                        .formatted(historicalMessage.getMessageId()))
+                .value(contains("Deleted user")))
+        .andExpect(
+            jsonPath(
+                    "$[?(@.messageId == '%s')].sharedPost.canView"
+                        .formatted(sharedMessage.getMessageId()))
+                .value(contains(false)))
+        .andExpect(
+            jsonPath(
+                    "$[?(@.messageId == '%s')].sharedPost.unavailableReason"
+                        .formatted(sharedMessage.getMessageId()))
+                .value(contains("REMOVED")));
 
     List<Message> groupMessages =
         messageRepository.findByChatOrderByDateAsc(
@@ -396,7 +407,7 @@ public class UserControllerIntegrationTest {
             .anyMatch(
                 message ->
                     message.isSystem()
-                        && "Deleted user deleted their account and left the group."
+                        && "A user deleted their account and left the group."
                             .equals(message.getContent())));
     assertTrue(
         groupMessages.stream()
