@@ -22,7 +22,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
-import at.ac.tuwien.inso.ctrl.report.service.ReportService;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
@@ -74,7 +74,7 @@ public class UserService {
   private final EmailVerificationService emailVerificationService;
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetRepository passwordResetRepository;
-  private final ReportService reportService;
+  private final ReportRepository reportRepository;
   private final PostRepository postRepository;
   private final PostVoteRepository postVoteRepository;
   private final SourceRepository sourceRepository;
@@ -117,8 +117,9 @@ public class UserService {
                 || friendRelationRepository.existsByUsers(user, currentUser)
                 || currentUser.getRole() == Role.ADMIN);
     boolean wasReportedByUser =
-        reportService.wasReportedByUser(
-            currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
+        currentUser != null
+            && reportRepository.existsReportByFromUserAndContentTypeAndContentId(
+                currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
     return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts, wasReportedByUser);
   }
 

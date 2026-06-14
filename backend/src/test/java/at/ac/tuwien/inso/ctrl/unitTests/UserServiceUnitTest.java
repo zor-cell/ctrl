@@ -24,9 +24,9 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
-import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
-import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
@@ -71,7 +71,7 @@ public class UserServiceUnitTest {
 
   @Mock private PasswordEncoder passwordEncoder;
 
-  @Mock private ReportService reportService;
+  @Mock private ReportRepository reportRepository;
 
   @Mock private JwtService jwtService;
 
@@ -175,7 +175,7 @@ public class UserServiceUnitTest {
             false);
     when(userRepository.findByUsernameAndDeletedFalse("testUser"))
         .thenReturn(Optional.of(testUser));
-    when(reportService.wasReportedByUser(
+    when(reportRepository.existsReportByFromUserAndContentTypeAndContentId(
             testUser, ContentTypeEnum.ACCOUNT, String.valueOf(testUser.getId())))
         .thenReturn(false);
     when(blockService.inBlockedRelationship(testUser, testUser)).thenReturn(false);

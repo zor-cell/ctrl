@@ -1,0 +1,30 @@
+<p-dialog
+  [header]="title"
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!inProgress"
+  [style]="{ width: '90vw', maxWidth: '380px' }"
+  styleClass="chat-dialog group-confirmation-dialog">
+  <div class="group-confirmation">
+    <p>{{ message }}</p>
+    <div class="group-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="inProgress"
+        (click)="cancelled.emit()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        [disabled]="inProgress"
+        (click)="confirmed.emit()">
+        {{ buttonLabel }}
+      </button>
+    </div>
+  </div>
+</p-dialog>

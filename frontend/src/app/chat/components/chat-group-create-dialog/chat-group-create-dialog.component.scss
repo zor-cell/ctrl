@@ -1,0 +1,237 @@
+$border: var(--border);
+
+.text-button,
+.primary-button,
+.header-icon-button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.group-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.group-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field-label {
+  font-weight: 650;
+  color: var(--p-text-color);
+}
+
+.field-error {
+  color: var(--p-red-500);
+  font-size: 0.8rem;
+}
+
+.group-image-picker {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.group-image-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.group-image-preview {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.1rem;
+}
+
+.group-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid $border;
+  border-radius: 999px;
+  background: var(--p-content-background);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.header-icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: var(--p-text-muted-color);
+
+  &:hover {
+    background: var(--p-content-hover-background);
+    color: var(--p-text-color);
+  }
+}
+
+.header-icon-button.remove-image-button {
+  color: var(--p-red-500);
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-red-500) 14%, transparent);
+    color: var(--p-red-600, var(--p-red-500));
+  }
+}
+
+.members-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.members-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--p-text-muted-color);
+}
+
+.selected-count {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.members-search input {
+  width: 100%;
+}
+
+.group-friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(22rem, 48vh);
+  padding: 0.25rem;
+  overflow-y: auto;
+  border: 1px solid $border;
+  border-radius: 12px;
+  background: var(--p-content-hover-background);
+}
+
+.picker-empty {
+  margin: 1rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.group-friend-row {
+  display: grid;
+  grid-template-columns: auto 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--p-content-background);
+  }
+}
+
+.row-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.row-title,
+.row-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  font-weight: 650;
+}
+
+.row-subtitle {
+  font-size: 0.78rem;
+}
+
+.avatar {
+  display: grid;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  max-height: 2.5rem;
+  overflow: hidden;
+  border: 1px solid $border;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-color);
+  font-weight: 700;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.group-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.primary-button {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+:host ::ng-deep .group-create-dialog {
+  .p-dialog-content {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+}
+
+:host-context(.app-dark) {
+  .group-friends-list,
+  .avatar {
+    background: var(--p-content-hover-background);
+  }
+
+  .group-friend-row:hover {
+    background: var(--p-surface-800);
+  }
+}

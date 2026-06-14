@@ -17,7 +17,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
-import { Dialog } from 'primeng/dialog';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { InputText } from 'primeng/inputtext';
@@ -43,6 +42,9 @@ import { ChatUnreadService } from '../../services/chat-unread.service';
 import { ChatService } from '../../services/chat.service';
 import { CommentsComponent } from '../../../feed/components/comments/comments.component';
 import { Post } from '../../../feed/dto/Post';
+import { ChatConfirmationDialogComponent } from '../chat-confirmation-dialog/chat-confirmation-dialog.component';
+import { ChatGroupCreateDialogComponent } from '../chat-group-create-dialog/chat-group-create-dialog.component';
+import { ChatMembersDialogComponent } from '../chat-members-dialog/chat-members-dialog.component';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
 const MORE_REACTION_EMOJIS = [
@@ -88,13 +90,15 @@ type GroupConfirmationAction = 'delete' | 'leave' | 'deleteDirect';
     FormsModule,
     RouterLink,
     Button,
-    Dialog,
     IconField,
     InputIcon,
     InputText,
     Textarea,
     TooltipModule,
     CommentsComponent,
+    ChatConfirmationDialogComponent,
+    ChatGroupCreateDialogComponent,
+    ChatMembersDialogComponent,
   ],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.scss',
@@ -142,6 +146,24 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly reactionEmojis = REACTION_EMOJIS;
   protected readonly moreReactionEmojis = MORE_REACTION_EMOJIS;
   protected readonly maxGroupMembers = MAX_GROUP_MEMBERS;
+  protected readonly avatarUrlFn = (id: string) => this.avatarUrl(id);
+  protected readonly initialForFn = (user: ChatParticipant | Friend) => this.initialFor(user);
+  protected readonly isGroupFriendSelectedFn = (username: string) => this.isGroupFriendSelected(username);
+  protected readonly canSelectGroupFriendFn = (username: string) => this.canSelectGroupFriend(username);
+  protected readonly isGroupOwnerFn = (participant: ChatParticipant, chat: Chat) =>
+    this.isGroupOwner(participant, chat);
+  protected readonly isFriendParticipantFn = (participant: ChatParticipant) =>
+    this.isFriendParticipant(participant);
+  protected readonly isBlockedParticipantFn = (participant: ChatParticipant | null) =>
+    this.isBlockedParticipant(participant);
+  protected readonly canOpenParticipantProfileFn = (participant: ChatParticipant | null) =>
+    this.canOpenParticipantProfile(participant);
+  protected readonly participantProfileTooltipFn = (participant: ChatParticipant) =>
+    this.participantProfileTooltip(participant);
+  protected readonly canRemoveMemberFn = (participant: ChatParticipant, chat: Chat) =>
+    this.canRemoveMember(participant, chat);
+  protected readonly isAddMemberFriendSelectedFn = (username: string) =>
+    this.isAddMemberFriendSelected(username);
   protected readonly groupName = signal('');
   protected readonly groupMemberSearch = signal('');
   protected readonly selectedGroupUsernames = signal<string[]>([]);
@@ -239,6 +261,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return this.friends()
       .filter(friend => !memberUsernames.has(friend.username))
       .filter(friend => this.matchesFriend(friend, query));
+  });
+
+  protected readonly selectedAddMemberCountForDialog = computed(() => {
+    const chat = this.selectedChat();
+    return chat ? this.selectedAddMemberCount(chat) : 0;
   });
 
   protected readonly isGroupNameValid = computed(() => {
