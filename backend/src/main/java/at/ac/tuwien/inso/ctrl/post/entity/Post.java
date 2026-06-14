@@ -77,6 +77,10 @@ public class Post implements Votable {
   @Builder.Default
   private Set<Comment> comments = new LinkedHashSet<>();
 
+  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private Set<PostVote> votes = new LinkedHashSet<>();
+
   public boolean isAiGenerated() {
     return Boolean.TRUE.equals(isAiGenerated);
   }
