@@ -88,22 +88,30 @@ public class SessionService {
     DailySessionStatsProjection stats =
         sessionRepository.getDailyStats(currentUser, LocalDate.now(clock).atStartOfDay());
 
-    boolean isAlreadyExceeded = isExceeded(config, stats);
-    if (isAlreadyExceeded) {
-      // limits are stored and only take effect on the next day
-      config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
-      config.setNextPostLimit(sessionConfigDto.postLimit());
-      config.setNextAllowSnooze(sessionConfigDto.allowSnooze());
-    } else {
-      // limits are updated immediately if limit is not reached
-      config.setTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
-      config.setPostLimit(sessionConfigDto.postLimit());
-      config.setAllowSnooze(sessionConfigDto.allowSnooze());
+    boolean timeLimitChanged = !config.getTimeLimitMinutes().equals(sessionConfigDto.timeLimitMinutes());
+    boolean postLimitChanged = !config.getPostLimit().equals(sessionConfigDto.postLimit());
+    boolean limitsChanged = timeLimitChanged || postLimitChanged;
 
-      config.setNextTimeLimitMinutes(null);
-      config.setNextPostLimit(null);
-      config.setNextAllowSnooze(null);
+    boolean changesAppliedImmediately = true;
+    if(limitsChanged) {
+      if (isExceeded(config, stats)) {
+        // limits are stored and only take effect on the next day
+        config.setNextTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
+        config.setNextPostLimit(sessionConfigDto.postLimit());
+        changesAppliedImmediately = false;
+      } else {
+        // limits are updated immediately if limit is not reached
+        config.setTimeLimitMinutes(sessionConfigDto.timeLimitMinutes());
+        config.setPostLimit(sessionConfigDto.postLimit());
+
+        config.setNextTimeLimitMinutes(null);
+        config.setNextPostLimit(null);
+      }
     }
+
+    //allow snooze updates should always be made instantly
+    config.setAllowSnooze(sessionConfigDto.allowSnooze());
+    config.setNextAllowSnooze(null);
 
     var savedConfig = sessionConfigRepository.save(config);
 
@@ -111,7 +119,7 @@ public class SessionService {
         savedConfig.getTimeLimitMinutes(),
         savedConfig.getPostLimit(),
         sessionConfigDto.allowSnooze(),
-        !isAlreadyExceeded);
+        changesAppliedImmediately);
   }
 
   public SessionHistory getOrCreateLastSession(User user) {
