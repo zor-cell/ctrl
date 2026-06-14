@@ -104,6 +104,14 @@ export class UserService {
     );
   }
 
+  public deleteAccount() {
+    return this.httpClient.delete<void>(this.baseUri + '/me').pipe(
+      tap(() => {
+        this.clearUser();
+      })
+    );
+  }
+
   public updatePassword(updateRequest: UpdatePasswordRequest) {
     return this.httpClient.put<void>(this.baseUri + '/me/password', updateRequest).pipe(
       tap(() => {

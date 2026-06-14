@@ -96,12 +96,17 @@ export class PostDetailPageComponent {
   }
 
   goToUser(): void {
-    if (this.post.value()?.isExternal) {
-      if (this.post.hasValue() && this.post.value()?.userProfileUrl !== null) {
-        window.open(this.post.value()?.userProfileUrl as string);
+    const post = this.post.value();
+    if (!post || post.userDeleted) {
+      return;
+    }
+
+    if (post.isExternal) {
+      if (post.userProfileUrl) {
+        window.open(post.userProfileUrl);
       }
     } else {
-      this.router.navigate(['/profile', this.post.value()?.username]);
+      this.router.navigate(['/profile', post.username]);
     }
   }
 

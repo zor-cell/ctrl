@@ -297,7 +297,7 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  void updateReportStatus_suspendAccountOfComment_marksUserAsSuspended() {
+  void updateReportStatus_deleteAccountOfComment_anonymizesUser() {
     User reporter = createUser("comment-account-reporter");
     User commentUser = createUser("comment-account-user");
     Post post = createPost("post-comment-account-1", commentUser, null, null);
@@ -319,6 +319,8 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(commentUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
+    assertTrue(updatedUser.isDeleted());
+    assertEquals("Deleted user", updatedUser.getName());
   }
 
   @Test
@@ -405,6 +407,8 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
+    assertTrue(updatedUser.isDeleted());
+    assertEquals("Deleted user", updatedUser.getName());
   }
 
   @Test
@@ -591,6 +595,8 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(contentUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
+    assertTrue(updatedUser.isDeleted());
+    assertEquals("Deleted user", updatedUser.getName());
   }
 
   @Test

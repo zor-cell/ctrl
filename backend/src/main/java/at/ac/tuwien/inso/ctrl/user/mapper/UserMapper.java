@@ -32,6 +32,7 @@ public class UserMapper {
         user.getBio(),
         user.getProfilePicture(),
         user.isVerified(),
+        user.isDeleted(),
         canSeePrivatePosts,
         wasReportedByUser);
   }

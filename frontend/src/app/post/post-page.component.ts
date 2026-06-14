@@ -479,7 +479,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openProfileSettings() {
-    this.router.navigate(['/settings']);
+    this.router.navigate(['/settings'], { queryParams: { tab: 'account' } });
   }
 
   protected startProfileEdit() {

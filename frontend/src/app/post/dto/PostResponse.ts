@@ -3,6 +3,7 @@ export interface CommentResponse {
   userId?: string;
   username: string;
   userProfilePic?: string;
+  userDeleted?: boolean;
   content: string;
   createdAt: string;
   parentCommentId: string | null;
@@ -15,6 +16,7 @@ export interface PostResponse {
   postId: string;
   userId: string;
   username: string;
+  userDeleted?: boolean;
   sourceId: string | null;
   source: SourceResponse | null;
   caption: string;

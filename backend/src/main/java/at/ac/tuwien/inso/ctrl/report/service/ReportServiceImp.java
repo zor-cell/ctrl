@@ -28,6 +28,7 @@ import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
 import java.io.IOException;
@@ -63,6 +64,7 @@ public class ReportServiceImp implements ReportService {
   private final UserMapper userMapper;
   private final ReportReasonLabelResolver reportReasonLabelResolver;
   private final ReportMapper reportMapper;
+  private final UserService userService;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -183,7 +185,7 @@ public class ReportServiceImp implements ReportService {
     reportRepository.save(report);
 
     if (request.action() == ReportAction.DELETE_ACCOUNT) {
-      suspendAccount(report);
+      takeDownAccount(report);
     } else if (request.action() == ReportAction.DELETE_ITEM) {
       deleteReportedItem(report);
     }
@@ -369,10 +371,9 @@ public class ReportServiceImp implements ReportService {
       User user = report.getUsernameReported();
 
       if (user != null) {
-        user.setSuspended(true);
-        userRepository.save(user);
-        dealWithOtherReportsOfUser(user);
         sendEmailToReported(report, ReportAction.DELETE_ITEM);
+        userService.deleteUser(user);
+        dealWithOtherReportsOfUser(user);
 
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
@@ -382,13 +383,12 @@ public class ReportServiceImp implements ReportService {
     dealWithOtherReportsOfItem(report.getContentType(), report.getContentId());
   }
 
-  private void suspendAccount(Report report) {
+  private void takeDownAccount(Report report) {
     User user = report.getUsernameReported();
     if (user != null) {
-      user.setSuspended(true);
-      userRepository.save(user);
-      dealWithOtherReportsOfUser(user);
       sendEmailToReported(report, ReportAction.DELETE_ACCOUNT);
+      userService.deleteUser(user);
+      dealWithOtherReportsOfUser(user);
     } else {
       ContentTypeEnum type = report.getContentType();
       if (type == ContentTypeEnum.POST) {
@@ -431,8 +431,7 @@ public class ReportServiceImp implements ReportService {
                     () ->
                         new EntityNotFoundException("Comment not found: " + report.getContentId()));
         User commentUser = comment.getUser();
-        commentUser.setSuspended(true);
-        userRepository.save(commentUser);
+        userService.deleteUser(commentUser);
         dealWithOtherReportsOfUser(commentUser);
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");

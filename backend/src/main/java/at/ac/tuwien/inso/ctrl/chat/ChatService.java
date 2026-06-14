@@ -31,6 +31,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
@@ -64,8 +65,18 @@ public class ChatService {
   private static final int DEFAULT_MESSAGE_PAGE_SIZE = 30;
   private static final int MAX_MESSAGE_PAGE_SIZE = 100;
   private static final Pattern GROUP_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9._]+$");
+  private static final String DELETED_USER_LABEL = "Deleted user";
+  private static final String ACCOUNT_DELETED_GROUP_MESSAGE =
+      "A user deleted their account and left the group.";
+  private static final String ACCOUNT_DELETED_DIRECT_MESSAGE =
+      "This user has deleted their account.";
+  private static final String GROUP_OWNERS_PROMOTED_MESSAGE =
+      "All remaining members are now group owners.";
   private static final Set<String> ALLOWED_REACTION_EMOJIS =
-      Set.of("👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥");
+      Set.of(
+          "👍", "❤️", "😂", "😮", "😢", "😡", "🎉", "🔥", "👏", "🙏", "💯", "✨", "😄", "😁", "🥳",
+          "😍", "🤔", "😎", "😭", "😅", "🙌", "💪", "✅", "👀", "🤯", "😬", "🤝", "😴", "🤮", "🤩",
+          "😇", "😱", "🤗", "😤", "🫶", "💀");
 
   private final ChatRepository chatRepository;
   private final ChatMemberRepository chatMemberRepository;
@@ -77,6 +88,7 @@ public class ChatService {
   private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final ChatMessageBroadcaster chatMessageBroadcaster;
+  private final BlockService blockService;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -89,6 +101,7 @@ public class ChatService {
   public List<ChatResponse> getChats(User currentUser) {
     List<ChatResponse> chats =
         loadChatsForUser(currentUser).stream()
+            .filter(chat -> isGroupChat(chat) || !isDirectChatBlockedForUser(chat, currentUser))
             .map(chat -> toChatResponse(chat, currentUser))
             .sorted(
                 Comparator.comparing(
@@ -114,6 +127,9 @@ public class ChatService {
 
     if (!groupChat) {
       User invitedUser = invitedUsers.getFirst();
+      if (blockService.inBlockedRelationship(currentUser, invitedUser)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This chat is not available");
+      }
       Optional<Chat> existingChat = findExistingDirectChat(currentUser, invitedUser);
       if (existingChat.isPresent()) {
         Chat chat = existingChat.get();
@@ -165,6 +181,24 @@ public class ChatService {
     return toChatResponse(chatRepository.save(chat), currentUser);
   }
 
+  @Transactional(readOnly = true)
+  public void publishBlockedDirectChatRemoval(User currentUser, String blockedUsername) {
+    User blockedUser =
+        userRepository
+            .findByUsername(blockedUsername)
+            .orElseThrow(() -> new NotFoundException("User", blockedUsername));
+
+    chatRepository.findDirectChatsBetweenUsers(currentUser.getId(), blockedUser.getId()).stream()
+        .filter(chat -> !isGroupChat(chat))
+        .map(Chat::getChatId)
+        .distinct()
+        .forEach(
+            chatId -> {
+              chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
+              chatMessageBroadcaster.publishChatRemoved(blockedUser.getUsername(), chatId);
+            });
+  }
+
   @Transactional
   public List<ChatMessageResponse> getMessages(User currentUser, UUID chatId) {
     return getMessages(currentUser, chatId, null, DEFAULT_MESSAGE_PAGE_SIZE);
@@ -202,6 +236,10 @@ public class ChatService {
   public ChatMessageResponse sendMessage(
       User currentUser, UUID chatId, SendMessageRequest request) {
     Chat chat = requireChatMember(currentUser, chatId);
+    if (isDirectChatWithDeletedParticipant(chat)) {
+      throw new InvalidRequestException("You cannot send messages to a deleted account");
+    }
+
     String content = trimToNull(request.content());
     String postIdToShare = trimToNull(request.postIdToShare());
     if (content == null && postIdToShare == null) {
@@ -232,8 +270,7 @@ public class ChatService {
       throw new InvalidRequestException("Only group chats can have a group image");
     }
 
-    User owner = resolveGroupOwner(chat);
-    if (owner == null || !owner.getId().equals(currentUser.getId())) {
+    if (!isEffectiveGroupOwner(chat, currentUser)) {
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN, "Only the group owner can change the group image");
     }
@@ -254,7 +291,7 @@ public class ChatService {
       throw new InvalidRequestException("Only group chats can be deleted");
     }
 
-    if (chat.getOwner() == null || !chat.getOwner().getId().equals(currentUser.getId())) {
+    if (!isEffectiveGroupOwner(chat, currentUser)) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the group owner can delete it");
     }
 
@@ -282,7 +319,7 @@ public class ChatService {
       throw new InvalidRequestException("All selected users are already members");
     }
 
-    int activeMemberCount = activeMembers(chat).size();
+    int activeMemberCount = activeNonDeletedMembers(chat).size();
     if (activeMemberCount + newMembers.size() > MAX_GROUP_MEMBERS) {
       throw new InvalidRequestException("Group chats can have at most 50 members");
     }
@@ -315,21 +352,19 @@ public class ChatService {
     if (message.isSystem()) {
       throw new InvalidRequestException("Cannot react to system messages");
     }
-    ReactionId reactionId = new ReactionId(currentUser.getId(), messageId);
-    Optional<Reaction> existingReaction = reactionRepository.findById(reactionId);
+    List<Reaction> currentUserReactions =
+        reactionRepository.findAllByUserIdAndMessageId(currentUser.getId(), messageId);
+    boolean sameEmojiAlreadyActive =
+        currentUserReactions.stream().anyMatch(reaction -> emoji.equals(reaction.getContent()));
 
-    if (existingReaction.isPresent()) {
-      Reaction reaction = existingReaction.get();
-      if (emoji.equals(reaction.getContent())) {
-        reactionRepository.delete(reaction);
-      } else {
-        reaction.setContent(emoji);
-        reactionRepository.save(reaction);
-      }
-    } else {
+    if (!currentUserReactions.isEmpty()) {
+      reactionRepository.deleteAllByUserIdAndMessageId(currentUser.getId(), messageId);
+    }
+
+    if (!sameEmojiAlreadyActive) {
       reactionRepository.save(
           Reaction.builder()
-              .id(reactionId)
+              .id(new ReactionId(currentUser.getId(), messageId, emoji))
               .message(message)
               .fromUser(currentUser)
               .content(emoji)
@@ -346,16 +381,12 @@ public class ChatService {
   @Transactional
   public ChatResponse removeMember(User currentUser, UUID chatId, UUID memberId) {
     Chat chat = requireGroupOwner(currentUser, chatId);
-    User owner = resolveGroupOwner(chat);
-    if (owner == null) {
-      throw new InvalidRequestException("Group owner could not be resolved");
-    }
 
     if (memberId.equals(currentUser.getId())) {
       throw new InvalidRequestException("Use leave group to remove yourself");
     }
 
-    if (memberId.equals(owner.getId())) {
+    if (hasActiveStoredGroupOwner(chat) && isEffectiveGroupOwner(chat, memberId)) {
       throw new InvalidRequestException("The group owner cannot be removed");
     }
 
@@ -388,8 +419,7 @@ public class ChatService {
   public void leaveChat(User currentUser, UUID chatId) {
     Chat chat = requireChatMember(currentUser, chatId);
     if (isGroupChat(chat)) {
-      User owner = resolveGroupOwner(chat);
-      if (owner != null && owner.getId().equals(currentUser.getId())) {
+      if (isActiveStoredGroupOwner(chat, currentUser)) {
         throw new InvalidRequestException("Group owners must delete the group instead of leaving");
       }
 
@@ -401,6 +431,28 @@ public class ChatService {
 
     markMemberLeft(chatId, currentUser.getId());
     chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
+  }
+
+  @Transactional
+  public void createAccountDeletedSystemMessages(User deletedUser) {
+    UUID deletedUserId = deletedUser.getId();
+    List<AccountDeletionGroupUpdate> affectedGroups =
+        mergeChatsById(chatRepository.findActiveChatsForUserWithDetails(deletedUserId)).stream()
+            .filter(this::isGroupChat)
+            .map(chat -> toAccountDeletionGroupUpdate(chat, deletedUserId))
+            .toList();
+
+    for (AccountDeletionGroupUpdate group : affectedGroups) {
+      markMemberLeft(group.chatId(), deletedUserId);
+      createPlainSystemMessage(group.chatId(), deletedUserId, ACCOUNT_DELETED_GROUP_MESSAGE);
+      if (group.promoteRemainingMembers()) {
+        createPlainSystemMessage(group.chatId(), deletedUserId, GROUP_OWNERS_PROMOTED_MESSAGE);
+      }
+    }
+
+    mergeChatsById(chatRepository.findActiveChatsForUserWithDetails(deletedUserId)).stream()
+        .filter(chat -> !isGroupChat(chat))
+        .forEach(chat -> handleAccountDeletedDirectChat(chat, deletedUser));
   }
 
   private List<User> resolveInvitedUsers(User currentUser, List<String> usernames) {
@@ -479,7 +531,7 @@ public class ChatService {
   }
 
   private List<Chat> loadChatsForUser(User currentUser) {
-    return chatRepository.findActiveChatsForUserWithDetails(currentUser.getId());
+    return mergeChatsById(chatRepository.findActiveChatsForUserWithDetails(currentUser.getId()));
   }
 
   private Chat reloadChatDetails(UUID chatId) {
@@ -498,12 +550,16 @@ public class ChatService {
   }
 
   private List<ChatResponse> dedupeDirectChats(List<ChatResponse> chats, User currentUser) {
+    Map<String, ChatResponse> groupByMembers = new LinkedHashMap<>();
     Map<String, ChatResponse> directByOtherUser = new LinkedHashMap<>();
-    List<ChatResponse> result = new ArrayList<>();
 
     for (ChatResponse chat : chats) {
       if (chat.groupChat()) {
-        result.add(chat);
+        groupByMembers.merge(
+            chat.chatId().toString(),
+            chat,
+            (existing, incoming) ->
+                chatActivityAt(incoming).isAfter(chatActivityAt(existing)) ? incoming : existing);
         continue;
       }
 
@@ -516,6 +572,8 @@ public class ChatService {
               chatActivityAt(incoming).isAfter(chatActivityAt(existing)) ? incoming : existing);
     }
 
+    List<ChatResponse> result = new ArrayList<>();
+    result.addAll(groupByMembers.values());
     result.addAll(directByOtherUser.values());
     result.sort(
         Comparator.comparing(
@@ -536,8 +594,7 @@ public class ChatService {
       throw new InvalidRequestException("This action is only available for group chats");
     }
 
-    User owner = resolveGroupOwner(chat);
-    if (owner == null || !owner.getId().equals(currentUser.getId())) {
+    if (!isEffectiveGroupOwner(chat, currentUser)) {
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN, "Only the group owner can manage members");
     }
@@ -551,6 +608,12 @@ public class ChatService {
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
     List<ChatMember> activeMembers = activeMembers(chatWithMembers);
+    if (!isGroupChat(chatWithMembers)) {
+      activeMembers =
+          activeMembers.stream()
+              .filter(member -> !isDirectChatBlockedForUser(chatWithMembers, member.getUser()))
+              .toList();
+    }
     Map<UUID, Long> personalMessageCounts =
         countPersonalMessagesByUser(chatWithMembers, activeMembers);
     Map<UUID, Long> unreadMessageCounts = countUnreadMessagesByUser(chatWithMembers, activeMembers);
@@ -617,6 +680,7 @@ public class ChatService {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this chat");
     }
 
+    ensureDirectChatNotBlocked(currentUser, chat);
     return chat;
   }
 
@@ -642,9 +706,11 @@ public class ChatService {
       long personalMessageCount,
       long unreadCount) {
 
-    User groupOwner = resolveGroupOwner(chat);
+    List<User> groupOwners = resolveGroupOwners(chat);
+    User groupOwner = groupOwners.isEmpty() ? null : groupOwners.getFirst();
     ChatParticipantResponse groupOwnerResponse =
         groupOwner != null ? toParticipantResponse(groupOwner) : null;
+    List<UUID> ownerIds = groupOwners.stream().map(User::getId).toList();
 
     return new ChatResponse(
         chat.getChatId(),
@@ -657,8 +723,9 @@ public class ChatService {
         chat.getCreatedAt(),
         isGroupChat(chat),
         groupOwner != null ? groupOwner.getId() : null,
+        ownerIds,
         groupOwnerResponse,
-        groupOwner != null && groupOwner.getId().equals(currentUser.getId()),
+        ownerIds.contains(currentUser.getId()),
         personalMessageCount,
         unreadCount);
   }
@@ -723,20 +790,66 @@ public class ChatService {
   }
 
   private User resolveGroupOwner(Chat chat) {
-    if (chat.getOwner() != null) {
-      return chat.getOwner();
-    }
+    List<User> groupOwners = resolveGroupOwners(chat);
+    return groupOwners.isEmpty() ? null : groupOwners.getFirst();
+  }
 
+  private List<User> resolveGroupOwners(Chat chat) {
     if (!isGroupChat(chat)) {
-      return null;
+      return List.of();
     }
 
-    return chat.getMembers().stream()
-        .min(
-            Comparator.comparing(
-                ChatMember::getJoinedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-        .map(ChatMember::getUser)
-        .orElse(null);
+    if (chat.getOwner() != null && !chat.getOwner().isDeleted()) {
+      return List.of(chat.getOwner());
+    }
+
+    List<User> owners =
+        activeMembers(chat).stream()
+            .sorted(
+                Comparator.comparing(
+                    ChatMember::getJoinedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(ChatMember::getUser)
+            .filter(user -> !user.isDeleted())
+            .toList();
+
+    return distinctUsersById(owners);
+  }
+
+  private List<User> distinctUsersById(List<User> users) {
+    Map<UUID, User> usersById = new LinkedHashMap<>();
+    for (User user : users) {
+      usersById.putIfAbsent(user.getId(), user);
+    }
+    return new ArrayList<>(usersById.values());
+  }
+
+  private List<ChatParticipantResponse> distinctParticipantsById(
+      List<ChatParticipantResponse> participants) {
+    Map<UUID, ChatParticipantResponse> participantsById = new LinkedHashMap<>();
+    for (ChatParticipantResponse participant : participants) {
+      participantsById.putIfAbsent(participant.id(), participant);
+    }
+    return new ArrayList<>(participantsById.values());
+  }
+
+  private List<ChatMember> activeNonDeletedMembers(Chat chat) {
+    return activeMembers(chat).stream().filter(member -> !member.getUser().isDeleted()).toList();
+  }
+
+  private boolean isEffectiveGroupOwner(Chat chat, User user) {
+    return isEffectiveGroupOwner(chat, user.getId());
+  }
+
+  private boolean isEffectiveGroupOwner(Chat chat, UUID userId) {
+    return resolveGroupOwners(chat).stream().anyMatch(owner -> owner.getId().equals(userId));
+  }
+
+  private boolean hasActiveStoredGroupOwner(Chat chat) {
+    return chat.getOwner() != null && !chat.getOwner().isDeleted();
+  }
+
+  private boolean isActiveStoredGroupOwner(Chat chat, User user) {
+    return hasActiveStoredGroupOwner(chat) && chat.getOwner().getId().equals(user.getId());
   }
 
   private ChatMessageResponse toMessageResponse(Message message, User currentUser) {
@@ -783,11 +896,15 @@ public class ChatService {
 
     Post post = shared.getPost();
     boolean externalPost = post.isExternalPost();
+    User postOwner = post.getUser();
+    boolean deletedOwner = postOwner != null && postOwner.isDeleted();
     String username =
-        externalPost ? post.getExternalAuthor().getDisplayName() : post.getUser().getUsername();
-    UUID profileUserId = externalPost ? null : post.getUser().getId();
-    String profilePicture = externalPost ? null : post.getUser().getProfilePicture();
-    String profileUsername = externalPost ? null : post.getUser().getUsername();
+        externalPost
+            ? post.getExternalAuthor().getDisplayName()
+            : deletedOwner ? DELETED_USER_LABEL : postOwner.getUsername();
+    UUID profileUserId = externalPost || deletedOwner ? null : postOwner.getId();
+    String profilePicture = externalPost || deletedOwner ? null : postOwner.getProfilePicture();
+    String profileUsername = externalPost || deletedOwner ? null : postOwner.getUsername();
     boolean publicPost = externalPost || post.isPublic();
     boolean removed = Boolean.TRUE.equals(post.getIsRemoved());
     boolean canView = canViewPost(post, currentUser);
@@ -859,6 +976,43 @@ public class ChatService {
 
     Message savedMessage = messageRepository.save(message);
     Chat reloadedChat = reloadChatDetails(chat.getChatId());
+    Message reloadedMessage =
+        messageRepository
+            .findWithDetailsByMessageId(savedMessage.getMessageId())
+            .orElseThrow(
+                () -> new NotFoundException("Message", savedMessage.getMessageId().toString()));
+    broadcastChatEvents(reloadedChat, reloadedMessage, "MESSAGE");
+  }
+
+  private AccountDeletionGroupUpdate toAccountDeletionGroupUpdate(Chat chat, UUID deletedUserId) {
+    boolean storedOwnerDeleted =
+        chat.getOwner() != null && chat.getOwner().getId().equals(deletedUserId);
+    boolean hasRemainingMembers =
+        activeMembers(chat).stream()
+            .map(ChatMember::getUser)
+            .anyMatch(user -> !user.getId().equals(deletedUserId) && !user.isDeleted());
+    return new AccountDeletionGroupUpdate(
+        chat.getChatId(), storedOwnerDeleted && hasRemainingMembers);
+  }
+
+  private void createPlainSystemMessage(UUID chatId, UUID actorId, String content) {
+    Chat chat =
+        chatRepository
+            .findByChatIdWithDetails(chatId)
+            .orElseThrow(() -> new NotFoundException("Chat", chatId.toString()));
+
+    Message message =
+        Message.builder()
+            .messageId(UUID.randomUUID())
+            .chat(chat)
+            .fromUser(userRepository.getReferenceById(actorId))
+            .content(content)
+            .date(LocalDateTime.now())
+            .system(true)
+            .build();
+
+    Message savedMessage = messageRepository.save(message);
+    Chat reloadedChat = reloadChatDetails(chatId);
     Message reloadedMessage =
         messageRepository
             .findWithDetailsByMessageId(savedMessage.getMessageId())
@@ -948,6 +1102,10 @@ public class ChatService {
   }
 
   private String formatDisplayName(User user) {
+    if (user.isDeleted()) {
+      return DELETED_USER_LABEL;
+    }
+
     String name = trimToNull(user.getName());
     return name != null ? name : user.getUsername();
   }
@@ -963,20 +1121,29 @@ public class ChatService {
     }
 
     Map<String, Long> counts = new LinkedHashMap<>();
-    String currentUserReaction = null;
+    Map<String, List<String>> reactionUsers = new LinkedHashMap<>();
+    Set<String> currentUserReactions = new LinkedHashSet<>();
     for (Reaction reaction : message.getReactions()) {
       counts.merge(reaction.getContent(), 1L, Long::sum);
+      reactionUsers
+          .computeIfAbsent(reaction.getContent(), ignored -> new ArrayList<>())
+          .add(formatDisplayName(reaction.getFromUser()));
       if (reaction.getFromUser().getId().equals(currentUser.getId())) {
-        currentUserReaction = reaction.getContent();
+        currentUserReactions.add(reaction.getContent());
       }
     }
 
-    final String myReaction = currentUserReaction;
     return counts.entrySet().stream()
         .map(
             entry ->
                 new MessageReactionResponse(
-                    entry.getKey(), entry.getValue(), entry.getKey().equals(myReaction)))
+                    entry.getKey(),
+                    entry.getValue(),
+                    currentUserReactions.contains(entry.getKey()),
+                    reactionUsers.getOrDefault(entry.getKey(), List.of()).stream()
+                        .distinct()
+                        .sorted(String::compareToIgnoreCase)
+                        .toList()))
         .sorted(Comparator.comparing(MessageReactionResponse::emoji))
         .toList();
   }
@@ -1010,8 +1177,12 @@ public class ChatService {
   }
 
   private ChatParticipantResponse toParticipantResponse(User user) {
+    if (user.isDeleted()) {
+      return new ChatParticipantResponse(user.getId(), DELETED_USER_LABEL, null, null, true);
+    }
+
     return new ChatParticipantResponse(
-        user.getId(), user.getUsername(), user.getName(), user.getProfilePicture());
+        user.getId(), user.getUsername(), user.getName(), user.getProfilePicture(), false);
   }
 
   private boolean hasMember(Chat chat, User user) {
@@ -1025,24 +1196,71 @@ public class ChatService {
 
   private List<ChatParticipantResponse> participantsForResponse(Chat chat, User currentUser) {
     if (isGroupChat(chat)) {
-      return activeMembers(chat).stream()
-          .map(ChatMember::getUser)
-          .map(this::toParticipantResponse)
-          .toList();
+      return distinctParticipantsById(
+          activeMembers(chat).stream()
+              .map(ChatMember::getUser)
+              .filter(user -> !user.isDeleted())
+              .map(this::toParticipantResponse)
+              .toList());
     }
 
-    return chat.getMembers().stream()
-        .filter(
-            member ->
-                member.getLeftAt() == null || !member.getUser().getId().equals(currentUser.getId()))
-        .map(ChatMember::getUser)
-        .map(this::toParticipantResponse)
-        .toList();
+    return distinctParticipantsById(
+        chat.getMembers().stream()
+            .filter(
+                member ->
+                    member.getLeftAt() == null
+                        || !member.getUser().getId().equals(currentUser.getId()))
+            .map(ChatMember::getUser)
+            .map(this::toParticipantResponse)
+            .toList());
   }
 
   private boolean hasVisibleDirectPartner(ChatResponse chat, User currentUser) {
     return chat.participants().stream()
         .anyMatch(participant -> !participant.id().equals(currentUser.getId()));
+  }
+
+  private void ensureDirectChatNotBlocked(User currentUser, Chat chat) {
+    if (isDirectChatBlockedForUser(chat, currentUser)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This chat is not available");
+    }
+  }
+
+  private boolean isDirectChatBlockedForUser(Chat chat, User currentUser) {
+    if (isGroupChat(chat) || currentUser == null) {
+      return false;
+    }
+
+    return activeMembers(chat).stream()
+        .map(ChatMember::getUser)
+        .filter(user -> !user.getId().equals(currentUser.getId()))
+        .filter(user -> !user.isDeleted())
+        .anyMatch(user -> blockService.inBlockedRelationship(currentUser, user));
+  }
+
+  private boolean isDirectChatWithDeletedParticipant(Chat chat) {
+    return !isGroupChat(chat)
+        && chat.getMembers().stream().map(ChatMember::getUser).anyMatch(User::isDeleted);
+  }
+
+  private void handleAccountDeletedDirectChat(Chat chat, User deletedUser) {
+    List<User> remainingUsers =
+        activeMembers(chat).stream()
+            .map(ChatMember::getUser)
+            .filter(user -> !user.getId().equals(deletedUser.getId()))
+            .filter(user -> !user.isDeleted())
+            .toList();
+
+    if (messageRepository.countByChat(chat) == 0) {
+      for (User remainingUser : remainingUsers) {
+        chatMessageBroadcaster.publishChatRemoved(remainingUser.getUsername(), chat.getChatId());
+      }
+      chatRepository.delete(chat);
+      return;
+    }
+
+    markMemberLeft(chat.getChatId(), deletedUser.getId());
+    createPlainSystemMessage(chat.getChatId(), deletedUser.getId(), ACCOUNT_DELETED_DIRECT_MESSAGE);
   }
 
   private void reactivateMembership(Chat chat, User user) {
@@ -1112,18 +1330,18 @@ public class ChatService {
   }
 
   private String resolveDirectChatPartnerKey(ChatResponse chat, User currentUser) {
-    Optional<String> partnerUsername =
+    Optional<UUID> partnerId =
         chat.participants().stream()
             .filter(participant -> !participant.id().equals(currentUser.getId()))
-            .map(ChatParticipantResponse::username)
+            .map(ChatParticipantResponse::id)
             .findFirst();
 
-    if (partnerUsername.isPresent()) {
-      return partnerUsername.get();
+    if (partnerId.isPresent()) {
+      return partnerId.get().toString();
     }
 
     if (chat.lastMessage() != null && !chat.lastMessage().own()) {
-      return chat.lastMessage().sender().username();
+      return chat.lastMessage().sender().id().toString();
     }
 
     return chat.chatId().toString();
@@ -1139,4 +1357,6 @@ public class ChatService {
     }
     return value.trim();
   }
+
+  private record AccountDeletionGroupUpdate(UUID chatId, boolean promoteRemainingMembers) {}
 }

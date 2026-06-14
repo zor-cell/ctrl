@@ -11,6 +11,7 @@ public record FeedPostResponse(
     String userId,
     String username,
     String userProfilePic,
+    boolean userDeleted,
     String caption,
     String mediaRef,
     boolean isPublic,
@@ -38,6 +39,7 @@ public record FeedPostResponse(
       String userId,
       String username,
       String userProfilePic,
+      boolean userDeleted,
       String content,
       LocalDateTime createdAt,
       String parentCommentId) {}

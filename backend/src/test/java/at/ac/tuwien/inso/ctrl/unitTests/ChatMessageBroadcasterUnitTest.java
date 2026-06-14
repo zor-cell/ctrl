@@ -90,6 +90,7 @@ class ChatMessageBroadcasterUnitTest {
         LocalDateTime.of(2026, 4, 25, 12, 0),
         false,
         null,
+        List.of(),
         null,
         false,
         0,

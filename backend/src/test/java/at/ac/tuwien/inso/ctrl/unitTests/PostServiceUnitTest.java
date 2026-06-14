@@ -385,6 +385,7 @@ public class PostServiceUnitTest {
         "post-1",
         verifiedUser.getId(),
         verifiedUser.getUsername(),
+        false,
         source.getSourceId(),
         null,
         caption,

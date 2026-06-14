@@ -5,6 +5,7 @@ export interface PublicUserProfile {
   bio: string | null;
   profilePicture: string | null;
   isVerified: boolean;
+  deleted?: boolean;
   canSeePrivatePosts: boolean;
   wasReportedByUser: boolean;
 }

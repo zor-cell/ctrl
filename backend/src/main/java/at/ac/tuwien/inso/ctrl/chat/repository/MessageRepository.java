@@ -146,4 +146,6 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
       """)
   List<UserMessageCount> countUnreadMessagesByUsers(
       @Param("chat") Chat chat, @Param("userIds") Collection<UUID> userIds);
+
+  long countByChat(Chat chat);
 }

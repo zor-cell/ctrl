@@ -13,6 +13,7 @@ public record ChatResponse(
     LocalDateTime createdAt,
     boolean groupChat,
     UUID ownerId,
+    List<UUID> ownerIds,
     ChatParticipantResponse groupOwner,
     boolean owner,
     long personalMessageCount,

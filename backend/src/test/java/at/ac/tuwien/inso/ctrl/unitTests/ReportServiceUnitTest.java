@@ -150,6 +150,7 @@ public class ReportServiceUnitTest {
                 "content",
                 null,
                 false,
+                false,
                 List.of(),
                 false));
 
@@ -221,6 +222,7 @@ public class ReportServiceUnitTest {
                 "content",
                 null,
                 false,
+                false,
                 List.of(),
                 false));
     Mockito.when(
@@ -235,6 +237,7 @@ public class ReportServiceUnitTest {
                 null,
                 "content",
                 null,
+                false,
                 false,
                 List.of(),
                 false));

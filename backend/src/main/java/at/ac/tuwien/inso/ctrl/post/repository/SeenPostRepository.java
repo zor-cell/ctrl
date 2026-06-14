@@ -26,4 +26,8 @@ public interface SeenPostRepository extends JpaRepository<SeenPost, SeenPostId> 
       @Param("userId") UUID userId,
       @Param("postId") String postId,
       @Param("durationMs") long durationMs);
+
+  @Modifying
+  @Query("DELETE FROM SeenPost sp WHERE sp.userId = :userId")
+  int deleteAllByUserId(@Param("userId") UUID userId);
 }

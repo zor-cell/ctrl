@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,6 +33,10 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Fr
       @Param("sender") User sender, @Param("receiver") User receiver);
 
   boolean existsBySenderAndReceiver(User sender, User receiver);
+
+  @Modifying
+  @Query("DELETE FROM FriendRequest fr WHERE fr.sender = :user OR fr.receiver = :user")
+  int deleteAllByUser(@Param("user") User user);
 
   @Query(
       """

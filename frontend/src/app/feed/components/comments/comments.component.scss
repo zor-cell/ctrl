@@ -67,6 +67,11 @@ $radius-sm:   10px;
     }
   }
 
+  .post-username--external {
+    cursor: help;
+    color: inherit;
+  }
+
   .post-info {
     font-size: 0.78rem;
     color: $text-muted;
