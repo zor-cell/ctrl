@@ -18,6 +18,7 @@ import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
+import {SessionStateService} from "../../../session/session-state.service";
 
 /**
  * Posts Search Component
@@ -55,6 +56,7 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private injector = inject(Injector);
+  protected sessionState = inject(SessionStateService);
 
   private _destroy$ = new Subject<void>();
 
@@ -261,9 +263,11 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
           }
           this.hasMoreResults.set(results.length === this.postsPerPage);
           this.isSearching.set(false);
+
+          this.sessionState.resetLimit();
         },
         error: err => {
-          this.notificationService.showError(err);
+          //this.notificationService.showError(err);
           this.isSearching.set(false);
         }
       });
