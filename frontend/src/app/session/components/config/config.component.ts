@@ -1,13 +1,15 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { Button } from "primeng/button";
-import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
-import { ProgressSpinner } from "primeng/progressspinner";
-import { Tooltip } from "primeng/tooltip";
-import { SessionConfigService } from "../../session-config.service";
-import { SessionConfig } from "../../dto/SessionConfig";
-import { ToggleSwitch } from "primeng/toggleswitch";
-import { Slider } from "primeng/slider";
-import { ConfirmationService } from "primeng/api";
+import {Component, inject, OnInit, signal} from '@angular/core';
+import {Button} from "primeng/button";
+import {FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators} from "@angular/forms";
+import {ProgressSpinner} from "primeng/progressspinner";
+import {Tooltip} from "primeng/tooltip";
+import {SessionConfigService} from "../../session-config.service";
+import {SessionConfig} from "../../dto/SessionConfig";
+import {ToggleSwitch} from "primeng/toggleswitch";
+import {Slider} from "primeng/slider";
+import {ConfirmationService} from "primeng/api";
+import {SessionStateService} from "../../session-state.service";
+import {Message} from "primeng/message";
 
 @Component({
   selector: 'app-session-config',
@@ -19,7 +21,8 @@ import { ConfirmationService } from "primeng/api";
     ReactiveFormsModule,
     ToggleSwitch,
     Tooltip,
-    Slider
+    Slider,
+    Message
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
@@ -28,6 +31,7 @@ import { ConfirmationService } from "primeng/api";
 export class SessionConfigComponent implements OnInit {
   private readonly configService = inject(SessionConfigService);
   private readonly fb = inject(NonNullableFormBuilder);
+  protected sessionState = inject(SessionStateService);
 
   protected isLoading = signal<boolean>(true);
 
@@ -59,6 +63,15 @@ export class SessionConfigComponent implements OnInit {
 
     this.configService.updateConfig(formValue).subscribe(updatedConfig => {
       this.configForm.patchValue(updatedConfig);
+    });
+  }
+
+  protected triggerManualSnooze() {
+    this.configService.snooze().subscribe({
+      next: () => {
+        this.sessionState.resetLimit();
+        this.sessionState.userDecision$.next(true);
+      }
     });
   }
 }
