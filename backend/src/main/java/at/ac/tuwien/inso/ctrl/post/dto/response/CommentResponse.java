@@ -7,4 +7,6 @@ public record CommentResponse(
     String username,
     String content,
     LocalDateTime createdAt,
-    String parentCommentId) {}
+    String parentCommentId,
+    boolean wasReportedByUser // true if the current user has reported this comment
+    ) {}

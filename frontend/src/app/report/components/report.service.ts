@@ -28,10 +28,14 @@ export class ReportService {
     );
   }
 
-  public updateStatus(status: ReportStatus, action: ReportAction, id: string) {
+  public updateStatus(status: ReportStatus, action: ReportAction, id: string, description?: string) {
+    const body = { status, action, description };
+    if (description) {
+      body.description = description;
+    }
     return this.httpClient.put<void>(
       `${this.baseUri}/${id}`,
-      { status, action },
+      body,
       { headers: { 'Content-Type': 'application/json' } },
     ).pipe(
       tap(() => {

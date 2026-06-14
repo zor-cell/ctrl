@@ -11,5 +11,6 @@ public record CommentResponse(
     String content,
     String parentCommentId, // null for top-level comments
     boolean edited, // true when the comment has been updated after creation
-    List<CommentResponse> replies // nested replies; empty list for leaf comments
+    List<CommentResponse> replies, // nested replies; empty list for leaf comments
+    boolean wasReportedByUser // true if the current user has reported this comment
     ) {}

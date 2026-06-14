@@ -24,10 +24,13 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -38,6 +41,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +71,7 @@ public class PostServiceImpl implements PostService {
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
   private final LabelingService labelingService;
+  private final ReportService reportService;
 
   @Override
   @Transactional
@@ -213,7 +218,8 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            || friendRelationRepository.existsByUsers(profileOwner, viewer)
+            || viewer.getRole() == Role.ADMIN;
 
     List<Post> posts =
         canSeePrivatePosts
@@ -312,8 +318,9 @@ public class PostServiceImpl implements PostService {
 
     if (!post.isPublic()) {
       if (post.getUser() != null
-          && !post.getUser().getUsername().equals(username)
-          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+              && !post.getUser().getUsername().equals(username)
+              && !friendRelationRepository.existsByUsers(user, post.getUser())
+          || user.getRole() == Role.ADMIN) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
@@ -337,6 +344,30 @@ public class PostServiceImpl implements PostService {
 
     PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
 
-    return this.postMapper.toDetailedPostResponse(post, toMap);
+    boolean wasReported = reportService.wasReportedByUser(user, ContentTypeEnum.POST, postId);
+
+    Map<String, Boolean> commentsReportedByUser =
+        post.getComments().isEmpty()
+            ? Map.of()
+            : post.getComments().stream()
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        Comment::getCommentId,
+                        comment ->
+                            reportService.wasReportedByUser(
+                                user, ContentTypeEnum.COMMENT, comment.getCommentId())));
+
+    boolean sourceWasReported;
+    if (post.getSource() != null) {
+      sourceWasReported =
+          reportService.wasReportedByUser(
+              user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
+    } else {
+      sourceWasReported = false;
+    }
+
+    return this.postMapper.toDetailedPostResponse(
+        post, toMap, wasReported, commentsReportedByUser, sourceWasReported);
   }
 }

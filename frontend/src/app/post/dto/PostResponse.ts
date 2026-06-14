@@ -7,6 +7,7 @@ export interface CommentResponse {
   createdAt: string;
   parentCommentId: string | null;
   edited?: boolean;
+  wasReportedByUser: boolean;
   replies?: CommentResponse[];
 }
 
@@ -42,5 +43,6 @@ export interface SourceResponse {
   upvotes: number;
   downvotes: number;
   createdAt: string;
+  wasReportedByUser: boolean;
   singleSources: SingleSourceResponse[];
 }

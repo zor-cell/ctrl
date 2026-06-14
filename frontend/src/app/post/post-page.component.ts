@@ -23,7 +23,7 @@ import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { ReportComponent } from '../report/components/report/report.component';
-import { ContentTypeEnum } from '../report/dto/report';
+import {ContentTypeEnum} from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
@@ -35,12 +35,16 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+import {AuthService} from '../auth/auth.service';
+import {Tag} from 'primeng/tag';
 import {FriendRequestEventBusService} from '../user/friend-request-event-bus.service';
 import {Menu} from 'primeng/menu';
 import {Friend} from '../user/dto/Relationship';
 import {Chat, ChatParticipant} from '../chat/models/chat.models';
 import {ChatService} from '../chat/services/chat.service';
 import {Message} from 'primeng/message';
+import {ConfirmationService} from 'primeng/api';
+import {ConfirmDialog} from 'primeng/confirmdialog';
 
 type ProfileFriendStatus =
   | 'NONE'
@@ -83,24 +87,30 @@ interface ShareTarget {
     PostDetailDialogComponent,
     ReportComponent,
     FollowBadgeComponent,
+    Tag,
     Message,
+    ConfirmDialog,
   ],
+  providers: [ConfirmationService],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostPageComponent implements OnDestroy, OnInit {
   private readonly router = inject(Router);
+  private confirmationService = inject(ConfirmationService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
   private readonly chatService = inject(ChatService);
   protected readonly userService = inject(UserService);
+  private readonly avatarInput = viewChild<ElementRef<HTMLInputElement>>('avatarInput');
   private relationshipService = inject(RelationshipService);
   private eventBus = inject(FriendRequestEventBusService);
-  private readonly avatarInput = viewChild<ElementRef<HTMLInputElement>>('avatarInput');
 
+  protected readonly isAdmin = computed(() => this.authService.isAdmin());
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
   protected readonly reportDialogVisible = signal(false);
@@ -281,18 +291,30 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
   protected readonly ContentTypeEnum = ContentTypeEnum;
-  protected readonly publicProfileMenuItems = computed(() => [
-    {
-      label: 'Report',
-      icon: 'pi pi-flag',
-      command: () => this.openReportDialog(),
-    },
-    {
-      label: 'Block',
-      icon: 'pi pi-ban',
-      command: () => this.openBlockConfirmation(),
-    },
-  ]);
+  protected readonly publicProfileMenuItems = computed(() => {
+    const items = [
+      {
+        label: 'Report',
+        icon: 'pi pi-flag',
+        command: () => this.openReportDialog(),
+      },
+      {
+        label: 'Block',
+        icon: 'pi pi-ban',
+        command: () => this.openBlockConfirmation(),
+      },
+    ];
+
+    if (this.isAdmin()) {
+      items.push({
+        label: 'Remove',
+        icon: 'pi pi-trash',
+        command: () => this.deleteAccount(),
+      });
+    }
+
+    return items;
+  });
 
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
@@ -1217,6 +1239,25 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.userService.updateUsername({ newUsername: this.usernameDraftTrimmed() }, false).subscribe({
       next: () => this.saveProfilePictureIfNeeded(),
       error: () => this.updatingProfile.set(false),
+    });
+  }
+
+  protected deleteAccount() {
+    if (!this.username()) {
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message: 'Are you sure you want remove this account?',
+      header: 'Confirm Remove',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.authService.requestAccountDeletion(this.username()).subscribe({
+          next: () => this.loadPublicProfile(),
+          error: () =>
+            this.notificationService.showError('Failed to delete account. Please try again later.'),
+        });
+      },
     });
   }
 

@@ -21,4 +21,5 @@ export interface Post {
   sourceIds: PostSource[];
   comments: PostComment[];
   explanation: PostExplanation;
+  wasReportedByUser: boolean;
 }

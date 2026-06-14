@@ -15,6 +15,7 @@ public record DetailedPostResponse(
     boolean isPublic,
     boolean isExternal,
     String userProfileUrl,
+    boolean wasReportedByUser,
     boolean isAiGenerated,
     List<String> labelIds,
     List<String> topicIds,

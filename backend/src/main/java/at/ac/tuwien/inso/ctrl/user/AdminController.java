@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.user;
 
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationDecisionRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.BusinessVerificationResponse;
+import at.ac.tuwien.inso.ctrl.user.service.AdminService;
 import at.ac.tuwien.inso.ctrl.user.service.BusinessVerificationService;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
   private final BusinessVerificationService businessVerificationService;
+  private final AdminService adminService;
 
   @GetMapping("/verifications/pending")
   public List<BusinessVerificationResponse> getPendingRequests() {
@@ -26,5 +28,10 @@ public class AdminController {
       @PathVariable UUID requestId,
       @RequestBody BusinessVerificationDecisionRequest verificationRequest) {
     businessVerificationService.updateVerification(requestId, verificationRequest);
+  }
+
+  @DeleteMapping("/{username}")
+  public void deleteRequest(@PathVariable String username) {
+    adminService.deleteRequest(username);
   }
 }

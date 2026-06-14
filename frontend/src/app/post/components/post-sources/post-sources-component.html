@@ -7,10 +7,21 @@
       size="small"
       [text]="true"
       (onClick)="this.sourcesExpanded.update(current => !current)" />
-
+    <div class="report-row">
+    @if (this.source().wasReportedByUser) {
+      <p-tag
+        [value]="'reported'"
+        severity="secondary"
+        class="post-label"
+        [pTooltip]="'This comment has been reported'"
+        tooltipPosition="bottom"
+      />
+    }
     <button class="source-flag-button action-btn flag-btn" (click)="this.reportDialogVisible.set(true)" pTooltip="Report Source" tooltipPosition="top">
       <i class="pi pi-flag"></i>
     </button>
+    </div>
+
   </div>
 
   @if (this.sourcesExpanded()) {

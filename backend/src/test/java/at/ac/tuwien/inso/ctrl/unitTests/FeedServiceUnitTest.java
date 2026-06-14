@@ -17,6 +17,8 @@ import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
@@ -45,6 +47,7 @@ public class FeedServiceUnitTest {
   @Mock private FeedMapper feedMapper;
   @Mock private RecommendationService recommendationService;
   @Mock private LabelingService labelingService;
+  @Mock private ReportService reportService;
 
   @InjectMocks private FeedService feedService;
 
@@ -72,10 +75,16 @@ public class FeedServiceUnitTest {
         .thenReturn(List.of(sourceVote));
     when(labelingService.buildContext(user)).thenReturn(labelCtx);
     when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+
+    when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-1")).thenReturn(false);
+    when(reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, "source-1"))
+        .thenReturn(false);
     when(feedMapper.toFeedPostResponse(
             eq(recommendedPost),
             eq(Map.of("post-1", "UPVOTE")),
+            eq(Map.of("post-1", false)),
             eq(Map.of("source-1", "DOWNVOTE")),
+            eq(Map.of("source-1", false)),
             eq(labels)))
         .thenReturn(expectedResponse);
 
@@ -149,6 +158,10 @@ public class FeedServiceUnitTest {
     when(labelingService.buildContext(user)).thenReturn(labelCtx);
     when(labelingService.computeLabels(post1, labelCtx)).thenReturn(labels1);
     when(labelingService.computeLabels(post2, labelCtx)).thenReturn(labels2);
+    when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-1")).thenReturn(false);
+    when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-2")).thenReturn(false);
+    when(reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, "source-2"))
+        .thenReturn(false);
 
     feedService.getFeed(0, 10, true, username);
 
@@ -156,13 +169,17 @@ public class FeedServiceUnitTest {
         .toFeedPostResponse(
             eq(recPost1),
             eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("post-1", false, "post-2", false)),
             eq(Map.of("source-2", "UPVOTE")),
+            eq(Map.of("source-2", false)),
             eq(labels1));
     verify(feedMapper)
         .toFeedPostResponse(
             eq(recPost2),
             eq(Map.of("post-1", "DOWNVOTE")),
+            eq(Map.of("post-1", false, "post-2", false)),
             eq(Map.of("source-2", "UPVOTE")),
+            eq(Map.of("source-2", false)),
             eq(labels2));
   }
 

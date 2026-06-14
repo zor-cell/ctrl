@@ -2,13 +2,13 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { Button } from 'primeng/button';
 import { AdminService } from '../../admin.service';
 import { BusinessVerification, VerificationStatus } from '../../dto/BusinessVerification';
-import { Router } from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { usernameInitial } from '../../../core/utils/username-initial.utils';
 
 @Component({
   selector: 'app-business-verification',
-  imports: [Button],
+  imports: [Button, RouterLink],
   templateUrl: './business-verification.component.html',
   styleUrl: './business-verification.component.scss',
 })
@@ -42,23 +42,19 @@ export class BusinessVerificationComponent implements OnInit {
   approveAccount(verification: BusinessVerification) {
     this.loading.set(true);
     this.adminService.reviewRequest(VerificationStatus.APPROVED, verification.id).subscribe({
-        next: () => {
-          this.loadPendingVerifications();
-
-        }
-      }
-    );
-
+      next: () => {
+        this.loadPendingVerifications();
+      },
+    });
   }
 
   denyAccount(verification: BusinessVerification) {
     this.loading.set(true);
     this.adminService.reviewRequest(VerificationStatus.REJECTED, verification.id).subscribe({
-        next: () => {
-          this.loadPendingVerifications();
-        }
-      }
-    );
+      next: () => {
+        this.loadPendingVerifications();
+      },
+    });
   }
 
   navigateToProfile(username: string) {
@@ -66,17 +62,21 @@ export class BusinessVerificationComponent implements OnInit {
   }
 
   hasProfilePicture(verification: BusinessVerification): boolean {
-    return Boolean(this.profilePictureUrl(verification))
-      && !this.failedProfilePictures().has(verification.user.id);
+    return (
+      Boolean(this.profilePictureUrl(verification)) &&
+      !this.failedProfilePictures().has(verification.user.id)
+    );
   }
 
   profilePictureUrl(verification: BusinessVerification): string | null {
-    return this.profilePictureUrls()[verification.user.id]
-      ?? this.directProfilePictureUrl(verification.user.profilePicture);
+    return (
+      this.profilePictureUrls()[verification.user.id] ??
+      this.directProfilePictureUrl(verification.user.profilePicture)
+    );
   }
 
   markProfilePictureFailed(verification: BusinessVerification): void {
-    this.failedProfilePictures.update(failedIds => {
+    this.failedProfilePictures.update((failedIds) => {
       const nextFailedIds = new Set(failedIds);
       nextFailedIds.add(verification.user.id);
       return nextFailedIds;
@@ -89,8 +89,8 @@ export class BusinessVerificationComponent implements OnInit {
   }
 
   private loadProfilePictures(verifications: BusinessVerification[]): void {
-    const activeIds = new Set(verifications.map(verification => verification.user.id));
-    this.profilePictureUrls.update(urls => {
+    const activeIds = new Set(verifications.map((verification) => verification.user.id));
+    this.profilePictureUrls.update((urls) => {
       const nextUrls: Record<string, string> = {};
       Object.entries(urls).forEach(([id, url]) => {
         if (activeIds.has(id)) {
@@ -100,16 +100,16 @@ export class BusinessVerificationComponent implements OnInit {
       return nextUrls;
     });
 
-    verifications.forEach(verification => {
+    verifications.forEach((verification) => {
       const profilePicture = verification.user.profilePicture;
       if (!profilePicture) {
         return;
       }
 
       this.mediaCacheService.resolveMediaUrl(profilePicture, 'image', 'high').subscribe({
-        next: url => {
+        next: (url) => {
           if (url) {
-            this.profilePictureUrls.update(urls => ({
+            this.profilePictureUrls.update((urls) => ({
               ...urls,
               [verification.user.id]: url,
             }));

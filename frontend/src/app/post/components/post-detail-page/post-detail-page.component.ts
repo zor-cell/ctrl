@@ -17,6 +17,7 @@ import { ContentTypeEnum } from '../../../report/dto/report';
 import { PostSources } from '../post-sources/post-sources-component';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { rxResource } from '@angular/core/rxjs-interop';
+import {Tag} from 'primeng/tag';
 
 
 @Component({
@@ -33,6 +34,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
     PostComments,
     PostActions,
     PostSources,
+    Tag,
   ],
   templateUrl: './post-detail-page.component.html',
   styleUrl: './post-detail-page.component.scss',
@@ -51,20 +53,20 @@ export class PostDetailPageComponent {
   post = resource({
     loader: () => {
       return this.postService.getPostById(this.postId!);
-    }
-  })
+    },
+  });
   profilePic = rxResource({
     params: () => this.post.value()?.userProfilePicture ?? undefined,
     stream: ({ params }) => {
-      return this.mediaService.resolveMediaUrl(params)
-    }
+      return this.mediaService.resolveMediaUrl(params);
+    },
   });
   mediaRef = rxResource({
     params: () => this.post.value()?.mediaUrl,
     stream: ({ params }) => {
-      return this.mediaService.resolveMediaUrl(params)
-    }
-  })
+      return this.mediaService.resolveMediaUrl(params);
+    },
+  });
   commentsVisible = signal<boolean>(false);
 
   goBack(): void {
@@ -99,7 +101,7 @@ export class PostDetailPageComponent {
         window.open(this.post.value()?.userProfileUrl as string);
       }
     } else {
-      this.router.navigate(['/profile', this.post.value()?.username])
+      this.router.navigate(['/profile', this.post.value()?.username]);
     }
   }
 

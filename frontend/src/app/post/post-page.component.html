@@ -1,3 +1,4 @@
+<p-confirmDialog></p-confirmDialog>
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
@@ -27,7 +28,21 @@
       </div>
 
       <div class="post-profile-card__copy">
-        <h1>{{ username() }}</h1>
+        <h1 style="display: flex; align-items: center; gap: 10px;">
+          {{ username() }}
+          @if (!canEditProfile()) {
+            <app-follow-badge [username]="username()" />
+            @if (publicProfile()?.wasReportedByUser) {
+              <p-tag
+                [value]="'reported'"
+                severity="secondary"
+                class="post-label"
+                [pTooltip]="'This account has been reported'"
+                tooltipPosition="bottom"
+              />
+            }
+          }
+        </h1>
         <div class="profile-bio">
           <p>{{ userBio() }}</p>
           @if (canEditProfile()) {

@@ -11,10 +11,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CommentMapper {
 
-  public CommentResponse toResponse(Comment comment, Map<String, List<Comment>> repliesByParent) {
+  public CommentResponse toResponse(
+      Comment comment,
+      Map<String, List<Comment>> repliesByParent,
+      Map<String, Boolean> commentsReportedByUser) {
     List<CommentResponse> nestedReplies =
         repliesByParent.getOrDefault(comment.getCommentId(), List.of()).stream()
-            .map(reply -> toResponse(reply, repliesByParent))
+            .map(reply -> toResponse(reply, repliesByParent, commentsReportedByUser))
             .toList();
 
     return new CommentResponse(
@@ -26,6 +29,8 @@ public class CommentMapper {
         comment.getContent(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null,
         comment.isEdited(),
-        nestedReplies);
+        nestedReplies,
+        commentsReportedByUser != null
+            && Boolean.TRUE.equals(commentsReportedByUser.get(comment.getCommentId())));
   }
 }

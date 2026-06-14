@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.*;
 
 import at.ac.tuwien.inso.ctrl.comments.dto.request.CreateCommentRequest;
@@ -13,6 +14,9 @@ import at.ac.tuwien.inso.ctrl.comments.service.impl.CommentServiceImpl;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.BlockService;
@@ -21,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,6 +44,20 @@ class CommentUnitTests {
   @Mock private PostRepository postRepository;
   @Mock private UserRepository userRepository;
   @Mock private CommentMapper commentMapper;
+  @Mock private ReportRepository reportRepository;
+  @Mock private ReportService reportService;
+
+  // user passed to service methods (can be null); tests stub reportService to ignore it
+  private User userDetails = null;
+
+  @BeforeEach
+  void setup() {
+    // default: no comment was reported by the user
+    lenient()
+        .when(reportService.wasReportedByUser(any(), eq(ContentTypeEnum.COMMENT), any()))
+        .thenReturn(false);
+  }
+
   @Mock private BlockService blockService;
 
   @InjectMocks private CommentServiceImpl commentService;
@@ -97,13 +116,14 @@ class CommentUnitTests {
     when(commentRepository.findByPost_PostId(postId)).thenReturn(List.of(topLevel, reply));
     when(blockService.inBlockedRelationship(currentUser, topLevelAuthor)).thenReturn(false);
     when(blockService.inBlockedRelationship(currentUser, replyAuthor)).thenReturn(false);
-    when(commentMapper.toResponse(eq(topLevel), any())).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(eq(topLevel), any(), anyMap()))
+        .thenReturn(mock(CommentResponse.class));
 
     List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
 
     assertEquals(1, result.size());
     // Mapper must only be called for top-level comment, not for the reply
-    verify(commentMapper, times(1)).toResponse(any(), any());
+    verify(commentMapper, times(1)).toResponse(any(), any(), anyMap());
   }
 
   @Test
@@ -121,7 +141,7 @@ class CommentUnitTests {
     List<CommentResponse> result = commentService.getCommentsForPost(postId, currentUser);
 
     assertTrue(result.isEmpty());
-    verify(commentMapper, never()).toResponse(any(), any());
+    verify(commentMapper, never()).toResponse(any(), any(), any());
   }
 
   @Test
@@ -214,7 +234,7 @@ class CommentUnitTests {
     }
 
     when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    when(commentMapper.toResponse(any(), any())).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(any(), any(), anyMap())).thenReturn(mock(CommentResponse.class));
 
     assertDoesNotThrow(() -> commentService.addComment(postId, request, username));
   }
@@ -271,7 +291,7 @@ class CommentUnitTests {
 
     when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
     when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    when(commentMapper.toResponse(any(), any())).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(any(), any(), anyMap())).thenReturn(mock(CommentResponse.class));
 
     assertDoesNotThrow(() -> commentService.updateComment(commentId, request, username));
   }
@@ -357,7 +377,8 @@ class CommentUnitTests {
 
     when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
     when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    when(commentMapper.toResponse(any(), eq(Map.of()))).thenReturn(mock(CommentResponse.class));
+    when(commentMapper.toResponse(any(), eq(Map.of()), anyMap()))
+        .thenReturn(mock(CommentResponse.class));
 
     commentService.updateComment(commentId, request, username);
 

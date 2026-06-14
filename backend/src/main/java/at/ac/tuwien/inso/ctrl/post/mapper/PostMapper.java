@@ -9,6 +9,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
@@ -36,7 +37,7 @@ public class PostMapper {
         post.getUser().getId(),
         post.getUser().getUsername(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -69,7 +70,7 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
@@ -77,7 +78,7 @@ public class PostMapper {
         post.getUser().getId(),
         post.getUser().getUsername(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -90,7 +91,12 @@ public class PostMapper {
         post.getCreatedAt());
   }
 
-  public DetailedPostResponse toDetailedPostResponse(Post post, PostVote postVote) {
+  public DetailedPostResponse toDetailedPostResponse(
+      Post post,
+      PostVote postVote,
+      boolean wasReported,
+      Map<String, Boolean> commentsReportedByUser,
+      boolean sourceWasReported) {
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -113,7 +119,11 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(
+                comment ->
+                    toCommentResponse(
+                        comment,
+                        commentsReportedByUser.getOrDefault(comment.getCommentId(), false)))
             .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
@@ -124,12 +134,13 @@ public class PostMapper {
         username,
         avatarUrl,
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), sourceWasReported),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
         post.isExternalPost(),
         userProfileUrl,
+        wasReported,
         post.isAiGenerated(),
         labelIds,
         topicIds,
@@ -166,7 +177,7 @@ public class PostMapper {
         userProfileUrl);
   }
 
-  private SourceResponse toSourceResponse(Source source) {
+  private SourceResponse toSourceResponse(Source source, boolean sourceWasReported) {
     if (source == null) {
       return null;
     }
@@ -184,7 +195,8 @@ public class PostMapper {
         source.getUpvotes(),
         source.getDownvotes(),
         source.getCreatedAt(),
-        singleSources);
+        singleSources,
+        sourceWasReported);
   }
 
   private SingleSourceResponse toSingleSourceResponse(SingleSource source) {
@@ -197,12 +209,13 @@ public class PostMapper {
         source.getDate());
   }
 
-  private CommentResponse toCommentResponse(Comment comment) {
+  private CommentResponse toCommentResponse(Comment comment, boolean wasReportedByUser) {
     return new CommentResponse(
         comment.getCommentId(),
         comment.getUser().getUsername(),
         comment.getContent(),
         comment.getCreatedAt(),
-        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId());
+        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId(),
+        wasReportedByUser);
   }
 }

@@ -12,6 +12,12 @@ $downvote:     #e05858;
     flex-direction: row;
     justify-content: space-between;
   }
+  .report-row {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+
+  }
 
   ::ng-deep .p-button {
     padding: 0.5rem 0;

@@ -6,13 +6,13 @@ import { UserService } from "../../../user/user.service";
 import { NotificationService } from "../../../core/services/notification.service";
 import { timeAgo as formatTimeAgo } from '../../../core/utils/date-time.utils';
 import { PostComment } from "../../../feed/dto/Comment";
+import {Tag} from 'primeng/tag';
+import {Tooltip} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-post-comments',
   standalone: true,
-  imports: [
-    ProgressSpinner,
-  ],
+  imports: [ProgressSpinner, Tag, Tooltip],
   templateUrl: './post-comments.html',
   styleUrl: './post-comments.scss',
 })
@@ -27,8 +27,8 @@ export class PostComments {
     defaultValue: [],
     loader: () => {
       return this.commentService.getComments(this.postId());
-    }
-  })
+    },
+  });
   loadingComments = signal<boolean>(false);
   commentDraft = signal<string>('');
   editDraft = signal<string>('');
@@ -36,15 +36,12 @@ export class PostComments {
   replyingTo = signal<CommentResponse | null>(null);
   submittingComment = signal<boolean>(false);
 
-
   topLevelComments(): PostComment[] {
-    return this.comments.value()?.filter(
-      comment => comment.parentCommentId === null,
-    );
+    return this.comments.value()?.filter((comment) => comment.parentCommentId === null);
   }
 
   repliesFor(commentId: string): PostComment[] {
-    return this.comments.value().filter(comment => comment.parentCommentId === commentId);
+    return this.comments.value().filter((comment) => comment.parentCommentId === commentId);
   }
 
   commentAvatarInitial(comment: CommentResponse): string {
@@ -89,8 +86,8 @@ export class PostComments {
 
     try {
       const updated = await this.commentService.updateComment(commentId, content);
-      this.comments.update(comments =>
-        comments.map(comment => comment.commentId === commentId ? updated : comment),
+      this.comments.update((comments) =>
+        comments.map((comment) => (comment.commentId === commentId ? updated : comment)),
       );
       this.cancelEdit();
     } catch (error) {
@@ -101,9 +98,9 @@ export class PostComments {
   async deleteComment(commentId: string): Promise<void> {
     try {
       await this.commentService.deleteComment(commentId);
-      this.comments.update(comments =>
+      this.comments.update((comments) =>
         comments.filter(
-          comment => comment.commentId !== commentId && comment.parentCommentId !== commentId,
+          (comment) => comment.commentId !== commentId && comment.parentCommentId !== commentId,
         ),
       );
     } catch (error) {
@@ -130,7 +127,7 @@ export class PostComments {
     this.submittingComment.set(true);
     try {
       const created = await this.commentService.addComment(this.postId(), content, parentCommentId);
-      this.comments.update(comments => [...comments, created]);
+      this.comments.update((comments) => [...comments, created]);
       this.commentDraft.set('');
       this.replyingTo.set(null);
     } catch (error) {

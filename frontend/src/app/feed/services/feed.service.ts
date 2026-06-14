@@ -64,7 +64,14 @@ export class FeedService {
       labelIds: item.labelIds?.map((l: any) => [l.name, l.explanation]) ?? [],
       topicIds: item.topicIds ?? [],
       videoImageRef: this.resolveVideoImageRef(item),
-      sourceIds: item.sourceIds ?? [],
+      sourceIds: item.sourceIds?.map((s: any) => ({
+        sourceId: s.sourceId,
+        url: s.url,
+        upvotes: s.upvotes ?? 0,
+        downvotes: s.downvotes ?? 0,
+        userVote: s.userVote ?? null,
+        wasReportedByUser: s.wasReportedByUser ?? false,
+      })) ?? [],
       comments:
         item.comments?.map((c: any) => ({
           commentId: c.commentId,
@@ -77,7 +84,8 @@ export class FeedService {
           edited: c.edited ?? false,
           replies: c.replies ?? [],
         })) ?? [],
-      explanation: item.explanation
+      explanation: item.explanation,
+      wasReportedByUser: item.wasReportedByUser
     };
   }
 

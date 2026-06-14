@@ -146,7 +146,8 @@ public class ReportServiceImp implements ReportService {
                 return null;
               }
 
-              CommentResponse commentResponse = commentMapper.toResponse(comment, repliesByParent);
+              CommentResponse commentResponse =
+                  commentMapper.toResponse(comment, repliesByParent, Map.of());
               String reportedByUsername =
                   report.getFromUser() != null ? report.getFromUser().getUsername() : null;
               String reportedUsername =
@@ -176,6 +177,9 @@ public class ReportServiceImp implements ReportService {
       report.setCreatedAt(LocalDateTime.now());
     }
     report.setStatus(request.status());
+    if (request.description() != null) {
+      report.setDescription(request.description());
+    }
     reportRepository.save(report);
 
     if (request.action() == ReportAction.DELETE_ACCOUNT) {
@@ -304,7 +308,7 @@ public class ReportServiceImp implements ReportService {
               String reportedUsername = reportedUser.getUsername();
 
               return new ReportedAccountResponse(
-                  userMapper.toPublicUserProfileResponse(reportedUser, true),
+                  userMapper.toPublicUserProfileResponse(reportedUser, true, false),
                   report.getReportId(),
                   report.getReason(),
                   report.getDescription(),
@@ -468,6 +472,11 @@ public class ReportServiceImp implements ReportService {
     reports = reportRepository.findByContentTypeAndStatus(ContentTypeEnum.SOURCE, status, pageable);
 
     return reports.stream().map(reportMapper::toReportedSourceResponse).toList();
+  }
+
+  @Override
+  public boolean wasReportedByUser(User user, ContentTypeEnum type, String contentId) {
+    return reportRepository.existsReportByFromUserAndContentTypeAndContentId(user, type, contentId);
   }
 
   private User getUserFromContent(CreateReportRequest createReportRequest) {
