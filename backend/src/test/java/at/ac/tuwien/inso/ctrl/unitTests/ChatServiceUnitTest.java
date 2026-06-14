@@ -36,6 +36,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -78,6 +79,7 @@ class ChatServiceUnitTest {
   @Mock private FriendRelationRepository friendRelationRepository;
   @Mock private FileStorageService fileStorageService;
   @Mock private ChatMessageBroadcaster chatMessageBroadcaster;
+  @Mock private BlockService blockService;
   @Mock private EntityManager entityManager;
 
   @InjectMocks private ChatService chatService;
@@ -155,6 +157,18 @@ class ChatServiceUnitTest {
     verify(chatRepository).findActiveChatsForUserWithDetails(alice.getId());
     verify(chatMemberRepository, never()).findChatIdsForUser(any());
     verify(chatRepository, never()).findByChatIdWithDetails(any());
+  }
+
+  @Test
+  void getChats_excludesDirectChatsWithBlockedUsers() {
+    Chat chat = directChat(alice, bob);
+    when(chatRepository.findActiveChatsForUserWithDetails(alice.getId())).thenReturn(List.of(chat));
+    when(blockService.inBlockedRelationship(alice, bob)).thenReturn(true);
+
+    var response = chatService.getChats(alice);
+
+    assertTrue(response.isEmpty());
+    verify(messageRepository, never()).findTopByChatOrderByDateDesc(any());
   }
 
   @Test
@@ -325,6 +339,23 @@ class ChatServiceUnitTest {
     verify(messageRepository, never()).findTopByChatOrderByDateDesc(chat);
     verify(chatMessageBroadcaster, atLeastOnce())
         .publishMessageEvent(any(), eq(chat.getChatId()), any());
+  }
+
+  @Test
+  void sendMessage_inBlockedDirectChat_throwsForbiddenAndDoesNotBroadcast() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    when(blockService.inBlockedRelationship(alice, bob)).thenReturn(true);
+    SendMessageRequest request = new SendMessageRequest("hello?", null);
+
+    ResponseStatusException ex =
+        assertThrows(
+            ResponseStatusException.class,
+            () -> chatService.sendMessage(alice, chat.getChatId(), request));
+
+    assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    verify(messageRepository, never()).save(any(Message.class));
+    verify(chatMessageBroadcaster, never()).publishMessageEvent(any(), any(), any());
   }
 
   // ---------------------------------------------------------------------------

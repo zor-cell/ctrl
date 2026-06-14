@@ -186,6 +186,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private readonly hasMoreMessages = signal(true);
 
   protected readonly friends = this.relationshipService.friends;
+  protected readonly blockedUsers = this.relationshipService.blocked;
   protected readonly currentUsername = computed(() => {
     const token = this.authService.token();
     if (!token) {
@@ -335,6 +336,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       });
 
     this.loadFriends();
+    this.loadBlockedUsers();
     this.loadChats();
     this.chatRealtimeBridge.setMessageHandler(payload => this.handleRealtimeMessage(payload));
     this.chatRealtimeBridge.setChatListHandler(chat => this.handleRealtimeChatSummary(chat));
@@ -711,11 +713,29 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected openParticipantProfile(participant: ChatParticipant): void {
-    if (this.isDeletedParticipant(participant)) {
+    if (!this.canOpenParticipantProfile(participant)) {
       return;
     }
 
     this.router.navigate(['/profile', participant.username]);
+  }
+
+  protected canOpenParticipantProfile(participant: ChatParticipant | null): boolean {
+    return !!participant
+      && !this.isDeletedParticipant(participant)
+      && !this.isBlockedParticipant(participant);
+  }
+
+  protected participantProfileTooltip(participant: ChatParticipant): string {
+    if (this.isDeletedParticipant(participant)) {
+      return 'This user has deleted their account';
+    }
+
+    if (this.isBlockedParticipant(participant)) {
+      return 'You cannot view this profile because you reported or blocked this user.';
+    }
+
+    return '';
   }
 
   protected groupImageUrl(chat: Chat): string | null {
@@ -772,7 +792,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected openDirectChatProfile(chat: Chat): void {
     const other = this.otherParticipant(chat);
-    if (!other || this.isDeletedParticipant(other)) {
+    if (!other || !this.canOpenParticipantProfile(other)) {
       return;
     }
 
@@ -781,9 +801,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected directChatProfileTooltip(chat: Chat): string {
     const other = this.otherParticipant(chat);
-    return other && this.isDeletedParticipant(other)
-      ? 'The user has deleted their account'
-      : '';
+    return other ? this.participantProfileTooltip(other) : '';
   }
 
   protected isDirectChatReadOnly(chat: Chat | null): boolean {
@@ -1231,7 +1249,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const profileUsername = this.sharedPostProfileUsername(sharedPost.post);
+    if (!profileUsername || this.isBlockedUsername(profileUsername)) {
+      return null;
+    }
+
     return profileUsername ? ['/profile', profileUsername] : null;
+  }
+
+  protected sharedPostProfileTooltip(sharedPost: ParsedSharedPost): string {
+    const profileUsername = this.sharedPostProfileUsername(sharedPost.post);
+    return profileUsername && this.isBlockedUsername(profileUsername)
+      ? 'You cannot view this profile because you reported or blocked this user.'
+      : '';
   }
 
   protected messagePreview(content: string): string {
@@ -1430,6 +1459,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       .subscribe({
         next: friends => friends.forEach(friend => this.loadAvatar(friend.id, friend.profilePicture)),
         error: () => this.notificationService.showError('Failed to load friends'),
+      });
+  }
+
+  private loadBlockedUsers(): void {
+    this.relationshipService.loadBlocked()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: blockedUsers =>
+          blockedUsers.forEach(user => this.loadAvatar(user.id, user.profilePicture)),
+        error: () => this.notificationService.showError('Failed to load blocked users'),
       });
   }
 
@@ -2074,6 +2113,30 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected isDeletedParticipant(participant: ChatParticipant | null): boolean {
     return participant?.deleted === true;
+  }
+
+  protected isBlockedParticipant(participant: ChatParticipant | null): boolean {
+    if (!participant) {
+      return false;
+    }
+
+    const participantUsername = participant.username.toLowerCase();
+    const participantId = this.normalizeId(participant.id);
+    return this.blockedUsers().some(blockedUser =>
+      blockedUser.username.toLowerCase() === participantUsername
+      || this.normalizeId(blockedUser.id) === participantId
+    );
+  }
+
+  private isBlockedUsername(username: string | null | undefined): boolean {
+    if (!username) {
+      return false;
+    }
+
+    const normalizedUsername = username.toLowerCase();
+    return this.blockedUsers().some(
+      blockedUser => blockedUser.username.toLowerCase() === normalizedUsername,
+    );
   }
 
   private activeParticipantCount(chat: Chat): number {

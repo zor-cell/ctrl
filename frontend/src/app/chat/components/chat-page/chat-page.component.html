@@ -156,7 +156,7 @@
           class="avatar avatar-large avatar-button"
           [class.avatar-button--group]="chat.groupChat"
           [class.avatar-button--direct]="!chat.groupChat"
-          [class.avatar-button--disabled]="!chat.groupChat && isDeletedParticipant(otherParticipant(chat))"
+          [class.avatar-button--disabled]="!chat.groupChat && !canOpenParticipantProfile(otherParticipant(chat))"
           (click)="chat.groupChat ? openMembersDialog() : openDirectChatProfile(chat)"
           [pTooltip]="chat.groupChat ? '' : directChatProfileTooltip(chat)"
           tooltipPosition="bottom"
@@ -178,7 +178,7 @@
           <button
             type="button"
             class="chat-header-copy chat-header-link"
-            [class.chat-header-link--disabled]="isDeletedParticipant(otherParticipant(chat))"
+            [class.chat-header-link--disabled]="!canOpenParticipantProfile(otherParticipant(chat))"
             (click)="openDirectChatProfile(chat)"
             [pTooltip]="directChatProfileTooltip(chat)"
             tooltipPosition="bottom">
@@ -404,6 +404,13 @@
                             <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
                             @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
                               <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
+                            } @else if (sharedPostProfileTooltip(sharedPost)) {
+                              <span
+                                class="shared-post-profile-unavailable"
+                                [pTooltip]="sharedPostProfileTooltip(sharedPost)"
+                                tooltipPosition="top">
+                                Profile unavailable
+                              </span>
                             }
                           </div>
                         </div>
@@ -643,31 +650,47 @@
     <ul class="members-list">
       @for (participant of sortedGroupMembers(); track participant.id) {
         <li class="member-row" [class.member-row--owner]="isGroupOwner(participant, chat)">
-          <button
-            type="button"
-            class="member-profile-button"
-            (click)="openParticipantProfile(participant)"
-            [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
-            <span class="avatar" aria-hidden="true">
-              @if (avatarUrl(participant.id)) {
-                <img [src]="avatarUrl(participant.id)" alt="" />
-              } @else {
-                {{ initialFor(participant) }}
-              }
-            </span>
-            <span class="row-copy">
-              <span class="row-title">
-                {{ participant.name || participant.username }}
-                @if (isGroupOwner(participant, chat)) {
-                  <span class="owner-badge">Owner</span>
-                }
-                @if (isFriendParticipant(participant)) {
-                  <span class="friend-badge">Friend</span>
+          <div class="member-profile-wrapper">
+            <button
+              type="button"
+              class="member-profile-button"
+              [class.member-profile-button--disabled]="!canOpenParticipantProfile(participant)"
+              (click)="openParticipantProfile(participant)"
+              [pTooltip]="isBlockedParticipant(participant) ? '' : participantProfileTooltip(participant)"
+              tooltipPosition="top"
+              [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
+              <span class="avatar" aria-hidden="true">
+                @if (avatarUrl(participant.id)) {
+                  <img [src]="avatarUrl(participant.id)" alt="" />
+                } @else {
+                  {{ initialFor(participant) }}
                 }
               </span>
-              <span class="row-subtitle">&#64;{{ participant.username }}</span>
-            </span>
-          </button>
+              <span class="row-copy">
+                <span class="row-title">
+                  {{ participant.name || participant.username }}
+                  @if (isGroupOwner(participant, chat)) {
+                    <span class="owner-badge">Owner</span>
+                  }
+                  @if (isFriendParticipant(participant)) {
+                    <span class="friend-badge">Friend</span>
+                  }
+                </span>
+                <span class="row-subtitle">&#64;{{ participant.username }}</span>
+              </span>
+            </button>
+            @if (isBlockedParticipant(participant)) {
+              <div class="member-profile-popover" role="tooltip">
+                <p>You blocked this user. To see their profile, please unblock them first.</p>
+                <a
+                  routerLink="/followed"
+                  [queryParams]="{ tab: 'blocked' }"
+                  (click)="$event.stopPropagation()">
+                  Manage blocked users
+                </a>
+              </div>
+            }
+          </div>
           @if (canRemoveMember(participant, chat)) {
             <button
               type="button"

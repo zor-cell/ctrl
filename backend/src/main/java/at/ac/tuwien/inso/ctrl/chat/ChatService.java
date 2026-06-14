@@ -31,6 +31,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
@@ -87,6 +88,7 @@ public class ChatService {
   private final FriendRelationRepository friendRelationRepository;
   private final FileStorageService fileStorageService;
   private final ChatMessageBroadcaster chatMessageBroadcaster;
+  private final BlockService blockService;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -99,6 +101,7 @@ public class ChatService {
   public List<ChatResponse> getChats(User currentUser) {
     List<ChatResponse> chats =
         loadChatsForUser(currentUser).stream()
+            .filter(chat -> isGroupChat(chat) || !isDirectChatBlockedForUser(chat, currentUser))
             .map(chat -> toChatResponse(chat, currentUser))
             .sorted(
                 Comparator.comparing(
@@ -124,6 +127,9 @@ public class ChatService {
 
     if (!groupChat) {
       User invitedUser = invitedUsers.getFirst();
+      if (blockService.inBlockedRelationship(currentUser, invitedUser)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This chat is not available");
+      }
       Optional<Chat> existingChat = findExistingDirectChat(currentUser, invitedUser);
       if (existingChat.isPresent()) {
         Chat chat = existingChat.get();
@@ -173,6 +179,24 @@ public class ChatService {
     }
 
     return toChatResponse(chatRepository.save(chat), currentUser);
+  }
+
+  @Transactional(readOnly = true)
+  public void publishBlockedDirectChatRemoval(User currentUser, String blockedUsername) {
+    User blockedUser =
+        userRepository
+            .findByUsername(blockedUsername)
+            .orElseThrow(() -> new NotFoundException("User", blockedUsername));
+
+    chatRepository.findDirectChatsBetweenUsers(currentUser.getId(), blockedUser.getId()).stream()
+        .filter(chat -> !isGroupChat(chat))
+        .map(Chat::getChatId)
+        .distinct()
+        .forEach(
+            chatId -> {
+              chatMessageBroadcaster.publishChatRemoved(currentUser.getUsername(), chatId);
+              chatMessageBroadcaster.publishChatRemoved(blockedUser.getUsername(), chatId);
+            });
   }
 
   @Transactional
@@ -584,6 +608,12 @@ public class ChatService {
             .findByChatIdWithDetails(chat.getChatId())
             .orElseThrow(() -> new NotFoundException("Chat", chat.getChatId().toString()));
     List<ChatMember> activeMembers = activeMembers(chatWithMembers);
+    if (!isGroupChat(chatWithMembers)) {
+      activeMembers =
+          activeMembers.stream()
+              .filter(member -> !isDirectChatBlockedForUser(chatWithMembers, member.getUser()))
+              .toList();
+    }
     Map<UUID, Long> personalMessageCounts =
         countPersonalMessagesByUser(chatWithMembers, activeMembers);
     Map<UUID, Long> unreadMessageCounts = countUnreadMessagesByUser(chatWithMembers, activeMembers);
@@ -650,6 +680,7 @@ public class ChatService {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this chat");
     }
 
+    ensureDirectChatNotBlocked(currentUser, chat);
     return chat;
   }
 
@@ -1187,6 +1218,24 @@ public class ChatService {
   private boolean hasVisibleDirectPartner(ChatResponse chat, User currentUser) {
     return chat.participants().stream()
         .anyMatch(participant -> !participant.id().equals(currentUser.getId()));
+  }
+
+  private void ensureDirectChatNotBlocked(User currentUser, Chat chat) {
+    if (isDirectChatBlockedForUser(chat, currentUser)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This chat is not available");
+    }
+  }
+
+  private boolean isDirectChatBlockedForUser(Chat chat, User currentUser) {
+    if (isGroupChat(chat) || currentUser == null) {
+      return false;
+    }
+
+    return activeMembers(chat).stream()
+        .map(ChatMember::getUser)
+        .filter(user -> !user.getId().equals(currentUser.getId()))
+        .filter(user -> !user.isDeleted())
+        .anyMatch(user -> blockService.inBlockedRelationship(currentUser, user));
   }
 
   private boolean isDirectChatWithDeletedParticipant(Chat chat) {

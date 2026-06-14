@@ -183,7 +183,12 @@ public class UserService {
 
   @Transactional
   public void deleteCurrentUser(User currentUser) {
-    User user = getUserInternal(currentUser.getId());
+    deleteUser(currentUser);
+  }
+
+  @Transactional
+  public void deleteUser(User userToDelete) {
+    User user = getUserInternal(userToDelete.getId());
     if (user.isDeleted()) {
       return;
     }
