@@ -18,6 +18,7 @@ import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
+import {SessionStateService} from "../../../session/session-state.service";
 import { PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 
 /**
@@ -50,13 +51,15 @@ import { PostDetailDialogComponent} from '../../../post/components/post-detail-d
 })
 
 export class PostsSearchComponent implements OnInit, OnDestroy {
-  private readonly searchService = inject(SearchService);
-  private readonly topicService = inject(TopicService);
-  private readonly notificationService = inject(NotificationService);
-  private readonly mediaCacheService = inject(MediaCacheService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly injector = inject(Injector);
+  private searchService = inject(SearchService);
+  private topicService = inject(TopicService);
+  private notificationService = inject(NotificationService);
+  private mediaCacheService = inject(MediaCacheService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private injector = inject(Injector);
+  protected sessionState = inject(SessionStateService);
+
   selectedPostId = signal<string | null>(null);
 
   private readonly _destroy$ = new Subject<void>();
@@ -264,9 +267,11 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
           }
           this.hasMoreResults.set(results.length === this.postsPerPage);
           this.isSearching.set(false);
+
+          this.sessionState.resetLimit();
         },
-        error: err => {
-          this.notificationService.showError(err);
+        error: () => {
+          //this.notificationService.showError(err);
           this.isSearching.set(false);
         }
       });

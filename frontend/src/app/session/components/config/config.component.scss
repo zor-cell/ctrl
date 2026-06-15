@@ -1,6 +1,15 @@
 $slider-height: 8px;
 $color-interaction:   #6366f1; // indigo
 
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  min-height: calc(100vh - 58px);
+  padding: 1rem;
+  gap: 2rem;
+}
+
 .slider-field {
   margin-bottom: 1.25rem;
 

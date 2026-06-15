@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
 import {Dialog} from "primeng/dialog";
 import {Button} from "primeng/button";
 import {SessionStateService} from "../../session-state.service";
@@ -6,13 +6,17 @@ import {SessionConfigService} from "../../session-config.service";
 import {toObservable, toSignal} from "@angular/core/rxjs-interop";
 import {filter, startWith, switchMap} from "rxjs";
 import {PrimeTemplate} from "primeng/api";
+import {Checkbox} from "primeng/checkbox";
+import {FormsModule} from "@angular/forms";
 
 @Component({
   selector: 'app-limit-popup',
   imports: [
     Dialog,
     Button,
-    PrimeTemplate
+    PrimeTemplate,
+    Checkbox,
+    FormsModule
   ],
   templateUrl: './limit-popup.component.html',
   styleUrl: './limit-popup.component.scss',
@@ -31,9 +35,10 @@ export class LimitPopupComponent {
     ),
     { initialValue: null }
   );
+  protected dontShowAgain = signal<boolean>(true);
 
   protected hardCutoff() {
-    this.sessionState.closeModal(false);
+    this.sessionState.closeModal(false, this.dontShowAgain());
   }
 
   protected softCutoff() {

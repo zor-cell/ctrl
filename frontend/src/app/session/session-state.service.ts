@@ -1,4 +1,5 @@
 import { Injectable, signal } from "@angular/core";
+import {Subject} from "rxjs";
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +11,8 @@ export class SessionStateService {
   public showModal = signal<boolean>(false);
   public limitMessage = signal<string>('');
 
+  public userDecision$ = new Subject<boolean>();
+
   public resetLimit() {
     localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
     this.isLimitActive.set(false);
@@ -20,6 +23,7 @@ export class SessionStateService {
 
     const dontShowModal = localStorage.getItem(SessionStateService.LIMIT_DISMISSED_KEY) === 'true';
     if (dontShowModal) {
+      setTimeout(() => this.userDecision$.next(false));
       return;
     }
 
@@ -27,13 +31,19 @@ export class SessionStateService {
     this.showModal.set(true);
   }
 
-  public closeModal(withSnooze: boolean) {
+  public closeModal(withSnooze: boolean, dontShowAgain = false) {
     this.showModal.set(false);
 
     if (withSnooze) {
       this.resetLimit();
     } else {
-      localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
+      if (dontShowAgain) {
+        localStorage.setItem(SessionStateService.LIMIT_DISMISSED_KEY, 'true');
+      } else {
+        localStorage.removeItem(SessionStateService.LIMIT_DISMISSED_KEY);
+      }
     }
+
+    this.userDecision$.next(withSnooze);
   }
 }

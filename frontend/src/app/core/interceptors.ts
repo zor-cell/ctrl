@@ -1,6 +1,6 @@
 import {HttpContext, HttpContextToken, HttpInterceptorFn} from "@angular/common/http";
 import {inject} from "@angular/core";
-import {catchError, throwError} from "rxjs";
+import {catchError, switchMap, take, throwError} from "rxjs";
 import {NotificationService} from "./services/notification.service";
 import {AuthService} from "../auth/auth.service";
 import {SessionStateService} from "../session/session-state.service";
@@ -53,7 +53,17 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       //handle session limits
       if(err.status === 429 && err.error?.errorCode === 'SESSION_LIMIT_EXCEEDED') {
         sessionState.triggerLimitModal(err.error.message);
-        return throwError(() => err);
+        return sessionState.userDecision$.pipe(
+          take(1),
+          switchMap(withSnooze => {
+            console.log("fired", withSnooze);
+            if (withSnooze) {
+              //if user snoozed we want to fire the request again
+              return next(req);
+            }
+            return throwError(() => err);
+          })
+        );
       }
 
       if(!silentErrorHandling) {

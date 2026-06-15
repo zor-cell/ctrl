@@ -21,55 +21,55 @@
 
             @if (sessionState.isLimitActive()) {
               <div class="empty-state">
-                <i class="pi pi-lock"></i>
-                <p>Session Limit Reached</p>
+                  <i class="pi pi-lock"></i>
+                  <p>Session limit reached.</p>
               </div>
-            } @else {
-              <!-- Skeleton Loader -->
-              @if (isLoading()) {
-                @for (i of skeletonItems; track i) {
-                  <div class="post-card post-card--skeleton">
-                    <div class="skeleton-header">
-                      <p-skeleton shape="circle" size="42px" />
-                      <div class="skeleton-meta">
-                        <p-skeleton width="140px" height="0.85rem" class="mb-2" />
-                        <p-skeleton width="80px" height="0.72rem" />
-                      </div>
-                    </div>
-                    <p-skeleton width="100%" height="200px" class="skeleton-image" />
-                    <div class="skeleton-body">
-                      <p-skeleton width="92%" height="0.85rem" class="mb-2" />
-                      <p-skeleton width="70%" height="0.85rem" class="mb-3" />
-                      <p-skeleton width="120px" height="0.75rem" />
-                    </div>
-                    <div class="skeleton-actions">
-                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                      <p-skeleton width="60px" height="30px" borderRadius="20px" />
+          } @else {
+            <!-- Skeleton Loader -->
+            @if (isLoading()) {
+              @for (i of skeletonItems; track i) {
+                <div class="post-card post-card--skeleton">
+                  <div class="skeleton-header">
+                    <p-skeleton shape="circle" size="42px" />
+                    <div class="skeleton-meta">
+                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="80px" height="0.72rem" />
                     </div>
                   </div>
-                }
-              }
-
-              <!-- Real posts -->
-              @if (!isLoading()) {
-                @if (publicPosts().length === 0) {
-                  <div class="empty-state">
-                    <i class="pi pi-inbox"></i>
-                    <p>No public posts yet.</p>
+                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                  <div class="skeleton-body">
+                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                    <p-skeleton width="120px" height="0.75rem" />
                   </div>
-                }
-                @for (post of publicPosts(); track post.postId) {
-                  <section
-                    class="post-card"
-                    [appPostView]="post.postId"
-                    (viewed)="onPostViewed($event)"
-                  >
-                    <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-                  </section>
-                }
+                  <div class="skeleton-actions">
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
+                  </div>
+                </div>
               }
             }
+
+            <!-- Real posts -->
+            @if (!isLoading()) {
+              @if (publicPosts().length === 0) {
+                  <div class="empty-state">
+                      <i class="pi pi-inbox"></i>
+                      <p>No public posts yet.</p>
+                  </div>
+              }
+              @for (post of publicPosts(); track post.postId) {
+                <section
+                  class="post-card"
+                  [appPostView]="post.postId"
+                  (viewed)="onPostViewed($event)"
+                >
+                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                </section>
+              }
+            }
+          }
           </div>
         </p-tabpanel>
 
@@ -77,64 +77,64 @@
         <p-tabpanel value="private">
           <div class="posts-list">
 
-            @if (sessionState.isLimitActive()) {
-              <div class="empty-state">
-                <i class="pi pi-lock"></i>
-                <p>Session Limit Reached</p>
-              </div>
-            } @else {
-              <!-- Skeleton Loader -->
-              @if (isLoading()) {
-                @for (i of skeletonItems; track i) {
-                  <div class="post-card post-card--skeleton">
-                    <div class="skeleton-header">
-                      <p-skeleton shape="circle" size="42px" />
-                      <div class="skeleton-meta">
-                        <p-skeleton width="140px" height="0.85rem" class="mb-2" />
-                        <p-skeleton width="80px" height="0.72rem" />
-                      </div>
-                    </div>
-                    <p-skeleton width="100%" height="200px" class="skeleton-image" />
-                    <div class="skeleton-body">
-                      <p-skeleton width="92%" height="0.85rem" class="mb-2" />
-                      <p-skeleton width="70%" height="0.85rem" class="mb-3" />
-                      <p-skeleton width="120px" height="0.75rem" />
-                    </div>
-                    <div class="skeleton-actions">
-                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                      <p-skeleton width="60px" height="30px" borderRadius="20px" />
+              @if (sessionState.isLimitActive()) {
+                  <div class="empty-state">
+                      <i class="pi pi-lock"></i>
+                      <p>Session limit reached.</p>
+                  </div>
+              } @else {
+            <!-- Skeleton Loader -->
+            @if (isLoading()) {
+              @for (i of skeletonItems; track i) {
+                <div class="post-card post-card--skeleton">
+                  <div class="skeleton-header">
+                    <p-skeleton shape="circle" size="42px" />
+                    <div class="skeleton-meta">
+                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="80px" height="0.72rem" />
                     </div>
                   </div>
-                }
-              }
-
-              <!-- Real posts -->
-              @if (!isLoading()) {
-                @if (privatePosts().length === 0) {
-                  @if (sessionState.isLimitActive()) {
-                    <div class="empty-state">
-                      <i class="pi pi-lock"></i>
-                      <p>Session Limit Reached</p>
-                    </div>
-                  } @else {
-                    <div class="empty-state">
-                      <i class="pi pi-inbox"></i>
-                      <p>No private posts yet.</p>
-                    </div>
-                  }
-                }
-                @for (post of privatePosts(); track post.postId) {
-                  <section
-                    class="post-card"
-                    [appPostView]="post.postId"
-                    (viewed)="onPostViewed($event)"
-                  >
-                    <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-                  </section>
-                }
+                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                  <div class="skeleton-body">
+                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                    <p-skeleton width="120px" height="0.75rem" />
+                  </div>
+                  <div class="skeleton-actions">
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
+                  </div>
+                </div>
               }
             }
+
+            <!-- Real posts -->
+            @if (!isLoading()) {
+              @if (privatePosts().length === 0) {
+                  @if (sessionState.isLimitActive()) {
+                      <div class="empty-state">
+                          <i class="pi pi-lock"></i>
+                          <p>Session Limit Reached</p>
+                      </div>
+                  } @else {
+                      <div class="empty-state">
+                          <i class="pi pi-inbox"></i>
+                          <p>No private posts yet.</p>
+                      </div>
+                  }
+              }
+              @for (post of privatePosts(); track post.postId) {
+                <section
+                  class="post-card"
+                  [appPostView]="post.postId"
+                  (viewed)="onPostViewed($event)"
+                >
+                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                </section>
+              }
+            }
+              }
           </div>
         </p-tabpanel>
 

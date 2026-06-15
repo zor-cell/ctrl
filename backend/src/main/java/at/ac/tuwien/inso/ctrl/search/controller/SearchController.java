@@ -4,6 +4,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.response.PostPreviewResponse;
 import at.ac.tuwien.inso.ctrl.search.dto.PostSearchRequest;
 import at.ac.tuwien.inso.ctrl.search.dto.UserSearchRequest;
 import at.ac.tuwien.inso.ctrl.search.service.SearchService;
+import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
 import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.validation.Valid;
@@ -35,6 +36,7 @@ public class SearchController {
    * @return List of feed posts matching the search criteria
    */
   @PostMapping("/posts")
+  @CheckSessionLimits
   public ResponseEntity<List<PostPreviewResponse>> searchPosts(
       @Valid @RequestBody PostSearchRequest request, @AuthenticationPrincipal User user) {
 

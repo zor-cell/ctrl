@@ -72,6 +72,13 @@
     </div>
   </div>
 
+    @if(sessionState.isLimitActive()) {
+        <div class="empty-state initial">
+            <i class="pi pi-lock"></i>
+            <p>Session limit reached.</p>
+        </div>
+    } @else {
+
   <!-- Loading State (initial search) -->
   @if (isSearching() && currentPage() === 0) {
     <div class="loading-state">
@@ -98,7 +105,7 @@
     </div>
   }
 
-  <!-- Results Grid -->
+      <!-- Results Grid -->
   @if (hasSearched() && searchResults().length > 0) {
     <div class="results-container" #resultsContainer>
       <div class="posts-preview-grid">
@@ -130,6 +137,7 @@
       }
     </div>
   }
+    }
 </div>
 
 <app-post-detail-dialog

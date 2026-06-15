@@ -66,4 +66,14 @@
             </form>
         }
     </div>
+
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Current Session</h2>
+        </div>
+
+        <app-usage [usage]="usage()"></app-usage>
+    </div>
 </div>
+
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
