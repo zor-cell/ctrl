@@ -371,10 +371,10 @@ public class PostServiceImpl implements PostService {
 
     return this.postMapper.toDetailedPostResponse(
         post,
-            toMap,
-            wasReported,
-            commentsReportedByUser,
-            sourceWasReported,
-            labelingService.computeLabels(post, ctx));
+        toMap,
+        wasReported,
+        commentsReportedByUser,
+        sourceWasReported,
+        labelingService.computeLabels(post, ctx));
   }
 }

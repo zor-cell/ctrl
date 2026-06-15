@@ -101,7 +101,8 @@ public class PostMapper {
       PostVote postVote,
       boolean wasReported,
       Map<String, Boolean> commentsReportedByUser,
-      boolean sourceWasReported, Set<PostLabelType> computedLabels) {
+      boolean sourceWasReported,
+      Set<PostLabelType> computedLabels) {
     boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()

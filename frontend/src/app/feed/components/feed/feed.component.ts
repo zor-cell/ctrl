@@ -28,32 +28,7 @@ import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
 import {PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 import {PostShareDialogComponent} from '../../../post/components/post-detail-share/post-share-dialog.component';
 import {PostStateService} from '../../../post/services/post-state.service';
-import {MediaCacheService} from '../../../core/services/media-cache.service';
-import {usernameInitial} from '../../../core/utils/username-initial.utils';
-import { Chat, ChatParticipant } from '../../../chat/models/chat.models';
-import { ChatService } from '../../../chat/services/chat.service';
 import {SessionStateService} from "../../../session/session-state.service";
-
-interface SharedPostPayload {
-  postId: string;
-  username: string;
-  caption: string;
-  url: string;
-  mediaUrl: string | null;
-  mediaKind: 'image' | 'video' | null;
-}
-
-interface ShareTarget {
-  id: string;
-  kind: 'direct' | 'group';
-  chatId: string | null;
-  username: string | null;
-  title: string;
-  subtitle: string;
-  avatarRef: string | null;
-  interactionCount: number;
-  lastActivityTime: number;
-}
 
 @Component({
   selector: 'app-feed',
