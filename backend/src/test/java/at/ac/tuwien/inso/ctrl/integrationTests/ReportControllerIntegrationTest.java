@@ -11,7 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.report.dto.CreateReportRequest;
@@ -66,18 +68,28 @@ public class ReportControllerIntegrationTest {
 
   @Autowired private JwtService jwtService;
 
+  @Autowired private CommentRepository commentRepository;
+
   @MockitoBean private IdAustriaOidcService idAustriaOidcService;
   @MockitoBean private GmailEmailService gmailEmailService;
   private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
   private final String reportEndpoint = "/api/report";
   private User adminUser;
   private String adminJwtToken;
+  private String standardUserJwtToken;
   private User contentUser;
   private Post post;
   private Source source;
+  private Comment comment1;
+  private Comment comment2;
 
   @BeforeEach
   public void setUp() {
+    // Clean up all data
+    reportRepository.deleteAll();
+    commentRepository.deleteAll();
+    postRepository.deleteAll();
+    sourceRepository.deleteAll();
     userRepository.deleteAll();
 
     adminUser =
@@ -90,6 +102,18 @@ public class ReportControllerIntegrationTest {
             .build();
     userRepository.save(adminUser);
     adminJwtToken = jwtService.generateToken(adminUser);
+
+    User standardUser =
+        User.builder()
+            .username("standardUser")
+            .password(passwordEncoder.encode("pass"))
+            .email("standard@test.com")
+            .role(Role.USER)
+            .isVerified(true)
+            .build();
+    userRepository.save(standardUser);
+    standardUserJwtToken = jwtService.generateToken(standardUser);
+
     contentUser =
         User.builder()
             .username("contentUser")
@@ -116,11 +140,37 @@ public class ReportControllerIntegrationTest {
             .createdAt(LocalDateTime.now())
             .build();
     postRepository.save(post);
+
+    // Create comments
+    comment1 =
+        Comment.builder()
+            .commentId("comment-1")
+            .user(contentUser)
+            .post(post)
+            .content("This is a comment.")
+            .parentComment(null)
+            .replies(List.of())
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    comment2 =
+        Comment.builder()
+            .commentId("comment-2")
+            .user(contentUser)
+            .post(post)
+            .content("This is another comment.")
+            .parentComment(null)
+            .replies(List.of())
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    commentRepository.saveAll(List.of(comment1, comment2));
   }
 
   @AfterEach
   public void tearDown() {
     reportRepository.deleteAll();
+    commentRepository.deleteAll();
     postRepository.deleteAll();
     sourceRepository.deleteAll();
     userRepository.deleteAll();
@@ -373,5 +423,420 @@ public class ReportControllerIntegrationTest {
     assertEquals("Deleted user", updatedUser.getName());
     assertEquals(ReportStatus.VALIDATED, updatedReport.getStatus());
     assertNotNull(updatedReport.getCreatedAt());
+  }
+
+  @Test
+  public void getReportedSources_shouldReturnForbidden_WhenCalledByStandardUser()
+      throws Exception {
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + standardUserJwtToken))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  public void getReportedSources_shouldReturnMultipleReports_WhenMultipleSourcesReported()
+      throws Exception {
+    Report report1 =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId(source.getSourceId())
+            .reason("Inappropriate content")
+            .description("This source contains inappropriate content.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    Source source2 = Source.builder().sourceId("source-2").singleSources(List.of()).build();
+    sourceRepository.save(source2);
+
+    Report report2 =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId(source2.getSourceId())
+            .reason("Misinformation")
+            .description("This source spreads misinformation.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    reportRepository.saveAll(List.of(report1, report2));
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
+        .andExpect(jsonPath("$[0].reportReason").value("Inappropriate content"))
+        .andExpect(jsonPath("$[1].reportReason").value("Misinformation"));
+  }
+
+  @Test
+  public void getReportedSources_shouldFilterByStatus_WhenStatusParameterProvided()
+      throws Exception {
+    Report createdReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId(source.getSourceId())
+            .reason("Inappropriate content")
+            .description("This source contains inappropriate content.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    Source source2 = Source.builder().sourceId("source-2").singleSources(List.of()).build();
+    sourceRepository.save(source2);
+
+    Report validatedReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId(source2.getSourceId())
+            .reason("Misinformation")
+            .description("This source spreads misinformation.")
+            .fromUser(adminUser)
+            .status(ReportStatus.VALIDATED)
+            .build();
+
+    reportRepository.saveAll(List.of(createdReport, validatedReport));
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources?status=VALIDATED")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+        .andExpect(jsonPath("$[0].status").value("VALIDATED"))
+        .andExpect(jsonPath("$[0].reportReason").value("Misinformation"));
+  }
+
+  @Test
+  public void getReportedSources_shouldReturnPaginatedResults_WhenPageParameterProvided()
+      throws Exception {
+    for (int i = 1; i <= 5; i++) {
+      Source src = Source.builder().sourceId("source-" + i).singleSources(List.of()).build();
+      sourceRepository.save(src);
+
+      Report report =
+          Report.builder()
+              .usernameReported(contentUser)
+              .contentType(ContentTypeEnum.SOURCE)
+              .contentId(src.getSourceId())
+              .reason("Reason " + i)
+              .description("Description " + i)
+              .fromUser(adminUser)
+              .status(ReportStatus.CREATED)
+              .build();
+      reportRepository.save(report);
+    }
+
+    // Get first page with 2 items per page
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources?page=0&postsPerPage=2")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)));
+
+    // Get second page with 2 items per page
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources?page=1&postsPerPage=2")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)));
+  }
+
+  @Test
+  public void getReportedSources_shouldReturnReportWithCorrectFields_WhenSourceReported()
+      throws Exception {
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId(source.getSourceId())
+            .reason("Inappropriate content")
+            .description("This source contains inappropriate content.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build();
+    reportRepository.save(report);
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/sources")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
+        .andExpect(jsonPath("$[0].reportReason").value("Inappropriate content"))
+        .andExpect(jsonPath("$[0].reportDescription").value("This source contains inappropriate content."))
+        .andExpect(jsonPath("$[0].contentType").value("SOURCE"))
+        .andExpect(jsonPath("$[0].status").value("CREATED"))
+        .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
+        .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()))
+        .andExpect(jsonPath("$[0].sourceResponse").exists());
+  }
+
+  // ========== Tests for /comments endpoint ==========
+
+  @Test
+  public void getReportedComments_shouldReturnForbidden_WhenCalledByStandardUser()
+      throws Exception {
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + standardUserJwtToken))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnNoReports_WhenNoneExist() throws Exception {
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnOneReport_WhenCommentReported() throws Exception {
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment1.getCommentId())
+            .reason("Inappropriate language")
+            .description("This comment contains inappropriate language.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+    reportRepository.save(report);
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+        .andExpect(jsonPath("$[0].contentType").value("COMMENT"))
+        .andExpect(jsonPath("$[0].status").value("CREATED"))
+        .andExpect(jsonPath("$[0].reportReason").value("Inappropriate language"))
+        .andExpect(jsonPath("$[0].reportDescription").value("This comment contains inappropriate language."))
+        .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
+        .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()));
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnMultipleReports_WhenMultipleCommentsReported()
+      throws Exception {
+    Report report1 =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment1.getCommentId())
+            .reason("Inappropriate language")
+            .description("This comment contains inappropriate language.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    Report report2 =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment2.getCommentId())
+            .reason("Spam")
+            .description("This comment is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    reportRepository.saveAll(List.of(report1, report2));
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
+        .andExpect(jsonPath("$[0].reportReason").value("Inappropriate language"))
+        .andExpect(jsonPath("$[1].reportReason").value("Spam"));
+  }
+
+  @Test
+  public void getReportedComments_shouldFilterByStatus_WhenStatusParameterProvided()
+      throws Exception {
+    Report createdReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment1.getCommentId())
+            .reason("Inappropriate language")
+            .description("This comment contains inappropriate language.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .build();
+
+    Report validatedReport =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment2.getCommentId())
+            .reason("Spam")
+            .description("This comment is spam.")
+            .fromUser(adminUser)
+            .status(ReportStatus.VALIDATED)
+            .build();
+
+    reportRepository.saveAll(List.of(createdReport, validatedReport));
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments?status=VALIDATED")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+        .andExpect(jsonPath("$[0].status").value("VALIDATED"))
+        .andExpect(jsonPath("$[0].reportReason").value("Spam"));
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnPaginatedResults_WhenPageParameterProvided()
+      throws Exception {
+    // Create multiple comments for pagination testing
+    for (int i = 3; i <= 7; i++) {
+      Comment comment =
+          Comment.builder()
+              .commentId("comment-" + i)
+              .user(contentUser)
+              .post(post)
+              .content("This is comment " + i)
+              .parentComment(null)
+              .replies(List.of())
+              .createdAt(LocalDateTime.now())
+              .build();
+      commentRepository.save(comment);
+
+      Report report =
+          Report.builder()
+              .usernameReported(contentUser)
+              .contentType(ContentTypeEnum.COMMENT)
+              .contentId(comment.getCommentId())
+              .reason("Reason " + i)
+              .description("Description " + i)
+              .fromUser(adminUser)
+              .status(ReportStatus.CREATED)
+              .build();
+      reportRepository.save(report);
+    }
+
+    // Get first page with 2 items per page
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments?page=0&postsPerPage=2")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)));
+
+    // Get second page with 2 items per page
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments?page=1&postsPerPage=2")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)));
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnReportWithCorrectFields_WhenCommentReported()
+      throws Exception {
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.COMMENT)
+            .contentId(comment1.getCommentId())
+            .reason("Harassment")
+            .description("This comment is harassing other users.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build();
+    reportRepository.save(report);
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/comments")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
+        .andExpect(jsonPath("$[0].reportReason").value("Harassment"))
+        .andExpect(jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
+        .andExpect(jsonPath("$[0].contentType").value("COMMENT"))
+        .andExpect(jsonPath("$[0].status").value("CREATED"))
+        .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
+        .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()))
+        .andExpect(jsonPath("$[0].comment").exists());
+  }
+
+  @Test
+  public void getReportedComments_shouldReturnUnauthorized_WhenNoAuthorizationToken()
+      throws Exception {
+    mockMvc
+        .perform(get(reportEndpoint + "/comments"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void getReportedSources_shouldReturnUnauthorized_WhenNoAuthorizationToken()
+      throws Exception {
+    mockMvc
+        .perform(get(reportEndpoint + "/sources"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void getReportedAccounts_shouldReturnUnauthorized_WhenNoAuthorizationToken()
+      throws Exception {
+    mockMvc
+        .perform(get(reportEndpoint + "/accounts"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void getReportedAccounts_shouldReturnReportWithCorrectFields_WhenCommentReported()
+      throws Exception {
+    Report report =
+        Report.builder()
+            .usernameReported(contentUser)
+            .contentType(ContentTypeEnum.ACCOUNT)
+            .contentId(String.valueOf(contentUser.getId()))
+            .reason("Harassment")
+            .description("This comment is harassing other users.")
+            .fromUser(adminUser)
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build();
+    reportRepository.save(report);
+
+    mockMvc
+        .perform(
+            get(reportEndpoint + "/accounts")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
+        .andExpect(jsonPath("$[0].reportReason").value("Harassment"))
+        .andExpect(jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
+        .andExpect(jsonPath("$[0].contentType").value("ACCOUNT"))
+        .andExpect(jsonPath("$[0].status").value("CREATED"))
+        .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
+        .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()))
+        .andExpect(jsonPath("$[0].profileResponse").exists());
   }
 }

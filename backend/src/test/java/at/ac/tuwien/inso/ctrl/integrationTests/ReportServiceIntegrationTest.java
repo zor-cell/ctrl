@@ -22,6 +22,7 @@ import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
+import at.ac.tuwien.inso.ctrl.report.mapper.ReportMapper;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
@@ -36,6 +37,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +68,7 @@ public class ReportServiceIntegrationTest {
   @Autowired private ExternalAuthorRepository externalAuthorRepository;
   @Autowired private UserRepository userRepository;
   @Autowired private CommentRepository commentRepository;
+  @Autowired private ReportMapper reportMapper;
 
   @MockitoBean private GmailEmailService gmailEmailService;
   @MockitoBean private FileStorageService fileStorageService;
@@ -1062,6 +1066,26 @@ public class ReportServiceIntegrationTest {
     assertTrue(responses.isEmpty());
   }
 
+  @Test
+  void toReportedSourceResponse_withInvalidContentId_shouldThrowException() {
+    User reporter = createUser("reporter-invalid-content-id");
+    User reportedUser = createUser("reported-invalid-content-id");
+    Report report =
+        Report.builder()
+            .fromUser(reporter)
+            .usernameReported(reportedUser)
+            .externalAuthorReported(null)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId("invalid-id")
+            .reason("spam")
+            .description("description")
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    assertThrows(EntityNotFoundException.class, () -> reportMapper.toReportedSourceResponse(report));
+  }
+
   private User createUser(String username) {
     User user = new User();
     user.setUsername(username);
@@ -1160,4 +1184,6 @@ public class ReportServiceIntegrationTest {
             .build();
     return reportRepository.save(report);
   }
+
+
 }
