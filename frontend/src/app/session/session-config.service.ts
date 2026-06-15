@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import { environment } from "../../environments/environment";
 import { HttpClient } from "@angular/common/http";
 import { NotificationService } from "../core/services/notification.service";
@@ -15,13 +15,21 @@ export class SessionConfigService {
   private httpClient = inject(HttpClient);
   private notificationService = inject(NotificationService);
 
+  private readonly _config = signal<SessionConfig | undefined>(undefined);
+  public readonly config = this._config.asReadonly();
+
   public getConfig() {
-    return this.httpClient.get<SessionConfig>(this.baseUri + '/config');
+    return this.httpClient.get<SessionConfig>(this.baseUri + '/config').pipe(
+      tap(config => {
+        this._config.set(config);
+      })
+    );
   }
 
   public updateConfig(updateConfigRequest: SessionConfig) {
     return this.httpClient.put<SessionConfigUpdateResponse>(this.baseUri + '/config', updateConfigRequest).pipe(
       tap(config => {
+        this._config.set(config);
         if (config.appliedImmediately) {
           this.notificationService.showSuccess('Configuration saved');
         } else {

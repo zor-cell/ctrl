@@ -41,6 +41,7 @@ export class SessionConfigComponent implements OnInit {
     allowSnooze: [true, [Validators.required]],
   });
 
+
   ngOnInit() {
     this.configService.getConfig().subscribe({
       next: (config: SessionConfig) => {
@@ -63,15 +64,6 @@ export class SessionConfigComponent implements OnInit {
 
     this.configService.updateConfig(formValue).subscribe(updatedConfig => {
       this.configForm.patchValue(updatedConfig);
-    });
-  }
-
-  protected triggerManualSnooze() {
-    this.configService.snooze().subscribe({
-      next: () => {
-        this.sessionState.resetLimit();
-        this.sessionState.userDecision$.next(true);
-      }
     });
   }
 }

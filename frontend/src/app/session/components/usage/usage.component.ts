@@ -5,25 +5,37 @@ import { SessionConfigService } from "../../session-config.service";
 import { RouterLink } from "@angular/router";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {ProgressSpinner} from "primeng/progressspinner";
+import {Button} from "primeng/button";
+import {SessionStateService} from "../../session-state.service";
 
 @Component({
   selector: 'app-usage',
   imports: [
     ChartModule,
     RouterLink,
-    ProgressSpinner
+    ProgressSpinner,
+    Button
   ],
   templateUrl: './usage.component.html',
   styleUrl: './usage.component.scss',
 })
 export class UsageComponent {
-  private sessionService = inject(SessionService);
   private sessionConfigService = inject(SessionConfigService);
+  protected sessionState = inject(SessionStateService);
   Math = Math;
 
-  protected sessionConfig = toSignal(this.sessionConfigService.getConfig());
+  protected sessionConfig = this.sessionConfigService.config;
   protected usage = toSignal(this.sessionConfigService.getDailyUsage());
 
   protected isLoading = computed(() => this.sessionConfig() === undefined || this.usage() === undefined);
+
+  protected triggerManualSnooze() {
+    this.sessionConfigService.snooze().subscribe({
+      next: () => {
+        this.sessionState.resetLimit();
+        this.sessionState.userDecision$.next(true);
+      }
+    });
+  }
 }
 
