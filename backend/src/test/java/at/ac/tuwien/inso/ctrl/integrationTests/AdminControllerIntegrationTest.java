@@ -110,7 +110,6 @@ public class AdminControllerIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
         .andExpect(status().isOk());
 
-
     User updatedUser = userRepository.findById(standardUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
   }

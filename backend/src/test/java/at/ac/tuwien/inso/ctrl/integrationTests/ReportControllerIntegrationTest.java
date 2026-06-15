@@ -426,8 +426,7 @@ public class ReportControllerIntegrationTest {
   }
 
   @Test
-  public void getReportedSources_shouldReturnForbidden_WhenCalledByStandardUser()
-      throws Exception {
+  public void getReportedSources_shouldReturnForbidden_WhenCalledByStandardUser() throws Exception {
     mockMvc
         .perform(
             get(reportEndpoint + "/sources")
@@ -575,7 +574,8 @@ public class ReportControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
         .andExpect(jsonPath("$[0].reportReason").value("Inappropriate content"))
-        .andExpect(jsonPath("$[0].reportDescription").value("This source contains inappropriate content."))
+        .andExpect(
+            jsonPath("$[0].reportDescription").value("This source contains inappropriate content."))
         .andExpect(jsonPath("$[0].contentType").value("SOURCE"))
         .andExpect(jsonPath("$[0].status").value("CREATED"))
         .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
@@ -628,7 +628,9 @@ public class ReportControllerIntegrationTest {
         .andExpect(jsonPath("$[0].contentType").value("COMMENT"))
         .andExpect(jsonPath("$[0].status").value("CREATED"))
         .andExpect(jsonPath("$[0].reportReason").value("Inappropriate language"))
-        .andExpect(jsonPath("$[0].reportDescription").value("This comment contains inappropriate language."))
+        .andExpect(
+            jsonPath("$[0].reportDescription")
+                .value("This comment contains inappropriate language."))
         .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
         .andExpect(jsonPath("$[0].reportedUsername").value(contentUser.getUsername()));
   }
@@ -777,7 +779,8 @@ public class ReportControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
         .andExpect(jsonPath("$[0].reportReason").value("Harassment"))
-        .andExpect(jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
+        .andExpect(
+            jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
         .andExpect(jsonPath("$[0].contentType").value("COMMENT"))
         .andExpect(jsonPath("$[0].status").value("CREATED"))
         .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))
@@ -788,25 +791,19 @@ public class ReportControllerIntegrationTest {
   @Test
   public void getReportedComments_shouldReturnUnauthorized_WhenNoAuthorizationToken()
       throws Exception {
-    mockMvc
-        .perform(get(reportEndpoint + "/comments"))
-        .andExpect(status().isUnauthorized());
+    mockMvc.perform(get(reportEndpoint + "/comments")).andExpect(status().isUnauthorized());
   }
 
   @Test
   public void getReportedSources_shouldReturnUnauthorized_WhenNoAuthorizationToken()
       throws Exception {
-    mockMvc
-        .perform(get(reportEndpoint + "/sources"))
-        .andExpect(status().isUnauthorized());
+    mockMvc.perform(get(reportEndpoint + "/sources")).andExpect(status().isUnauthorized());
   }
 
   @Test
   public void getReportedAccounts_shouldReturnUnauthorized_WhenNoAuthorizationToken()
       throws Exception {
-    mockMvc
-        .perform(get(reportEndpoint + "/accounts"))
-        .andExpect(status().isUnauthorized());
+    mockMvc.perform(get(reportEndpoint + "/accounts")).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -832,7 +829,8 @@ public class ReportControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].reportId").value(report.getReportId()))
         .andExpect(jsonPath("$[0].reportReason").value("Harassment"))
-        .andExpect(jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
+        .andExpect(
+            jsonPath("$[0].reportDescription").value("This comment is harassing other users."))
         .andExpect(jsonPath("$[0].contentType").value("ACCOUNT"))
         .andExpect(jsonPath("$[0].status").value("CREATED"))
         .andExpect(jsonPath("$[0].reportedByUsername").value(adminUser.getUsername()))

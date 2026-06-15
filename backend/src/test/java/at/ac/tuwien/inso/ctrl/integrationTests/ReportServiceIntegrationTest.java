@@ -37,8 +37,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1083,7 +1081,8 @@ public class ReportServiceIntegrationTest {
             .createdAt(LocalDateTime.now())
             .build();
 
-    assertThrows(EntityNotFoundException.class, () -> reportMapper.toReportedSourceResponse(report));
+    assertThrows(
+        EntityNotFoundException.class, () -> reportMapper.toReportedSourceResponse(report));
   }
 
   private User createUser(String username) {
@@ -1184,6 +1183,4 @@ public class ReportServiceIntegrationTest {
             .build();
     return reportRepository.save(report);
   }
-
-
 }

@@ -42,8 +42,7 @@ public class AuthSchedulerIntegrationTest {
   @MockitoBean private GmailEmailService gmailEmailService;
 
   private User testUser;
-  @Autowired
-  private EmailVerificationRepository emailVerificationRepository;
+  @Autowired private EmailVerificationRepository emailVerificationRepository;
 
   @BeforeEach
   void setUp() {
@@ -56,6 +55,7 @@ public class AuthSchedulerIntegrationTest {
     testUser.setBirthdate(LocalDate.of(1990, 1, 1));
     userRepository.save(testUser);
   }
+
   @AfterEach
   void tearDown() {
     emailVerificationRepository.deleteAll();
@@ -97,7 +97,8 @@ public class AuthSchedulerIntegrationTest {
     validToken.setExpiryTime(LocalDateTime.now().plusMinutes(10));
     validToken.setInvalid(false);
 
-    List<EmailVerification> saved = emailVerificationRepository.saveAll(List.of(validToken, expiredToken));
+    List<EmailVerification> saved =
+        emailVerificationRepository.saveAll(List.of(validToken, expiredToken));
     EmailVerification savedValidToken = saved.get(0);
 
     authScheduler.deleteExpiredVerificationTokens();

@@ -1,5 +1,15 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
@@ -23,12 +33,10 @@ import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.FriendshipService;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.web.server.ResponseStatusException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,16 +44,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 public class BlockServiceUnitTest {
@@ -75,47 +74,58 @@ public class BlockServiceUnitTest {
 
   @BeforeEach
   void setUp() {
-	currentUser = createUser("currentUser");
-	blockedUser = createUser("blockedUser");
+    currentUser = createUser("currentUser");
+    blockedUser = createUser("blockedUser");
   }
 
   @Test
   public void inBlockedRelationship_withNoBlockedRelationship_shouldReturnFalse() {
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(any(), any())).thenReturn(false);
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(any(), any()))
+        .thenReturn(false);
 
     assertFalse(blockService.inBlockedRelationship(currentUser, blockedUser));
 
-    verify(blockedRelationRepository).existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
-    verify(blockedRelationRepository).existsBlockedRelationByUserAndBlockedUser(blockedUser, currentUser);
-
+    verify(blockedRelationRepository)
+        .existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
+    verify(blockedRelationRepository)
+        .existsBlockedRelationByUserAndBlockedUser(blockedUser, currentUser);
   }
 
   @Test
   public void inBlockedRelationship_withABlockedB_shouldReturnTrue() {
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(true);
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(true);
     assertTrue(blockService.inBlockedRelationship(currentUser, blockedUser));
 
-    verify(blockedRelationRepository).existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
+    verify(blockedRelationRepository)
+        .existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
   }
 
   @Test
   public void inBlockedRelationship_withBBlockedA_shouldReturnTrue() {
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(blockedUser, currentUser)).thenReturn(true);
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            blockedUser, currentUser))
+        .thenReturn(true);
 
     assertTrue(blockService.inBlockedRelationship(currentUser, blockedUser));
 
-    verify(blockedRelationRepository).existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
-    verify(blockedRelationRepository).existsBlockedRelationByUserAndBlockedUser(blockedUser, currentUser);
+    verify(blockedRelationRepository)
+        .existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
+    verify(blockedRelationRepository)
+        .existsBlockedRelationByUserAndBlockedUser(blockedUser, currentUser);
   }
-  
+
   @Test
   public void unblockUser_withValidUserAndValidUsername_shouldRemoveBlockingRelation() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
     BlockedRelationId expectedRelationId =
         new BlockedRelationId(currentUser.getId(), blockedUser.getId());
-    when(blockedRelationRepository.existsById(expectedRelationId))
-        .thenReturn(true);
+    when(blockedRelationRepository.existsById(expectedRelationId)).thenReturn(true);
 
     blockService.unblockUser(currentUser, blockedUser.getUsername());
 
@@ -126,13 +136,15 @@ public class BlockServiceUnitTest {
 
   @Test
   public void unblockUser_withInvalidUserAndValidUsername_shouldRemoveBlockingRelation() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
     BlockedRelationId expectedRelationId =
         new BlockedRelationId(currentUser.getId(), blockedUser.getId());
-    when(blockedRelationRepository.existsById(expectedRelationId))
-        .thenReturn(false);
+    when(blockedRelationRepository.existsById(expectedRelationId)).thenReturn(false);
 
-    assertThrows(EntityNotFoundException.class, () -> blockService.unblockUser(currentUser, blockedUser.getUsername()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () -> blockService.unblockUser(currentUser, blockedUser.getUsername()));
 
     verify(userRepository).findByUsername(blockedUser.getUsername());
   }
@@ -141,15 +153,19 @@ public class BlockServiceUnitTest {
   public void unblockUser_withValidUserAndInvalidUsername_shouldThrowException() {
     when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.empty());
 
-    assertThrows(EntityNotFoundException.class, () -> blockService.unblockUser(currentUser, blockedUser.getUsername()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () -> blockService.unblockUser(currentUser, blockedUser.getUsername()));
 
     verify(userRepository).findByUsername(blockedUser.getUsername());
   }
-  
+
   @Test
   public void blockUser_withValidUserAndUsernameInNoRelationship_shouldBlockUser() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser))
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
         .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
@@ -170,7 +186,8 @@ public class BlockServiceUnitTest {
     assertNotNull(savedRelation);
     assertEquals(currentUser, savedRelation.getUser());
     assertEquals(blockedUser, savedRelation.getBlockedUser());
-    assertEquals(new BlockedRelationId(currentUser.getId(), blockedUser.getId()), savedRelation.getId());
+    assertEquals(
+        new BlockedRelationId(currentUser.getId(), blockedUser.getId()), savedRelation.getId());
 
     verify(followService, never()).unfollow(any(), any());
     verify(friendshipService, never()).unfriend(any(), any());
@@ -181,31 +198,38 @@ public class BlockServiceUnitTest {
   public void blockUser_withValidUserAndInvalidUsername_shouldThrowException() {
     when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.empty());
 
-    assertThrows(EntityNotFoundException.class, () -> blockService.blockUser(currentUser, blockedUser.getUsername()));
+    assertThrows(
+        EntityNotFoundException.class,
+        () -> blockService.blockUser(currentUser, blockedUser.getUsername()));
 
     verify(userRepository).findByUsername(blockedUser.getUsername());
   }
 
   @Test
   public void blockUser_withValidUserAndUsernameAlreadyBlocked_shouldThrowException() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser))
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
         .thenReturn(true);
 
-    assertThrows(ResourceAlreadyExistsException.class, () -> blockService.blockUser(currentUser, blockedUser.getUsername()));
+    assertThrows(
+        ResourceAlreadyExistsException.class,
+        () -> blockService.blockUser(currentUser, blockedUser.getUsername()));
 
     verify(userRepository).findByUsername(blockedUser.getUsername());
     verify(blockedRelationRepository)
         .existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser);
-
   }
-
 
   @Test
   public void blockUser_whenCurrentUserFollowsTarget_shouldUnfollowTarget() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
-    when(followService.isFollowing(currentUser, blockedUser)).thenReturn(true);   // <-- branch hit
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
+    when(followService.isFollowing(currentUser, blockedUser)).thenReturn(true); // <-- branch hit
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
     when(followService.areFriends(currentUser, blockedUser)).thenReturn(false);
     when(friendshipService.getIncomingRequests(currentUser)).thenReturn(List.of());
@@ -219,10 +243,13 @@ public class BlockServiceUnitTest {
 
   @Test
   public void blockUser_whenTargetFollowsCurrentUser_shouldUnfollowCurrentUser() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
-    when(followService.isFollowing(blockedUser, currentUser)).thenReturn(true);   // <-- branch hit
+    when(followService.isFollowing(blockedUser, currentUser)).thenReturn(true); // <-- branch hit
     when(followService.areFriends(currentUser, blockedUser)).thenReturn(false);
     when(friendshipService.getIncomingRequests(currentUser)).thenReturn(List.of());
     when(friendshipService.getSentRequests(currentUser)).thenReturn(List.of());
@@ -235,11 +262,14 @@ public class BlockServiceUnitTest {
 
   @Test
   public void blockUser_whenUsersAreFriends_shouldUnfriend() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
-    when(followService.areFriends(currentUser, blockedUser)).thenReturn(true);    // <-- branch hit
+    when(followService.areFriends(currentUser, blockedUser)).thenReturn(true); // <-- branch hit
     when(friendshipService.getIncomingRequests(currentUser)).thenReturn(List.of());
     when(friendshipService.getSentRequests(currentUser)).thenReturn(List.of());
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of());
@@ -251,15 +281,19 @@ public class BlockServiceUnitTest {
 
   @Test
   public void blockUser_whenBlockedUserSentIncomingRequest_shouldCancelIt() {
-    FriendRequestResponse incomingRequest = new FriendRequestResponse(
-        blockedUser.getUsername(), null, true, null);
+    FriendRequestResponse incomingRequest =
+        new FriendRequestResponse(blockedUser.getUsername(), null, true, null);
 
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
     when(followService.areFriends(currentUser, blockedUser)).thenReturn(false);
-    when(friendshipService.getIncomingRequests(currentUser)).thenReturn(List.of(incomingRequest)); // <-- branch hit
+    when(friendshipService.getIncomingRequests(currentUser))
+        .thenReturn(List.of(incomingRequest)); // <-- branch hit
     when(friendshipService.getSentRequests(currentUser)).thenReturn(List.of());
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of());
 
@@ -270,16 +304,20 @@ public class BlockServiceUnitTest {
 
   @Test
   public void blockUser_whenCurrentUserSentRequestToTarget_shouldCancelIt() {
-    FriendRequestResponse sentRequest = new FriendRequestResponse(
-        blockedUser.getUsername(), null, false, null);
+    FriendRequestResponse sentRequest =
+        new FriendRequestResponse(blockedUser.getUsername(), null, false, null);
 
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser)).thenReturn(false);
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
+        .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
     when(followService.areFriends(currentUser, blockedUser)).thenReturn(false);
     when(friendshipService.getIncomingRequests(currentUser)).thenReturn(List.of());
-    when(friendshipService.getSentRequests(currentUser)).thenReturn(List.of(sentRequest));         // <-- branch hit
+    when(friendshipService.getSentRequests(currentUser))
+        .thenReturn(List.of(sentRequest)); // <-- branch hit
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of());
 
     blockService.blockUser(currentUser, blockedUser.getUsername());
@@ -293,7 +331,8 @@ public class BlockServiceUnitTest {
     stubNoRelationship();
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of(post));
     when(commentRepository.findCommentsByUserAndPost(blockedUser, post)).thenReturn(List.of());
-    when(postVoteRepository.findById(new PostVoteId(post.getPostId(), blockedUser.getId().toString())))
+    when(postVoteRepository.findById(
+            new PostVoteId(post.getPostId(), blockedUser.getId().toString())))
         .thenReturn(Optional.empty());
 
     blockService.blockUser(currentUser, blockedUser.getUsername());
@@ -309,7 +348,8 @@ public class BlockServiceUnitTest {
     Comment comment = createComment("c1");
     stubNoRelationship();
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of(post));
-    when(commentRepository.findCommentsByUserAndPost(blockedUser, post)).thenReturn(List.of(comment));
+    when(commentRepository.findCommentsByUserAndPost(blockedUser, post))
+        .thenReturn(List.of(comment));
     when(commentRepository.findById("c1")).thenReturn(Optional.of(comment));
     when(postVoteRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -319,15 +359,18 @@ public class BlockServiceUnitTest {
   }
 
   @Test
-  public void removeBlockedUserContent_withCommentNotFoundById_shouldThrowResponseStatusException() {
+  public void
+      removeBlockedUserContent_withCommentNotFoundById_shouldThrowResponseStatusException() {
     Post post = createPost("post1", null);
     Comment comment = createComment("c1");
     stubNoRelationship();
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of(post));
-    when(commentRepository.findCommentsByUserAndPost(blockedUser, post)).thenReturn(List.of(comment));
+    when(commentRepository.findCommentsByUserAndPost(blockedUser, post))
+        .thenReturn(List.of(comment));
     when(commentRepository.findById("c1")).thenReturn(Optional.empty());
 
-    assertThrows(ResponseStatusException.class,
+    assertThrows(
+        ResponseStatusException.class,
         () -> blockService.blockUser(currentUser, blockedUser.getUsername()));
   }
 
@@ -364,7 +407,8 @@ public class BlockServiceUnitTest {
     Source source = createSource("src1");
     Post post = createPost("post1", source);
     SourceVote sourceVote = new SourceVote();
-    SourceVoteId sourceVoteId = new SourceVoteId(source.getSourceId(), blockedUser.getId().toString());
+    SourceVoteId sourceVoteId =
+        new SourceVoteId(source.getSourceId(), blockedUser.getId().toString());
     stubNoRelationship();
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of(post));
     when(commentRepository.findCommentsByUserAndPost(blockedUser, post)).thenReturn(List.of());
@@ -380,7 +424,8 @@ public class BlockServiceUnitTest {
   public void removeBlockedUserContent_withSourceAndNoSourceVote_shouldNotDeleteSourceVote() {
     Source source = createSource("src1");
     Post post = createPost("post1", source);
-    SourceVoteId sourceVoteId = new SourceVoteId(source.getSourceId(), blockedUser.getId().toString());
+    SourceVoteId sourceVoteId =
+        new SourceVoteId(source.getSourceId(), blockedUser.getId().toString());
     stubNoRelationship();
     when(postRepository.findPostsByUser(currentUser)).thenReturn(List.of(post));
     when(commentRepository.findCommentsByUserAndPost(blockedUser, post)).thenReturn(List.of());
@@ -391,7 +436,7 @@ public class BlockServiceUnitTest {
 
     verify(sourceVoteRepository, never()).delete(any());
   }
-  
+
   @Test
   public void getBlockedUsers_withValidUserButNullSearch_shouldReturnEmptyList() {
     when(blockedRelationRepository.findBlockedUserByUser(currentUser)).thenReturn(List.of());
@@ -418,7 +463,8 @@ public class BlockServiceUnitTest {
   @Test
   public void getBlockedUsers_withSearch_shouldUseSearchRepositoryAndMapResults() {
     BlockedResponse mapped =
-        new BlockedResponse(blockedUser.getId(), blockedUser.getUsername(), blockedUser.getProfilePicture());
+        new BlockedResponse(
+            blockedUser.getId(), blockedUser.getUsername(), blockedUser.getProfilePicture());
     when(blockedRelationRepository.findBlockedUserByUserAndSearch(currentUser, "blocked"))
         .thenReturn(List.of(blockedUser));
     when(relationshipMapper.toBlockedResponse(blockedUser)).thenReturn(mapped);
@@ -433,8 +479,10 @@ public class BlockServiceUnitTest {
   }
 
   private void stubNoRelationship() {
-    when(userRepository.findByUsername(blockedUser.getUsername())).thenReturn(Optional.of(blockedUser));
-    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(currentUser, blockedUser))
+    when(userRepository.findByUsername(blockedUser.getUsername()))
+        .thenReturn(Optional.of(blockedUser));
+    when(blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, blockedUser))
         .thenReturn(false);
     when(followService.isFollowing(currentUser, blockedUser)).thenReturn(false);
     when(followService.isFollowing(blockedUser, currentUser)).thenReturn(false);
@@ -463,11 +511,11 @@ public class BlockServiceUnitTest {
   }
 
   private User createUser(String username) {
-	User user = new User();
-	user.setId(UUID.randomUUID());
-	user.setUsername(username);
-	user.setEmail(username + "@test.com");
-	user.setName(username);
-	return user;
+    User user = new User();
+    user.setId(UUID.randomUUID());
+    user.setUsername(username);
+    user.setEmail(username + "@test.com");
+    user.setName(username);
+    return user;
   }
 }
