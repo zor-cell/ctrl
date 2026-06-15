@@ -1,9 +1,7 @@
 import {Component, computed, inject, input} from "@angular/core";
-import { SessionService } from "../../../core/services/session.service";
 import { ChartModule } from "primeng/chart";
 import { SessionConfigService } from "../../session-config.service";
 import { RouterLink } from "@angular/router";
-import {toSignal} from "@angular/core/rxjs-interop";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Button} from "primeng/button";
 import {SessionStateService} from "../../session-state.service";
