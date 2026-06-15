@@ -1,0 +1,128 @@
+@if (chat; as selectedChat) {
+  <p-dialog
+    [header]="selectedChat.name + ' – Members'"
+    [visible]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '90vw', maxWidth: '420px' }"
+    styleClass="chat-dialog members-dialog">
+    <ul class="members-list">
+      @for (participant of members; track participant.id) {
+        <li class="member-row" [class.member-row--owner]="isGroupOwner(participant, selectedChat)">
+          <div class="member-profile-wrapper">
+            <button
+              type="button"
+              class="member-profile-button"
+              [class.member-profile-button--disabled]="!canOpenParticipantProfile(participant)"
+              (click)="openParticipantProfile.emit(participant)"
+              [pTooltip]="isBlockedParticipant(participant) ? '' : participantProfileTooltip(participant)"
+              tooltipPosition="top"
+              [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
+              <span class="avatar" aria-hidden="true">
+                @if (avatarUrl(participant.id)) {
+                  <img [src]="avatarUrl(participant.id)" alt="" />
+                } @else {
+                  {{ initialFor(participant) }}
+                }
+              </span>
+              <span class="row-copy">
+                <span class="row-title">
+                  {{ participant.name || participant.username }}
+                  @if (isGroupOwner(participant, selectedChat)) {
+                    <span class="owner-badge">Owner</span>
+                  }
+                  @if (isFriendParticipant(participant)) {
+                    <span class="friend-badge">Friend</span>
+                  }
+                  @if (isBlockedParticipant(participant)) {
+                    <span class="blocked-badge">Blocked</span>
+                  }
+                </span>
+                <span class="row-subtitle">&#64;{{ participant.username }}</span>
+              </span>
+            </button>
+            @if (isBlockedParticipant(participant)) {
+              <div class="member-profile-popover" role="tooltip">
+                <p>You blocked this user. To see their profile, please unblock them first.</p>
+                <a
+                  routerLink="/followed"
+                  [queryParams]="{ tab: 'blocked' }"
+                  (click)="$event.stopPropagation()">
+                  Manage blocked users
+                </a>
+              </div>
+            }
+          </div>
+          @if (canRemoveMember(participant, selectedChat)) {
+            <button
+              type="button"
+              class="member-remove-button"
+              (click)="removeMember.emit(participant)"
+              pTooltip="Remove member"
+              tooltipPosition="left"
+              aria-label="Remove member">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (selectedChat.owner) {
+      <section class="add-members-section">
+        <div class="members-picker-header">
+          <span class="section-title">Add members</span>
+          <span class="selected-count">{{ selectedAddMemberCount }} / {{ maxGroupMembers }} members</span>
+        </div>
+
+        <p-iconField iconPosition="left" class="members-search">
+          <p-inputIcon styleClass="pi pi-search" />
+          <input
+            type="text"
+            pInputText
+            placeholder="Search friends"
+            [ngModel]="addMemberSearch"
+            (ngModelChange)="addMemberSearchChange.emit($event)"
+            name="addMemberSearch" />
+        </p-iconField>
+
+        <div class="group-friends-list add-members-list">
+          @if (friendsToAdd.length === 0) {
+            <p class="picker-empty">No friends to add</p>
+          } @else {
+            @for (friend of friendsToAdd; track friend.id) {
+              <label class="group-friend-row">
+                <input
+                  type="checkbox"
+                  [checked]="isAddMemberFriendSelected(friend.username)"
+                  [disabled]="!canToggleAddMember(friend.username)"
+                  (change)="toggleAddMemberFriend.emit(friend.username)" />
+                <span class="avatar" aria-hidden="true">
+                  @if (avatarUrl(friend.id)) {
+                    <img [src]="avatarUrl(friend.id)" alt="" />
+                  } @else {
+                    {{ initialFor(friend) }}
+                  }
+                </span>
+                <span class="row-copy">
+                  <span class="row-title">{{ friend.name || friend.username }}</span>
+                  <span class="row-subtitle">&#64;{{ friend.username }}</span>
+                </span>
+              </label>
+            }
+          }
+        </div>
+
+        <button
+          type="button"
+          class="primary-button add-members-button"
+          [disabled]="!canAddMembers"
+          (click)="addMembers.emit()">
+          Add to group
+        </button>
+      </section>
+    }
+  </p-dialog>
+}

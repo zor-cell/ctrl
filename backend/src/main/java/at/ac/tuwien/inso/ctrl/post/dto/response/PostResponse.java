@@ -8,6 +8,7 @@ public record PostResponse(
     String postId,
     UUID userId,
     String username,
+    boolean userDeleted,
     String sourceId,
     SourceResponse source,
     String caption,

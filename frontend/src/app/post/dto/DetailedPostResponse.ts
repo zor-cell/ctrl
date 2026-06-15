@@ -1,11 +1,19 @@
 import { VoteType } from "../post.service";
 import { CommentResponse, SourceResponse } from "./PostResponse";
 
+export interface LabelResponse {
+  labelId: string;
+  name: string;
+  emoji: string;
+  explanation: string;
+}
+
 export interface DetailedPostResponse {
   postId: string;
   userId: string;
   username: string;
   userProfilePicture: string;
+  userDeleted: boolean;
   sourceId: string | null;
   source: SourceResponse | null;
   caption: string;
@@ -15,7 +23,7 @@ export interface DetailedPostResponse {
   userProfileUrl: string | null;
   wasReportedByUser: boolean;
   isAiGenerated: boolean;
-  labelIds: string[];
+  labelIds: LabelResponse[];
   topicIds: string[];
   comments: CommentResponse[];
   upvotes: number;

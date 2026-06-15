@@ -5,6 +5,7 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -30,7 +31,14 @@ public class Shared {
   private UUID sharedId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "post_id", referencedColumnName = "post_id", nullable = false)
+  @JoinColumn(
+      name = "post_id",
+      referencedColumnName = "post_id",
+      nullable = true,
+      foreignKey =
+          @ForeignKey(
+              foreignKeyDefinition =
+                  "FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE SET NULL"))
   private Post post;
 
   @ManyToOne(fetch = FetchType.LAZY)

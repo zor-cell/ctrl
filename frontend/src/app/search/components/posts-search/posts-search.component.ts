@@ -19,6 +19,7 @@ import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
 import {SessionStateService} from "../../../session/session-state.service";
+import { PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 
 /**
  * Posts Search Component
@@ -43,6 +44,7 @@ import {SessionStateService} from "../../../session/session-state.service";
     MultiSelectModule,
     ProgressSpinnerModule,
     PostPreviewCardComponent,
+    PostDetailDialogComponent,
   ],
   templateUrl: './posts-search.component.html',
   styleUrl: './posts-search.component.scss',
@@ -58,7 +60,9 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   private injector = inject(Injector);
   protected sessionState = inject(SessionStateService);
 
-  private _destroy$ = new Subject<void>();
+  selectedPostId = signal<string | null>(null);
+
+  private readonly _destroy$ = new Subject<void>();
 
   // Search state
   searchQuery = signal<string>('');
@@ -325,7 +329,16 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
    */
   onPostSelected(preview: PostPreview): void {
     this.searchService.saveScrollPosition(window.scrollY);
-    this.router.navigate(['/posts', preview.postId]);
+    this.selectedPostId.set(preview.postId); // ← Dialog öffnen statt navigieren
+  }
+
+  onDialogDismissed(): void {
+    this.selectedPostId.set(null);
+  }
+
+  onPostDeleted(postId: string): void {
+    this.selectedPostId.set(null);
+    this.searchResults.update(results => results.filter(p => p.postId !== postId));
   }
 
   /**

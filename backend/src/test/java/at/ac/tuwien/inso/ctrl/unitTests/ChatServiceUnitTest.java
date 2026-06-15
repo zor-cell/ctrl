@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.unitTests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -35,6 +36,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -65,6 +67,7 @@ class ChatServiceUnitTest {
 
   private static final String EMOJI_THUMBS_UP = "👍";
   private static final String EMOJI_HEART = "❤️";
+  private static final String EMOJI_FIRE = "🔥";
 
   @Mock private ChatRepository chatRepository;
   @Mock private ChatMemberRepository chatMemberRepository;
@@ -76,6 +79,7 @@ class ChatServiceUnitTest {
   @Mock private FriendRelationRepository friendRelationRepository;
   @Mock private FileStorageService fileStorageService;
   @Mock private ChatMessageBroadcaster chatMessageBroadcaster;
+  @Mock private BlockService blockService;
   @Mock private EntityManager entityManager;
 
   @InjectMocks private ChatService chatService;
@@ -116,6 +120,20 @@ class ChatServiceUnitTest {
   }
 
   @Test
+  void getChat_whenStoredGroupOwnerIsDeleted_treatsActiveMembersAsOwners() {
+    User deletedOwner = createUser("deletedOwner");
+    deletedOwner.setDeleted(true);
+    Chat chat = groupChat(deletedOwner, deletedOwner, alice, bob);
+    stubChatMembership(chat, true);
+    stubResponseMappers();
+
+    var response = chatService.getChat(alice, chat.getChatId());
+
+    assertTrue(response.owner());
+    assertEquals(Set.of(alice.getId(), bob.getId()), Set.copyOf(response.ownerIds()));
+  }
+
+  @Test
   void markChatAsRead_forNonMember_throwsForbidden() {
     Chat chat = directChat(alice, bob);
     stubChatMembership(chat, false);
@@ -139,6 +157,18 @@ class ChatServiceUnitTest {
     verify(chatRepository).findActiveChatsForUserWithDetails(alice.getId());
     verify(chatMemberRepository, never()).findChatIdsForUser(any());
     verify(chatRepository, never()).findByChatIdWithDetails(any());
+  }
+
+  @Test
+  void getChats_excludesDirectChatsWithBlockedUsers() {
+    Chat chat = directChat(alice, bob);
+    when(chatRepository.findActiveChatsForUserWithDetails(alice.getId())).thenReturn(List.of(chat));
+    when(blockService.inBlockedRelationship(alice, bob)).thenReturn(true);
+
+    var response = chatService.getChats(alice);
+
+    assertTrue(response.isEmpty());
+    verify(messageRepository, never()).findTopByChatOrderByDateDesc(any());
   }
 
   @Test
@@ -311,6 +341,23 @@ class ChatServiceUnitTest {
         .publishMessageEvent(any(), eq(chat.getChatId()), any());
   }
 
+  @Test
+  void sendMessage_inBlockedDirectChat_throwsForbiddenAndDoesNotBroadcast() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    when(blockService.inBlockedRelationship(alice, bob)).thenReturn(true);
+    SendMessageRequest request = new SendMessageRequest("hello?", null);
+
+    ResponseStatusException ex =
+        assertThrows(
+            ResponseStatusException.class,
+            () -> chatService.sendMessage(alice, chat.getChatId(), request));
+
+    assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    verify(messageRepository, never()).save(any(Message.class));
+    verify(chatMessageBroadcaster, never()).publishMessageEvent(any(), any(), any());
+  }
+
   // ---------------------------------------------------------------------------
   // reactToMessage
   // ---------------------------------------------------------------------------
@@ -351,13 +398,14 @@ class ChatServiceUnitTest {
     when(messageRepository.findById(message.getMessageId())).thenReturn(Optional.of(message));
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.empty());
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of());
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
     verify(reactionRepository).save(any(Reaction.class));
-    verify(reactionRepository, never()).delete(any(Reaction.class));
+    verify(reactionRepository, never()).deleteAllByUserIdAndMessageId(any(), any());
     verify(chatMessageBroadcaster, atLeastOnce())
         .publishMessageEvent(any(), eq(chat.getChatId()), any());
   }
@@ -372,17 +420,18 @@ class ChatServiceUnitTest {
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
     Reaction existing = reaction(message, alice, EMOJI_THUMBS_UP);
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.of(existing));
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of(existing));
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
-    verify(reactionRepository).delete(existing);
+    verify(reactionRepository).deleteAllByUserIdAndMessageId(alice.getId(), message.getMessageId());
     verify(reactionRepository, never()).save(any(Reaction.class));
   }
 
   @Test
-  void reactToMessage_withDifferentEmoji_updatesReaction() {
+  void reactToMessage_withDifferentEmoji_replacesExistingReaction() {
     Chat chat = directChat(alice, bob);
     stubChatMembership(chat, true);
     stubResponseMappers();
@@ -390,15 +439,15 @@ class ChatServiceUnitTest {
     when(messageRepository.findById(message.getMessageId())).thenReturn(Optional.of(message));
     when(messageRepository.findWithDetailsByMessageId(message.getMessageId()))
         .thenReturn(Optional.of(message));
-    Reaction existing = reaction(message, alice, EMOJI_HEART);
-    when(reactionRepository.findById(any(ReactionId.class))).thenReturn(Optional.of(existing));
+    Reaction existing = reaction(message, alice, EMOJI_FIRE);
+    when(reactionRepository.findAllByUserIdAndMessageId(alice.getId(), message.getMessageId()))
+        .thenReturn(List.of(existing));
 
     AddReactionRequest request = new AddReactionRequest(EMOJI_THUMBS_UP);
     chatService.reactToMessage(alice, chat.getChatId(), message.getMessageId(), request);
 
-    assertEquals(EMOJI_THUMBS_UP, existing.getContent());
-    verify(reactionRepository).save(existing);
-    verify(reactionRepository, never()).delete(any(Reaction.class));
+    verify(reactionRepository).deleteAllByUserIdAndMessageId(alice.getId(), message.getMessageId());
+    verify(reactionRepository).save(any(Reaction.class));
   }
 
   // ---------------------------------------------------------------------------
@@ -556,7 +605,7 @@ class ChatServiceUnitTest {
 
   private Reaction reaction(Message message, User from, String emoji) {
     return Reaction.builder()
-        .id(new ReactionId(from.getId(), message.getMessageId()))
+        .id(new ReactionId(from.getId(), message.getMessageId(), emoji))
         .message(message)
         .fromUser(from)
         .content(emoji)

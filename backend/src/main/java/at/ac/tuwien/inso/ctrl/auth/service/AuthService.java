@@ -66,7 +66,7 @@ public class AuthService {
 
     var user =
         userRepository
-            .findByUsername(username)
+            .findByUsernameAndDeletedFalse(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     if (requireEmailVerification) {
       if (!user.isEmailVerified()) {

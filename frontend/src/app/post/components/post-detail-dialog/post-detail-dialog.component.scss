@@ -1,0 +1,12 @@
+:host ::ng-deep .post-detail-dialog {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+:host ::ng-deep .post-detail-dialog .p-dialog-content {
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+}

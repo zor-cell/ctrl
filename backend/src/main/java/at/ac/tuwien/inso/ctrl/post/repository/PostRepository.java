@@ -10,17 +10,48 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, String> {
   boolean existsByExternalPostId(String externalPostId);
 
-  List<Post> findAllByUserUsernameOrderByCreatedAtDesc(String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.user.username = :username
+        AND p.isRemoved = false
+      ORDER BY p.createdAt DESC
+      """)
+  List<Post> findAllByUserUsernameOrderByCreatedAtDesc(@Param("username") String username);
 
-  List<Post> findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.user.username = :username
+        AND p.isPublic = true
+        AND p.isRemoved = false
+      ORDER BY p.createdAt DESC
+      """)
+  List<Post> findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+      @Param("username") String username);
 
-  Optional<Post> findByPostIdAndUserUsername(String postId, String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.postId = :postId
+        AND p.user.username = :username
+        AND p.isRemoved = false
+      """)
+  Optional<Post> findByPostIdAndUserUsername(
+      @Param("postId") String postId, @Param("username") String username);
+
+  List<Post> findAllByUserId(UUID userId);
+
+  @Modifying
+  @Query("UPDATE Post p SET p.isRemoved = true WHERE p.user.id = :userId")
+  int markAllByUserAsRemoved(@Param("userId") UUID userId);
 
   boolean existsByMediaRef(String mediaRef);
 

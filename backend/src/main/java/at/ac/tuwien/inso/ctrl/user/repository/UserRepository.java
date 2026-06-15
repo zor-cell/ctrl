@@ -16,7 +16,26 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   @Query(
       """
-      SELECT u FROM User u WHERE u.isSuspended = false AND LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+      SELECT u FROM User u
+      WHERE u.username = :username
+        AND (u.deleted = false OR u.deleted IS NULL)
+      """)
+  Optional<User> findByUsernameAndDeletedFalse(@Param("username") String username);
+
+  @Query(
+      """
+      SELECT u FROM User u
+      WHERE u.id = :id
+        AND (u.deleted = false OR u.deleted IS NULL)
+      """)
+  Optional<User> findByIdAndDeletedFalse(@Param("id") UUID id);
+
+  @Query(
+      """
+      SELECT u FROM User u
+      WHERE u.isSuspended = false
+      AND (u.deleted = false OR u.deleted IS NULL)
+      AND LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
       """)
   List<User> findByUsernameContainingIgnoreCaseAndFilterSuspended(String search);
 

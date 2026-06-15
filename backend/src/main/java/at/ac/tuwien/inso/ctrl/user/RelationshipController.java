@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.user;
 
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.service.BlockService;
@@ -21,6 +22,7 @@ public class RelationshipController {
   private final FollowService followService;
   private final FriendshipService friendshipService;
   private final BlockService blockService;
+  private final ChatService chatService;
 
   @GetMapping("/friends")
   public List<FriendResponse> getFriends(
@@ -96,6 +98,7 @@ public class RelationshipController {
   @ResponseStatus(HttpStatus.CREATED)
   public void block(@AuthenticationPrincipal User currentUser, @PathVariable String username) {
     blockService.blockUser(currentUser, username);
+    chatService.publishBlockedDirectChatRemoval(currentUser, username);
   }
 
   @DeleteMapping("/block/{username}")

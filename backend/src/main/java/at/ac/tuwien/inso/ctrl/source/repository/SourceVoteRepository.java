@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SourceVoteRepository extends JpaRepository<SourceVote, SourceVoteId> {
   List<SourceVote> findByIdUserIdAndIdSourceIdIn(String userId, List<String> sourceIds);
+
+  List<SourceVote> findByIdUserId(String userId);
 }

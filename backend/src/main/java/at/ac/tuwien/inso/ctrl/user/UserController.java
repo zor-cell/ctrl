@@ -63,6 +63,12 @@ public class UserController {
     return userService.deleteProfilePicture(currentUser);
   }
 
+  @DeleteMapping("/me")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteCurrentUser(@AuthenticationPrincipal User currentUser) {
+    userService.deleteCurrentUser(currentUser);
+  }
+
   @PutMapping("/me/password")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updatePassword(

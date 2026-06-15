@@ -3,12 +3,14 @@ export interface ChatParticipant {
   username: string;
   name: string | null;
   profilePicture: string | null;
+  deleted: boolean;
 }
 
 export interface MessageReaction {
   emoji: string;
   count: number;
   reactedByCurrentUser: boolean;
+  users: string[];
 }
 
 export interface SharedPost {
@@ -52,6 +54,7 @@ export interface Chat {
   createdAt: string;
   groupChat: boolean;
   ownerId: string | null;
+  ownerIds: string[];
   groupOwner: ChatParticipant | null;
   owner: boolean;
   personalMessageCount: number;

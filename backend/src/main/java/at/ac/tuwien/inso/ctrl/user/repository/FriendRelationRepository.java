@@ -52,6 +52,10 @@ public interface FriendRelationRepository extends JpaRepository<FriendRelation, 
       """)
   void deleteFriendship(@Param("user1") User user1, @Param("user2") User user2);
 
+  @Modifying
+  @Query("DELETE FROM FriendRelation fr WHERE fr.friend1 = :user OR fr.friend2 = :user")
+  int deleteAllByUser(@Param("user") User user);
+
   @Query(
       """
       SELECT CASE WHEN COUNT(fr) > 0 THEN true ELSE false END

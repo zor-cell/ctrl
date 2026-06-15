@@ -1,0 +1,17 @@
+<p-dialog
+  [visible]="postId !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [showHeader]="false"
+  styleClass="post-detail-dialog"
+  [style]="{ width: 'min(45rem, 92vw)' }"
+  (visibleChange)="onVisibleChange($event)"
+>
+  <app-post-detail-view
+    [postId]="postId"
+    (closeClicked)="onVisibleChange(false)"
+    (postDeleted)="onPostDeleted($event)"
+  />
+</p-dialog>

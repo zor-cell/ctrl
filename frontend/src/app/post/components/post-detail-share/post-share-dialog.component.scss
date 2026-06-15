@@ -1,0 +1,311 @@
+// ─── Tokens ───────────────────────────────────────────
+$border:     var(--border);
+$text-muted: #888;
+$upvote:     #5bc97a;
+$downvote:   #e05858;
+$radius-sm:  10px;
+
+:host {
+  display: block;
+  max-height: min(46rem, 88vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// ─── Loading / Error ──────────────────────────────────
+.pdv-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.pdv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: $text-muted;
+
+  i { font-size: 2rem; opacity: 0.4; }
+  p { font-size: 0.88rem; margin: 0; }
+}
+
+// ─── Post Header ──────────────────────────────────────
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid $border;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--p-content-background, #fff);
+
+  .post-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-username {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .post-username--link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    &:hover { text-decoration: underline; }
+  }
+
+  .post-info {
+    font-size: 0.78rem;
+    color: $text-muted;
+  }
+}
+
+.post-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.post-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+:host ::ng-deep .post-label {
+  color: $text-muted !important;
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+  border: 1px solid $border !important;
+}
+
+// ─── Media ────────────────────────────────────────────
+.preview-image-wrapper {
+  width: 100%;
+  background: var(--p-surface-100, #f4f4f4);
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+// ─── Caption ──────────────────────────────────────────
+.post-caption {
+  padding: 14px 16px 8px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-line;
+}
+
+// ─── Source ───────────────────────────────────────────
+.post-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px 12px;
+
+  .post-source-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.post-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid $border;
+  font-size: 0.75rem;
+  color: $text-muted;
+  text-decoration: none;
+  transition: all 0.2s;
+
+  i { font-size: 0.7rem; }
+  &:hover { color: var(--p-primary-color); border-color: var(--p-primary-color); }
+}
+
+.hint-icon {
+  font-size: 0.8rem;
+  color: $text-muted;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin: 0 0.1rem;
+
+  &:hover { color: var(--p-primary-color, #6366f1); }
+}
+
+// ─── Actions ──────────────────────────────────────────
+.post-actions {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 12px;
+  border-top: 1px solid $border;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--p-content-background, #fff);
+
+  .post-actions-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid $border;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  i { font-size: 0.9rem; }
+
+  &.heart:hover  { border-color: $downvote; color: $downvote; }
+  &.heart.active { color: $downvote; border-color: $downvote; }
+
+  &.upvote:hover   { color: $upvote;   border-color: $upvote; }
+  &.downvote:hover { color: $downvote; border-color: $downvote; }
+
+  &.upvote.active   { color: $upvote;   border-color: $upvote; }
+  &.downvote.active { color: $downvote; border-color: $downvote; }
+
+  &.flag-btn {
+    border-color: transparent;
+    padding: 6px 8px;
+    &:hover { color: $downvote; border-color: transparent; background: transparent; }
+  }
+
+  &.source-flag-btn {
+    margin-left: auto;
+  }
+}
+
+// ─── Divider ──────────────────────────────────────────
+.comments-divider {
+  height: 1px;
+  background: $border;
+}
+
+// ─── Share Dialog ─────────────────────────────────────
+.share-dialog-content {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.share-search {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  font: inherit;
+}
+
+.share-targets-list {
+  display: grid;
+  gap: 0.4rem;
+  max-height: min(22rem, 52vh);
+  overflow-y: auto;
+}
+
+.share-target-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $border;
+    background: var(--p-content-hover-background);
+  }
+}
+
+.share-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border: 1px solid $border;
+  border-radius: 999px;
+  background: var(--p-content-hover-background);
+  color: var(--p-text-color);
+  font-weight: 700;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.share-target-copy {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+
+  strong, span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: $text-muted;
+    font-size: 0.8rem;
+  }
+}
+
+.share-target-kind {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: var(--p-text-muted-color);
+  background: var(--p-content-hover-background);
+}
+
+.share-empty {
+  margin: 0;
+  padding: 1rem;
+  color: $text-muted;
+  text-align: center;
+}
