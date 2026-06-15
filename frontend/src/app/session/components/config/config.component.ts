@@ -10,6 +10,8 @@ import {Slider} from "primeng/slider";
 import {ConfirmationService} from "primeng/api";
 import {SessionStateService} from "../../session-state.service";
 import {UsageComponent} from "../usage/usage.component";
+import {toSignal} from "@angular/core/rxjs-interop";
+import {ConfirmDialog} from "primeng/confirmdialog";
 
 @Component({
   selector: 'app-session-config',
@@ -22,7 +24,8 @@ import {UsageComponent} from "../usage/usage.component";
     ToggleSwitch,
     Tooltip,
     Slider,
-    UsageComponent
+    UsageComponent,
+    ConfirmDialog
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
@@ -31,9 +34,11 @@ import {UsageComponent} from "../usage/usage.component";
 export class SessionConfigComponent implements OnInit {
   private readonly configService = inject(SessionConfigService);
   private readonly fb = inject(NonNullableFormBuilder);
-  protected sessionState = inject(SessionStateService);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly sessionState = inject(SessionStateService);
 
   protected isLoading = signal<boolean>(true);
+  protected usage = toSignal(this.configService.getDailyUsage());
 
   protected configForm = this.fb.group({
     timeLimitMinutes: [50, [Validators.required, Validators.min(0)]],
@@ -62,8 +67,25 @@ export class SessionConfigComponent implements OnInit {
 
     const formValue = this.configForm.getRawValue() as SessionConfig;
 
-    this.configService.updateConfig(formValue).subscribe(updatedConfig => {
-      this.configForm.patchValue(updatedConfig);
-    });
+    const usage = this.usage();
+    if (!this.sessionState.isLimitActive() && usage && (formValue.timeLimitMinutes < usage.elapsedMinutes || formValue.postLimit < usage.seenPosts)) {
+      this.confirmationService.confirm({
+        header: 'Confirm Limit Reduction',
+        message: 'Your new limits are lower than your current usage today. Saving these changes will restrict your session immediately. Do you want to proceed?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptIcon: 'pi pi-check mr-2',
+        rejectIcon: 'pi pi-times mr-2',
+        rejectButtonStyleClass: 'p-button-text',
+        accept: () => this.executeSave(formValue)
+      });
+    } else {
+      this.executeSave(formValue);
+    }
+  }
+
+  private executeSave(config: SessionConfig) {
+    this.configService.updateConfig(config).subscribe(updatedConfig => {
+        this.configForm.patchValue(updatedConfig);
+      });
   }
 }

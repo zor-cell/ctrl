@@ -1,4 +1,4 @@
-import {Component, computed, inject} from "@angular/core";
+import {Component, computed, inject, input} from "@angular/core";
 import { SessionService } from "../../../core/services/session.service";
 import { ChartModule } from "primeng/chart";
 import { SessionConfigService } from "../../session-config.service";
@@ -7,6 +7,7 @@ import {toSignal} from "@angular/core/rxjs-interop";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Button} from "primeng/button";
 import {SessionStateService} from "../../session-state.service";
+import {Usage} from "../../dto/usage";
 
 @Component({
   selector: 'app-usage',
@@ -25,7 +26,7 @@ export class UsageComponent {
   Math = Math;
 
   protected sessionConfig = this.sessionConfigService.config;
-  protected usage = toSignal(this.sessionConfigService.getDailyUsage());
+  public usage = input.required<Usage | undefined>();
 
   protected isLoading = computed(() => this.sessionConfig() === undefined || this.usage() === undefined);
 
