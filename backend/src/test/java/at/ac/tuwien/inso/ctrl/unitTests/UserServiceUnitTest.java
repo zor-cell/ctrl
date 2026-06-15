@@ -405,7 +405,8 @@ public class UserServiceUnitTest {
   void conductUserCleanup_withUnverifiedUsers_cleansTokensAndDeletesUsers() {
     User userOne = createUser("cleanup-one");
     User userTwo = createUser("cleanup-two");
-    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay()).thenReturn(List.of(userOne, userTwo));
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay())
+        .thenReturn(List.of(userOne, userTwo));
 
     userService.conductUserCleanup();
 
