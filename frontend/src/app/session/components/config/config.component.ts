@@ -68,7 +68,7 @@ export class SessionConfigComponent implements OnInit {
     const formValue = this.configForm.getRawValue() as SessionConfig;
 
     const usage = this.usage();
-    if (!this.sessionState.isLimitActive() && usage && (formValue.timeLimitMinutes < usage.elapsedMinutes || formValue.postLimit < usage.seenPosts)) {
+    if (!this.sessionState.isLimitActive() && usage && (formValue.timeLimitMinutes <= usage.elapsedMinutes || formValue.postLimit <= usage.seenPosts)) {
       this.confirmationService.confirm({
         header: 'Confirm Limit Reduction',
         message: 'Your new limits are lower than your current usage today. Saving these changes will restrict your session immediately. Do you want to proceed?',
