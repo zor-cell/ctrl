@@ -23,11 +23,11 @@ import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { ReportComponent } from '../report/components/report/report.component';
-import { ContentTypeEnum } from '../report/dto/report';
+import {ContentTypeEnum} from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
-import { TopicResponse } from './dto/TopicResponse';
+import { TopicResponse } from '../topic/dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
 import { PostDetailDialogComponent} from './components/post-detail-dialog/post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
@@ -35,9 +35,16 @@ import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
 import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
 import {RelationshipService} from '../user/relationship.service';
+import {AuthService} from '../auth/auth.service';
+import {Tag} from 'primeng/tag';
+import {FriendRequestEventBusService} from '../user/friend-request-event-bus.service';
+import {Menu} from 'primeng/menu';
 import {Friend} from '../user/dto/Relationship';
-import {Chat, ChatParticipant} from '../chat/chat.models';
-import {ChatService} from '../chat/chat.service';
+import {Chat, ChatParticipant} from '../chat/models/chat.models';
+import {ChatService} from '../chat/services/chat.service';
+import {Message} from 'primeng/message';
+import {ConfirmationService} from 'primeng/api';
+import {ConfirmDialog} from 'primeng/confirmdialog';
 
 type ProfileFriendStatus =
   | 'NONE'
@@ -73,28 +80,37 @@ interface ShareTarget {
     RouterModule,
     Button,
     Dialog,
+    Menu,
     TooltipModule,
     PostCaptionFormatPipe,
     PostComposerComponent,
     PostDetailDialogComponent,
     ReportComponent,
     FollowBadgeComponent,
+    Tag,
+    Message,
+    ConfirmDialog,
   ],
+  providers: [ConfirmationService],
   templateUrl: './post-page.component.html',
   styleUrl: './post-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostPageComponent implements OnDestroy, OnInit {
   private readonly router = inject(Router);
+  private confirmationService = inject(ConfirmationService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly postService = inject(PostService);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly notificationService = inject(NotificationService);
   private readonly chatService = inject(ChatService);
   protected readonly userService = inject(UserService);
-  private readonly avatarInput =
-    viewChild<ElementRef<HTMLInputElement>>('avatarInput');
+  private readonly avatarInput = viewChild<ElementRef<HTMLInputElement>>('avatarInput');
+  private relationshipService = inject(RelationshipService);
+  private eventBus = inject(FriendRequestEventBusService);
 
+  protected readonly isAdmin = computed(() => this.authService.isAdmin());
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
   protected readonly dialogVisible = signal(false);
   protected readonly reportDialogVisible = signal(false);
@@ -103,7 +119,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
   protected readonly postCardMediaUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
-  protected readonly selectedPost = signal<PostResponse | null>(null);
+  protected readonly selectedPostId = signal<string | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
   protected readonly publicProfileUsername = signal<string | null>(null);
   protected readonly loadingPosts = signal(false);
@@ -118,6 +134,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly checkingUsername = signal(false);
   protected readonly deletingPost = signal(false);
   protected readonly postPendingDeletion = signal<PostResponse | null>(null);
+  protected readonly blockDialogVisible = signal(false);
+  protected readonly blockingUser = signal(false);
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
   protected readonly friendActionBusy = signal(false);
@@ -139,23 +157,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected readonly username = computed(
     () =>
-      this.publicProfile()?.username
-      ?? this.publicProfileUsername()
-      ?? this.userService.user()?.username
-      ?? 'Unknown user',
+      this.publicProfile()?.username ??
+      this.publicProfileUsername() ??
+      this.userService.user()?.username ??
+      'Unknown user',
   );
   protected readonly profileTargetUsername = computed(
     () => this.publicProfile()?.username ?? this.publicProfileUsername(),
   );
-  protected readonly profileActionUsername = computed(
-    () => this.publicProfile()?.username ?? null,
-  );
+  protected readonly profileActionUsername = computed(() => this.publicProfile()?.username ?? null);
   protected readonly avatarInitial = computed(() => usernameInitial(this.username()));
-  protected readonly currentProfilePicture = computed(
-    () =>
-      this.removeProfilePicture()
-        ? null
-        : this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null,
+  protected readonly currentProfilePicture = computed(() =>
+    this.removeProfilePicture()
+      ? null
+      : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
     const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
@@ -173,9 +188,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const currentUsername = this.userService.user()?.username;
 
     return Boolean(
-      profileUsername
-      && currentUsername
-      && profileUsername.toLowerCase() === currentUsername.toLowerCase(),
+      profileUsername &&
+      currentUsername &&
+      profileUsername.toLowerCase() === currentUsername.toLowerCase(),
     );
   });
   protected readonly canEditProfile = computed(
@@ -189,18 +204,19 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly usernameEmpty = computed(() => this.usernameDraftTrimmed().length === 0);
   protected readonly usernameInvalid = computed(
-    () => !this.usernameEmpty()
-      && (this.usernameDraftTrimmed().length < 3
-        || !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
+    () =>
+      !this.usernameEmpty() &&
+      (this.usernameDraftTrimmed().length < 3 ||
+        !USERNAME_PATTERN.test(this.usernameDraftTrimmed())),
   );
   protected readonly canSaveProfile = computed(
     () =>
-      !this.updatingProfile()
-      && !this.bioTooLong()
-      && !this.usernameEmpty()
-      && !this.usernameInvalid()
-      && !this.checkingUsername()
-      && this.usernameAvailable() !== false,
+      !this.updatingProfile() &&
+      !this.bioTooLong() &&
+      !this.usernameEmpty() &&
+      !this.usernameInvalid() &&
+      !this.checkingUsername() &&
+      this.usernameAvailable() !== false,
   );
   protected readonly postsCountLabel = computed(() => {
     const count = this.myPosts().length;
@@ -214,9 +230,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
   );
   protected readonly publicProfilePrivateAccess = computed(
     () =>
-      !this.publicProfileMode()
-      || this.isOwnPublicProfile()
-      || this.publicProfileFriendStatus() === 'FRIEND',
+      !this.publicProfileMode() ||
+      this.isOwnPublicProfile() ||
+      this.publicProfileFriendStatus() === 'FRIEND',
   );
   protected readonly privatePostsHidden = computed(
     () => this.publicProfileMode() && !this.publicProfilePrivateAccess(),
@@ -234,18 +250,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return override.status;
     }
 
-    if (
-      this.isFriendWithProfile(username, profile?.id)
-      || profile?.canSeePrivatePosts === true
-    ) {
+    if (this.isFriendWithProfile(username, profile?.id) || profile?.canSeePrivatePosts === true) {
       return 'FRIEND';
     }
 
-    if (this.rel.incomingRequests().some(request => request.username.toLowerCase() === username)) {
+    if (
+      this.rel.incomingRequests().some((request) => request.username.toLowerCase() === username)
+    ) {
       return 'PENDING_REQUEST_INCOMING';
     }
 
-    if (this.rel.sentRequests().some(request => request.username.toLowerCase() === username)) {
+    if (this.rel.sentRequests().some((request) => request.username.toLowerCase() === username)) {
       return 'PENDING_REQUEST_SENT';
     }
 
@@ -253,10 +268,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
   });
   protected readonly filteredShareTargets = computed(() => {
     const query = this.shareFriendQuery().trim().toLowerCase();
-    return this.shareTargets().filter(target =>
-      !query
-      || target.title.toLowerCase().includes(query)
-      || target.subtitle.toLowerCase().includes(query)
+    return this.shareTargets().filter(
+      (target) =>
+        !query ||
+        target.title.toLowerCase().includes(query) ||
+        target.subtitle.toLowerCase().includes(query),
     );
   });
   protected readonly emptyPostsTitle = computed(() =>
@@ -271,12 +287,34 @@ export class PostPageComponent implements OnDestroy, OnInit {
       ? 'Public posts will appear here.'
       : 'Your posts will appear here after you create them.';
   });
-  protected readonly isVerifiedUser = computed(
-    () => this.userService.user()?.isVerified ?? false,
-  );
+  protected readonly isVerifiedUser = computed(() => this.userService.user()?.isVerified ?? false);
   protected readonly maxBioLength = 280;
   protected readonly createOnlyMode = signal(false);
   protected readonly ContentTypeEnum = ContentTypeEnum;
+  protected readonly publicProfileMenuItems = computed(() => {
+    const items = [
+      {
+        label: 'Report',
+        icon: 'pi pi-flag',
+        command: () => this.openReportDialog(),
+      },
+      {
+        label: 'Block',
+        icon: 'pi pi-ban',
+        command: () => this.openBlockConfirmation(),
+      },
+    ];
+
+    if (this.isAdmin()) {
+      items.push({
+        label: 'Remove',
+        icon: 'pi pi-trash',
+        command: () => this.deleteAccount(),
+      });
+    }
+
+    return items;
+  });
 
   private usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   private routeParamsSubscription: Subscription | null = null;
@@ -285,7 +323,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
     this.loadTopics();
 
-    this.routeParamsSubscription = this.route.paramMap.subscribe(params => {
+    this.routeParamsSubscription = this.route.paramMap.subscribe((params) => {
       this.loadProfileForRoute(params.get('username'));
     });
 
@@ -317,16 +355,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const username = this.profileActionUsername();
 
     if (
-      !username
-      || this.isOwnPublicProfile()
-      || this.publicProfileFriendStatus() !== 'NONE'
-      || this.friendActionBusy()
+      !username ||
+      this.isOwnPublicProfile() ||
+      this.publicProfileFriendStatus() !== 'NONE' ||
+      this.friendActionBusy()
     ) {
       return;
     }
 
     this.friendActionBusy.set(true);
-    this.rel.sendFriendRequest(username)
+    this.rel
+      .sendFriendRequest(username)
       .pipe(finalize(() => this.friendActionBusy.set(false)))
       .subscribe({
         next: () => {
@@ -343,16 +382,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const username = this.profileActionUsername();
 
     if (
-      !username
-      || this.isOwnPublicProfile()
-      || this.publicProfileFriendStatus() !== 'PENDING_REQUEST_INCOMING'
-      || this.friendActionBusy()
+      !username ||
+      this.isOwnPublicProfile() ||
+      this.publicProfileFriendStatus() !== 'PENDING_REQUEST_INCOMING' ||
+      this.friendActionBusy()
     ) {
       return;
     }
 
     this.friendActionBusy.set(true);
-    this.rel.acceptFriendRequest(username)
+    this.rel
+      .acceptFriendRequest(username)
       .pipe(finalize(() => this.friendActionBusy.set(false)))
       .subscribe({
         next: () => {
@@ -369,16 +409,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const username = this.profileActionUsername();
 
     if (
-      !username
-      || this.isOwnPublicProfile()
-      || this.publicProfileFriendStatus() !== 'PENDING_REQUEST_SENT'
-      || this.friendActionBusy()
+      !username ||
+      this.isOwnPublicProfile() ||
+      this.publicProfileFriendStatus() !== 'PENDING_REQUEST_SENT' ||
+      this.friendActionBusy()
     ) {
       return;
     }
 
     this.friendActionBusy.set(true);
-    this.rel.cancelFriendRequest(username)
+    this.rel
+      .cancelFriendRequest(username)
       .pipe(finalize(() => this.friendActionBusy.set(false)))
       .subscribe({
         next: () => {
@@ -395,16 +436,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
     const username = this.profileActionUsername();
 
     if (
-      !username
-      || this.isOwnPublicProfile()
-      || this.publicProfileFriendStatus() !== 'FRIEND'
-      || this.friendActionBusy()
+      !username ||
+      this.isOwnPublicProfile() ||
+      this.publicProfileFriendStatus() !== 'FRIEND' ||
+      this.friendActionBusy()
     ) {
       return;
     }
 
     this.friendActionBusy.set(true);
-    this.rel.unfriend(username)
+    this.rel
+      .unfriend(username)
       .pipe(finalize(() => this.friendActionBusy.set(false)))
       .subscribe({
         next: () => {
@@ -437,7 +479,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openProfileSettings() {
-    this.router.navigate(['/settings']);
+    this.router.navigate(['/settings'], { queryParams: { tab: 'account' } });
   }
 
   protected startProfileEdit() {
@@ -491,7 +533,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.usernameCheckTimeout = setTimeout(() => {
       const username = this.usernameDraftTrimmed();
       this.userService.isUsernameAvailable(username).subscribe({
-        next: available => {
+        next: (available) => {
           if (this.usernameDraftTrimmed() === username) {
             this.usernameAvailable.set(available);
             this.checkingUsername.set(false);
@@ -528,15 +570,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.updatingProfile.set(true);
-    this.userService.updateUser({
-      name: user.name,
-      email: user.email,
-      bio: this.profileBioDraft().trim(),
-      birthdate: user.birthdate,
-    }, false).subscribe({
-      next: () => this.saveUsernameIfNeeded(),
-      error: () => this.updatingProfile.set(false),
-    });
+    this.userService
+      .updateUser(
+        {
+          name: user.name,
+          email: user.email,
+          bio: this.profileBioDraft().trim(),
+          birthdate: user.birthdate,
+        },
+        false,
+      )
+      .subscribe({
+        next: () => this.saveUsernameIfNeeded(),
+        error: () => this.updatingProfile.set(false),
+      });
   }
 
   protected openAvatarPicker() {
@@ -552,9 +599,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     if (!file.type.startsWith('image/')) {
-      this.notificationService.showWarning(
-        'Please choose an image as profile picture.',
-      );
+      this.notificationService.showWarning('Please choose an image as profile picture.');
       input.value = '';
       return;
     }
@@ -576,25 +621,22 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected topicLabelById(topicId: string): string {
-    return (
-      this.topicOptions().find(option => option.value === topicId)?.label ?? topicId
-    );
+    return this.topicOptions().find((option) => option.value === topicId)?.label ?? topicId;
   }
 
   protected openPost(post: PostResponse) {
-    this.selectedPost.set(post);
-    this.loadFullPostMedia(post);
+    this.selectedPostId.set(post.postId);
   }
 
   protected closePost() {
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
   }
 
   protected onPostDeletedFromDialog(postId: string): void {
     this.revokePostMediaObjectUrl(postId);
     this.revokePostCardMediaUrl(postId);
     this.myPosts.update(posts => posts.filter(p => p.postId !== postId));
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
   }
 
   protected requestPostDeletion(post: PostResponse) {
@@ -603,7 +645,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openShareDialog(post: PostResponse): void {
     this.selectedPostForShare.set(post);
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
     this.shareFriendQuery.set('');
     this.loadShareTargets();
     this.shareDialogVisible.set(true);
@@ -616,9 +658,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.shareDialogVisible.set(false);
-    const queryParams = target.chatId
-      ? { chat: target.chatId }
-      : { user: target.username };
+    const queryParams = target.chatId ? { chat: target.chatId } : { user: target.username };
 
     this.router.navigate(['/chat'], {
       queryParams,
@@ -644,7 +684,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     const friend = this.friendByUsername(target.username);
-    return friend ? this.shareFriendAvatarUrls()[friend.id] ?? null : null;
+    return friend ? (this.shareFriendAvatarUrls()[friend.id] ?? null) : null;
   }
 
   protected shareTargetAvatarFailed(target: ShareTarget): boolean {
@@ -662,7 +702,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected markShareTargetAvatarFailed(target: ShareTarget): void {
     if (target.kind === 'group' && target.chatId) {
-      this.failedShareGroupAvatars.update(failed => {
+      this.failedShareGroupAvatars.update((failed) => {
         const next = new Set(failed);
         next.add(target.chatId!);
         return next;
@@ -676,7 +716,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     const friend = this.friendByUsername(target.username);
     if (friend) {
-      this.failedShareFriendAvatars.update(failed => {
+      this.failedShareFriendAvatars.update((failed) => {
         const next = new Set(failed);
         next.add(friend.id);
         return next;
@@ -700,6 +740,44 @@ export class PostPageComponent implements OnDestroy, OnInit {
     this.postPendingDeletion.set(null);
   }
 
+  protected openBlockConfirmation(): void {
+    if (!this.profileActionUsername() || this.blockingUser()) {
+      return;
+    }
+
+    this.blockDialogVisible.set(true);
+  }
+
+  protected cancelBlockConfirmation(): void {
+    if (this.blockingUser()) {
+      return;
+    }
+
+    this.blockDialogVisible.set(false);
+  }
+
+  protected confirmBlockUser(): void {
+    const username = this.profileActionUsername();
+
+    if (!username || this.blockingUser()) {
+      return;
+    }
+
+    this.blockingUser.set(true);
+    this.relationshipService.block(username).subscribe({
+      next: () => {
+        this.blockDialogVisible.set(false);
+        this.blockingUser.set(false);
+        this.notificationService.showSuccess(`Blocked ${username}`);
+        this.router.navigate(['/followed'], { queryParams: { tab: 'blocked' } });
+      },
+      error: () => {
+        this.blockingUser.set(false);
+        this.notificationService.showError(`Failed to block ${username}`);
+      },
+    });
+  }
+
   protected confirmPostDeletion() {
     const post = this.postPendingDeletion();
 
@@ -712,8 +790,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
       next: () => {
         this.revokePostMediaObjectUrl(post.postId);
         this.revokePostCardMediaUrl(post.postId);
-        this.myPosts.update(posts =>
-          posts.filter(currentPost => currentPost.postId !== post.postId),
+        this.myPosts.update((posts) =>
+          posts.filter((currentPost) => currentPost.postId !== post.postId),
         );
 
         this.closePost();
@@ -745,40 +823,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return this.withVideoStartFragment(url);
   }
 
-  protected selectedPostMediaUrl(): string | null {
-    const post = this.selectedPost();
-    if (!post) {
-      return null;
-    }
-
-    return this.postMediaObjectUrls()[post.postId]
-      ?? this.postCardMediaUrls()[post.postId]
-      ?? this.directMediaUrl(post.mediaRef);
-  }
-
-  protected selectedPostMediaKind(): PreviewKind {
-    const post = this.selectedPost();
-    if (!post) {
-      return null;
-    }
-
-    return postMediaKind(post.mediaRef);
-  }
-
   protected postMediaKind(post: PostResponse): PreviewKind {
     return postMediaKind(post.mediaRef);
   }
 
   protected onPostCardMediaError(post: PostResponse): void {
-    this.revokePostCardMediaUrl(post.postId);
-  }
-
-  protected onSelectedPostMediaError(post: PostResponse): void {
-    if (this.postMediaObjectUrls()[post.postId]) {
-      this.revokePostMediaObjectUrl(post.postId);
-      return;
-    }
-
     this.revokePostCardMediaUrl(post.postId);
   }
 
@@ -801,7 +850,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private loadMyPosts() {
     this.loadingPosts.set(true);
     this.postService.getMyPosts().subscribe({
-      next: posts => {
+      next: (posts) => {
         this.myPosts.set(posts);
         this.loadPostMedia(posts);
         this.loadingPosts.set(false);
@@ -822,7 +871,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.publicProfileUsername.set(isOwnProfileRoute ? null : username);
     this.publicProfile.set(null);
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
     this.postPendingDeletion.set(null);
     this.friendActionBusy.set(false);
     this.profileFriendStatusOverride.set(null);
@@ -882,7 +931,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPublicProfilePosts(username: string): void {
     this.postService.getProfilePostsForUser(username).subscribe({
-      next: posts => {
+      next: (posts) => {
         const visiblePosts = this.visiblePublicProfilePosts(posts);
         this.myPosts.set(visiblePosts);
         this.loadPostMedia(visiblePosts);
@@ -902,8 +951,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private loadTopics() {
     this.loadingTopics.set(true);
     this.postService.getTopics().subscribe({
-      next: topics => {
-        this.topicOptions.set(topics.map(topic => this.toTopicOption(topic)));
+      next: (topics) => {
+        this.topicOptions.set(topics.map((topic) => this.toTopicOption(topic)));
         this.loadingTopics.set(false);
       },
       error: () => {
@@ -918,15 +967,14 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private loadShareTargets(): void {
-    forkJoin([
-      this.rel.loadFriends(),
-      this.chatService.getChats(),
-    ]).subscribe({
+    forkJoin([this.rel.loadFriends(), this.chatService.getChats()]).subscribe({
       next: ([friends, chats]) => {
-        this.shareChats.set(chats.map(chat => ({
-          ...chat,
-          personalMessageCount: chat.personalMessageCount ?? 0,
-        })));
+        this.shareChats.set(
+          chats.map((chat) => ({
+            ...chat,
+            personalMessageCount: chat.personalMessageCount ?? 0,
+          })),
+        );
         this.loadShareFriendAvatars(friends);
         this.loadShareGroupAvatars(chats);
       },
@@ -937,15 +985,16 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private loadShareFriendAvatars(friends: Friend[]): void {
-    friends.forEach(friend => {
+    friends.forEach((friend) => {
       if (!friend.profilePicture || this.shareFriendAvatarUrls()[friend.id]) {
         return;
       }
 
-      this.mediaCacheService.resolveMediaUrl(friend.profilePicture, 'image', 'high')
-        .subscribe(url => {
+      this.mediaCacheService
+        .resolveMediaUrl(friend.profilePicture, 'image', 'high')
+        .subscribe((url) => {
           if (url) {
-            this.shareFriendAvatarUrls.update(urls => ({ ...urls, [friend.id]: url }));
+            this.shareFriendAvatarUrls.update((urls) => ({ ...urls, [friend.id]: url }));
           }
         });
     });
@@ -953,16 +1002,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadShareGroupAvatars(chats: Chat[]): void {
     chats
-      .filter(chat => chat.groupChat)
-      .forEach(chat => {
+      .filter((chat) => chat.groupChat)
+      .forEach((chat) => {
         if (!chat.groupImage || this.shareGroupAvatarUrls()[chat.chatId]) {
           return;
         }
 
-        this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
-          .subscribe(url => {
+        this.mediaCacheService
+          .resolveMediaUrl(chat.groupImage, 'image', 'high')
+          .subscribe((url) => {
             if (url) {
-              this.shareGroupAvatarUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+              this.shareGroupAvatarUrls.update((urls) => ({ ...urls, [chat.chatId]: url }));
             }
           });
       });
@@ -970,19 +1020,19 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private shareTargets(): ShareTarget[] {
     const friendsByUsername = new Map(
-      this.friends().map(friend => [friend.username.toLowerCase(), friend]),
+      this.friends().map((friend) => [friend.username.toLowerCase(), friend]),
     );
     const targets = this.shareChats()
-      .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
+      .map((chat) => this.shareTargetFromChat(chat, friendsByUsername))
       .filter((target): target is ShareTarget => target !== null);
     const usernamesWithChats = new Set(
       targets
-        .filter(target => target.kind === 'direct' && target.username)
-        .map(target => target.username!.toLowerCase()),
+        .filter((target) => target.kind === 'direct' && target.username)
+        .map((target) => target.username!.toLowerCase()),
     );
     const friendsWithoutChats = this.friends()
-      .filter(friend => !usernamesWithChats.has(friend.username.toLowerCase()))
-      .map(friend => this.shareTargetFromFriend(friend));
+      .filter((friend) => !usernamesWithChats.has(friend.username.toLowerCase()))
+      .map((friend) => this.shareTargetFromFriend(friend));
 
     return [...targets, ...friendsWithoutChats].sort((left, right) => {
       if (left.interactionCount !== right.interactionCount) {
@@ -1048,15 +1098,16 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private shareDirectPartner(chat: Chat): ChatParticipant | null {
     const currentUserId = this.userService.user()?.id?.toLowerCase();
-    const byChatName = chat.participants.find(participant => participant.username === chat.name);
+    const byChatName = chat.participants.find((participant) => participant.username === chat.name);
     if (byChatName) {
       return byChatName;
     }
 
     if (currentUserId) {
-      return chat.participants.find(
-        participant => participant.id.toLowerCase() !== currentUserId,
-      ) ?? null;
+      return (
+        chat.participants.find((participant) => participant.id.toLowerCase() !== currentUserId) ??
+        null
+      );
     }
 
     return chat.participants[0] ?? null;
@@ -1069,19 +1120,17 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private friendByUsername(username: string): Friend | null {
     const normalizedUsername = username.toLowerCase();
-    return this.friends().find(
-      friend => friend.username.toLowerCase() === normalizedUsername,
-    ) ?? null;
+    return (
+      this.friends().find((friend) => friend.username.toLowerCase() === normalizedUsername) ?? null
+    );
   }
 
   private sharedPostPayload(post: PostResponse): SharedPostPayload {
-    const caption = post.caption.length > 220
-      ? `${post.caption.slice(0, 217)}...`
-      : post.caption;
+    const caption = post.caption.length > 220 ? `${post.caption.slice(0, 217)}...` : post.caption;
     const mediaUrl =
-      this.postMediaObjectUrls()[post.postId]
-      ?? this.postCardMediaUrls()[post.postId]
-      ?? this.directMediaUrl(post.mediaRef);
+      this.postMediaObjectUrls()[post.postId] ??
+      this.postCardMediaUrls()[post.postId] ??
+      this.directMediaUrl(post.mediaRef);
     const mediaKind = mediaUrl ? postMediaKind(post.mediaRef) : null;
 
     return {
@@ -1094,10 +1143,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     };
   }
 
-  private setProfileFriendStatusOverride(
-    username: string,
-    status: ProfileFriendStatus,
-  ): void {
+  private setProfileFriendStatusOverride(username: string, status: ProfileFriendStatus): void {
     this.profileFriendStatusOverride.set({ username, status });
   }
 
@@ -1106,7 +1152,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return posts;
     }
 
-    return posts.filter(post => post.isPublic);
+    return posts.filter((post) => post.isPublic);
   }
 
   private removePublicProfilePrivateAccess(): void {
@@ -1115,13 +1161,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.publicProfile.set({ ...profile, canSeePrivatePosts: false });
     }
 
-    const selectedPost = this.selectedPost();
-    if (selectedPost && !selectedPost.isPublic) {
-      this.selectedPost.set(null);
-    }
-
     const visiblePosts = this.visiblePublicProfilePosts(this.myPosts());
     if (visiblePosts.length !== this.myPosts().length) {
+      // Close dialog if the currently open post is no longer visible
+      const openId = this.selectedPostId();
+      if (openId && !visiblePosts.some(p => p.postId === openId)) {
+        this.selectedPostId.set(null);
+      }
       this.myPosts.set(visiblePosts);
       this.loadPostMedia(visiblePosts);
     }
@@ -1135,19 +1181,20 @@ export class PostPageComponent implements OnDestroy, OnInit {
   private isFriendWithProfile(username: string, profileId: string | undefined): boolean {
     const normalizedProfileId = profileId?.toLowerCase();
 
-    return this.rel.friends().some(friend =>
-      friend.username.toLowerCase() === username
-      || Boolean(normalizedProfileId && friend.id.toLowerCase() === normalizedProfileId)
-    );
+    return this.rel
+      .friends()
+      .some(
+        (friend) =>
+          friend.username.toLowerCase() === username ||
+          Boolean(normalizedProfileId && friend.id.toLowerCase() === normalizedProfileId),
+      );
   }
 
   private isCurrentUserProfileUsername(username: string | null): boolean {
     const currentUsername = this.userService.user()?.username;
 
     return Boolean(
-      username
-      && currentUsername
-      && username.toLowerCase() === currentUsername.toLowerCase(),
+      username && currentUsername && username.toLowerCase() === currentUsername.toLowerCase(),
     );
   }
 
@@ -1164,12 +1211,28 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.userService.updateUsername(
-      { newUsername: this.usernameDraftTrimmed() },
-      false,
-    ).subscribe({
+    this.userService.updateUsername({ newUsername: this.usernameDraftTrimmed() }, false).subscribe({
       next: () => this.saveProfilePictureIfNeeded(),
       error: () => this.updatingProfile.set(false),
+    });
+  }
+
+  protected deleteAccount() {
+    if (!this.username()) {
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message: 'Are you sure you want remove this account?',
+      header: 'Confirm Remove',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.authService.requestAccountDeletion(this.username()).subscribe({
+          next: () => this.loadPublicProfile(),
+          error: () =>
+            this.notificationService.showError('Failed to delete account. Please try again later.'),
+        });
+      },
     });
   }
 
@@ -1207,7 +1270,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private loadPostMedia(posts: PostResponse[]): void {
     this.revokePostCardMediaUrls();
-    posts.forEach(post => this.loadPostCardMedia(post));
+    posts.forEach((post) => this.loadPostCardMedia(post));
   }
 
   private loadPostCardMedia(post: PostResponse): void {
@@ -1216,7 +1279,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe(url => {
+    this.resolveVerifiedMediaUrl(mediaRef, postMediaKind(mediaRef)).subscribe((url) => {
       if (url) {
         this.setPostCardMediaUrl(post.postId, previewMediaUrl(url) ?? url);
       }
@@ -1229,7 +1292,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     priority: 'normal' | 'high' = 'normal',
   ): Observable<string | null> {
     return this.mediaCacheService.resolveMediaUrl(mediaRef, kind ?? 'image', priority).pipe(
-      switchMap(url => {
+      switchMap((url) => {
         if (!url) {
           return of(null);
         }
@@ -1245,7 +1308,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   private verifyImageLoads(url: string): Observable<string | null> {
-    return new Observable(observer => {
+    return new Observable((observer) => {
       const image = new Image();
       image.decoding = 'async';
       image.onload = () => {
@@ -1269,12 +1332,8 @@ export class PostPageComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.resolveVerifiedMediaUrl(
-      post.mediaRef,
-      postMediaKind(post.mediaRef),
-      'high',
-    ).subscribe({
-      next: objectUrl => {
+    this.resolveVerifiedMediaUrl(post.mediaRef, postMediaKind(post.mediaRef), 'high').subscribe({
+      next: (objectUrl) => {
         if (objectUrl) {
           this.setPostMediaObjectUrl(post.postId, objectUrl);
         }
@@ -1296,7 +1355,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     }
 
     this.mediaCacheService.resolveMediaUrl(url, 'image', 'high').subscribe({
-      next: objectUrl => {
+      next: (objectUrl) => {
         if (objectUrl) {
           this.replaceProfilePictureObjectUrl(objectUrl);
         }
@@ -1325,11 +1384,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private setPostMediaObjectUrl(postId: string, objectUrl: string): void {
     this.revokePostMediaObjectUrl(postId);
-    this.postMediaObjectUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+    this.postMediaObjectUrls.update((urls) => ({ ...urls, [postId]: objectUrl }));
   }
 
   private revokePostMediaObjectUrl(postId: string): void {
-    this.postMediaObjectUrls.update(urls => {
+    this.postMediaObjectUrls.update((urls) => {
       const remaining = { ...urls };
       delete remaining[postId];
       return remaining;
@@ -1342,11 +1401,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private setPostCardMediaUrl(postId: string, objectUrl: string): void {
     this.revokePostCardMediaUrl(postId);
-    this.postCardMediaUrls.update(urls => ({ ...urls, [postId]: objectUrl }));
+    this.postCardMediaUrls.update((urls) => ({ ...urls, [postId]: objectUrl }));
   }
 
   private revokePostCardMediaUrl(postId: string): void {
-    this.postCardMediaUrls.update(urls => {
+    this.postCardMediaUrls.update((urls) => {
       const remaining = { ...urls };
       delete remaining[postId];
       return remaining;

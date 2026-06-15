@@ -11,6 +11,7 @@ public record FeedPostResponse(
     String userId,
     String username,
     String userProfilePic,
+    boolean userDeleted,
     String caption,
     String mediaRef,
     boolean isPublic,
@@ -22,21 +23,23 @@ public record FeedPostResponse(
     List<LabelResponse> labelIds,
     List<SourceResponse> sourceIds,
     List<CommentResponse> comments,
-    PostExplanation explanation) {
+    PostExplanation explanation,
+    boolean wasReportedByUser) {
 
   public record SourceResponse(
       String sourceId,
       String url,
       Integer upvotes,
       Integer downvotes,
-      String userVote // "up", "down" or null
-      ) {}
+      String userVote, // "up", "down" or null,
+      boolean wasReportedByUser) {}
 
   public record CommentResponse(
       String commentId,
       String userId,
       String username,
       String userProfilePic,
+      boolean userDeleted,
       String content,
       LocalDateTime createdAt,
       String parentCommentId) {}

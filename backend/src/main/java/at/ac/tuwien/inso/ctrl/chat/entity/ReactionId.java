@@ -22,4 +22,7 @@ public class ReactionId implements Serializable {
 
   @Column(name = "message_id")
   private UUID messageId;
+
+  @Column(name = "content")
+  private String content;
 }

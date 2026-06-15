@@ -4,4 +4,5 @@ export interface PostSource {
   upvotes: number;
   downvotes: number;
   userVote: 'up' | 'down' | null;
+  wasReportedByUser: boolean;
 }

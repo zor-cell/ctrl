@@ -2,7 +2,7 @@ import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { tap, switchMap, takeUntil, Subject, merge, forkJoin, of, catchError, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult } from './dto/Relationship';
+import {Friend, Followed, FriendRequest, SendFriendRequest, UserSearchResult, Blocked} from './dto/Relationship';
 import { FriendRequestEventBusService, FriendRequestActionEvent } from './friend-request-event-bus.service';
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { SILENT_ERROR_CONTEXT } from '../core/interceptors';
@@ -18,6 +18,7 @@ export class RelationshipService implements OnDestroy {
 
   private _friends = signal<Friend[]>([]);
   private _followed = signal<Followed[]>([]);
+  private _blocked = signal<Blocked[]>([])
   private _incomingRequests = signal<FriendRequest[]>([]);
   private _sentRequests = signal<FriendRequest[]>([]);
   private _pendingRequestCount = signal<number>(0);
@@ -25,6 +26,7 @@ export class RelationshipService implements OnDestroy {
 
   public friends = this._friends.asReadonly();
   public followed = this._followed.asReadonly();
+  public blocked = this._blocked.asReadonly();
   public incomingRequests = this._incomingRequests.asReadonly();
   public sentRequests = this._sentRequests.asReadonly();
   public pendingRequestCount = this._pendingRequestCount.asReadonly();
@@ -84,6 +86,12 @@ export class RelationshipService implements OnDestroy {
           this.safeRefresh(this.loadFollowed()),
           this.safeRefresh(this.loadFriends())
         ]).pipe(takeUntil(this._destroy$)).subscribe();
+        break;
+      case "blocked":
+        this.safeRefresh(this.loadBlocked()).pipe(takeUntil(this._destroy$)).subscribe();
+        break
+      case "unblock":
+        this.safeRefresh(this.loadBlocked()).pipe(takeUntil(this._destroy$)).subscribe();
         break;
     }
   }
@@ -165,6 +173,20 @@ export class RelationshipService implements OnDestroy {
     );
   }
 
+  loadBlocked(search?: string) {
+    let params = new HttpParams();
+    if (search) {
+      params = params.set('q', search);
+    }
+    return this.http.get<Blocked[]>(`${this.baseUri}/block`, { params }).pipe(
+      tap(blocked => {
+        this._blocked.set(blocked);
+        this.cacheProfilePictures(blocked);
+        console.log('Blocked users loaded:', blocked);
+      })
+    );
+  }
+
   unfriend(username: string) {
     return this.http.delete<void>(`${this.baseUri}/friends/${username}`);
   }
@@ -175,6 +197,14 @@ export class RelationshipService implements OnDestroy {
 
   unfollow(username: string) {
     return this.http.delete<void>(`${this.baseUri}/followed/${username}`);
+  }
+
+  block(username: string) {
+    return this.http.post<void>(`${this.baseUri}/block/${username}`, {});
+  }
+
+  unblock(username: string) {
+    return this.http.delete<void>(`${this.baseUri}/block/${username}`, {});
   }
 
   loadSentFriendRequests() {

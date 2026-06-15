@@ -1,3 +1,7 @@
+::ng-deep .p-menubar-submenu {
+  z-index: 10 !important;
+}
+
 .nav-bar {
   border-radius: 0;
   border-left: none;

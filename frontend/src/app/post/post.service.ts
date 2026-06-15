@@ -4,7 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { CreatePostRequest } from './dto/CreatePostRequest';
 import { PostResponse } from './dto/PostResponse';
-import { TopicResponse } from './dto/TopicResponse';
+import { TopicResponse } from '../topic/dto/TopicResponse';
 import { firstValueFrom } from 'rxjs';
 import { DetailedPostResponse } from './dto/DetailedPostResponse';
 

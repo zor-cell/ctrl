@@ -1,7 +1,5 @@
 package at.ac.tuwien.inso.ctrl.post.service.impl;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
@@ -15,6 +13,7 @@ import at.ac.tuwien.inso.ctrl.post.dto.request.VoteRequest;
 import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.VoteResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
@@ -25,17 +24,24 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.PostService;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -55,6 +61,7 @@ public class PostServiceImpl implements PostService {
   private final TopicRepository topicRepository;
   private final UserRepository userRepository;
   private final SourceService sourceService;
+  private final BlockService blockService;
   private final PostMapper postMapper;
   private final EmbeddingService embeddingService;
   private final PostVoteRepository postVoteRepository;
@@ -64,6 +71,7 @@ public class PostServiceImpl implements PostService {
   private final FileStorageService fileStorageService;
   private final UserPreferenceService userPreferenceService;
   private final LabelingService labelingService;
+  private final ReportService reportService;
 
   @Override
   @Transactional
@@ -83,6 +91,7 @@ public class PostServiceImpl implements PostService {
             .caption(request.caption())
             .mediaRef(request.mediaRef())
             .isPublic(resolveIsPublic(request, user.isVerified()))
+            .isRemoved(false)
             .isAiGenerated(Boolean.TRUE.equals(request.isAiGenerated()))
             .upvotes(INITIAL_VOTE_COUNT)
             .downvotes(INITIAL_VOTE_COUNT)
@@ -172,9 +181,33 @@ public class PostServiceImpl implements PostService {
   public List<PostResponse> getPostsForUser(String username) {
     User user = fetchUser(username);
     LabelContext ctx = labelingService.buildContext(user);
-    return postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username).stream()
+    List<Post> posts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username);
+    filterComments(user, posts);
+    return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
         .toList();
+  }
+
+  private void filterComments(User user, List<Post> posts) {
+    for (Post post : posts) {
+      if (post.getComments() == null || post.getComments().isEmpty()) {
+        continue;
+      }
+
+      Set<Comment> comments =
+          post.getComments().stream()
+              .filter(
+                  c ->
+                      c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+              .filter(
+                  c ->
+                      c.getParentComment() == null
+                          || (c.getParentComment().getUser() != null
+                              && !blockService.inBlockedRelationship(
+                                  user, c.getParentComment().getUser())))
+              .collect(Collectors.toSet());
+      post.setComments(comments);
+    }
   }
 
   @Override
@@ -185,13 +218,16 @@ public class PostServiceImpl implements PostService {
 
     boolean canSeePrivatePosts =
         profileOwner.getId().equals(viewer.getId())
-            || friendRelationRepository.existsByUsers(profileOwner, viewer);
+            || friendRelationRepository.existsByUsers(profileOwner, viewer)
+            || viewer.getRole() == Role.ADMIN;
 
     List<Post> posts =
         canSeePrivatePosts
             ? postRepository.findAllByUserUsernameOrderByCreatedAtDesc(profileUsername)
             : postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
                 profileUsername);
+
+    filterComments(viewer, posts);
 
     return posts.stream()
         .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
@@ -283,11 +319,25 @@ public class PostServiceImpl implements PostService {
 
     if (!post.isPublic()) {
       if (post.getUser() != null
-          && !post.getUser().getUsername().equals(username)
-          && !friendRelationRepository.existsByUsers(user, post.getUser())) {
+              && !post.getUser().getUsername().equals(username)
+              && !friendRelationRepository.existsByUsers(user, post.getUser())
+          || user.getRole() == Role.ADMIN) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
+
+    Set<Comment> comments =
+        post.getComments().stream()
+            .filter(
+                c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
+            .filter(
+                c ->
+                    c.getParentComment() == null
+                        || (c.getParentComment().getUser() != null
+                            && !blockService.inBlockedRelationship(
+                                user, c.getParentComment().getUser())))
+            .collect(Collectors.toSet());
+    post.setComments(comments);
 
     List<PostVote> userVote =
         this.postVoteRepository.findByIdUserIdAndIdPostIdIn(
@@ -295,8 +345,36 @@ public class PostServiceImpl implements PostService {
 
     PostVote toMap = userVote.isEmpty() ? null : userVote.getFirst();
 
+    boolean wasReported = reportService.wasReportedByUser(user, ContentTypeEnum.POST, postId);
+
+    Map<String, Boolean> commentsReportedByUser =
+        post.getComments().isEmpty()
+            ? Map.of()
+            : post.getComments().stream()
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        Comment::getCommentId,
+                        comment ->
+                            reportService.wasReportedByUser(
+                                user, ContentTypeEnum.COMMENT, comment.getCommentId())));
+
+    boolean sourceWasReported;
+    if (post.getSource() != null) {
+      sourceWasReported =
+          reportService.wasReportedByUser(
+              user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
+    } else {
+      sourceWasReported = false;
+    }
     LabelContext ctx = labelingService.buildContext(user);
+
     return this.postMapper.toDetailedPostResponse(
-        post, toMap, labelingService.computeLabels(post, ctx));
+        post,
+            toMap,
+            wasReported,
+            commentsReportedByUser,
+            sourceWasReported,
+            labelingService.computeLabels(post, ctx));
   }
 }

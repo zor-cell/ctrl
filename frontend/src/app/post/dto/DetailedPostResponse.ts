@@ -13,6 +13,7 @@ export interface DetailedPostResponse {
   userId: string;
   username: string;
   userProfilePicture: string;
+  userDeleted: boolean;
   sourceId: string | null;
   source: SourceResponse | null;
   caption: string;
@@ -20,6 +21,7 @@ export interface DetailedPostResponse {
   isPublic: boolean;
   isExternal: boolean;
   userProfileUrl: string | null;
+  wasReportedByUser: boolean;
   isAiGenerated: boolean;
   labelIds: LabelResponse[];
   topicIds: string[];

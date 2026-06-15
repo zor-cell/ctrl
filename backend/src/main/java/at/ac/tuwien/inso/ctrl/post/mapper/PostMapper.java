@@ -9,6 +9,7 @@ import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,9 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class PostMapper {
+  private static final String DELETED_USER_LABEL = "Deleted user";
+  private static final String DELETED_COMMENT_CONTENT = "This comment was deleted.";
+
   public PostResponse toResponse(Post post) {
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<LabelResponse> labelIds = List.of();
@@ -28,15 +32,16 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
-        post.getUser().getUsername(),
+        post.getUser().isDeleted() ? DELETED_USER_LABEL : post.getUser().getUsername(),
+        post.getUser().isDeleted(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -69,15 +74,16 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(comment -> toCommentResponse(comment, false))
             .toList();
 
     return new PostResponse(
         post.getPostId(),
         post.getUser().getId(),
-        post.getUser().getUsername(),
+        post.getUser().isDeleted() ? DELETED_USER_LABEL : post.getUser().getUsername(),
+        post.getUser().isDeleted(),
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), false),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
@@ -91,7 +97,12 @@ public class PostMapper {
   }
 
   public DetailedPostResponse toDetailedPostResponse(
-      Post post, PostVote postVote, Set<PostLabelType> computedLabels) {
+      Post post,
+      PostVote postVote,
+      boolean wasReported,
+      Map<String, Boolean> commentsReportedByUser,
+      boolean sourceWasReported, Set<PostLabelType> computedLabels) {
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -99,11 +110,11 @@ public class PostMapper {
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String avatarUrl =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
     List<LabelResponse> labels =
         computedLabels.stream()
@@ -120,7 +131,11 @@ public class PostMapper {
     List<CommentResponse> comments =
         post.getComments().stream()
             .sorted(Comparator.comparing(Comment::getCreatedAt))
-            .map(this::toCommentResponse)
+            .map(
+                comment ->
+                    toCommentResponse(
+                        comment,
+                        commentsReportedByUser.getOrDefault(comment.getCommentId(), false)))
             .toList();
     String userVote = postVote == null ? null : postVote.getVoteType();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
@@ -130,13 +145,15 @@ public class PostMapper {
         userId,
         username,
         avatarUrl,
+        deletedUser,
         sourceId,
-        toSourceResponse(post.getSource()),
+        toSourceResponse(post.getSource(), sourceWasReported),
         post.getCaption(),
         post.getMediaRef(),
         post.isPublic(),
         post.isExternalPost(),
         userProfileUrl,
+        wasReported,
         post.isAiGenerated(),
         labels,
         topicIds,
@@ -148,6 +165,7 @@ public class PostMapper {
   }
 
   public PostPreviewResponse toPostPreviewResponse(Post post) {
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()
             ? post.getExternalAuthor().getExternalAuthorId()
@@ -155,11 +173,11 @@ public class PostMapper {
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String avatarUrl =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
     String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
     return new PostPreviewResponse(
         post.getPostId(),
@@ -168,12 +186,13 @@ public class PostMapper {
         userId,
         username,
         avatarUrl,
+        deletedUser,
         post.isPublic(),
         post.isExternalPost(),
         userProfileUrl);
   }
 
-  private SourceResponse toSourceResponse(Source source) {
+  private SourceResponse toSourceResponse(Source source, boolean sourceWasReported) {
     if (source == null) {
       return null;
     }
@@ -191,7 +210,8 @@ public class PostMapper {
         source.getUpvotes(),
         source.getDownvotes(),
         source.getCreatedAt(),
-        singleSources);
+        singleSources,
+        sourceWasReported);
   }
 
   private SingleSourceResponse toSingleSourceResponse(SingleSource source) {
@@ -204,12 +224,21 @@ public class PostMapper {
         source.getDate());
   }
 
-  private CommentResponse toCommentResponse(Comment comment) {
+  private CommentResponse toCommentResponse(Comment comment, boolean wasReportedByUser) {
+    boolean deletedUser = comment.getUser().isDeleted();
     return new CommentResponse(
         comment.getCommentId(),
-        comment.getUser().getUsername(),
-        comment.getContent(),
+        deletedUser ? DELETED_USER_LABEL : comment.getUser().getUsername(),
+        deletedUser,
+        Boolean.TRUE.equals(comment.getIsRemoved())
+            ? DELETED_COMMENT_CONTENT
+            : comment.getContent(),
         comment.getCreatedAt(),
-        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId());
+        comment.getParentComment() == null ? null : comment.getParentComment().getCommentId(),
+        wasReportedByUser);
+  }
+
+  private boolean isDeletedInternalAuthor(Post post) {
+    return !post.isExternalPost() && post.getUser().isDeleted();
   }
 }

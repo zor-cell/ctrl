@@ -24,6 +24,21 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
 
   @Query(
       """
+      SELECT DISTINCT c FROM Chat c
+      LEFT JOIN FETCH c.owner
+      LEFT JOIN FETCH c.members member
+      LEFT JOIN FETCH member.user
+      WHERE EXISTS (
+        SELECT 1 FROM ChatMember currentMember
+        WHERE currentMember.chat = c
+          AND currentMember.user.id = :userId
+          AND currentMember.leftAt IS NULL
+      )
+      """)
+  List<Chat> findActiveChatsForUserWithDetails(@Param("userId") UUID userId);
+
+  @Query(
+      """
       SELECT c FROM Chat c
       LEFT JOIN FETCH c.owner
       LEFT JOIN FETCH c.members member

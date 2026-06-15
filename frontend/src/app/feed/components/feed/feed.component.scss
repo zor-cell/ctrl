@@ -399,3 +399,12 @@ $radius-sm:    10px;
   border-radius: 0 4px 4px 0;
   background-color: #6366F1;
 }
+
+.blurred-lock {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  opacity: 0.6;
+  transition: filter 0.3s ease;
+}

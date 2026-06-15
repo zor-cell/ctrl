@@ -8,7 +8,7 @@ import {Button} from "primeng/button";
 import {InputText} from "primeng/inputtext";
 import {Dialog} from "primeng/dialog";
 import {SharedModule} from 'primeng/api';
-import {passwordMatchValidator, usernameValidator, USERNAME_VALIDATION_MESSAGE} from "../../validators";
+import {passwordMatchValidator, usernameValidator, USERNAME_VALIDATION_MESSAGE, passwordValidator, PASSWORD_VALIDATION_MESSAGE} from "../../validators";
 import {UpdatePasswordRequest} from "../../dto/UpdatePasswordRequest";
 import {UpdateUsernameRequest} from "../../dto/UpdateUsernameRequest";
 import {environment} from "../../../../environments/environment";
@@ -47,6 +47,7 @@ export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
 
   protected readonly USERNAME_VALIDATION_MESSAGE = USERNAME_VALIDATION_MESSAGE;
+  protected readonly PASSWORD_VALIDATION_MESSAGE = PASSWORD_VALIDATION_MESSAGE;
 
   protected isLoading = signal(true);
   protected currentUser = this.userService.user;
@@ -73,7 +74,7 @@ export class ProfileComponent implements OnInit {
   protected passwordForm = this.fb.group(
     {
       currentPassword: ['', Validators.required],
-      newPassword: ['', Validators.required],
+      newPassword: ['', [Validators.required, passwordValidator]],
       confirmPassword: ['', Validators.required],
     },
     { validators: passwordMatchValidator },

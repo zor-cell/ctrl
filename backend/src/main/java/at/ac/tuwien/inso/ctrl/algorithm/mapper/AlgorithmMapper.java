@@ -2,7 +2,7 @@ package at.ac.tuwien.inso.ctrl.algorithm.mapper;
 
 import at.ac.tuwien.inso.ctrl.algorithm.dto.AlgorithmConfigDto;
 import at.ac.tuwien.inso.ctrl.algorithm.entity.AlgorithmConfig;
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

@@ -3,6 +3,7 @@
     <p-tablist>
       <p-tab value="friends">Friends</p-tab>
       <p-tab value="followed">Followed</p-tab>
+      <p-tab value="blocked">Blocked</p-tab>
     </p-tablist>
 
     <!-- Friends Tab Content -->
@@ -76,6 +77,26 @@
 
         <!-- Followed List -->
         <app-followed-list [searchQuery]="followedSearch()" />
+      </div>
+    }
+    <!-- Followed Tab Content -->
+    @if (activeTab() === 'blocked') {
+      <div class="tab-content">
+
+        <div class="search-section">
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              type="text"
+              pInputText
+              placeholder="Search by username..."
+              [ngModel]="followedSearch()"
+              (ngModelChange)="onBlockedSearchChange($event)"
+              class="search-input" />
+          </p-iconField>
+        </div>
+        <!-- Followed List -->
+        <app-blocked-list [searchQuery]="blockedSearch()"/>
       </div>
     }
   </p-tabs>

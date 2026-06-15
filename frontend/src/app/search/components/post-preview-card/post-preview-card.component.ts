@@ -1,6 +1,7 @@
 import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
+import { TooltipModule } from 'primeng/tooltip';
 import { PostPreview } from '../../dto/PostPreview';
 import { Router } from '@angular/router';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
@@ -20,7 +21,7 @@ import { tap } from 'rxjs';
 @Component({
   selector: 'app-post-preview-card',
   standalone: true,
-  imports: [CommonModule, AvatarModule],
+  imports: [CommonModule, AvatarModule, TooltipModule],
   templateUrl: './post-preview-card.component.html',
   styleUrl: './post-preview-card.component.scss',
 })
@@ -64,10 +65,17 @@ export class PostPreviewCardComponent {
   }
 
   goToUser(): void {
-    if (this.post().isExternal) {
-      window.open(this.post().userProfileUrl!);
+    const post = this.post();
+    if (post.userDeleted) {
+      return;
+    }
+
+    if (post.isExternal) {
+      if (post.userProfileUrl) {
+        window.open(post.userProfileUrl);
+      }
     } else {
-      this.router.navigate(['/profile', this.post().username]);
+      this.router.navigate(['/profile', post.username]);
     }
   }
 }

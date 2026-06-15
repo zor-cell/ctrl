@@ -1,3 +1,4 @@
+<p-confirmDialog></p-confirmDialog>
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
     <header class="post-profile-card">
@@ -27,7 +28,21 @@
       </div>
 
       <div class="post-profile-card__copy">
-        <h1>{{ username() }}</h1>
+        <h1 style="display: flex; align-items: center; gap: 10px;">
+          {{ username() }}
+          @if (!canEditProfile()) {
+            <app-follow-badge [username]="username()" />
+            @if (publicProfile()?.wasReportedByUser) {
+              <p-tag
+                [value]="'reported'"
+                severity="secondary"
+                class="post-label"
+                [pTooltip]="'This account has been reported'"
+                tooltipPosition="bottom"
+              />
+            }
+          }
+        </h1>
         <div class="profile-bio">
           <p>{{ userBio() }}</p>
           @if (canEditProfile()) {
@@ -117,12 +132,12 @@
               }
             }
           }
+          <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
           <p-button
-            icon="pi pi-flag"
-            ariaLabel="Report profile"
+            icon="pi pi-ellipsis-v"
             severity="secondary"
             [rounded]="true"
-            (onClick)="openReportDialog()"
+            (onClick)="publicProfileMenu.toggle($event)"
           />
         </div>
       }
@@ -321,11 +336,10 @@
 </p-dialog>
 
 <app-post-detail-dialog
-  [postId]="selectedPost()?.postId ?? null"
+  [postId]="selectedPostId()"
   (dismissed)="closePost()"
   (postDeleted)="onPostDeletedFromDialog($event)"
 />
-
 
 <app-report
   [contentType]="ContentTypeEnum.ACCOUNT"
@@ -420,6 +434,43 @@
         severity="danger"
         [loading]="deletingPost()"
         (onClick)="confirmPostDeletion()"
+      />
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  header="Block user?"
+  [visible]="blockDialogVisible()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="!blockingUser()"
+  [style]="{ width: 'min(28rem, 92vw)' }"
+  (visibleChange)="!$event && cancelBlockConfirmation()"
+>
+  <div class="delete-confirmation">
+    <p>
+      Are you sure you want to block this user?
+    </p>
+    <p-message severity="warn">
+      This action will end the friend or follow relationship if one exists.
+      Interactions of the user with your posts will be permanently deleted.
+    </p-message>
+    <div class="delete-confirmation__actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="blockingUser()"
+        (onClick)="cancelBlockConfirmation()"
+      />
+      <p-button
+        label="Block"
+        icon="pi pi-ban"
+        severity="danger"
+        [loading]="blockingUser()"
+        (onClick)="confirmBlockUser()"
       />
     </div>
   </div>

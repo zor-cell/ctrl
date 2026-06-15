@@ -11,8 +11,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
@@ -30,6 +28,8 @@ import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
@@ -385,6 +385,7 @@ public class PostServiceUnitTest {
         "post-1",
         verifiedUser.getId(),
         verifiedUser.getUsername(),
+        false,
         source.getSourceId(),
         null,
         caption,

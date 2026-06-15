@@ -9,13 +9,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
+import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
@@ -24,9 +37,12 @@ import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
@@ -55,6 +71,8 @@ public class UserServiceUnitTest {
 
   @Mock private PasswordEncoder passwordEncoder;
 
+  @Mock private ReportRepository reportRepository;
+
   @Mock private JwtService jwtService;
 
   @Mock private IdAustriaOidcService idAustriaOidcService;
@@ -63,9 +81,37 @@ public class UserServiceUnitTest {
 
   @Mock private FriendRelationRepository friendRelationRepository;
 
+  @Mock private FollowRelationRepository followRelationRepository;
+
+  @Mock private BusinessVerificationRepository businessVerificationRepository;
+
   @Mock private FileStorageService fileStorageService;
 
   @Mock private FollowService followService;
+
+  @Mock private BlockService blockService;
+
+  @Mock private EmailVerificationRepository emailVerificationRepository;
+
+  @Mock private PasswordResetRepository passwordResetRepository;
+
+  @Mock private PostRepository postRepository;
+
+  @Mock private PostVoteRepository postVoteRepository;
+
+  @Mock private SourceRepository sourceRepository;
+
+  @Mock private SourceVoteRepository sourceVoteRepository;
+
+  @Mock private CommentRepository commentRepository;
+
+  @Mock private ReactionRepository reactionRepository;
+
+  @Mock private SeenPostRepository seenPostRepository;
+
+  @Mock private AlgorithmRepository algorithmRepository;
+
+  @Mock private ChatService chatService;
 
   @InjectMocks private UserService userService;
 
@@ -124,23 +170,44 @@ public class UserServiceUnitTest {
             testUser.getBio(),
             "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
             false,
-            true);
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
-    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
+            false,
+            true,
+            false);
+    when(userRepository.findByUsernameAndDeletedFalse("testUser"))
+        .thenReturn(Optional.of(testUser));
+    when(reportRepository.existsReportByFromUserAndContentTypeAndContentId(
+            testUser, ContentTypeEnum.ACCOUNT, String.valueOf(testUser.getId())))
+        .thenReturn(false);
+    when(blockService.inBlockedRelationship(testUser, testUser)).thenReturn(false);
+    when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
-    verify(userRepository).findByUsername("testUser");
-    verify(userMapper).toPublicUserProfileResponse(testUser, true);
+    verify(userRepository).findByUsernameAndDeletedFalse("testUser");
+    verify(blockService).inBlockedRelationship(testUser, testUser);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
   }
 
   @Test
   void getPublicProfile_withMissingUser_throwsUsernameNotFoundException() {
-    when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+    when(userRepository.findByUsernameAndDeletedFalse("missing")).thenReturn(Optional.empty());
 
     assertThrows(
         UsernameNotFoundException.class, () -> userService.getPublicProfile("missing", testUser));
+  }
+
+  @Test
+  void getPublicProfile_whenUserIsBlocked_throwsUsernameNotFoundException() {
+    User otherUser = createUser("otherUser");
+    when(userRepository.findByUsernameAndDeletedFalse("otherUser"))
+        .thenReturn(Optional.of(otherUser));
+    when(blockService.inBlockedRelationship(testUser, otherUser)).thenReturn(true);
+
+    assertThrows(
+        UsernameNotFoundException.class, () -> userService.getPublicProfile("otherUser", testUser));
+    verify(userRepository).findByUsernameAndDeletedFalse("otherUser");
+    verify(blockService).inBlockedRelationship(testUser, otherUser);
   }
 
   @Test

@@ -15,11 +15,11 @@ import { CommonModule } from '@angular/common';
 import { UserService } from '../../../user/user.service';
 import { RelationshipService } from '../../../user/relationship.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
-import { ChatService } from '../../../chat/chat.service';
+import { ChatService} from '../../../chat/services/chat.service';
 import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { ShareablePost, resolveShareMediaUrl } from '../../dto/ShareablePost';
 import { Friend } from '../../../user/dto/Relationship';
-import { Chat, ChatParticipant } from '../../../chat/chat.models';
+import { Chat, ChatParticipant} from '../../../chat/models/chat.models';
 import {ShareTarget} from '../../dto/ShareTarget';
 import {SharedPostPayload} from '../../dto/SharedPostPayload';
 

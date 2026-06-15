@@ -1,0 +1,120 @@
+package at.ac.tuwien.inso.ctrl.session.repository;
+
+import at.ac.tuwien.inso.ctrl.session.entity.DailySessionStatsProjection;
+import at.ac.tuwien.inso.ctrl.session.entity.DailySummary;
+import at.ac.tuwien.inso.ctrl.session.entity.DayOfWeekAverage;
+import at.ac.tuwien.inso.ctrl.session.entity.SessionHistory;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SessionRepository extends JpaRepository<SessionHistory, UUID> {
+  Optional<SessionHistory> findTopByUserOrderByStartDesc(User user);
+
+  @Query(
+      """
+          SELECT
+            COALESCE(SUM(s.seconds), 0) AS totalSeconds,
+            COALESCE(SUM(s.postsViewed), 0) AS totalPostsViewed
+          FROM SessionHistory s
+          WHERE s.user = :user
+            AND FUNCTION('TIMESTAMPADD', SECOND, s.seconds, s.start) > :trackingStart
+      """)
+  DailySessionStatsProjection getDailyStats(
+      @Param("user") User user, @Param("trackingStart") LocalDateTime trackingStart);
+
+  @Query(
+      value =
+          """
+          WITH days AS (
+            SELECT generate_series(
+              CAST(:from AS date),
+              CAST(:to AS date) - INTERVAL '1 day',
+              INTERVAL '1 day'
+            )::date AS day
+          )
+          SELECT
+            d.day,
+            COALESCE(SUM(sh.seconds), 0) AS totalSeconds,
+            COUNT(sh.session_id)         AS sessionCount
+          FROM days d
+          LEFT JOIN session_history sh
+            ON sh.user_id = :userId
+            AND sh.seconds IS NOT NULL
+            AND sh.started_at < (d.day + INTERVAL '1 day')
+            AND (sh.started_at + (sh.seconds || ' seconds')::interval) > d.day::timestamp
+          GROUP BY d.day
+          ORDER BY d.day
+          """,
+      nativeQuery = true)
+  List<DailySummary> findSummaries(
+      @Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+  @Query(
+      value =
+          """
+          WITH date_range AS (
+            SELECT generate_series(
+              CAST(:from AS date),
+              CAST(:to AS date) - INTERVAL '1 day',
+              INTERVAL '1 day'
+            )::date AS day
+          ),
+          daily_totals AS (
+            SELECT
+              d.day,
+              COALESCE(SUM(sh.seconds), 0) AS totalSeconds,
+              COUNT(sh.session_id)         AS sessionCount
+            FROM date_range d
+            LEFT JOIN session_history sh
+              ON sh.user_id = :userId
+              AND sh.seconds IS NOT NULL
+              AND sh.started_at < (d.day + INTERVAL '1 day')
+              AND (sh.started_at + (sh.seconds || ' seconds')::interval) > d.day::timestamp
+            GROUP BY d.day
+          ),
+          filled AS (
+            SELECT
+              day,
+              EXTRACT(ISODOW FROM day)::int AS dayOfWeek,
+              totalSeconds,
+              sessionCount
+            FROM daily_totals
+          )
+          SELECT
+            dayOfWeek,
+            COALESCE(AVG(totalSeconds), 0)  AS avgSeconds,
+            COALESCE(AVG(sessionCount), 0)  AS avgSessionCount,
+            COUNT(day)::int                 AS daysInPeriod
+          FROM filled
+          GROUP BY dayOfWeek
+          ORDER BY dayOfWeek
+          """,
+      nativeQuery = true)
+  List<DayOfWeekAverage> findDayOfWeekAverages(
+      @Param("userId") UUID userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+  @Query(
+      value =
+          """
+          SELECT * FROM session_history
+          WHERE user_id = :userId
+            AND seconds IS NOT NULL
+            AND started_at < :to
+            AND (started_at + (seconds || ' seconds')::interval) > :from
+          ORDER BY started_at
+          """,
+      nativeQuery = true)
+  List<SessionHistory> findSessionsForPeriod(
+      @Param("userId") UUID userId,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to);
+}

@@ -1,11 +1,11 @@
 package at.ac.tuwien.inso.ctrl.algorithm.service;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.transaction.Transactional;
 import java.util.List;

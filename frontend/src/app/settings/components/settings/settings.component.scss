@@ -1,0 +1,9 @@
+.wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+:host ::ng-deep .p-tablist-tab-list {
+  justify-content: center;
+}

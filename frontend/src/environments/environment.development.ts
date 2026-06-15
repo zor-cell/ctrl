@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: '/api',
+  apiUrl: 'http://localhost:8080/api',
   // Direct backend WebSocket — Vite dev proxy can corrupt STOMP frames (opCode 7).
   wsUrl: 'ws://127.0.0.1:8080/ws',
   // Native-first: every machine tries the native WebSocket and only falls back to SockJS at
@@ -16,5 +16,8 @@ export const environment = {
   },
   auth: {
     requireEmailVerification: true
+  },
+  heartbeat: {
+    interval: 10000 // 10 s in ms
   }
 };

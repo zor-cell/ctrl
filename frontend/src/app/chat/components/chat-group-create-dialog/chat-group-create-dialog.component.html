@@ -1,0 +1,107 @@
+<p-dialog
+  header="Create group"
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '520px' }"
+  styleClass="chat-dialog group-create-dialog">
+  <form class="group-form" (ngSubmit)="createGroup.emit()">
+    <label class="group-field">
+      <span class="field-label">Group name</span>
+      <input
+        type="text"
+        pInputText
+        placeholder="Name"
+        [ngModel]="groupName"
+        (ngModelChange)="groupNameChange.emit($event)"
+        name="groupName" />
+      @if (groupName.trim() && !groupNameValid) {
+        <span class="field-error">Only letters, numbers, dots and underscores allowed</span>
+      }
+    </label>
+
+    <div class="group-image-picker">
+      <span class="field-label">Group image (optional)</span>
+      <div class="group-image-picker-row">
+        <span class="avatar group-image-preview" aria-hidden="true">
+          @if (groupImagePreview) {
+            <img [src]="groupImagePreview" alt="" />
+          } @else {
+            <i class="pi pi-image"></i>
+          }
+        </span>
+        <div class="group-image-actions">
+          <label class="secondary-button">
+            Choose image
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              (change)="imageSelected.emit($event)" />
+          </label>
+          @if (groupImagePreview) {
+            <button
+              type="button"
+              class="header-icon-button remove-image-button"
+              (click)="clearImage.emit()"
+              aria-label="Remove group image">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <section class="members-picker">
+      <div class="members-picker-header">
+        <span class="section-title">Members</span>
+        <span class="selected-count">{{ selectedMemberCount }} / {{ maxGroupMembers }} members</span>
+      </div>
+
+      <p-iconField iconPosition="left" class="members-search">
+        <p-inputIcon styleClass="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          placeholder="Search friends"
+          [ngModel]="groupMemberSearch"
+          (ngModelChange)="groupMemberSearchChange.emit($event)"
+          name="groupMemberSearch" />
+      </p-iconField>
+
+      <div class="group-friends-list">
+        @if (friends.length === 0) {
+          <p class="picker-empty">No friends found</p>
+        } @else {
+          @for (friend of friends; track friend.id) {
+            <label class="group-friend-row">
+              <input
+                type="checkbox"
+                [checked]="isFriendSelected(friend.username)"
+                [disabled]="!canSelectFriend(friend.username)"
+                (change)="toggleFriend.emit(friend.username)" />
+              <span class="avatar" aria-hidden="true">
+                @if (avatarUrl(friend.id)) {
+                  <img [src]="avatarUrl(friend.id)" alt="" />
+                } @else {
+                  {{ initialFor(friend) }}
+                }
+              </span>
+              <span class="row-copy">
+                <span class="row-title">{{ friend.name || friend.username }}</span>
+                <span class="row-subtitle">&#64;{{ friend.username }}</span>
+              </span>
+            </label>
+          }
+        }
+      </div>
+    </section>
+
+    <div class="group-actions">
+      <button type="button" class="text-button" (click)="cancelled.emit()">Cancel</button>
+      <button type="submit" class="primary-button" [disabled]="!canCreate">Create</button>
+    </div>
+  </form>
+</p-dialog>

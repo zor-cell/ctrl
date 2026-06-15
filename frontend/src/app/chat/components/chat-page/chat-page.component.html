@@ -1,0 +1,597 @@
+<main class="chat-page">
+  <aside class="chat-sidebar" aria-label="Chats">
+    <div class="sidebar-header">
+      <h1>Chats</h1>
+    </div>
+
+    <div class="search-wrapper">
+      <p-iconField iconPosition="left" class="chat-search">
+        <p-inputIcon styleClass="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          placeholder="Search friends or chats"
+          [ngModel]="searchQuery()"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          (ngModelChange)="onSearchChange($event)" />
+      </p-iconField>
+
+      @if (friendDropdownOpen()) {
+        <div class="friend-dropdown" (mousedown)="keepFriendDropdownOpen($event)">
+          <div class="section-title">Friends</div>
+
+          @if (filteredFriends().length === 0) {
+            <p class="sidebar-empty">No friends found</p>
+          } @else {
+            @for (friend of filteredFriends(); track friend.id) {
+              <button type="button" class="friend-row" (click)="startOrOpenChat(friend)">
+                <span class="avatar" aria-hidden="true">
+                  @if (avatarUrl(friend.id)) {
+                    <img [src]="avatarUrl(friend.id)" alt="" />
+                  } @else {
+                    {{ initialFor(friend) }}
+                  }
+                </span>
+
+                <span class="row-copy">
+                  <span class="row-title">{{ friend.name || friend.username }}</span>
+                  <span class="row-subtitle">&#64;{{ friend.username }}</span>
+                </span>
+
+                <span class="row-action">
+                  @if (directChatFor(friend)) {
+                    <i class="pi pi-comments"></i>
+                    Go to chat
+                  } @else {
+                    <i class="pi pi-plus"></i>
+                    New chat
+                  }
+                </span>
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <section class="sidebar-section group-section">
+      <button type="button" class="new-group-button" (click)="openGroupDialog()">
+        <i class="pi pi-users"></i>
+        New group
+      </button>
+    </section>
+
+    <section class="sidebar-section chat-section">
+      @if (loadingChats()) {
+        <p class="sidebar-empty">Loading chats</p>
+      } @else if (filteredChats().length === 0) {
+        <p class="sidebar-empty">No chats yet</p>
+      } @else {
+        @if (filteredDirectChats().length > 0) {
+          <div class="section-title">
+            <i class="pi pi-user section-title-icon" aria-hidden="true"></i>
+            Direct
+          </div>
+          <div class="chat-list">
+            @for (chat of filteredDirectChats(); track chat.chatId) {
+              <ng-container
+                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+            }
+          </div>
+        }
+
+        @if (filteredGroupChats().length > 0) {
+          <div class="section-title" [class.section-title--spaced]="filteredDirectChats().length > 0">
+            <i class="pi pi-users section-title-icon" aria-hidden="true"></i>
+            Groups
+          </div>
+          <div class="chat-list">
+            @for (chat of filteredGroupChats(); track chat.chatId) {
+              <ng-container
+                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+            }
+          </div>
+        }
+      }
+    </section>
+
+    <ng-template #chatListRow let-chat>
+      <button
+        type="button"
+        class="chat-row"
+        [class.chat-row--group]="chat.groupChat"
+        [class.active]="isSelected(chat)"
+        [class.chat-row--unread]="hasUnreadMessages(chat)"
+        (click)="selectChat(chat)">
+        <span class="avatar" [class.avatar--group]="chat.groupChat" aria-hidden="true">
+          @if (chat.groupChat && groupImageUrl(chat)) {
+            <img [src]="groupImageUrl(chat)" alt="" />
+          } @else if (!chat.groupChat) {
+            @let other = otherParticipant(chat);
+            @if (other && avatarUrl(other.id)) {
+              <img [src]="avatarUrl(other.id)" alt="" />
+            } @else {
+              {{ chatAvatarLabel(chat) }}
+            }
+          } @else {
+            {{ chatAvatarLabel(chat) }}
+          }
+        </span>
+
+        <span class="row-copy">
+          <div class="row-header">
+            <span class="row-title" [class.row-title--unread]="hasUnreadMessages(chat)">
+              <span class="row-title-text">{{ chatDisplayName(chat) }}</span>
+            </span>
+
+            <span class="row-header-side">
+              @if (chat.lastMessage && !hasUnreadMessages(chat)) {
+                <time class="chat-time">{{ chat.lastMessage.date | date: 'shortTime' }}</time>
+              }
+              @if (hasUnreadMessages(chat)) {
+                <span class="chat-unread-badge" [attr.aria-label]="chat.unreadCount + ' unread'">
+                  {{ chat.unreadCount > 9 ? '+9' : chat.unreadCount }}
+                </span>
+              }
+            </span>
+          </div>
+
+          <span class="row-subtitle" [class.row-subtitle--unread]="hasUnreadMessages(chat)">
+            @if (chat.lastMessage) {
+              {{ messagePreviewForMessage(chat.lastMessage) }}
+            } @else {
+              {{ participantText(chat) }}
+            }
+          </span>
+        </span>
+      </button>
+    </ng-template>
+  </aside>
+
+  <section class="chat-detail">
+    @if (selectedChat(); as chat) {
+      <header class="chat-header">
+        <button
+          type="button"
+          class="avatar avatar-large avatar-button"
+          [class.avatar-button--group]="chat.groupChat"
+          [class.avatar-button--direct]="!chat.groupChat"
+          [class.avatar-button--disabled]="!chat.groupChat && !canOpenParticipantProfile(otherParticipant(chat))"
+          (click)="chat.groupChat ? openMembersDialog() : openDirectChatProfile(chat)"
+          [pTooltip]="chat.groupChat ? '' : directChatProfileTooltip(chat)"
+          tooltipPosition="bottom"
+          [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'">
+          @if (chat.groupChat && groupImageUrl(chat)) {
+            <img [src]="groupImageUrl(chat)" alt="" />
+          } @else if (!chat.groupChat) {
+            @let other = otherParticipant(chat);
+            @if (other && avatarUrl(other.id)) {
+              <img [src]="avatarUrl(other.id)" alt="" />
+            } @else {
+              {{ chatAvatarLabel(chat) }}
+            }
+          } @else {
+            {{ chatAvatarLabel(chat) }}
+          }
+        </button>
+
+        @if (!chat.groupChat) {
+          <button
+            type="button"
+            class="chat-header-copy chat-header-link"
+            [class.chat-header-link--disabled]="!canOpenParticipantProfile(otherParticipant(chat))"
+            (click)="openDirectChatProfile(chat)"
+            [pTooltip]="directChatProfileTooltip(chat)"
+            tooltipPosition="bottom">
+            <h2>{{ chatDisplayName(chat) }}</h2>
+            @if (directChatSubtitle(chat); as subtitle) {
+              <p>{{ subtitle }}</p>
+            }
+          </button>
+        } @else {
+          <div class="chat-header-copy">
+            <h2>{{ chatDisplayName(chat) }}</h2>
+            @if (participantText(chat)) {
+              <p>{{ participantText(chat) }}</p>
+            }
+          </div>
+        }
+
+        <div class="chat-header-actions">
+          @if (chat.groupChat) {
+            <button
+              type="button"
+              class="header-icon-button"
+              (click)="openMembersDialog()"
+              aria-label="View members">
+              <i class="pi pi-users"></i>
+            </button>
+          }
+
+          @if (chat.groupChat && chat.owner) {
+            <button
+              type="button"
+              class="header-icon-button delete-group-button"
+              (click)="requestDeleteSelectedGroup()"
+              pTooltip="Delete group for everyone"
+              tooltipPosition="bottom"
+              aria-label="Delete group for everyone">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+
+          @if (chat.groupChat && (!chat.owner || hasMultipleGroupOwners(chat))) {
+            <button
+              type="button"
+              class="header-icon-button leave-group-button"
+              (click)="requestLeaveGroup()"
+              pTooltip="Leave group"
+              tooltipPosition="bottom"
+              aria-label="Leave group">
+              <i class="pi pi-sign-out"></i>
+            </button>
+          }
+
+          @if (!chat.groupChat) {
+            <button
+              type="button"
+              class="header-icon-button delete-direct-button"
+              (click)="requestDeleteDirectChatForSelf()"
+              pTooltip="Delete chat for yourself"
+              tooltipPosition="bottom"
+              aria-label="Delete chat for yourself">
+              <i class="pi pi-trash"></i>
+            </button>
+          }
+        </div>
+      </header>
+
+      <div class="message-list" #messageList (scroll)="onMessageListScroll()">
+        @if (loadingMessages()) {
+          <p class="message-empty">Loading messages</p>
+        } @else {
+          @if (loadingOlderMessages()) {
+            <p class="message-page-loader">Loading older messages</p>
+          }
+
+          @if (messages().length === 0) {
+            <p class="message-empty">No messages yet</p>
+          }
+
+          @for (message of messages(); track message.messageId) {
+            @if (message.system) {
+              <div class="message-system">
+                <span class="message-system-pill">{{ systemMessageLabel(message) }}</span>
+              </div>
+            } @else {
+              <article
+                class="message-row"
+                [class.own]="isOwnMessage(message)"
+                [class.message-row--shared-post]="hasSharedPost(message)">
+                @if (!isOwnMessage(message)) {
+                  <span class="avatar message-avatar" aria-hidden="true">
+                  @if (avatarUrl(message.sender.id)) {
+                    <img [src]="avatarUrl(message.sender.id)" alt="" />
+                  } @else {
+                    {{ initialFor(message.sender) }}
+                  }
+                </span>
+                }
+
+                <div
+                  class="message-stack"
+                  [class.message-stack--own]="isOwnMessage(message)"
+                  [class.message-stack--reaction-open]="isMoreReactionPickerOpen(message)"
+                  tabindex="0"
+                  (mouseenter)="setHoveredMessage(message.messageId)"
+                  (mouseleave)="clearHoveredMessage(message.messageId)"
+                  (click)="setHoveredMessage(message.messageId)"
+                  (keydown.enter)="setHoveredMessage(message.messageId)"
+                  (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
+                  <div
+                    class="reaction-bar"
+                    tabindex="-1"
+                    (click)="$event.stopPropagation()"
+                    (keydown)="$event.stopPropagation()"
+                    [class.reaction-bar--visible]="
+                    reactionPickerMessageId() === message.messageId
+                    || hoveredMessageId() === message.messageId
+                  ">
+                    @for (emoji of reactionEmojis; track emoji) {
+                      <button
+                        type="button"
+                        class="reaction-bar-item"
+                        [class.reaction-bar-item--active]="hasReactedWith(message, emoji)"
+                        (click)="toggleReaction(message, emoji)"
+                        [attr.aria-label]="'React with ' + emoji">
+                        {{ emoji }}
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="reaction-bar-item reaction-bar-item--more"
+                      (click)="toggleMoreReactionPicker(message, $event)"
+                      aria-label="Choose another emoji"
+                      pTooltip="Choose another emoji"
+                      tooltipPosition="top">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
+                  @if (isMoreReactionPickerOpen(message)) {
+                    <div
+                      class="emoji-picker emoji-picker--message"
+                      tabindex="-1"
+                      (click)="$event.stopPropagation()"
+                      (keydown)="$event.stopPropagation()">
+                      @for (emoji of moreReactionEmojis; track emoji) {
+                        <button
+                          type="button"
+                          class="emoji-picker-item"
+                          [class.emoji-picker-item--active]="hasReactedWith(message, emoji)"
+                          (click)="toggleReaction(message, emoji)"
+                          [attr.aria-label]="'React with ' + emoji">
+                          {{ emoji }}
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  <div class="message-bubble">
+                    <div class="message-meta">
+                      @if (!isOwnMessage(message)) {
+                        <span>{{ message.sender.name || message.sender.username }}</span>
+                      }
+                      <time>{{ message.date | date: 'shortTime' }}</time>
+                    </div>
+                    @if (sharedPostFromMessage(message); as sharedPost) {
+                      <article
+                        class="shared-post-card"
+                        [class.shared-post-card--private]="!canViewSharedPost(sharedPost)"
+                        [class.shared-post-card--clickable]="canViewSharedPost(sharedPost)"
+                        [attr.role]="canViewSharedPost(sharedPost) ? 'link' : null"
+                        [attr.tabindex]="canViewSharedPost(sharedPost) ? 0 : null"
+                        (click)="openSharedPostDetail(sharedPost)"
+                        (keydown.enter)="openSharedPostDetail(sharedPost)"
+                        (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)">
+                        @if (canViewSharedPost(sharedPost)) {
+                          <div class="shared-post-header">
+                          <span class="shared-post-avatar" aria-hidden="true">
+                            @if (sharedPostAuthorAvatarUrl(sharedPost)) {
+                              <img [src]="sharedPostAuthorAvatarUrl(sharedPost)!" alt="" />
+                            } @else {
+                              {{ sharedPostAuthorInitial(sharedPost) }}
+                            }
+                          </span>
+                            <span class="shared-post-author-copy">
+                            <span class="shared-post-author-name">{{ sharedPostAuthorName(sharedPost) }}</span>
+                          </span>
+                          </div>
+
+                          @if (sharedPostHasMediaSlot(sharedPost)) {
+                            <div
+                              class="shared-post-media"
+                              [class.shared-post-media--video]="sharedPost.post.mediaKind === 'video'">
+                              @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
+                                @if (sharedPost.post.mediaKind === 'video') {
+                                  <div class="shared-post-video-preview">
+                                    <video
+                                      [src]="sharedPostVideoPreviewUrl(mediaUrl)"
+                                      muted
+                                      playsinline
+                                      preload="metadata"
+                                      (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                                    <span class="shared-post-video-play" aria-hidden="true">
+                                    <i class="pi pi-play"></i>
+                                  </span>
+                                  </div>
+                                } @else {
+                                  <img
+                                    [src]="mediaUrl"
+                                    alt=""
+                                    loading="lazy"
+                                    (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                                }
+                              } @else {
+                                <div class="shared-post-media-placeholder" aria-hidden="true"></div>
+                              }
+                            </div>
+                          }
+
+                          <div class="shared-post-copy">
+                            <p>{{ sharedPost.post.caption }}</p>
+                            <span class="shared-post-link">View post</span>
+                          </div>
+                        } @else {
+                          <div class="shared-post-unavailable">
+                          <span class="shared-post-unavailable-icon" aria-hidden="true">
+                            <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
+                          </span>
+                            <div class="shared-post-unavailable-copy">
+                              <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
+                              <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
+                              @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
+                                <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
+                              } @else if (sharedPostProfileTooltip(sharedPost)) {
+                                <span
+                                  class="shared-post-profile-unavailable"
+                                  [pTooltip]="sharedPostProfileTooltip(sharedPost)"
+                                  tooltipPosition="top">
+                                Profile unavailable
+                              </span>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </article>
+
+                      @if (sharedPost.note) {
+                        <p class="message-content">{{ sharedPost.note }}</p>
+                      }
+                    } @else {
+                      <p class="message-content">{{ message.content }}</p>
+                    }
+                  </div>
+
+                  @if (message.reactions.length > 0) {
+                    <div class="message-reactions-floating">
+                      @for (reaction of message.reactions; track reaction.emoji) {
+                        <button
+                          type="button"
+                          class="reaction-chip"
+                          [class.reaction-chip--active]="reaction.reactedByCurrentUser"
+                          (click)="toggleReaction(message, reaction.emoji)"
+                          [attr.aria-label]="'React with ' + reaction.emoji"
+                          [pTooltip]="reactionTooltip(reaction)"
+                          tooltipPosition="top">
+                          <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
+                          <span class="reaction-chip-count">{{ reaction.count }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+          }
+          <div #messageListEnd class="message-list-end" aria-hidden="true"></div>
+        }
+      </div>
+
+      <form class="message-composer" (ngSubmit)="sendMessage()">
+        @if (isDirectChatReadOnly(chat)) {
+          <p class="message-composer-notice">This user has deleted their account.</p>
+        } @else {
+          <div class="composer-main">
+            @if (sharedPostDraft(); as sharedPost) {
+              <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
+                @if (sharedPost.mediaUrl) {
+                  <div
+                    class="composer-shared-post-media"
+                    [class.composer-shared-post-media--video]="sharedPost.mediaKind === 'video'">
+                    @if (sharedPost.mediaKind === 'video') {
+                      <div class="shared-post-video-preview">
+                        <video
+                          [src]="sharedPostVideoPreviewUrl(sharedPost.mediaUrl)"
+                          muted
+                          playsinline
+                          preload="metadata"></video>
+                        <span class="shared-post-video-play" aria-hidden="true">
+                          <i class="pi pi-play"></i>
+                        </span>
+                      </div>
+                    } @else {
+                      <img
+                        [src]="sharedPost.mediaUrl"
+                        [alt]="sharedPost.caption"
+                        loading="lazy" />
+                    }
+                  </div>
+                }
+
+                <div class="composer-shared-post-copy">
+                  <span>Shared post from &#64;{{ sharedPost.username }}</span>
+                  <p>{{ sharedPost.caption }}</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="composer-shared-post-remove"
+                  (click)="clearSharedPostDraft()"
+                  aria-label="Remove shared post">
+                  <i class="pi pi-times"></i>
+                </button>
+              </article>
+            }
+
+            <textarea
+              pTextarea
+              rows="1"
+              [placeholder]="messagePlaceholder(chat)"
+              [ngModel]="messageText()"
+              (ngModelChange)="messageText.set($event)"
+              (keydown)="sendMessageOnEnter($event)"
+              name="message"></textarea>
+          </div>
+
+          <p-button
+            type="submit"
+            icon="pi pi-send"
+            [rounded]="true"
+            [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
+            aria-label="Send message" />
+        }
+      </form>
+    } @else {
+      <div class="no-chat">
+        <i class="pi pi-comments"></i>
+        <h2>Select a chat</h2>
+      </div>
+    }
+  </section>
+</main>
+
+<app-post-detail-dialog
+  [postId]="selectedChatPostId()"
+  (dismissed)="onChatPostCommentsVisibleChange(false)"
+  (postDeleted)="onChatPostDeleted($event)"
+/>
+
+<app-chat-group-create-dialog
+  [visible]="groupDialogVisible()"
+  [groupName]="groupName()"
+  [groupMemberSearch]="groupMemberSearch()"
+  [groupImagePreview]="groupImagePreview()"
+  [selectedMemberCount]="selectedGroupMemberCount()"
+  [maxGroupMembers]="maxGroupMembers"
+  [friends]="filteredGroupFriends()"
+  [groupNameValid]="isGroupNameValid()"
+  [canCreate]="canCreateGroup()"
+  [avatarUrl]="avatarUrlFn"
+  [initialFor]="initialForFn"
+  [isFriendSelected]="isGroupFriendSelectedFn"
+  [canSelectFriend]="canSelectGroupFriendFn"
+  (visibleChange)="onGroupDialogVisibilityChange($event)"
+  (groupNameChange)="groupName.set($event)"
+  (groupMemberSearchChange)="groupMemberSearch.set($event)"
+  (imageSelected)="onGroupImageSelected($event)"
+  (clearImage)="clearGroupImageSelection()"
+  (toggleFriend)="toggleGroupFriend($event)"
+  (cancelled)="closeGroupDialog()"
+  (createGroup)="createGroup()" />
+
+<app-chat-members-dialog
+  [chat]="selectedChat()"
+  [visible]="membersDialogVisible()"
+  [members]="sortedGroupMembers()"
+  [addMemberSearch]="addMemberSearch()"
+  [friendsToAdd]="filteredAddMemberFriends()"
+  [maxGroupMembers]="maxGroupMembers"
+  [canAddMembers]="canAddMembersToGroup()"
+  [selectedAddMemberCount]="selectedAddMemberCountForDialog()"
+  [canSelectAdditionalMember]="canSelectAdditionalMember()"
+  [avatarUrl]="avatarUrlFn"
+  [initialFor]="initialForFn"
+  [isGroupOwner]="isGroupOwnerFn"
+  [isFriendParticipant]="isFriendParticipantFn"
+  [isBlockedParticipant]="isBlockedParticipantFn"
+  [canOpenParticipantProfile]="canOpenParticipantProfileFn"
+  [participantProfileTooltip]="participantProfileTooltipFn"
+  [canRemoveMember]="canRemoveMemberFn"
+  [isAddMemberFriendSelected]="isAddMemberFriendSelectedFn"
+  (visibleChange)="onMembersDialogVisibilityChange($event)"
+  (openParticipantProfile)="openParticipantProfile($event)"
+  (removeMember)="removeMemberFromGroup($event)"
+  (addMemberSearchChange)="addMemberSearch.set($event)"
+  (toggleAddMemberFriend)="toggleAddMemberFriend($event)"
+  (addMembers)="addMembersToGroup()" />
+
+<app-chat-confirmation-dialog
+  [title]="groupConfirmationTitle()"
+  [message]="groupConfirmationMessage()"
+  [buttonLabel]="groupConfirmationButtonLabel()"
+  [visible]="groupConfirmationAction() !== null"
+  [inProgress]="groupActionInProgress()"
+  (visibleChange)="onGroupConfirmationVisibilityChange($event)"
+  (cancelled)="closeGroupConfirmation()"
+  (confirmed)="confirmGroupAction()" />

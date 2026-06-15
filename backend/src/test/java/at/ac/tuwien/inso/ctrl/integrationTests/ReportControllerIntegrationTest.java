@@ -323,7 +323,7 @@ public class ReportControllerIntegrationTest {
     reportRepository.save(report);
 
     UpdateReportRequest request =
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM);
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ITEM, null);
 
     mockMvc
         .perform(
@@ -356,7 +356,7 @@ public class ReportControllerIntegrationTest {
     reportRepository.save(report);
 
     UpdateReportRequest request =
-        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT);
+        new UpdateReportRequest(ReportStatus.VALIDATED, ReportAction.DELETE_ACCOUNT, null);
 
     mockMvc
         .perform(
@@ -369,6 +369,8 @@ public class ReportControllerIntegrationTest {
     User updatedUser = userRepository.findById(contentUser.getId()).orElseThrow();
     Report updatedReport = reportRepository.findById(report.getReportId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
+    assertTrue(updatedUser.isDeleted());
+    assertEquals("Deleted user", updatedUser.getName());
     assertEquals(ReportStatus.VALIDATED, updatedReport.getStatus());
     assertNotNull(updatedReport.getCreatedAt());
   }

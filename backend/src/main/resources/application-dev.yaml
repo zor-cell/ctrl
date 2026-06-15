@@ -23,10 +23,14 @@ application:
   security:
     id-austria:
       issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      jwk-uri: "http://localhost:8081/realms/id-austria-mock"
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:4200/verification-callback"
   auth:
     require-email-verification: false
+  session:
+    max-time-between-heartbeats: 3 #minutes
+    snooze-time: 5 #minutes
 
 infinity:
   url: http://localhost:7997

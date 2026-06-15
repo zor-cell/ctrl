@@ -7,7 +7,7 @@ import {MenuItem} from "primeng/api";
 import {Menubar} from "primeng/menubar";
 import {UserService} from "../user/user.service";
 import {MediaCacheService} from '../core/services/media-cache.service';
-import {ChatUnreadService} from '../chat/chat-unread.service';
+import {ChatUnreadService} from '../chat/services/chat-unread.service';
 
 @Component({
   selector: 'app-navigation',
@@ -91,7 +91,8 @@ export class NavigationComponent {
           styleClass: 'nav-admin-item',
           items: [
             {label: 'Reports', icon: 'pi pi-flag', routerLink: '/report'},
-            {label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'}
+            {label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'},
+            {label: 'Topics', icon: 'pi pi-tag', routerLink: '/topics'}
           ]
         });
       }

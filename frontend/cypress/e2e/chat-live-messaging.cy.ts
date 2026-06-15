@@ -8,7 +8,7 @@ describe('Chat live messaging', () => {
     }
   });
 
-  it('renders a message received through realtime while the chat is open', () => {
+  it('renders a realtime message once and updates the open chat summary', () => {
     let aliceToken: string;
     let bobToken: string;
     let chatId: string;
@@ -74,6 +74,17 @@ describe('Chat live messaging', () => {
         });
 
         cy.contains('.message-content', message, { timeout: 10000 }).should('be.visible');
+        cy.contains('button.chat-row.active', message, { timeout: 10000 }).should('be.visible');
+        cy.get('button.chat-row.active .chat-unread-badge').should('not.exist');
+
+        cy.wait(500);
+        cy.get('.message-content').should(contents => {
+          const matchingMessages = contents.toArray().filter(
+            content => content.textContent?.trim() === message,
+          );
+
+          expect(matchingMessages).to.have.length(1);
+        });
       });
   });
 });

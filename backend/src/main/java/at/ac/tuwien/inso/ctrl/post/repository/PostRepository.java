@@ -3,23 +3,55 @@ package at.ac.tuwien.inso.ctrl.post.repository;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.PostScoreProjection;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, String> {
   boolean existsByExternalPostId(String externalPostId);
 
-  List<Post> findAllByUserUsernameOrderByCreatedAtDesc(String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.user.username = :username
+        AND p.isRemoved = false
+      ORDER BY p.createdAt DESC
+      """)
+  List<Post> findAllByUserUsernameOrderByCreatedAtDesc(@Param("username") String username);
 
-  List<Post> findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.user.username = :username
+        AND p.isPublic = true
+        AND p.isRemoved = false
+      ORDER BY p.createdAt DESC
+      """)
+  List<Post> findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(
+      @Param("username") String username);
 
-  Optional<Post> findByPostIdAndUserUsername(String postId, String username);
+  @Query(
+      """
+      SELECT p FROM Post p
+      WHERE p.postId = :postId
+        AND p.user.username = :username
+        AND p.isRemoved = false
+      """)
+  Optional<Post> findByPostIdAndUserUsername(
+      @Param("postId") String postId, @Param("username") String username);
+
+  List<Post> findAllByUserId(UUID userId);
+
+  @Modifying
+  @Query("UPDATE Post p SET p.isRemoved = true WHERE p.user.id = :userId")
+  int markAllByUserAsRemoved(@Param("userId") UUID userId);
 
   boolean existsByMediaRef(String mediaRef);
 
@@ -109,14 +141,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
                  ON (fr.friend_id_1 = :userId AND fr.friend_id_2 = p.user_id)
                  OR (fr.friend_id_1 = p.user_id AND fr.friend_id_2 = :userId)
               WHERE p.post_id IN (:candidatePosts)
-                AND p.is_removed = false
-                AND NOT EXISTS (
-                  SELECT 1 FROM reports r
-                  WHERE r.from_user_id = :userId
-                    AND r.content_type = 'POST'
-                    AND r.content_id = p.post_id
-                    AND r.status <> 'DECLINED'
-                )
           )
           SELECT
               c.post_id AS postId,
@@ -168,6 +192,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
                       )
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
+                      AND (p.user_id IS NULL OR NOT EXISTS (
+                              SELECT 1
+                                  FROM blocked_relation br
+                                  WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                                  OR
+                                  (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
           )
           ( --interaction candidates
             SELECT pp.post_id FROM public_posts pp
@@ -267,6 +297,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
               LIMIT 200
@@ -292,6 +328,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
           WHERE p.is_removed = false
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
+            AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
             AND pt.topic_id = ANY(ARRAY[:topicList])
           ORDER BY p.created_at DESC
           LIMIT :pageSize OFFSET :offset
@@ -322,6 +364,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NULL OR NOT EXISTS (
+                      SELECT 1
+                            FROM blocked_relation br
+                            WHERE (br.user_id = :userId AND br.blocked_user_id = p.user_id)
+                            OR
+                            (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
               ORDER BY totalScore DESC
               LIMIT 200
           """,
@@ -387,4 +435,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
             """,
       nativeQuery = true)
   Integer findUpvotePercentile95();
+
+  List<Post> findPostsByUser(User user);
 }

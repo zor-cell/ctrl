@@ -7,15 +7,15 @@ import { Button } from 'primeng/button';
 import { ProgressSpinner } from 'primeng/progressspinner';
 import { TooltipModule } from 'primeng/tooltip';
 import { AlgorithmConfig } from '../../dto/AlgorithmConfig';
-import { TopicResponse } from '../../../post/dto/TopicResponse';
-import { TopicService } from '../../topic.service';
+import { TopicResponse } from '../../../topic/dto/TopicResponse';
+import { TopicService } from '../../../topic/topic.service';
 import { MultiSelect, MultiSelectFilterEvent } from 'primeng/multiselect';
 
 type SliderField = 'weightInteraction' | 'weightRecency' | 'weightExploration' |
   'weightSourceQuality' | 'weightPopularity' | 'weightTopic';
 
 @Component({
-  selector: 'app-config',
+  selector: 'app-algorithm-config',
   imports: [
     Slider,
     ReactiveFormsModule,

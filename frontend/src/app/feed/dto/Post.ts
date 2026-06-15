@@ -7,6 +7,7 @@ export interface Post {
   userId: string;
   username: string;
   userProfilePic: string;
+  userDeleted?: boolean;
   createdAt: string;
   caption: string;
   isPublic: boolean;
@@ -21,4 +22,5 @@ export interface Post {
   sourceIds: PostSource[];
   comments: PostComment[];
   explanation: PostExplanation;
+  wasReportedByUser: boolean;
 }

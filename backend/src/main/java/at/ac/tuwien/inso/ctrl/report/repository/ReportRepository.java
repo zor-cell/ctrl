@@ -30,4 +30,7 @@ public interface ReportRepository extends JpaRepository<Report, String> {
       ExternalAuthor externalAuthorReported, ReportStatus reportStatus);
 
   List<Report> findAllByContentIdAndContentType(String id, ContentTypeEnum type);
+
+  boolean existsReportByFromUserAndContentTypeAndContentId(
+      User user, ContentTypeEnum type, String contentId);
 }

@@ -54,6 +54,7 @@ export class FeedService {
       isExternal: !item.userId,
       username: item.username,
       userProfilePic: item.userProfilePic ?? '',
+      userDeleted: item.userDeleted ?? false,
       createdAt: item.createdAt,
       caption: item.caption ?? '',
       isPublic: item.isPublic,
@@ -64,20 +65,29 @@ export class FeedService {
       labelIds: item.labelIds ?? [],
       topicIds: item.topicIds ?? [],
       videoImageRef: this.resolveVideoImageRef(item),
-      sourceIds: item.sourceIds ?? [],
+      sourceIds: item.sourceIds?.map((s: any) => ({
+        sourceId: s.sourceId,
+        url: s.url,
+        upvotes: s.upvotes ?? 0,
+        downvotes: s.downvotes ?? 0,
+        userVote: s.userVote ?? null,
+        wasReportedByUser: s.wasReportedByUser ?? false,
+      })) ?? [],
       comments:
         item.comments?.map((c: any) => ({
           commentId: c.commentId,
           userId: c.userId,
           username: c.username,
           userProfilePic: c.userProfilePic ?? '',
+          userDeleted: c.userDeleted ?? false,
           createdAt: c.createdAt,
           content: c.content,
           parentCommentId: c.parentCommentId ?? null,
           edited: c.edited ?? false,
           replies: c.replies ?? [],
         })) ?? [],
-      explanation: item.explanation
+      explanation: item.explanation,
+      wasReportedByUser: item.wasReportedByUser
     };
   }
 

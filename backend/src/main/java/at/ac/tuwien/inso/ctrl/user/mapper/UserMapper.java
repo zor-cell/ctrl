@@ -24,7 +24,7 @@ public class UserMapper {
   }
 
   public PublicUserProfileResponse toPublicUserProfileResponse(
-      User user, boolean canSeePrivatePosts) {
+      User user, boolean canSeePrivatePosts, boolean wasReportedByUser) {
     return new PublicUserProfileResponse(
         user.getId(),
         user.getUsername(),
@@ -32,6 +32,8 @@ public class UserMapper {
         user.getBio(),
         user.getProfilePicture(),
         user.isVerified(),
-        canSeePrivatePosts);
+        user.isDeleted(),
+        canSeePrivatePosts,
+        wasReportedByUser);
   }
 }

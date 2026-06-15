@@ -37,7 +37,7 @@ public class Reaction {
   @JoinColumn(name = "from_user_id", referencedColumnName = "id", nullable = false)
   private User fromUser;
 
-  @Column(nullable = false)
+  @Column(nullable = false, insertable = false, updatable = false)
   private String content;
 
   @Column(name = "created_at")

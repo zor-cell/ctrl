@@ -62,6 +62,10 @@ $border: var(--border);
   text-align: left;
 }
 
+.preview-card__user--disabled {
+  cursor: default;
+}
+
 .avatar {
   width: 40px;
   height: 40px;
