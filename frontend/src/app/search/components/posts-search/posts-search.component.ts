@@ -18,6 +18,7 @@ import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
+import { PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 
 /**
  * Posts Search Component
@@ -42,21 +43,23 @@ import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card
     MultiSelectModule,
     ProgressSpinnerModule,
     PostPreviewCardComponent,
+    PostDetailDialogComponent,
   ],
   templateUrl: './posts-search.component.html',
   styleUrl: './posts-search.component.scss',
 })
 
 export class PostsSearchComponent implements OnInit, OnDestroy {
-  private searchService = inject(SearchService);
-  private topicService = inject(TopicService);
-  private notificationService = inject(NotificationService);
-  private mediaCacheService = inject(MediaCacheService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private injector = inject(Injector);
+  private readonly searchService = inject(SearchService);
+  private readonly topicService = inject(TopicService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly mediaCacheService = inject(MediaCacheService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly injector = inject(Injector);
+  selectedPostId = signal<string | null>(null);
 
-  private _destroy$ = new Subject<void>();
+  private readonly _destroy$ = new Subject<void>();
 
   // Search state
   searchQuery = signal<string>('');
@@ -321,7 +324,16 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
    */
   onPostSelected(preview: PostPreview): void {
     this.searchService.saveScrollPosition(window.scrollY);
-    this.router.navigate(['/posts', preview.postId]);
+    this.selectedPostId.set(preview.postId); // ← Dialog öffnen statt navigieren
+  }
+
+  onDialogDismissed(): void {
+    this.selectedPostId.set(null);
+  }
+
+  onPostDeleted(postId: string): void {
+    this.selectedPostId.set(null);
+    this.searchResults.update(results => results.filter(p => p.postId !== postId));
   }
 
   /**

@@ -101,7 +101,8 @@ public class PostMapper {
       PostVote postVote,
       boolean wasReported,
       Map<String, Boolean> commentsReportedByUser,
-      boolean sourceWasReported) {
+      boolean sourceWasReported,
+      Set<PostLabelType> computedLabels) {
     boolean deletedUser = isDeletedInternalAuthor(post);
     String userId =
         post.isExternalPost()
@@ -116,7 +117,13 @@ public class PostMapper {
             ? post.getExternalAuthor().getAvatarUrl()
             : deletedUser ? null : post.getUser().getProfilePicture();
     String sourceId = post.getSource() != null ? post.getSource().getSourceId() : null;
-    List<String> labelIds = List.of();
+    List<LabelResponse> labels =
+        computedLabels.stream()
+            .map(
+                type ->
+                    new LabelResponse(
+                        type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
+            .toList();
     List<String> topicIds =
         post.getPostTopics().stream()
             .map(postTopic -> postTopic.getTopic().getTopicId())
@@ -149,7 +156,7 @@ public class PostMapper {
         userProfileUrl,
         wasReported,
         post.isAiGenerated(),
-        labelIds,
+        labels,
         topicIds,
         comments,
         post.getUpvotes(),

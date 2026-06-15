@@ -98,7 +98,7 @@
     </div>
   }
 
-      <!-- Results Grid -->
+  <!-- Results Grid -->
   @if (hasSearched() && searchResults().length > 0) {
     <div class="results-container" #resultsContainer>
       <div class="posts-preview-grid">
@@ -131,3 +131,8 @@
     </div>
   }
 </div>
+
+<app-post-detail-dialog
+  [postId]="selectedPostId()"
+  (dismissed)="onDialogDismissed()"
+  (postDeleted)="onPostDeleted($event)" />

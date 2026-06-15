@@ -19,57 +19,57 @@
         <p-tabpanel value="public">
           <div class="posts-list">
 
-          @if (sessionState.isLimitActive()) {
+            @if (sessionState.isLimitActive()) {
               <div class="empty-state">
-                  <i class="pi pi-lock"></i>
-                  <p>Session Limit Reached</p>
+                <i class="pi pi-lock"></i>
+                <p>Session Limit Reached</p>
               </div>
-          } @else {
-            <!-- Skeleton Loader -->
-            @if (isLoading()) {
-              @for (i of skeletonItems; track i) {
-                <div class="post-card post-card--skeleton">
-                  <div class="skeleton-header">
-                    <p-skeleton shape="circle" size="42px" />
-                    <div class="skeleton-meta">
-                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
-                      <p-skeleton width="80px" height="0.72rem" />
+            } @else {
+              <!-- Skeleton Loader -->
+              @if (isLoading()) {
+                @for (i of skeletonItems; track i) {
+                  <div class="post-card post-card--skeleton">
+                    <div class="skeleton-header">
+                      <p-skeleton shape="circle" size="42px" />
+                      <div class="skeleton-meta">
+                        <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                        <p-skeleton width="80px" height="0.72rem" />
+                      </div>
+                    </div>
+                    <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                    <div class="skeleton-body">
+                      <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                      <p-skeleton width="120px" height="0.75rem" />
+                    </div>
+                    <div class="skeleton-actions">
+                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                      <p-skeleton width="60px" height="30px" borderRadius="20px" />
                     </div>
                   </div>
-                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
-                  <div class="skeleton-body">
-                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
-                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
-                    <p-skeleton width="120px" height="0.75rem" />
-                  </div>
-                  <div class="skeleton-actions">
-                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
-                  </div>
-                </div>
+                }
               }
-            }
 
-            <!-- Real posts -->
-            @if (!isLoading()) {
-              @if (publicPosts().length === 0) {
+              <!-- Real posts -->
+              @if (!isLoading()) {
+                @if (publicPosts().length === 0) {
                   <div class="empty-state">
-                      <i class="pi pi-inbox"></i>
-                      <p>No public posts yet.</p>
+                    <i class="pi pi-inbox"></i>
+                    <p>No public posts yet.</p>
                   </div>
-              }
-              @for (post of publicPosts(); track post.postId) {
-                <section
-                  class="post-card"
-                  [appPostView]="post.postId"
-                  (viewed)="onPostViewed($event)"
-                >
-                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-                </section>
+                }
+                @for (post of publicPosts(); track post.postId) {
+                  <section
+                    class="post-card"
+                    [appPostView]="post.postId"
+                    (viewed)="onPostViewed($event)"
+                  >
+                    <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                  </section>
+                }
               }
             }
-          }
           </div>
         </p-tabpanel>
 
@@ -77,64 +77,64 @@
         <p-tabpanel value="private">
           <div class="posts-list">
 
-              @if (sessionState.isLimitActive()) {
-                  <div class="empty-state">
-                      <i class="pi pi-lock"></i>
-                      <p>Session Limit Reached</p>
-                  </div>
-              } @else {
-            <!-- Skeleton Loader -->
-            @if (isLoading()) {
-              @for (i of skeletonItems; track i) {
-                <div class="post-card post-card--skeleton">
-                  <div class="skeleton-header">
-                    <p-skeleton shape="circle" size="42px" />
-                    <div class="skeleton-meta">
-                      <p-skeleton width="140px" height="0.85rem" class="mb-2" />
-                      <p-skeleton width="80px" height="0.72rem" />
+            @if (sessionState.isLimitActive()) {
+              <div class="empty-state">
+                <i class="pi pi-lock"></i>
+                <p>Session Limit Reached</p>
+              </div>
+            } @else {
+              <!-- Skeleton Loader -->
+              @if (isLoading()) {
+                @for (i of skeletonItems; track i) {
+                  <div class="post-card post-card--skeleton">
+                    <div class="skeleton-header">
+                      <p-skeleton shape="circle" size="42px" />
+                      <div class="skeleton-meta">
+                        <p-skeleton width="140px" height="0.85rem" class="mb-2" />
+                        <p-skeleton width="80px" height="0.72rem" />
+                      </div>
+                    </div>
+                    <p-skeleton width="100%" height="200px" class="skeleton-image" />
+                    <div class="skeleton-body">
+                      <p-skeleton width="92%" height="0.85rem" class="mb-2" />
+                      <p-skeleton width="70%" height="0.85rem" class="mb-3" />
+                      <p-skeleton width="120px" height="0.75rem" />
+                    </div>
+                    <div class="skeleton-actions">
+                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                      <p-skeleton width="72px" height="30px" borderRadius="20px" />
+                      <p-skeleton width="60px" height="30px" borderRadius="20px" />
                     </div>
                   </div>
-                  <p-skeleton width="100%" height="200px" class="skeleton-image" />
-                  <div class="skeleton-body">
-                    <p-skeleton width="92%" height="0.85rem" class="mb-2" />
-                    <p-skeleton width="70%" height="0.85rem" class="mb-3" />
-                    <p-skeleton width="120px" height="0.75rem" />
-                  </div>
-                  <div class="skeleton-actions">
-                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                    <p-skeleton width="72px" height="30px" borderRadius="20px" />
-                    <p-skeleton width="60px" height="30px" borderRadius="20px" />
-                  </div>
-                </div>
+                }
               }
-            }
 
-            <!-- Real posts -->
-            @if (!isLoading()) {
-              @if (privatePosts().length === 0) {
+              <!-- Real posts -->
+              @if (!isLoading()) {
+                @if (privatePosts().length === 0) {
                   @if (sessionState.isLimitActive()) {
-                      <div class="empty-state">
-                          <i class="pi pi-lock"></i>
-                          <p>Session Limit Reached</p>
-                      </div>
+                    <div class="empty-state">
+                      <i class="pi pi-lock"></i>
+                      <p>Session Limit Reached</p>
+                    </div>
                   } @else {
-                      <div class="empty-state">
-                          <i class="pi pi-inbox"></i>
-                          <p>No private posts yet.</p>
-                      </div>
+                    <div class="empty-state">
+                      <i class="pi pi-inbox"></i>
+                      <p>No private posts yet.</p>
+                    </div>
                   }
-              }
-              @for (post of privatePosts(); track post.postId) {
-                <section
-                  class="post-card"
-                  [appPostView]="post.postId"
-                  (viewed)="onPostViewed($event)"
-                >
-                  <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
-                </section>
+                }
+                @for (post of privatePosts(); track post.postId) {
+                  <section
+                    class="post-card"
+                    [appPostView]="post.postId"
+                    (viewed)="onPostViewed($event)"
+                  >
+                    <ng-container *ngTemplateOutlet="postCard; context: { post: post }" />
+                  </section>
+                }
               }
             }
-              }
           </div>
         </p-tabpanel>
 
@@ -202,14 +202,8 @@
     <div class="post-header-right">
       @if (post.labelIds.length > 0 || post.wasReportedByUser) {
         <div class="post-labels">
-          @for (label of post.labelIds; track label) {
-            <p-tag
-              [value]="label[0]"
-              severity="secondary"
-              class="post-label"
-              [pTooltip]="label[1]"
-              tooltipPosition="bottom"
-            />
+          @for (label of post.labelIds; track label.labelId) {
+            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
           }
           @if (post.wasReportedByUser) {
             <p-tag
@@ -272,19 +266,19 @@
            tooltipPosition="right" style="margin-right: 0.4rem;margin-left: 0.2rem;"></i>
         <button
           class="action-btn upvote"
-          [class.active]="post.sourceIds[0].userVote === 'up'"
+          [class.active]="sourceVoteFor(post.postId) === 'up'"
           (click)="voteSource(post, 'up')"
           [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'up'"
+          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'up'"
         >
           <i class="pi pi-check"></i>
         </button>
         <button
           class="action-btn downvote"
-          [class.active]="post.sourceIds[0].userVote === 'down'"
+          [class.active]="sourceVoteFor(post.postId) === 'down'"
           (click)="voteSource(post, 'down')"
           [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-          [attr.aria-pressed]="post.sourceIds[0].userVote === 'down'"
+          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'down'"
         >
           <i class="pi pi-times"></i>
         </button>
@@ -314,10 +308,10 @@
       <!-- PRIVATE: Likes only -->
       @if (!post.isPublic) {
         <button class="action-btn heart"
-                [class.active]="post.userVote === 'up'"
+                [class.active]="userVoteFor(post.postId) === 'up'"
                 (click)="votePost(post, 'up')"
                 [attr.aria-label]="'Upvote – ' + post.upvotes"
-                [attr.aria-pressed]="post.userVote === 'up'">
+                [attr.aria-pressed]="userVoteFor(post.postId) === 'up'">
           <i class="pi pi-heart"></i>
         </button>
       }
@@ -326,28 +320,28 @@
       @if (post.isPublic) {
         <button
           class="action-btn upvote"
-          [class.active]="post.userVote === 'up'"
+          [class.active]="userVoteFor(post.postId) === 'up'"
           (click)="votePost(post, 'up')"
           [attr.aria-label]="'Upvote – ' + post.upvotes"
-          [attr.aria-pressed]="post.userVote === 'up'"
+          [attr.aria-pressed]="userVoteFor(post.postId) === 'up'"
         >
           <i class="pi pi-thumbs-up"></i>
         </button>
         <button
           class="action-btn downvote"
-          [class.active]="post.userVote === 'down'"
+          [class.active]="userVoteFor(post.postId) === 'down'"
           (click)="votePost(post, 'down')"
           [attr.aria-label]="'Downvote – ' + post.downvotes"
-          [attr.aria-pressed]="post.userVote === 'down'"
+          [attr.aria-pressed]="userVoteFor(post.postId) === 'down'"
         >
           <i class="pi pi-thumbs-down"></i>
         </button>
       }
 
       <!-- Comments -->
-      <button class="action-btn" (click)="openCommentsDialog(post)">
+      <button class="action-btn" (click)="openCommentsDialog(post.postId)">
         <i class="pi pi-comment"></i>
-        <span>{{ post.comments.length }}</span>
+        <span>{{ commentCount(post) }}</span>
       </button>
 
       <button
@@ -376,10 +370,10 @@
 />
 
 <!-- ─── Comments Dialog ─── -->
-<app-comments
-  [post]="selectedPostForComments()"
-  [visible]="commentsDialogVisible()"
-  (visibleChange)="onCommentsVisibleChange($event)"
+<app-post-detail-dialog
+  [postId]="selectedPostId()"
+  (dismissed)="onCommentsDialogDismissed()"
+  (postDeleted)="onPostDeleted($event)"
 />
 
 <!-- ─── Report Dialog ─── -->
@@ -405,59 +399,12 @@
   (visibleChange)="reportSourceDialogVisible.set($event)">
 </app-report>
 
-<p-dialog
-  header="Send post"
+<!-- ─── Share Dialog ─── -->
+<app-post-share-dialog
+  [post]="selectedPostForShare()"
   [visible]="shareDialogVisible()"
   (visibleChange)="onShareDialogVisibleChange($event)"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [style]="{ width: '90vw', maxWidth: '420px' }"
-  styleClass="share-post-dialog"
->
-  <div class="share-dialog-content">
-    <input
-      class="share-search"
-      type="search"
-      placeholder="Search people or groups"
-      [value]="shareFriendQuery()"
-      (input)="shareFriendQuery.set($any($event.target).value)"
-    />
-
-    <div class="share-targets-list">
-      @if (filteredShareTargets().length === 0) {
-        <p class="share-empty">No people or groups found</p>
-      }
-
-      @for (target of filteredShareTargets(); track target.id) {
-        <button
-          type="button"
-          class="share-target-row"
-          (click)="sharePostWithTarget(target)"
-        >
-          <span class="share-avatar" aria-hidden="true">
-            @if (shareTargetAvatarUrl(target) && !shareTargetAvatarFailed(target)) {
-              <img
-                [src]="shareTargetAvatarUrl(target)!"
-                alt=""
-                (error)="markShareTargetAvatarFailed(target)"
-              />
-            } @else {
-              {{ shareTargetInitial(target) }}
-            }
-          </span>
-          <span class="share-target-copy">
-            <strong>{{ target.title }}</strong>
-            <span>{{ target.subtitle }}</span>
-          </span>
-          <span class="share-target-kind" [attr.aria-label]="target.kind">
-            <i class="pi" [class]="shareTargetIcon(target)"></i>
-          </span>
-        </button>
-      }
-    </div>
-  </div>
-</p-dialog>
+/>
 
 <!-- ─── Algorithm Config Dialog ─── -->
 <p-dialog

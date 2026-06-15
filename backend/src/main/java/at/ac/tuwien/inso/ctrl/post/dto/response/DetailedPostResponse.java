@@ -18,7 +18,7 @@ public record DetailedPostResponse(
     String userProfileUrl,
     boolean wasReportedByUser,
     boolean isAiGenerated,
-    List<String> labelIds,
+    List<LabelResponse> labelIds,
     List<String> topicIds,
     List<CommentResponse> comments,
     Integer upvotes,

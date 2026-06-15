@@ -40,11 +40,10 @@ import { ChatRealtimePayload } from '../../services/chat-realtime.service';
 import { ChatRealtimeBridgeService } from '../../services/chat-realtime-bridge.service';
 import { ChatUnreadService } from '../../services/chat-unread.service';
 import { ChatService } from '../../services/chat.service';
-import { CommentsComponent } from '../../../feed/components/comments/comments.component';
-import { Post } from '../../../feed/dto/Post';
 import { ChatConfirmationDialogComponent } from '../chat-confirmation-dialog/chat-confirmation-dialog.component';
 import { ChatGroupCreateDialogComponent } from '../chat-group-create-dialog/chat-group-create-dialog.component';
 import { ChatMembersDialogComponent } from '../chat-members-dialog/chat-members-dialog.component';
+import { PostDetailDialogComponent } from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
 const MORE_REACTION_EMOJIS = [
@@ -95,10 +94,10 @@ type GroupConfirmationAction = 'delete' | 'leave' | 'deleteDirect';
     InputText,
     Textarea,
     TooltipModule,
-    CommentsComponent,
     ChatConfirmationDialogComponent,
     ChatGroupCreateDialogComponent,
     ChatMembersDialogComponent,
+    PostDetailDialogComponent,
   ],
   templateUrl: './chat-page.component.html',
   styleUrl: './chat-page.component.scss',
@@ -140,8 +139,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly hoveredMessageId = signal<string | null>(null);
   protected readonly loadingMembersDialog = signal(false);
   protected readonly sharedPostDraft = signal<SharedPostPayload | null>(null);
-  protected readonly chatPostCommentsVisible = signal(false);
-  protected readonly selectedChatPostForComments = signal<Post | null>(null);
+  protected readonly selectedChatPostId = signal<string | null>(null);
 
   protected readonly reactionEmojis = REACTION_EMOJIS;
   protected readonly moreReactionEmojis = MORE_REACTION_EMOJIS;
@@ -199,10 +197,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   });
   private pendingSharedPost:
     | {
-        username?: string;
-        chatId?: string;
-        post: SharedPostPayload;
-      }
+    username?: string;
+    chatId?: string;
+    post: SharedPostPayload;
+  }
     | null = null;
   private pendingChatId: string | null = null;
   private readonly hasMoreMessages = signal(true);
@@ -302,39 +300,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       }
 
       queueMicrotask(() => untracked(() => this.loadAvatar(user.id, user.profilePicture)));
-    });
-
-    effect(() => {
-      const selectedPost = this.selectedChatPostForComments();
-      if (!selectedPost?.userId) {
-        return;
-      }
-
-      const avatarUrl = this.avatarUrls()[selectedPost.userId] ?? '';
-      const currentUser = this.userService.user();
-      const username =
-        currentUser?.id === selectedPost.userId ? currentUser.username : selectedPost.username;
-
-      if (selectedPost.userProfilePic === avatarUrl && selectedPost.username === username) {
-        return;
-      }
-
-      queueMicrotask(() => untracked(() => {
-        const latestPost = this.selectedChatPostForComments();
-        if (
-          !latestPost
-          || latestPost.postId !== selectedPost.postId
-          || latestPost.userId !== selectedPost.userId
-        ) {
-          return;
-        }
-
-        this.selectedChatPostForComments.set({
-          ...latestPost,
-          username,
-          userProfilePic: avatarUrl,
-        });
-      }));
     });
   }
 
@@ -1000,8 +965,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const currentUserId = this.userService.user()?.id;
     const currentUserIsTarget = currentUserId
       ? message.systemTargets.some(
-          target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
-        )
+        target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
+      )
       : false;
 
     switch (message.systemEvent) {
@@ -1257,17 +1222,35 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.selectedChatPostForComments.set(this.sharedPostToFeedPost(sharedPost));
-    this.chatPostCommentsVisible.set(true);
-    this.ensureSelectedChatPostAvatar(sharedPost);
-    this.ensureSelectedChatPostMedia(sharedPost);
+    this.selectedChatPostId.set(postId);
   }
 
   protected onChatPostCommentsVisibleChange(visible: boolean): void {
-    this.chatPostCommentsVisible.set(visible);
     if (!visible) {
-      this.selectedChatPostForComments.set(null);
+      this.selectedChatPostId.set(null);
     }
+  }
+
+  protected onChatPostDeleted(postId: string): void {
+    this.selectedChatPostId.set(null);
+
+    // Mark the deleted post as REMOVED in all messages so the template shows
+    // the "Post unavailable" state without requiring a full reload.
+    this.messages.update(messages =>
+      messages.map(message => {
+        if (!message.sharedPost || message.sharedPost.postId !== postId) {
+          return message;
+        }
+        return {
+          ...message,
+          sharedPost: {
+            ...message.sharedPost,
+            canView: false,
+            unavailableReason: 'REMOVED' as const,
+          },
+        };
+      })
+    );
   }
 
   protected sharedPostProfileRoute(sharedPost: ParsedSharedPost): string[] | null {
@@ -1390,80 +1373,6 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
-  }
-
-  private sharedPostToFeedPost(sharedPost: ParsedSharedPost): Post {
-    const post = sharedPost.post;
-    const mediaUrl = this.resolvedSharedPostMediaUrl(post) ?? post.mediaUrl;
-    const authorUserId = this.sharedPostAuthorUserId(post);
-    const userDeleted = this.isDeletedSharedPostAuthor(post);
-
-    return {
-      postId: post.postId,
-      userId: authorUserId ?? '',
-      username: this.sharedPostAuthorUsername(post),
-      userProfilePic: authorUserId ? this.avatarUrl(authorUserId) ?? '' : '',
-      userDeleted,
-      createdAt: post.sharedAt ?? new Date().toISOString(),
-      caption: post.caption,
-      isPublic: post.publicPost ?? true,
-      likes: 0,
-      upvotes: 0,
-      downvotes: 0,
-      userVote: null,
-      labelIds: [],
-      topicIds: [],
-      videoImageRef: mediaUrl ? [mediaUrl] : [],
-      isExternal: !userDeleted && !post.profileUserId && !post.profileUsername,
-      sourceIds: [],
-      comments: [],
-      explanation: {
-        scoreInteraction: 0,
-        scoreTopic: 0,
-        scoreRecency: 0,
-        scorePopularity: 0,
-        scoreSource: 0,
-        scoreExploration: 0,
-        totalScore: 0,
-      },
-      wasReportedByUser: false,
-    };
-  }
-
-  private ensureSelectedChatPostMedia(sharedPost: ParsedSharedPost): void {
-    const post = sharedPost.post;
-    if (post.mediaUrl || !post.mediaRef) {
-      return;
-    }
-
-    this.mediaCacheService.resolveMediaUrl(post.mediaRef, post.mediaKind ?? 'image', 'normal')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(url => {
-        const selectedPost = this.selectedChatPostForComments();
-        if (!url || !selectedPost || selectedPost.postId !== post.postId) {
-          return;
-        }
-
-        this.selectedChatPostForComments.set({
-          ...selectedPost,
-          videoImageRef: [url],
-        });
-      });
-  }
-
-  private ensureSelectedChatPostAvatar(sharedPost: ParsedSharedPost): void {
-    const profileUserId = this.sharedPostAuthorUserId(sharedPost.post);
-    if (!profileUserId) {
-      return;
-    }
-
-    const currentUser = this.userService.user();
-    const profilePicture =
-      currentUser?.id === profileUserId
-        ? currentUser.profilePicture
-        : sharedPost.post.profilePicture ?? null;
-
-    this.loadAvatar(profileUserId, profilePicture);
   }
 
   protected participantText(chat: Chat): string {
@@ -1602,10 +1511,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private directChatForUsername(username: string): Chat | null {
     const normalizedUsername = username.toLowerCase();
     const matches = this.chats().filter(chat =>
-      !chat.groupChat
-      && chat.participants.some(
-        participant => participant.username.toLowerCase() === normalizedUsername
-      )
+        !chat.groupChat
+        && chat.participants.some(
+          participant => participant.username.toLowerCase() === normalizedUsername
+        )
     );
 
     return this.pickLatestDirectChat(matches);
@@ -2332,8 +2241,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const canView = sharedPost.canView ?? true;
     const postId = this.resolveSharedPostId(sharedPost.postId) ?? '';
     const mediaUrl = canView
-      && sharedPost.mediaRef?.startsWith('http')
-      && !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
+    && sharedPost.mediaRef?.startsWith('http')
+    && !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
       ? sharedPost.mediaRef
       : canView
         ? resolvedMediaUrl

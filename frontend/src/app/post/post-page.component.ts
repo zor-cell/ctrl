@@ -29,7 +29,7 @@ import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from '../topic/dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
-import { PostDetailDialogComponent } from './post-detail-dialog.component';
+import { PostDetailDialogComponent} from './components/post-detail-dialog/post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
@@ -119,7 +119,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly postMediaObjectUrls = signal<Record<string, string>>({});
   protected readonly postCardMediaUrls = signal<Record<string, string>>({});
   protected readonly myPosts = signal<PostResponse[]>([]);
-  protected readonly selectedPost = signal<PostResponse | null>(null);
+  protected readonly selectedPostId = signal<string | null>(null);
   protected readonly publicProfile = signal<PublicUserProfile | null>(null);
   protected readonly publicProfileUsername = signal<string | null>(null);
   protected readonly loadingPosts = signal(false);
@@ -625,12 +625,18 @@ export class PostPageComponent implements OnDestroy, OnInit {
   }
 
   protected openPost(post: PostResponse) {
-    this.selectedPost.set(post);
-    this.loadFullPostMedia(post);
+    this.selectedPostId.set(post.postId);
   }
 
   protected closePost() {
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
+  }
+
+  protected onPostDeletedFromDialog(postId: string): void {
+    this.revokePostMediaObjectUrl(postId);
+    this.revokePostCardMediaUrl(postId);
+    this.myPosts.update(posts => posts.filter(p => p.postId !== postId));
+    this.selectedPostId.set(null);
   }
 
   protected requestPostDeletion(post: PostResponse) {
@@ -639,7 +645,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   protected openShareDialog(post: PostResponse): void {
     this.selectedPostForShare.set(post);
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
     this.shareFriendQuery.set('');
     this.loadShareTargets();
     this.shareDialogVisible.set(true);
@@ -817,42 +823,11 @@ export class PostPageComponent implements OnDestroy, OnInit {
     return this.withVideoStartFragment(url);
   }
 
-  protected selectedPostMediaUrl(): string | null {
-    const post = this.selectedPost();
-    if (!post) {
-      return null;
-    }
-
-    return (
-      this.postMediaObjectUrls()[post.postId] ??
-      this.postCardMediaUrls()[post.postId] ??
-      this.directMediaUrl(post.mediaRef)
-    );
-  }
-
-  protected selectedPostMediaKind(): PreviewKind {
-    const post = this.selectedPost();
-    if (!post) {
-      return null;
-    }
-
-    return postMediaKind(post.mediaRef);
-  }
-
   protected postMediaKind(post: PostResponse): PreviewKind {
     return postMediaKind(post.mediaRef);
   }
 
   protected onPostCardMediaError(post: PostResponse): void {
-    this.revokePostCardMediaUrl(post.postId);
-  }
-
-  protected onSelectedPostMediaError(post: PostResponse): void {
-    if (this.postMediaObjectUrls()[post.postId]) {
-      this.revokePostMediaObjectUrl(post.postId);
-      return;
-    }
-
     this.revokePostCardMediaUrl(post.postId);
   }
 
@@ -896,7 +871,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
     this.publicProfileUsername.set(isOwnProfileRoute ? null : username);
     this.publicProfile.set(null);
-    this.selectedPost.set(null);
+    this.selectedPostId.set(null);
     this.postPendingDeletion.set(null);
     this.friendActionBusy.set(false);
     this.profileFriendStatusOverride.set(null);
@@ -1186,13 +1161,13 @@ export class PostPageComponent implements OnDestroy, OnInit {
       this.publicProfile.set({ ...profile, canSeePrivatePosts: false });
     }
 
-    const selectedPost = this.selectedPost();
-    if (selectedPost && !selectedPost.isPublic) {
-      this.selectedPost.set(null);
-    }
-
     const visiblePosts = this.visiblePublicProfilePosts(this.myPosts());
     if (visiblePosts.length !== this.myPosts().length) {
+      // Close dialog if the currently open post is no longer visible
+      const openId = this.selectedPostId();
+      if (openId && !visiblePosts.some(p => p.postId === openId)) {
+        this.selectedPostId.set(null);
+      }
       this.myPosts.set(visiblePosts);
       this.loadPostMedia(visiblePosts);
     }

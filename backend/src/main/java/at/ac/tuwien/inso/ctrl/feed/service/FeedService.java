@@ -100,7 +100,6 @@ public class FeedService {
                                 v -> v.getId().getSourceId(), SourceVote::getVoteType)))
             .orElse(Map.of());
 
-    // NEU: einmal Context bauen, dann pro Post Labels berechnen
     LabelContext labelCtx = labelingService.buildContext(user);
 
     return recommendedPosts.stream()
@@ -112,7 +111,7 @@ public class FeedService {
                     postReportedByUser,
                     sourceVotes,
                     sourceReportedByUser,
-                    labelingService.computeLabels(rp.getPost(), labelCtx))) // NEU
+                    labelingService.computeLabels(rp.getPost(), labelCtx)))
         .toList();
   }
 }

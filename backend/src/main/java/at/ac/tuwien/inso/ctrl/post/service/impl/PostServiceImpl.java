@@ -242,6 +242,7 @@ public class PostServiceImpl implements PostService {
             .findByPostIdAndUserUsername(postId, username)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
+    seenPostRepository.deleteByPostId(postId);
     postRepository.delete(post);
     deleteLocalPostMedia(post);
   }
@@ -366,8 +367,14 @@ public class PostServiceImpl implements PostService {
     } else {
       sourceWasReported = false;
     }
+    LabelContext ctx = labelingService.buildContext(user);
 
     return this.postMapper.toDetailedPostResponse(
-        post, toMap, wasReported, commentsReportedByUser, sourceWasReported);
+        post,
+        toMap,
+        wasReported,
+        commentsReportedByUser,
+        sourceWasReported,
+        labelingService.computeLabels(post, ctx));
   }
 }

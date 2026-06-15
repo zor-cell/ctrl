@@ -1,0 +1,226 @@
+// ─── Tokens ───────────────────────────────────────────
+$border:     var(--border);
+$text-muted: #888;
+$downvote:   #e05858;
+$radius-sm:  10px;
+
+// ─── Loading / Empty ──────────────────────────────────
+.pdv-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.pdv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: $text-muted;
+
+  i { font-size: 2rem; opacity: 0.4; }
+  p { font-size: 0.88rem; margin: 0; }
+}
+
+// ─── Comments List ────────────────────────────────────
+.comments-list {
+  padding: 12px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.comment {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+
+  &.reply {
+    margin-top: 10px;
+    padding-left: 4px;
+
+    .comment-username { font-size: 0.8rem; }
+    .comment-content  { font-size: 0.82rem; }
+    .comment-time     { font-size: 0.72rem; }
+  }
+}
+
+.comment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.comment-username {
+  font-size: 0.84rem;
+  font-weight: 600;
+
+  &--link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: $text-muted;
+}
+
+.comment-edited {
+  font-size: 0.7rem;
+  color: $text-muted;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.comment-content {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &:hover { color: var(--p-primary-color); }
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: $text-muted;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+
+  &.edit-btn:hover   { color: var(--p-primary-color); }
+  &.delete-btn:hover { color: $downvote; }
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+// ─── Comment Input Footer ─────────────────────────────
+.comment-input-footer {
+  border-top: 1px solid $border;
+  padding: 8px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.replying-to-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: $text-muted;
+  padding-bottom: 4px;
+}
+
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $text-muted;
+  font-size: 0.85rem;
+  &:hover { color: $downvote; }
+}
+
+.comment-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.comment-input {
+  flex: 1;
+  resize: none;
+  border-radius: $radius-sm;
+  font-size: 0.9rem;
+}
+
+// ─── Delete Confirm Dialog ─────────────────────────────
+:host ::ng-deep .pdv-confirm-dialog {
+  width: min(420px, 90vw);
+
+  .p-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 0;
+  }
+}
+
+.pdv-confirm-text {
+  padding: 8px;
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--p-text-color);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-confirm-btn {
+  border-color: transparent;
+  color: #888;
+  &:hover { color: #e05858; border-color: transparent; background: transparent; }
+
+  &--solid {
+    border-color: #e05858;
+    color: #e05858;
+    &:hover { background: #e05858; color: #fff; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}

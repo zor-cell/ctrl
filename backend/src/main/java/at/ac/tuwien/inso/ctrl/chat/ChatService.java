@@ -895,6 +895,25 @@ public class ChatService {
     }
 
     Post post = shared.getPost();
+    if (post == null) {
+      // Post was hard-deleted from the database (e.g. by an admin).
+      // Return an unavailable response so the chat still loads cleanly.
+      return new SharedPostResponse(
+          shared.getSharedId(),
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          shared.getCreatedAt(),
+          false,
+          false,
+          null,
+          "REMOVED");
+    }
+
     boolean externalPost = post.isExternalPost();
     User postOwner = post.getUser();
     boolean deletedOwner = postOwner != null && postOwner.isDeleted();

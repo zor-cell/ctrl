@@ -44,7 +44,7 @@ public class TopicAssignmentScheduler {
   private final PostRepository postRepository;
   private final TopicRepository topicRepository;
 
-  @Scheduled(fixedDelay = 60_000) // every minute
+  @Scheduled(fixedDelay = 1000_000) // every 10 minutes
   @Transactional
   public void assignTopics() {
     log.info("TopicAssignmentScheduler started");
