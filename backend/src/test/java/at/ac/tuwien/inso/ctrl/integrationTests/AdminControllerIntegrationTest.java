@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -99,6 +100,19 @@ public class AdminControllerIntegrationTest {
   public void tearDown() {
     businessVerificationRepository.deleteAll();
     userRepository.deleteAll();
+  }
+
+  @Test
+  public void deleteRequest_withValidUsername_shouldSuspendUser() throws Exception {
+    mockMvc
+        .perform(
+            delete(adminEndpoint + "/" + standardUser.getUsername())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
+        .andExpect(status().isOk());
+
+
+    User updatedUser = userRepository.findById(standardUser.getId()).orElseThrow();
+    assertTrue(updatedUser.isSuspended());
   }
 
   @Test
