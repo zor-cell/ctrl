@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -153,15 +154,22 @@ public class SessionService {
         .findByUserId(user.getId())
         .orElseGet(
             () -> {
-              SessionConfig defaultConfig =
-                  SessionConfig.builder()
-                      .user(user)
-                      .timeLimitMinutes(30)
-                      .postLimit(100)
-                      .allowSnooze(false)
-                      .build();
+              try {
+                SessionConfig defaultConfig =
+                    SessionConfig.builder()
+                        .user(user)
+                        .timeLimitMinutes(30)
+                        .postLimit(100)
+                        .allowSnooze(false)
+                        .build();
 
-              return sessionConfigRepository.save(defaultConfig);
+                return sessionConfigRepository.save(defaultConfig);
+              } catch (DataIntegrityViolationException ex) {
+                return sessionConfigRepository
+                    .findById(user.getId())
+                    .orElseThrow(
+                        () -> new IllegalStateException("SessionConfig could not be loaded"));
+              }
             });
   }
 
