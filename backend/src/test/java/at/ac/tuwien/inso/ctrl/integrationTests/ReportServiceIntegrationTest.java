@@ -22,6 +22,7 @@ import at.ac.tuwien.inso.ctrl.report.dto.UpdateReportRequest;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
 import at.ac.tuwien.inso.ctrl.report.entity.Report;
 import at.ac.tuwien.inso.ctrl.report.entity.ReportStatus;
+import at.ac.tuwien.inso.ctrl.report.mapper.ReportMapper;
 import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
 import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
@@ -65,6 +66,7 @@ public class ReportServiceIntegrationTest {
   @Autowired private ExternalAuthorRepository externalAuthorRepository;
   @Autowired private UserRepository userRepository;
   @Autowired private CommentRepository commentRepository;
+  @Autowired private ReportMapper reportMapper;
 
   @MockitoBean private GmailEmailService gmailEmailService;
   @MockitoBean private FileStorageService fileStorageService;
@@ -1060,6 +1062,27 @@ public class ReportServiceIntegrationTest {
     var responses = reportService.getAccountReports(ReportStatus.CREATED, 0, 10);
 
     assertTrue(responses.isEmpty());
+  }
+
+  @Test
+  void toReportedSourceResponse_withInvalidContentId_shouldThrowException() {
+    User reporter = createUser("reporter-invalid-content-id");
+    User reportedUser = createUser("reported-invalid-content-id");
+    Report report =
+        Report.builder()
+            .fromUser(reporter)
+            .usernameReported(reportedUser)
+            .externalAuthorReported(null)
+            .contentType(ContentTypeEnum.SOURCE)
+            .contentId("invalid-id")
+            .reason("spam")
+            .description("description")
+            .status(ReportStatus.CREATED)
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    assertThrows(
+        EntityNotFoundException.class, () -> reportMapper.toReportedSourceResponse(report));
   }
 
   private User createUser(String username) {

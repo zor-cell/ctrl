@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.integrationTests;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -8,10 +9,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
+import at.ac.tuwien.inso.ctrl.user.dto.BlockedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestAction;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendRequestResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.FriendResponse;
+import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelation;
+import at.ac.tuwien.inso.ctrl.user.entity.BlockedRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
@@ -19,10 +24,12 @@ import at.ac.tuwien.inso.ctrl.user.entity.FriendRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRequestId;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import at.ac.tuwien.inso.ctrl.user.repository.BlockedRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -41,6 +48,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -57,9 +65,12 @@ public class RelationshipControllerIntegrationTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
   @Autowired private UserRepository userRepository;
+  @Autowired private BlockService blockService;
+  @Autowired private BlockedRelationRepository blockedRelationRepository;
   @Autowired private FollowRelationRepository followRelationRepository;
   @Autowired private FriendRelationRepository friendRelationRepository;
   @Autowired private FriendRequestRepository friendRequestRepository;
+  @MockitoBean private ChatService chatService;
   @PersistenceContext private EntityManager entityManager;
 
   private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -118,6 +129,7 @@ public class RelationshipControllerIntegrationTest {
     friendRequestRepository.deleteAll();
     friendRelationRepository.deleteAll();
     followRelationRepository.deleteAll();
+    blockedRelationRepository.deleteAll();
     userRepository.deleteAll();
   }
 
@@ -267,6 +279,96 @@ public class RelationshipControllerIntegrationTest {
         .andExpect(status().isNotFound());
   }
 
+  // block tests
+
+  @Test
+  public void block_withValidUser_shouldCreateBlockedRelationAndPublishChatRemoval()
+      throws Exception {
+    mockMvc
+        .perform(
+            post("/api/users/me/block/{username}", regularUser.getUsername())
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(user(currentUser)))
+        .andExpect(status().isCreated());
+
+    assertTrue(
+        blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, regularUser));
+    verify(chatService).publishBlockedDirectChatRemoval(currentUser, regularUser.getUsername());
+  }
+
+  @Test
+  public void unblock_withExistingBlockedRelation_shouldDeleteRelation() throws Exception {
+    createBlockedRelation(currentUser, regularUser);
+
+    mockMvc
+        .perform(
+            delete("/api/users/me/block/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNoContent());
+
+    assertFalse(
+        blockedRelationRepository.existsBlockedRelationByUserAndBlockedUser(
+            currentUser, regularUser));
+  }
+
+  @Test
+  public void unblock_withNoBlockedRelation_shouldReturnNotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/users/me/block/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  public void getBlockedUsers_withoutSearch_shouldExcludeSuspendedUsers() throws Exception {
+    createBlockedRelation(currentUser, regularUser);
+    createBlockedRelation(currentUser, suspendedUser);
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/users/me/block").with(user(currentUser)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    List<BlockedResponse> blockedUsers =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertEquals(1, blockedUsers.size());
+    assertEquals(regularUser.getUsername(), blockedUsers.get(0).username());
+  }
+
+  @Test
+  public void getBlockedUsers_withSearch_shouldReturnOnlyMatchingUsers() throws Exception {
+    User anotherUser =
+        userRepository.save(
+            User.builder()
+                .username("anotheruser")
+                .email("another@test.com")
+                .password("password123")
+                .name("Another User")
+                .isVerified(true)
+                .emailVerified(true)
+                .isSuspended(false)
+                .birthdate(LocalDate.of(2000, 1, 1))
+                .build());
+    createBlockedRelation(currentUser, regularUser);
+    createBlockedRelation(currentUser, anotherUser);
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/users/me/block").param("q", "regular").with(user(currentUser)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    List<BlockedResponse> blockedUsers =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertEquals(1, blockedUsers.size());
+    assertEquals(regularUser.getUsername(), blockedUsers.get(0).username());
+  }
+
   // Helper methods
 
   private void createFollow(User follower, User followed) {
@@ -301,5 +403,16 @@ public class RelationshipControllerIntegrationTest {
             .since(LocalDateTime.now())
             .build();
     friendRelationRepository.save(friendship);
+  }
+
+  private void createBlockedRelation(User user, User blockedUser) {
+    BlockedRelation relation =
+        BlockedRelation.builder()
+            .id(new BlockedRelationId(user.getId(), blockedUser.getId()))
+            .user(user)
+            .blockedUser(blockedUser)
+            .since(LocalDateTime.now())
+            .build();
+    blockedRelationRepository.save(relation);
   }
 }

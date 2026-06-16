@@ -48,6 +48,7 @@ import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -398,6 +399,47 @@ public class UserServiceUnitTest {
 
     assertThrows(InvalidRequestException.class, () -> userService.verifyUser(testUser, request));
     verify(userRepository, never()).save(any());
+  }
+
+  @Test
+  void conductUserCleanup_withUnverifiedUsers_cleansTokensAndDeletesUsers() {
+    User userOne = createUser("cleanup-one");
+    User userTwo = createUser("cleanup-two");
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay())
+        .thenReturn(List.of(userOne, userTwo));
+
+    userService.conductUserCleanup();
+
+    verify(emailVerificationRepository).deleteByUser_Id(userOne.getId());
+    verify(emailVerificationRepository).deleteByUser_Id(userTwo.getId());
+    verify(passwordResetRepository).deleteUnusedTokensByUserId(userOne.getId());
+    verify(passwordResetRepository).deleteUnusedTokensByUserId(userTwo.getId());
+    verify(userRepository).deleteUnverifiedUsersOlderThanOneDay();
+  }
+
+  @Test
+  void conductUserCleanup_withNoUsers_stillDeletesUnverifiedUsers() {
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay()).thenReturn(List.of());
+
+    userService.conductUserCleanup();
+
+    verify(emailVerificationRepository, never()).deleteByUser_Id(any());
+    verify(passwordResetRepository, never()).deleteUnusedTokensByUserId(any());
+    verify(userRepository).deleteUnverifiedUsersOlderThanOneDay();
+  }
+
+  @Test
+  void conductUserCleanup_whenPerUserCleanupFails_throwsAndSkipsBulkDelete() {
+    User userOne = createUser("cleanup-fail");
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay()).thenReturn(List.of(userOne));
+    org.mockito.Mockito.doThrow(new RuntimeException("cleanup failed"))
+        .when(emailVerificationRepository)
+        .deleteByUser_Id(userOne.getId());
+
+    assertThrows(RuntimeException.class, () -> userService.conductUserCleanup());
+
+    verify(passwordResetRepository, never()).deleteUnusedTokensByUserId(any());
+    verify(userRepository, never()).deleteUnverifiedUsersOlderThanOneDay();
   }
 
   private User createUser(String username) {
