@@ -55,6 +55,14 @@ export class WhyDialogComponent {
 
     const scale = 100 / 6;
 
+    // Max achievable score given current weights — used to normalise displayed numbers to /100
+    const weightSum =
+      weights['Interests'] + weights['Recency'] + weights['Source Quality'] +
+      weights['Popularity'] + weights['Exploration'] + weights['Topics'];
+    const maxAchievable = Math.round(weightSum / 6);
+    // Factor that maps the current max onto 100
+    const normFactor = maxAchievable > 0 ? 100 / maxAchievable : 1;
+
     const raw = [
       { label: 'Interests',      score: p.explanation.scoreInteraction * scale, description: 'Similar content you have liked, commented on, or spent time watching is boosted.', weight: weights['Interests'] },
       { label: 'Recency',        score: p.explanation.scoreRecency     * scale, description: 'Newer posts get a boost.',                                                           weight: weights['Recency'] },
@@ -66,28 +74,29 @@ export class WhyDialogComponent {
 
     return raw.map(r => ({
       ...r,
+      // Displayed number scaled to /100 — bar widths (scoreFillPct, maxFillPct) are unchanged
+      score: r.score * normFactor,
       maxFillPct: r.weight,
       scoreFillPct: (Math.abs(r.score) / scale) * 100,
     }));
   });
 
-  maxAchievableScore = computed<number>(() => {
-    const cfg = this.algorithmService.config();
-    if (!cfg) return 100;
-    const weightSum =
-      cfg.weightInteraction +
-      cfg.weightTopic +
-      cfg.weightRecency +
-      cfg.weightSourceQuality +
-      cfg.weightPopularity +
-      cfg.weightExploration;
-    return Math.round(weightSum / 6);
-  });
+  maxAchievableScore = computed<number>(() => 100);
 
   totalScore = computed<string>(() => {
     const p = this.post();
     if (!p) return '0';
-    return ((p.explanation.totalScore / 6) * 100).toFixed(1);
+    const cfg = this.algorithmService.config();
+    const weightSum =
+      (cfg?.weightInteraction   ?? 100) +
+      (cfg?.weightTopic         ?? 100) +
+      (cfg?.weightRecency       ?? 100) +
+      (cfg?.weightSourceQuality ?? 100) +
+      (cfg?.weightPopularity    ?? 100) +
+      (cfg?.weightExploration   ?? 100);
+    const maxAchievable = Math.round(weightSum / 6);
+    const normFactor = maxAchievable > 0 ? 100 / maxAchievable : 1;
+    return ((p.explanation.totalScore / 6) * 100 * normFactor).toFixed(1);
   });
 
   close(): void {
