@@ -96,7 +96,7 @@ class LabelingServiceUnitTest {
     post.setCreatedAt(createdAt);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     if (expectedLabel != null) assertTrue(labels.contains(expectedLabel));
     if (absentLabel != null) assertFalse(labels.contains(absentLabel));
@@ -118,7 +118,7 @@ class LabelingServiceUnitTest {
     post.setCreatedAt(null);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertFalse(labels.contains(PostLabelType.RECENT));
     assertFalse(labels.contains(PostLabelType.OLD_POST));
@@ -140,7 +140,7 @@ class LabelingServiceUnitTest {
     post.setComments(buildComments(commentCount));
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertTrue(labels.contains(expectedLabel));
   }
@@ -170,7 +170,7 @@ class LabelingServiceUnitTest {
     post.setComments(buildComments(commentCount));
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertFalse(labels.contains(absentLabel));
   }
@@ -194,7 +194,7 @@ class LabelingServiceUnitTest {
     post.setSource(buildSource(upvotes, downvotes));
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     expectedLabel.ifPresentOrElse(
         label -> assertTrue(labels.contains(label)),
@@ -225,7 +225,7 @@ class LabelingServiceUnitTest {
     post.setSource(null);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertFalse(labels.contains(PostLabelType.TRUSTED_SOURCE));
     assertFalse(labels.contains(PostLabelType.DISPUTED_SOURCE));
@@ -240,7 +240,7 @@ class LabelingServiceUnitTest {
     post.setSource(source);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertFalse(labels.contains(PostLabelType.TRUSTED_SOURCE));
     assertFalse(labels.contains(PostLabelType.DISPUTED_SOURCE));
@@ -262,7 +262,7 @@ class LabelingServiceUnitTest {
     Set<UUID> secondDegreeIds = inSecondDegree ? Set.of(creatorId) : Set.of();
     LabelContext ctx = new LabelContext(followedIds, secondDegreeIds, 0, LocalDateTime.now());
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertEquals(expectLabel, labels.contains(PostLabelType.EXTENDED_NETWORK));
   }
@@ -281,7 +281,7 @@ class LabelingServiceUnitTest {
     post.setUser(null);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertFalse(labels.contains(PostLabelType.EXTENDED_NETWORK));
   }
@@ -292,7 +292,7 @@ class LabelingServiceUnitTest {
     Post post = buildPost();
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertTrue(labels.isEmpty());
   }
@@ -305,7 +305,7 @@ class LabelingServiceUnitTest {
     post.setUpvotes(10);
     LabelContext ctx = buildContext();
 
-    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx);
+    Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
     assertTrue(labels.contains(PostLabelType.RECENT));
     assertTrue(labels.contains(PostLabelType.AI_GENERATED));

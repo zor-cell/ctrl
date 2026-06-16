@@ -23,16 +23,17 @@ public class LabelingService {
   public LabelContext buildContext(User user) {
     Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
-        followRelationRepository.findFollowedIds(user.getId()),
-        followRelationRepository.findSecondDegreeIds(user.getId()),
-        p95 != null ? p95 : 0,
-        LocalDateTime.now());
+            followRelationRepository.findFollowedIds(user.getId()),
+            followRelationRepository.findSecondDegreeIds(user.getId()),
+            p95 != null ? p95 : 0,
+            LocalDateTime.now());
   }
 
-  public Set<PostLabelType> computeLabels(Post post, LabelContext ctx) {
+  public Set<PostLabelType> computeLabels(Post post, LabelContext ctx, boolean postReportedByUser) {
     Set<PostLabelType> labels = new HashSet<>();
 
-    // Time-based labels
+    if (postReportedByUser) labels.add(PostLabelType.POST_REPORTED);
+
     if (post.getCreatedAt() != null) {
       if (post.getCreatedAt().isAfter(ctx.now().minusHours(6))) labels.add(PostLabelType.RECENT);
       if (post.getCreatedAt().isBefore(ctx.now().minusMonths(6)))
@@ -45,8 +46,8 @@ public class LabelingService {
     if (post.isExternalPost()) labels.add(PostLabelType.MASTODON);
 
     if (post.getUpvotes() != null
-        && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
-    labels.add(PostLabelType.POPULAR);
+            && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
+      labels.add(PostLabelType.POPULAR);
 
     if (post.getComments() != null && post.getComments().size() > 5)
       labels.add(PostLabelType.HIGHLY_DISCUSSED);
