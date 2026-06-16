@@ -1,9 +1,10 @@
 // ─── Tokens ───────────────────────────────────────────
 $border:    var(--border);
 $radius:    16px;
-$green:     #2DD4A0;
+$green:     #00D97E;
 $orange:    #F97341;
-$track-bg:  rgba(255, 255, 255, 0.07);
+$track-bg:  rgba(128, 128, 128, 0.02);
+$max-bg:    rgba(128, 128, 128, 0.28);
 
 // ─── Dialog Shell ─────────────────────────────────────
 :host ::ng-deep .why-dialog {
@@ -77,15 +78,26 @@ $track-bg:  rgba(255, 255, 255, 0.07);
   overflow: hidden;
 }
 
+.bar-max {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: $max-bg;
+  border-radius: 5px;
+  transition: width 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
 .bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 100%;
   border-radius: 5px;
   transition: width 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  min-width: 6px;
 
-  &.bar-pos  { background: $green; }
-  &.bar-neg  { background: $orange; }
-  &.bar-zero { background: var(--text-color-secondary, #9ca3af); opacity: 0.4; }
+  &.bar-pos { background: $green; }
+  &.bar-neg { background: $orange; }
 }
 
 // ─── Total Row ────────────────────────────────────────
@@ -119,24 +131,7 @@ $track-bg:  rgba(255, 255, 255, 0.07);
   }
 }
 
-// ─── Topics Toggle & Chips ────────────────────────────
-.topics-toggle {
-  display: inline-flex;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: inherit;
-  line-height: 1;
-
-  .pi-chevron-down,
-  .pi-chevron-up {
-    font-size: 0.7rem;
-    opacity: 0.6;
-  }
-}
-
+// ─── Topics Chips ─────────────────────────────────────
 .topics-list {
   display: flex;
   flex-wrap: wrap;
