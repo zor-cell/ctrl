@@ -15,7 +15,6 @@ import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,91 +28,95 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class AlgorithmServiceUnitTest {
 
-    @Mock private AlgorithmRepository algorithmRepository;
-    @Mock private AlgorithmMapper algorithmMapper;
-    @Mock private TopicRepository topicRepository;
+  @Mock private AlgorithmRepository algorithmRepository;
+  @Mock private AlgorithmMapper algorithmMapper;
+  @Mock private TopicRepository topicRepository;
 
-    @InjectMocks private AlgorithmService algorithmService;
+  @InjectMocks private AlgorithmService algorithmService;
 
-    @Captor private ArgumentCaptor<AlgorithmConfig> configCaptor;
+  @Captor private ArgumentCaptor<AlgorithmConfig> configCaptor;
 
-    private User testUser;
-    private AlgorithmConfig defaultConfig;
+  private User testUser;
+  private AlgorithmConfig defaultConfig;
 
-    @BeforeEach
-    void setUp() {
-        testUser = new User();
-        testUser.setId(UUID.randomUUID());
+  @BeforeEach
+  void setUp() {
+    testUser = new User();
+    testUser.setId(UUID.randomUUID());
 
-        defaultConfig = AlgorithmConfig.builder()
-                .user(testUser)
-                .weightInteraction(70)
-                .weightRecency(60)
-                .weightExploration(70)
-                .weightSourceQuality(50)
-                .weightPopularity(50)
-                .weightTopic(40)
-                .topics(new HashSet<>())
-                .build();
-    }
+    defaultConfig =
+        AlgorithmConfig.builder()
+            .user(testUser)
+            .weightInteraction(70)
+            .weightRecency(60)
+            .weightExploration(70)
+            .weightSourceQuality(50)
+            .weightPopularity(50)
+            .weightTopic(40)
+            .topics(new HashSet<>())
+            .build();
+  }
 
-    @Test
-    void getOrCreateConfig_ReturnsExistingConfig_WhenFound() {
-        when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
+  @Test
+  void getOrCreateConfig_ReturnsExistingConfig_WhenFound() {
+    when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
 
-        AlgorithmConfig result = algorithmService.getOrCreateConfig(testUser);
+    AlgorithmConfig result = algorithmService.getOrCreateConfig(testUser);
 
-        assertEquals(defaultConfig, result);
-        verify(algorithmRepository, never()).save(any());
-    }
+    assertEquals(defaultConfig, result);
+    verify(algorithmRepository, never()).save(any());
+  }
 
-    @Test
-    void getOrCreateConfig_CreatesNewConfig_WhenNotFound() {
-        when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.empty());
-        when(algorithmRepository.save(any(AlgorithmConfig.class))).thenAnswer(i -> i.getArguments()[0]);
+  @Test
+  void getOrCreateConfig_CreatesNewConfig_WhenNotFound() {
+    when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.empty());
+    when(algorithmRepository.save(any(AlgorithmConfig.class))).thenAnswer(i -> i.getArguments()[0]);
 
-        AlgorithmConfig result = algorithmService.getOrCreateConfig(testUser);
+    AlgorithmConfig result = algorithmService.getOrCreateConfig(testUser);
 
-        assertNotNull(result);
-        assertEquals(70, result.getWeightInteraction());
-        verify(algorithmRepository).save(any(AlgorithmConfig.class));
-    }
+    assertNotNull(result);
+    assertEquals(70, result.getWeightInteraction());
+    verify(algorithmRepository).save(any(AlgorithmConfig.class));
+  }
 
-    @Test
-    void updateConfig_SetsTopicPreferenceEmbedding_WhenTopicsExist() {
-        AlgorithmConfigDto updateDto = new AlgorithmConfigDto(80, 50, 40, 60, 50, 50, List.of("tech", "science"));
-        Topic t1 = new Topic(); t1.setTopicId("tech");
-        Topic t2 = new Topic(); t2.setTopicId("science");
+  @Test
+  void updateConfig_SetsTopicPreferenceEmbedding_WhenTopicsExist() {
+    AlgorithmConfigDto updateDto =
+        new AlgorithmConfigDto(80, 50, 40, 60, 50, 50, List.of("tech", "science"));
+    Topic t1 = new Topic();
+    t1.setTopicId("tech");
+    Topic t2 = new Topic();
+    t2.setTopicId("science");
 
-        when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
-        when(topicRepository.findAllById(updateDto.topics())).thenReturn(List.of(t1, t2));
-        when(topicRepository.calculateTopicPreferenceVector(List.of("tech", "science")))
-                .thenReturn(List.of(0.1f, 0.5f, 0.9f));
-        when(algorithmRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-        when(algorithmMapper.toConfig(any())).thenReturn(updateDto);
+    when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
+    when(topicRepository.findAllById(updateDto.topics())).thenReturn(List.of(t1, t2));
+    when(topicRepository.calculateTopicPreferenceVector(List.of("tech", "science")))
+        .thenReturn(List.of(0.1f, 0.5f, 0.9f));
+    when(algorithmRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(algorithmMapper.toConfig(any())).thenReturn(updateDto);
 
-        algorithmService.updateConfig(testUser, updateDto);
+    algorithmService.updateConfig(testUser, updateDto);
 
-        verify(algorithmRepository).save(configCaptor.capture());
-        AlgorithmConfig savedConfig = configCaptor.getValue();
+    verify(algorithmRepository).save(configCaptor.capture());
+    AlgorithmConfig savedConfig = configCaptor.getValue();
 
-        assertEquals(80, savedConfig.getWeightInteraction());
-        assertEquals(2, savedConfig.getTopics().size());
-        assertNotNull(savedConfig.getTopicPreferenceEmbedding());
-    }
+    assertEquals(80, savedConfig.getWeightInteraction());
+    assertEquals(2, savedConfig.getTopics().size());
+    assertNotNull(savedConfig.getTopicPreferenceEmbedding());
+  }
 
-    @Test
-    void updateConfig_SetsEmbeddingToNull_WhenNoTopicsSelected() {
-        AlgorithmConfigDto updateDto = new AlgorithmConfigDto(80, 50, 40, 60, 50, 50, List.of());
+  @Test
+  void updateConfig_SetsEmbeddingToNull_WhenNoTopicsSelected() {
+    AlgorithmConfigDto updateDto = new AlgorithmConfigDto(80, 50, 40, 60, 50, 50, List.of());
 
-        when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
-        when(topicRepository.findAllById(updateDto.topics())).thenReturn(List.of());
-        when(algorithmRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(algorithmRepository.findByUserId(testUser.getId())).thenReturn(Optional.of(defaultConfig));
+    when(topicRepository.findAllById(updateDto.topics())).thenReturn(List.of());
+    when(algorithmRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
-        algorithmService.updateConfig(testUser, updateDto);
+    algorithmService.updateConfig(testUser, updateDto);
 
-        verify(algorithmRepository).save(configCaptor.capture());
-        assertNull(configCaptor.getValue().getTopicPreferenceEmbedding());
-        verify(topicRepository, never()).calculateTopicPreferenceVector(any());
-    }
+    verify(algorithmRepository).save(configCaptor.capture());
+    assertNull(configCaptor.getValue().getTopicPreferenceEmbedding());
+    verify(topicRepository, never()).calculateTopicPreferenceVector(any());
+  }
 }
