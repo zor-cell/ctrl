@@ -15,6 +15,8 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { TextareaModule } from 'primeng/textarea';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { DialogModule } from 'primeng/dialog';
@@ -34,6 +36,8 @@ import { ContentTypeEnum } from '../../../report/dto/report';
     FormsModule,
     AvatarModule,
     ButtonModule,
+    TagModule,
+    TooltipModule,
     TextareaModule,
     ProgressSpinnerModule,
     ReportComponent,

@@ -77,6 +77,9 @@
           <i class="pi pi-external-link"></i>
           {{ getDomain(p.source!.singleSources[0].url) }}
         </a>
+        @if (p.source?.wasReportedByUser) {
+          <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this source" tooltipPosition="bottom" />
+        }
         <i class="pi pi-info-circle hint-icon"
            pTooltip="Is the source reliable and relevant to the post?"
            tooltipPosition="right"></i>
