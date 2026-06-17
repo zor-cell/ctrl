@@ -24,8 +24,6 @@ import { DialogModule } from 'primeng/dialog';
 import { CommentResponse } from '../../dto/PostResponse';
 import { CommentService } from '../../../feed/services/comment.service';
 import { UserService } from '../../../user/user.service';
-import { ReportComponent } from '../../../report/components/report/report.component';
-import { ContentTypeEnum } from '../../../report/dto/report';
 
 @Component({
   selector: 'app-post-comment',
@@ -40,7 +38,6 @@ import { ContentTypeEnum } from '../../../report/dto/report';
     TooltipModule,
     TextareaModule,
     ProgressSpinnerModule,
-    ReportComponent,
     DialogModule,
   ],
   templateUrl: './post-comment.component.html',
@@ -53,7 +50,8 @@ export class PostCommentComponent implements OnChanges {
   private readonly cdr            = inject(ChangeDetectorRef);
 
   @Input() postId: string | null = null;
-  @Output() readonly commentAdded = new EventEmitter<void>();
+  @Output() readonly commentAdded    = new EventEmitter<void>();
+  @Output() readonly reportComment   = new EventEmitter<CommentResponse>();
 
   protected readonly comments         = signal<CommentResponse[]>([]);
   protected readonly loadingComments  = signal(false);
@@ -62,11 +60,6 @@ export class PostCommentComponent implements OnChanges {
   protected readonly editingCommentId = signal<string | null>(null);
   protected newComment  = '';
   protected editContent = '';
-
-  // ─── Report ───────────────────────────────────────────
-  protected readonly reportCommentVisible     = signal(false);
-  protected readonly selectedCommentForReport = signal<CommentResponse | null>(null);
-  protected readonly ContentTypeEnum          = ContentTypeEnum;
 
   // ─── Delete confirm ───────────────────────────────────
   protected readonly deleteConfirmVisible    = signal(false);
@@ -228,8 +221,7 @@ export class PostCommentComponent implements OnChanges {
   // ─── Report ───────────────────────────────────────────
 
   protected onReportComment(comment: CommentResponse): void {
-    this.selectedCommentForReport.set(comment);
-    this.reportCommentVisible.set(true);
+    this.reportComment.emit(comment);
   }
 
   // ─── Utilities ────────────────────────────────────────

@@ -102,7 +102,7 @@
           <i class="pi pi-times"></i>
         </button>
       </div>
-      <button class="action-btn flag-btn source-flag-btn" (click)="reportSourceVisible.set(true)" pTooltip="Report Source" tooltipPosition="top">
+      <button class="action-btn flag-btn source-flag-btn" (click)="requestReportSource()" pTooltip="Report Source" tooltipPosition="top">
         <i class="pi pi-flag"></i>
       </button>
     </div>
@@ -162,7 +162,7 @@
         </button>
       }
       @if (!isOwnPost()) {
-        <button class="action-btn flag-btn" (click)="reportPostVisible.set(true)" pTooltip="Report Post" tooltipPosition="top">
+        <button class="action-btn flag-btn" (click)="requestReportPost()" pTooltip="Report Post" tooltipPosition="top">
           <i class="pi pi-flag"></i>
         </button>
       }
@@ -192,28 +192,8 @@
   <div class="comments-divider"></div>
 
   <!-- ─── Comments ─── -->
-  <app-post-comment #commentsComponent [postId]="p.postId" (commentAdded)="onCommentAdded()" />
+  <app-post-comment #commentsComponent [postId]="p.postId" (commentAdded)="onCommentAdded()" (reportComment)="requestReportComment($event)" />
 
-  <!-- Report dialogs -->
-  <app-report
-    [compact]="true"
-    [contentType]="ContentTypeEnum.POST"
-    [contentId]="p.postId"
-    [contentTitle]="p.caption"
-    [username]="p.username"
-    [visible]="reportPostVisible()"
-    (visibleChange)="reportPostVisible.set($event)"
-  />
-
-  <app-report
-    [compact]="true"
-    [contentType]="ContentTypeEnum.SOURCE"
-    [contentId]="p.source?.sourceId || undefined"
-    [contentTitle]="p.source?.singleSources?.[0]?.url || undefined"
-    [username]="p.username"
-    [visible]="reportSourceVisible()"
-    (visibleChange)="reportSourceVisible.set($event)"
-  />
 }
 
 <!-- ─── Share Dialog ─── -->

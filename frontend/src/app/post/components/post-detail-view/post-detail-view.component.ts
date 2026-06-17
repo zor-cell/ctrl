@@ -23,9 +23,8 @@ import { DialogModule } from 'primeng/dialog';
 
 import { DetailedPostResponse } from '../../dto/DetailedPostResponse';
 import { PostService, VoteType } from '../../post.service';
+import { CommentResponse } from '../../dto/PostResponse';
 import { UserService } from '../../../user/user.service';
-import { ReportComponent } from '../../../report/components/report/report.component';
-import { ContentTypeEnum } from '../../../report/dto/report';
 import { FollowBadgeComponent } from '../../../feed/components/follow-badge/follow-badge.component';
 import { PostShareDialogComponent } from '../post-detail-share/post-share-dialog.component';
 import { PostCommentComponent} from '../post-detail-comment/post-comment.component';
@@ -44,11 +43,11 @@ import { firstValueFrom } from 'rxjs';
     TagModule,
     TooltipModule,
     ProgressSpinnerModule,
-    ReportComponent,
-    FollowBadgeComponent,
+
     PostShareDialogComponent,
     PostCommentComponent,
     DialogModule,
+    FollowBadgeComponent,
   ],
   templateUrl: './post-detail-view.component.html',
   styleUrl: './post-detail-view.component.scss',
@@ -69,6 +68,9 @@ export class PostDetailViewComponent implements OnChanges {
   @Output() readonly postDeleted   = new EventEmitter<string>();
   @Output() readonly shareClicked  = new EventEmitter<void>();
   @Output() readonly closeClicked  = new EventEmitter<void>();
+  @Output() readonly reportPost    = new EventEmitter<{ postId: string; caption: string; username: string }>();
+  @Output() readonly reportSource  = new EventEmitter<{ sourceId: string | undefined; url: string | undefined; username: string }>();
+  @Output() readonly reportComment = new EventEmitter<CommentResponse>();
 
   @ViewChild(PostShareDialogComponent) private readonly shareDialog!: PostShareDialogComponent;
   @ViewChild('commentsComponent') protected commentsComponent?: PostCommentComponent;
@@ -93,11 +95,6 @@ export class PostDetailViewComponent implements OnChanges {
 
   private votingInProgress       = false;
   private sourceVotingInProgress = false;
-
-  // ─── Report ───────────────────────────────────────────────────────────────
-  protected readonly reportPostVisible   = signal(false);
-  protected readonly reportSourceVisible = signal(false);
-  protected readonly ContentTypeEnum     = ContentTypeEnum;
 
   // ─── Delete ───────────────────────────────────────────────────────────────
   protected readonly deleteConfirmVisible = signal(false);
@@ -270,6 +267,28 @@ export class PostDetailViewComponent implements OnChanges {
       if (currentVote === 'up') upvotes = Math.max(0, upvotes - 1);
     }
     return { upvotes, downvotes, userVote: voteType };
+  }
+
+  // ─── Report ───────────────────────────────────────────────────────────────
+
+  protected requestReportPost(): void {
+    const p = this.post();
+    if (!p) return;
+    this.reportPost.emit({ postId: p.postId, caption: p.caption, username: p.username });
+  }
+
+  protected requestReportSource(): void {
+    const p = this.post();
+    if (!p) return;
+    this.reportSource.emit({
+      sourceId: p.source?.sourceId ?? undefined,
+      url:      p.source?.singleSources?.[0]?.url ?? undefined,
+      username: p.username,
+    });
+  }
+
+  protected requestReportComment(comment: CommentResponse): void {
+    this.reportComment.emit(comment);
   }
 
   // ─── Share ────────────────────────────────────────────────────────────────

@@ -172,14 +172,3 @@
     </button>
   </ng-template>
 </p-dialog>
-
-<!-- Report Comment Dialog -->
-<app-report
-  [contentType]="ContentTypeEnum.COMMENT"
-  [contentId]="selectedCommentForReport()?.commentId"
-  [contentTitle]="selectedCommentForReport()?.content"
-  [userProfilePic]="selectedCommentForReport()?.userProfilePic"
-  [username]="selectedCommentForReport()?.username"
-  [visible]="reportCommentVisible()"
-  (visibleChange)="reportCommentVisible.set($event)"
-/>
