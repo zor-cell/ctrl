@@ -12,7 +12,8 @@ public enum PostLabelType {
   TRUSTED_SOURCE("✅", "Trusted Source", "High Wilson score with enough votes"),
   DISPUTED_SOURCE("⚠️", "Disputed Source", "Low Wilson score with enough votes"),
   EXTENDED_NETWORK("❤️", "Extended Network", "Posted by someone your follows follow"),
-  MASTODON("Ⓜ️", "Mastodon", "Post from Mastodon");
+  MASTODON("Ⓜ️", "Mastodon", "Post from Mastodon"),
+  POST_REPORTED("🚩", "Reported", "You have reported this post");
 
   private final String emoji;
   private final String name;

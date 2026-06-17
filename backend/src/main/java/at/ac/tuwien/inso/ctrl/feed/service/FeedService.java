@@ -111,7 +111,10 @@ public class FeedService {
                     postReportedByUser,
                     sourceVotes,
                     sourceReportedByUser,
-                    labelingService.computeLabels(rp.getPost(), labelCtx)))
+                    labelingService.computeLabels(
+                        rp.getPost(),
+                        labelCtx,
+                        postReportedByUser.getOrDefault(rp.getPost().getPostId(), false))))
         .toList();
   }
 }

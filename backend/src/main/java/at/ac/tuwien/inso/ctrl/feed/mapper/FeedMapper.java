@@ -61,7 +61,12 @@ public class FeedMapper {
                             sourceVotes.get(post.getSource().getSourceId()),
                             sourceReportedByUser != null
                                 && Boolean.TRUE.equals(
-                                    sourceReportedByUser.get(post.getSource().getSourceId()))))
+                                    sourceReportedByUser.get(post.getSource().getSourceId())),
+                            post.getSource().getCreatedAt(),
+                            s.getJournal(),
+                            s.getAuthor(),
+                            s.getTitle(),
+                            s.getDate()))
                 .toList()
             : List.of();
 
@@ -121,7 +126,12 @@ public class FeedMapper {
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
                             sourceVotes.get(post.getSource().getSourceId()),
-                            false))
+                            false,
+                            post.getSource().getCreatedAt(),
+                            s.getJournal(),
+                            s.getAuthor(),
+                            s.getTitle(),
+                            s.getDate()))
                 .toList()
             : List.of();
 

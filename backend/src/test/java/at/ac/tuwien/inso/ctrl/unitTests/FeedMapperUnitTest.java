@@ -5,20 +5,22 @@ import static org.mockito.Mockito.*;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
-import at.ac.tuwien.inso.ctrl.post.entity.Comment;
-import at.ac.tuwien.inso.ctrl.post.entity.ExternalAuthor;
-import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
+import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
+import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
+import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,13 +30,13 @@ class FeedMapperUnitTest {
   @InjectMocks private FeedMapper feedMapper;
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - author resolution */
-  /*@Test
+  @Test
   void toFeedPostResponse_recommendedPost_withInternalUser_shouldResolveAuthorFieldsCorrectly() {
     Post post = buildInternalPost();
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertEquals(post.getUser().getId().toString(), response.userId());
     assertEquals(post.getUser().getUsername(), response.username());
@@ -47,7 +49,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertNull(response.userId());
     assertEquals(post.getExternalAuthor().getDisplayName(), response.username());
@@ -55,7 +57,7 @@ class FeedMapperUnitTest {
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - core fields */
-  /*@Test
+  @Test
   void toFeedPostResponse_recommendedPost_shouldMapCorePostFieldsCorrectly() {
     LocalDateTime now = LocalDateTime.now();
     Post post = buildInternalPost();
@@ -68,7 +70,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, explanation);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertEquals(post.getPostId(), response.postId());
     assertEquals("Test caption", response.caption());
@@ -80,7 +82,7 @@ class FeedMapperUnitTest {
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - vote mapping */
-  /*@ParameterizedTest
+  @ParameterizedTest
   @MethodSource("postVoteInputs")
   void toFeedPostResponse_recommendedPost_shouldResolvePostVoteCorrectly(
       Map<String, String> postVotes, String expectedVote) {
@@ -88,7 +90,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, postVotes, Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, postVotes, null, Map.of(), null, Set.of());
 
     assertEquals(expectedVote, response.userVote());
   }
@@ -101,7 +103,7 @@ class FeedMapperUnitTest {
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - label mapping */
-  /*@ParameterizedTest
+  @ParameterizedTest
   @MethodSource("labelMappingInputs")
   void toFeedPostResponse_recommendedPost_shouldMapLabelsCorrectly(
       Set<PostLabelType> inputLabels, int expectedCount) {
@@ -109,7 +111,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), inputLabels);
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, inputLabels);
 
     assertEquals(expectedCount, response.labelIds().size());
   }
@@ -128,7 +130,7 @@ class FeedMapperUnitTest {
 
     FeedPostResponse response =
         feedMapper.toFeedPostResponse(
-            recommendedPost, Map.of(), Map.of(), Set.of(PostLabelType.POPULAR));
+            recommendedPost, Map.of(), null, Map.of(), null, Set.of(PostLabelType.POPULAR));
 
     LabelResponse label = response.labelIds().getFirst();
     assertEquals(PostLabelType.POPULAR.name(), label.labelId());
@@ -138,7 +140,7 @@ class FeedMapperUnitTest {
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - source mapping */
-  /*@Test
+  @Test
   void toFeedPostResponse_recommendedPost_withSource_shouldMapSourceFieldsCorrectly() {
     Post post = buildInternalPost();
     Source source = buildSource("src-1", 5, 2, List.of(buildSingleSource("https://example.com")));
@@ -147,7 +149,7 @@ class FeedMapperUnitTest {
 
     FeedPostResponse response =
         feedMapper.toFeedPostResponse(
-            recommendedPost, Map.of(), Map.of("src-1", "UPVOTE"), Set.of());
+            recommendedPost, Map.of(), null, Map.of("src-1", "UPVOTE"), null, Set.of());
 
     assertEquals(1, response.sourceIds().size());
     FeedPostResponse.SourceResponse src = response.sourceIds().getFirst();
@@ -171,7 +173,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertEquals(2, response.sourceIds().size());
   }
@@ -183,13 +185,13 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertTrue(response.sourceIds().isEmpty());
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - comment mapping */
-  /*@Test
+  @Test
   void toFeedPostResponse_recommendedPost_shouldMapCommentsCorrectly() {
     Post post = buildInternalPost();
     Comment comment = buildComment("c-1", null);
@@ -197,7 +199,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertEquals(1, response.comments().size());
     FeedPostResponse.CommentResponse cr = response.comments().getFirst();
@@ -214,7 +216,7 @@ class FeedMapperUnitTest {
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     FeedPostResponse.CommentResponse replyResponse =
         response.comments().stream()
@@ -225,20 +227,20 @@ class FeedMapperUnitTest {
   }
 
   /** toFeedPostResponse(RecommendedPost, postVotes, sourceVotes, labels) - topic mapping */
-  /*@Test
+  @Test
   void toFeedPostResponse_recommendedPost_shouldMapTopicNamesCorrectly() {
     Post post = buildInternalPost();
     post.setPostTopics(new LinkedHashSet<>(Set.of(buildPostTopic("Technology"))));
     RecommendedPost recommendedPost = new RecommendedPost(post, null);
 
     FeedPostResponse response =
-        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), Map.of(), Set.of());
+        feedMapper.toFeedPostResponse(recommendedPost, Map.of(), null, Map.of(), null, Set.of());
 
     assertEquals(List.of("Technology"), response.topicIds());
   }
 
   /** toFeedPostResponse(Post, postVotes, sourceVotes) - core behaviour */
-  /*@Test
+  @Test
   void toFeedPostResponse_post_shouldMapCoreFieldsCorrectly() {
     LocalDateTime now = LocalDateTime.now();
     Post post = buildInternalPost();

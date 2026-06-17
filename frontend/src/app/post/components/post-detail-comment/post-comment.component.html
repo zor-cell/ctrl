@@ -29,6 +29,9 @@
             </a>
             <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
             @if (comment.edited) { <span class="comment-edited">edited</span> }
+            @if (comment.wasReportedByUser) {
+              <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" />
+            }
           </div>
 
           @if (editingCommentId() === comment.commentId) {
@@ -79,6 +82,9 @@
                   </a>
                   <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
                   @if (reply.edited) { <span class="comment-edited">edited</span> }
+                  @if (reply.wasReportedByUser) {
+                    <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" />
+                  }
                 </div>
                 @if (editingCommentId() === reply.commentId) {
                   <div class="edit-form">
@@ -166,14 +172,3 @@
     </button>
   </ng-template>
 </p-dialog>
-
-<!-- Report Comment Dialog -->
-<app-report
-  [contentType]="ContentTypeEnum.COMMENT"
-  [contentId]="selectedCommentForReport()?.commentId"
-  [contentTitle]="selectedCommentForReport()?.content"
-  [userProfilePic]="selectedCommentForReport()?.userProfilePic"
-  [username]="selectedCommentForReport()?.username"
-  [visible]="reportCommentVisible()"
-  (visibleChange)="reportCommentVisible.set($event)"
-/>

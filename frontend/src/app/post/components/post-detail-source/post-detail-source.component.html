@@ -1,0 +1,107 @@
+@if (source?.singleSources?.length) {
+  <div class="src-section">
+
+    <!-- Header: toggle + label + voting + flag -->
+    <div class="src-header">
+      <button
+        class="src-toggle"
+        (click)="toggleCollapsed()"
+        [attr.aria-expanded]="!collapsed()"
+        aria-controls="src-list"
+      >
+        <i class="pi pi-book" aria-hidden="true"></i>
+        Sources
+        <span class="src-count">{{ source!.singleSources.length }}</span>
+        <i class="pi src-chevron"
+           [class.pi-chevron-down]="collapsed()"
+           [class.pi-chevron-up]="!collapsed()"
+           aria-hidden="true"></i>
+      </button>
+
+      <div class="src-actions">
+        <button
+          class="src-vote-btn up"
+          [class.active]="sourceVote === 'up'"
+          (click)="vote('up')"
+          aria-label="Sources reliable"
+          [attr.aria-pressed]="sourceVote === 'up'"
+        >
+          <i class="pi pi-check" aria-hidden="true"></i>
+          Reliable
+        </button>
+        <button
+          class="src-vote-btn down"
+          [class.active]="sourceVote === 'down'"
+          (click)="vote('down')"
+          aria-label="Sources not reliable"
+          [attr.aria-pressed]="sourceVote === 'down'"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+          Not reliable
+        </button>
+        @if (source?.wasReportedByUser) {
+          <p-tag value="🚩" severity="secondary" styleClass="post-label"
+                 pTooltip="You have reported this source" tooltipPosition="bottom" />
+        }
+        <button class="src-flag-btn" (click)="reportClicked.emit()"
+                pTooltip="Report source" tooltipPosition="top" aria-label="Report source">
+          <i class="pi pi-flag" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- One card per SingleSource -->
+    @if (!collapsed()) {
+      <div class="src-list" id="src-list">
+        @for (s of source!.singleSources; track s.singleSourceId) {
+          <div class="src-card">
+            <div class="src-card-row">
+
+              <div class="src-card-icon">
+                @if (s.url) {
+                  <i class="pi pi-external-link" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-file" aria-hidden="true"></i>
+                }
+              </div>
+
+              <div class="src-card-body">
+                <p class="src-card-title">
+                  @if (s.url) {
+                    <a [href]="s.url" target="_blank" rel="noopener noreferrer">
+                      {{ s.title || getDomain(s.url) }}
+                    </a>
+                  } @else {
+                    {{ s.title || '—' }}
+                  }
+                </p>
+                <div class="src-meta">
+                  @if (s.author) {
+                    <span class="src-meta-item">
+                      <i class="pi pi-user" aria-hidden="true"></i>
+                      {{ s.author }}
+                    </span>
+                  }
+                  @if (s.journal) {
+                    <span class="src-meta-item">
+                      <i class="pi pi-building" aria-hidden="true"></i>
+                      {{ s.journal }}
+                    </span>
+                  }
+                  @if (s.date) {
+                    <span class="src-meta-item">
+                      <i class="pi pi-calendar" aria-hidden="true"></i>
+                      {{ formatDate(s.date) }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+}

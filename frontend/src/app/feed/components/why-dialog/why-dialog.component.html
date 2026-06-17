@@ -20,11 +20,6 @@
                 <i class="pi pi-info-circle hint-icon"
                    [pTooltip]="row.description"
                    tooltipPosition="right"></i>
-                @if (row.label === 'Topics' && post()!.topicIds.length) {
-                  <button class="topics-toggle" (click)="topicsOpen.set(!topicsOpen())">
-                    <i class="pi" [class.pi-chevron-down]="!topicsOpen()" [class.pi-chevron-up]="topicsOpen()"></i>
-                  </button>
-                }
               </span>
               <span
                 [class.value-pos]="row.score > 0"
@@ -33,16 +28,22 @@
                 {{ row.score >= 0 ? '+' : '' }}{{ row.score.toFixed(2) }}
               </span>
             </div>
+
             <div class="bar-track">
-              <div
-                class="bar-fill"
-                [class.bar-pos]="row.score > 0"
-                [class.bar-neg]="row.score < 0"
-                [class.bar-zero]="row.score === 0"
-                [style.width.%]="row.score === 0 ? 0.5 : row.barWidth"
-              ></div>
+              <!-- Grey layer: always visible, shows max achievable for this weight -->
+              <div class="bar-max" [style.width.%]="row.maxFillPct"></div>
+              <!-- Coloured layer: actual score, only when non-zero -->
+              @if (row.score !== 0) {
+                <div
+                  class="bar-fill"
+                  [class.bar-pos]="row.score > 0"
+                  [class.bar-neg]="row.score < 0"
+                  [style.width.%]="row.scoreFillPct"
+                ></div>
+              }
             </div>
-            @if (row.label === 'Topics' && topicsOpen() && post()!.topicIds.length) {
+
+            @if (row.label === 'Topics' && post()!.topicIds.length) {
               <div class="topics-list">
                 @for (topic of post()!.topicIds; track topic) {
                   <span class="topic-chip">{{ topic }}</span>

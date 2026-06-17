@@ -17,18 +17,20 @@ import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CommonModule } from '@angular/common';
 import { PostService, VoteType } from '../../../post/post.service';
-import {ContentTypeEnum} from '../../../report/dto/report';
-import {ViewTrackingService} from '../../../post/services/view-tracking.service';
-import {PostViewDirective, ViewEvent} from '../../../post/post-view-directive/post-view.directive';
-import {ReactiveFormsModule} from "@angular/forms";
-import {ActivatedRoute, Router, RouterLink} from "@angular/router";
-import {RelationshipService} from '../../../user/relationship.service';
-import {FollowBadgeComponent} from '../follow-badge/follow-badge.component';
-import {WhyDialogComponent} from '../why-dialog/why-dialog.component';
-import {PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
-import {PostShareDialogComponent} from '../../../post/components/post-detail-share/post-share-dialog.component';
-import {PostStateService} from '../../../post/services/post-state.service';
-import {SessionStateService} from "../../../session/session-state.service";
+import { ContentTypeEnum } from '../../../report/dto/report';
+import { ViewTrackingService } from '../../../post/services/view-tracking.service';
+import { PostViewDirective, ViewEvent } from '../../../post/post-view-directive/post-view.directive';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RelationshipService } from '../../../user/relationship.service';
+import { FollowBadgeComponent } from '../follow-badge/follow-badge.component';
+import { WhyDialogComponent } from '../why-dialog/why-dialog.component';
+import { PostDetailDialogComponent } from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
+import { PostShareDialogComponent } from '../../../post/components/post-detail-share/post-share-dialog.component';
+import { PostDetailSourceComponent } from '../../../post/components/post-detail-source/post-detail-source.component';
+import { PostStateService } from '../../../post/services/post-state.service';
+import { SessionStateService } from '../../../session/session-state.service';
+import { SourceResponse } from '../../../post/dto/PostResponse';
 
 @Component({
   selector: 'app-feed',
@@ -51,8 +53,8 @@ import {SessionStateService} from "../../../session/session-state.service";
     FollowBadgeComponent,
     WhyDialogComponent,
     PostDetailDialogComponent,
-    PostDetailDialogComponent,
     PostShareDialogComponent,
+    PostDetailSourceComponent,
   ],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
@@ -77,7 +79,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected reportDialogVisible = signal(false);
   protected selectedPostForReport = signal<Post | null>(null);
 
-  //Report source
+  // Report source
   protected reportSourceDialogVisible = signal(false);
   protected selectedSourceForReport = signal<PostSource | null>(null);
   protected selectedPostForSourceReport = signal<Post | null>(null);
@@ -91,6 +93,20 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected isSpinning = signal(false);
   protected isLoading = signal(true);
 
+  // ─── Infinite Scroll ──────────────────────────────────────────────────────
+  private readonly postsPerPage = 20;
+  private publicPage  = 0;
+  private privatePage = 0;
+
+  protected hasMorePublic  = signal(true);
+  protected hasMorePrivate = signal(true);
+  protected isLoadingMore  = signal(false);
+
+  private observer!: IntersectionObserver;
+
+  @ViewChild('publicSentinel',  { static: false }) publicSentinelRef!:  ElementRef;
+  @ViewChild('privateSentinel', { static: false }) privateSentinelRef!: ElementRef;
+
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly rel = inject(RelationshipService);
@@ -98,6 +114,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected activeTab = signal<string>(
     localStorage.getItem('feed-active-tab') ?? 'private'
   );
+
   protected onTabChange(tab: string | number | undefined): void {
     if (tab == null) return;
     const value = String(tab);
@@ -109,11 +126,9 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   private readonly elRef = inject(ElementRef);
 
-  // Prevents double-clicks whilst a request is in progress
   private readonly votingInProgress = new Set<string>();
-  private readonly sourceVotingInProgress = new Set<string>();
 
-  protected publicPosts = signal<Post[]>([]);
+  protected publicPosts  = signal<Post[]>([]);
   protected privatePosts = signal<Post[]>([]);
   private readonly relativeTimeNow = signal(Date.now());
   private relativeTimeTimer: ReturnType<typeof setInterval> | null = null;
@@ -125,8 +140,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.viewTracking.startTracking();
 
     forkJoin([
-      this.feedService.getFeed(true),
-      this.feedService.getFeed(false),
+      this.feedService.getFeed(true,  0, this.postsPerPage),
+      this.feedService.getFeed(false, 0, this.postsPerPage),
       this.rel.loadFriends(),
       this.rel.loadFollowed(),
       this.rel.loadSentFriendRequests(),
@@ -135,18 +150,14 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+        this.hasMorePublic.set(publicPosts.length === this.postsPerPage);
+        this.hasMorePrivate.set(privatePosts.length === this.postsPerPage);
 
-        // ── Seed shared state once for every post ──────────────────────────
-        [...publicPosts, ...privatePosts].forEach(post => {
-          this.postState.initVote(
-            post.postId,
-            (post.userVote as 'up' | 'down' | null) ?? null,
-            (post.sourceIds?.[0]?.userVote as 'up' | 'down' | null) ?? null,
-          );
-          this.postState.initCommentCount(post.postId, post.comments?.length ?? 0);
-        });
+        this.seedPostState([...publicPosts, ...privatePosts]);
 
         this.isLoading.set(false);
+
+        setTimeout(() => this.setupObserver(), 0);
 
         const postId = this.route.snapshot.queryParamMap.get('comments');
         if (postId) {
@@ -160,6 +171,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.observer?.disconnect();
+
     if (this.relativeTimeTimer) {
       clearInterval(this.relativeTimeTimer);
       this.relativeTimeTimer = null;
@@ -168,21 +181,98 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.viewTracking.stopAndClear();
   }
 
+  // ─── Infinite Scroll Setup ────────────────────────────────────────────────
+
+  private setupObserver(): void {
+    this.observer?.disconnect();
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || this.isLoadingMore()) return;
+
+          if (entry.target === this.publicSentinelRef?.nativeElement) {
+            if (this.activeTab() === 'public' && this.hasMorePublic()) {
+              this.loadMorePublic();
+            }
+          } else {
+            if (this.activeTab() === 'private' && this.hasMorePrivate()) {
+              this.loadMorePrivate();
+            }
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (this.publicSentinelRef?.nativeElement) {
+      this.observer.observe(this.publicSentinelRef.nativeElement);
+    }
+    if (this.privateSentinelRef?.nativeElement) {
+      this.observer.observe(this.privateSentinelRef.nativeElement);
+    }
+  }
+
+  private loadMorePublic(): void {
+    this.isLoadingMore.set(true);
+    this.publicPage++;
+
+    this.feedService.getFeed(true, this.publicPage, this.postsPerPage).subscribe({
+      next: (posts) => {
+        this.publicPosts.update(existing => [...existing, ...posts]);
+        this.hasMorePublic.set(posts.length === this.postsPerPage);
+        this.seedPostState(posts);
+        this.isLoadingMore.set(false);
+      },
+      error: () => {
+        this.publicPage--;
+        this.isLoadingMore.set(false);
+      },
+    });
+  }
+
+  private loadMorePrivate(): void {
+    this.isLoadingMore.set(true);
+    this.privatePage++;
+
+    this.feedService.getFeed(false, this.privatePage, this.postsPerPage).subscribe({
+      next: (posts) => {
+        this.privatePosts.update(existing => [...existing, ...posts]);
+        this.hasMorePrivate.set(posts.length === this.postsPerPage);
+        this.seedPostState(posts);
+        this.isLoadingMore.set(false);
+      },
+      error: () => {
+        this.privatePage--;
+        this.isLoadingMore.set(false);
+      },
+    });
+  }
+
+  // ─── Seed post state helper ───────────────────────────────────────────────
+
+  private seedPostState(posts: Post[]): void {
+    posts.forEach(post => {
+      this.postState.initVote(
+        post.postId,
+        (post.userVote as 'up' | 'down' | null) ?? null,
+        (post.sourceIds?.[0]?.userVote as 'up' | 'down' | null) ?? null,
+      );
+      this.postState.initCommentCount(post.postId, post.comments?.length ?? 0);
+    });
+  }
+
   openAlgorithmConfig(): void {
     this.algorithmConfigVisible.set(true);
   }
 
-  // ─── Comment count helper (reads from shared store) ───────────────────────
+  // ─── Comment count helper ─────────────────────────────────────────────────
 
-  /**
-   * Returns the comment count for a post from the shared store.
-   * Falls back to the feed payload length so existing template references keep working.
-   */
   protected commentCount(post: Post): number {
     return this.postState.getCommentCount(post.postId) ?? post.comments?.length ?? 0;
   }
 
-  // ─── Vote helpers (delegate to shared store for user-vote state) ──────────
+  // ─── Vote helpers ─────────────────────────────────────────────────────────
 
   protected userVoteFor(postId: string): 'up' | 'down' | null {
     return this.postState.getVote(postId).userVote;
@@ -196,14 +286,13 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (this.votingInProgress.has(post.postId)) return;
     this.votingInProgress.add(post.postId);
 
-    const previousVote    = this.postState.getVote(post.postId).userVote;
-    const previousUpvotes = post.upvotes;
+    const previousVote      = this.postState.getVote(post.postId).userVote;
+    const previousUpvotes   = post.upvotes;
     const previousDownvotes = post.downvotes;
 
     const isSameVote = previousVote === voteType;
     const optimistic = this.calcOptimisticVote(post.upvotes, post.downvotes, previousVote, voteType, isSameVote);
 
-    // Update shared vote store immediately (optimistic)
     this.postState.setUserVote(post.postId, optimistic.userVote);
     this.patchPost(post.postId, { upvotes: optimistic.upvotes, downvotes: optimistic.downvotes });
 
@@ -226,40 +315,32 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  async voteSource(post: Post, voteType: VoteType): Promise<void> {
-    const source: PostSource | undefined = post.sourceIds?.[0];
-    if (!source?.sourceId) return;
-    if (this.sourceVotingInProgress.has(source.sourceId)) return;
-    this.sourceVotingInProgress.add(source.sourceId);
+  // ─── Source adapter ───────────────────────────────────────────────────────
 
-    const previousVote     = this.postState.getVote(post.postId).sourceVote;
-    const previousUpvotes  = source.upvotes;
-    const previousDownvotes = source.downvotes;
+  /**
+   * Maps the feed's PostSource[] to the SourceResponse shape expected by
+   * PostDetailSourceComponent. Returns null when the post has no sources.
+   */
+  protected toSourceResponse(post: Post): SourceResponse | null {
+    const sources = post.sourceIds;
+    if (!sources?.length) return null;
 
-    const isSameVote = previousVote === voteType;
-    const optimistic = this.calcOptimisticVote(source.upvotes, source.downvotes, previousVote, voteType, isSameVote);
-
-    // Update shared vote store immediately (optimistic)
-    this.postState.setSourceVote(post.postId, optimistic.userVote);
-    this.patchSource(post.postId, { upvotes: optimistic.upvotes, downvotes: optimistic.downvotes });
-
-    try {
-      const result = await this.postService.voteSource(source.sourceId, voteType);
-      this.postState.setSourceVote(post.postId, result.userVote ?? null);
-      this.patchSource(post.postId, {
-        upvotes: result.upvotes,
-        downvotes: result.downvotes,
-      });
-    } catch (err) {
-      console.error('Source vote failed; will be reset:', err);
-      this.postState.setSourceVote(post.postId, previousVote);
-      this.patchSource(post.postId, {
-        upvotes: previousUpvotes,
-        downvotes: previousDownvotes,
-      });
-    } finally {
-      this.sourceVotingInProgress.delete(source.sourceId);
-    }
+    const first = sources[0];
+    return {
+      sourceId:          first.sourceId,
+      upvotes:           first.upvotes   ?? 0,
+      downvotes:         first.downvotes ?? 0,
+      createdAt:         first.createdAt ?? '',
+      wasReportedByUser: first.wasReportedByUser ?? false,
+      singleSources:     sources.map(s => ({
+        singleSourceId: s.sourceId,
+        journal:        s.journal        ?? null,
+        author:         s.author         ?? null,
+        title:          s.title          ?? null,
+        url:            s.url            ?? null,
+        date:           s.date           ?? null,
+      })),
+    };
   }
 
   getDomain(url: string): string {
@@ -322,39 +403,41 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.viewTracking.track(event);
   }
 
-  /** Helpers **/
-  protected loadFeed() {
+  protected loadFeed(): void {
+    this.publicPage  = 0;
+    this.privatePage = 0;
+
     this.isLoading.set(true);
     this.isSpinning.set(true);
     setTimeout(() => this.isSpinning.set(false), 600);
 
     forkJoin([
-      this.feedService.getFeed(true),
-      this.feedService.getFeed(false),
+      this.feedService.getFeed(true,  0, this.postsPerPage),
+      this.feedService.getFeed(false, 0, this.postsPerPage),
     ]).subscribe({
       next: ([publicPosts, privatePosts]) => {
         this.publicPosts.set(publicPosts);
         this.privatePosts.set(privatePosts);
+        this.hasMorePublic.set(publicPosts.length === this.postsPerPage);
+        this.hasMorePrivate.set(privatePosts.length === this.postsPerPage);
 
-        // Re-seed state for refreshed posts (init is a no-op if already tracked,
-        // so use set here to actually refresh values on a manual reload).
         [...publicPosts, ...privatePosts].forEach(post => {
           this.postState.setUserVote(post.postId, (post.userVote as 'up' | 'down' | null) ?? null);
           this.postState.setSourceVote(post.postId, (post.sourceIds?.[0]?.userVote as 'up' | 'down' | null) ?? null);
           this.postState.setCommentCount(post.postId, post.comments?.length ?? 0);
         });
 
-
         this.sessionState.resetLimit();
 
         this.isLoading.set(false);
         this.isRefreshing.set(false);
         this.scrollFeedToTop();
+
+        setTimeout(() => this.setupObserver(), 0);
       },
       error: () => {
         this.isLoading.set(false);
         this.isRefreshing.set(false);
-
         this.publicPosts.set([]);
         this.privatePosts.set([]);
       },
@@ -397,28 +480,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     );
   }
 
-  private patchSource(postId: string, patch: Partial<PostSource>): void {
-    this.publicPosts.update(posts =>
-      posts.map(p => {
-        if (p.postId !== postId || !p.sourceIds?.length) return p;
-        const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
-          i === 0 ? { ...s, ...patch } : s
-        );
-        return { ...p, sourceIds: updatedSources };
-      })
-    );
-    this.privatePosts.update(posts =>
-      posts.map(p => {
-        if (p.postId !== postId || !p.sourceIds?.length) return p;
-        const updatedSources: PostSource[] = p.sourceIds.map((s, i) =>
-          i === 0 ? { ...s, ...patch } : s
-        );
-        return { ...p, sourceIds: updatedSources };
-      })
-    );
-  }
-
-  reportPost(post: Post) {
+  reportPost(post: Post): void {
     this.selectedPostForReport.set(post);
     this.reportDialogVisible.set(true);
   }
@@ -427,7 +489,6 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (event.contentType !== ContentTypeEnum.POST) {
       return;
     }
-
     this.removePostFromFeed(event.contentId);
     this.selectedPostForReport.set(null);
   }
@@ -439,7 +500,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   protected readonly ContentTypeEnum = ContentTypeEnum;
 
-  reportSource(postSource: PostSource, post: Post) {
+  reportSource(postSource: PostSource, post: Post): void {
     this.selectedSourceForReport.set(postSource);
     this.reportSourceDialogVisible.set(true);
     this.selectedPostForSourceReport.set(post);

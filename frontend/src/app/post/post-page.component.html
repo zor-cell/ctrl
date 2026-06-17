@@ -34,10 +34,10 @@
             <app-follow-badge [username]="username()" />
             @if (publicProfile()?.wasReportedByUser) {
               <p-tag
-                [value]="'reported'"
+                value="🚩"
                 severity="secondary"
-                class="post-label"
-                [pTooltip]="'This account has been reported'"
+                styleClass="post-label"
+                pTooltip="You have reported this account"
                 tooltipPosition="bottom"
               />
             }

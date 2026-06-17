@@ -242,8 +242,8 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(firstPost, labelCtx)).thenReturn(labels);
-    when(labelingService.computeLabels(secondPost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(firstPost, labelCtx, false)).thenReturn(labels);
+    when(labelingService.computeLabels(secondPost, labelCtx, false)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(firstPost, secondPost));
     when(postMapper.toResponse(firstPost, labels)).thenReturn(firstResponse);
@@ -266,7 +266,7 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(post));
     when(postMapper.toResponse(post, labels)).thenReturn(response);
@@ -291,8 +291,8 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(publicPost, labelCtx)).thenReturn(labels);
-    when(labelingService.computeLabels(privatePost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(publicPost, labelCtx, false)).thenReturn(labels);
+    when(labelingService.computeLabels(privatePost, labelCtx, false)).thenReturn(labels);
     when(friendRelationRepository.existsByUsers(verifiedUser, unverifiedUser)).thenReturn(true);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(publicPost, privatePost));

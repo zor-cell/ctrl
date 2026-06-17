@@ -148,32 +148,6 @@ $radius-sm:  10px;
   }
 }
 
-.post-source {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid $border;
-  font-size: 0.75rem;
-  color: $text-muted;
-  text-decoration: none;
-  transition: all 0.2s;
-
-  i { font-size: 0.7rem; }
-  &:hover { color: var(--p-primary-color); border-color: var(--p-primary-color); }
-}
-
-.hint-icon {
-  font-size: 0.8rem;
-  color: $text-muted;
-  cursor: pointer;
-  transition: color 0.2s;
-  margin: 0 0.1rem;
-
-  &:hover { color: var(--p-primary-color, #6366f1); }
-}
-
 // ─── Actions ──────────────────────────────────────────
 .post-actions {
   display: flex;

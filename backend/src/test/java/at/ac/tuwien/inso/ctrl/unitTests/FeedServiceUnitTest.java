@@ -74,7 +74,7 @@ public class FeedServiceUnitTest {
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-1")))
         .thenReturn(List.of(sourceVote));
     when(labelingService.buildContext(user)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
 
     when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-1")).thenReturn(false);
     when(reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, "source-1"))
@@ -156,8 +156,8 @@ public class FeedServiceUnitTest {
     when(sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(userId, List.of("source-2")))
         .thenReturn(List.of(mockedSourceVote));
     when(labelingService.buildContext(user)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post1, labelCtx)).thenReturn(labels1);
-    when(labelingService.computeLabels(post2, labelCtx)).thenReturn(labels2);
+    when(labelingService.computeLabels(post1, labelCtx, false)).thenReturn(labels1);
+    when(labelingService.computeLabels(post2, labelCtx, false)).thenReturn(labels2);
     when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-1")).thenReturn(false);
     when(reportService.wasReportedByUser(user, ContentTypeEnum.POST, "post-2")).thenReturn(false);
     when(reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, "source-2"))

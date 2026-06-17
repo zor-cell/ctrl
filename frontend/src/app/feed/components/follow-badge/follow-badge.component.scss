@@ -1,6 +1,7 @@
 :host {
   display: inline-flex;
   align-items: center;
+  line-height: 1;
 }
 
 :host ::ng-deep .follow-btn.p-button {
@@ -8,6 +9,8 @@
   height: 26px !important;
   padding: 0 10px !important;
   border-radius: 20px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 :host ::ng-deep .follow-btn--action.p-button {

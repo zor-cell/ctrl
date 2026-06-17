@@ -184,7 +184,7 @@ public class PostServiceImpl implements PostService {
     List<Post> posts = postRepository.findAllByUserUsernameOrderByCreatedAtDesc(username);
     filterComments(user, posts);
     return posts.stream()
-        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx, false)))
         .toList();
   }
 
@@ -230,7 +230,7 @@ public class PostServiceImpl implements PostService {
     filterComments(viewer, posts);
 
     return posts.stream()
-        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx)))
+        .map(post -> postMapper.toResponse(post, labelingService.computeLabels(post, ctx, false)))
         .toList();
   }
 
@@ -318,10 +318,11 @@ public class PostServiceImpl implements PostService {
     }
 
     if (!post.isPublic()) {
-      if (post.getUser() != null
-              && !post.getUser().getUsername().equals(username)
-              && !friendRelationRepository.existsByUsers(user, post.getUser())
-          || user.getRole() == Role.ADMIN) {
+      boolean isOwner = post.getUser() != null && post.getUser().getUsername().equals(username);
+      boolean isFriend = friendRelationRepository.existsByUsers(user, post.getUser());
+      boolean isAdmin = user.getRole() == Role.ADMIN;
+
+      if (!isOwner && !isFriend && !isAdmin) {
         throw new UnauthorizedException("post with Id " + postId);
       }
     }
@@ -375,6 +376,6 @@ public class PostServiceImpl implements PostService {
         wasReported,
         commentsReportedByUser,
         sourceWasReported,
-        labelingService.computeLabels(post, ctx));
+        labelingService.computeLabels(post, ctx, wasReported));
   }
 }

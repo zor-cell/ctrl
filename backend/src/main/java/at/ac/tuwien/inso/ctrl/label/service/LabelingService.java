@@ -29,10 +29,11 @@ public class LabelingService {
         LocalDateTime.now());
   }
 
-  public Set<PostLabelType> computeLabels(Post post, LabelContext ctx) {
+  public Set<PostLabelType> computeLabels(Post post, LabelContext ctx, boolean postReportedByUser) {
     Set<PostLabelType> labels = new HashSet<>();
 
-    // Time-based labels
+    if (postReportedByUser) labels.add(PostLabelType.POST_REPORTED);
+
     if (post.getCreatedAt() != null) {
       if (post.getCreatedAt().isAfter(ctx.now().minusHours(6))) labels.add(PostLabelType.RECENT);
       if (post.getCreatedAt().isBefore(ctx.now().minusMonths(6)))
