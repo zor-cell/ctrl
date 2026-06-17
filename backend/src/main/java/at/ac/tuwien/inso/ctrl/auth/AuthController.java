@@ -64,6 +64,13 @@ public class AuthController {
     return emailVerificationService.getVerificationToken(sendEmailRequest);
   }
 
+  @PreAuthorize("hasRole('TEST')")
+  @GetMapping("/password-token")
+  public String getPasswordResetToken(@Valid @RequestBody PasswordResetEmailRequest sendEmailRequest) {
+    LOGGER.trace("Get password token request: {}", sendEmailRequest);
+    return passwordResetService.getPasswordToken(sendEmailRequest);
+  }
+
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest loginRequest) {
     return authService.login(loginRequest);
