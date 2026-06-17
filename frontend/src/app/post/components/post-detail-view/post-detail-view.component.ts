@@ -133,7 +133,6 @@ export class PostDetailViewComponent implements OnChanges {
       if (post.userProfilePicture) post.userProfilePicture = await this.resolveMedia(post.userProfilePicture) ?? post.userProfilePicture;
 
       this.post.set(post);
-      console.log(post);
 
       const sourceVoteFromDetail = (post.source as { userVote?: 'up' | 'down' | null })?.userVote ?? null;
       this.postState.initVote(postId, post.userVote ?? null, sourceVoteFromDetail);

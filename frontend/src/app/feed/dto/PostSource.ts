@@ -5,4 +5,9 @@ export interface PostSource {
   downvotes: number;
   userVote: 'up' | 'down' | null;
   wasReportedByUser: boolean;
+  createdAt?:         string;
+  journal?:           string | null;
+  author?:            string | null;
+  title?:             string | null;
+  date?:              string | null;
 }

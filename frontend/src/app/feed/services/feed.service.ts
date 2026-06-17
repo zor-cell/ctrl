@@ -2,7 +2,7 @@
 
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {firstValueFrom, map, switchMap} from 'rxjs';
+import { firstValueFrom, map, switchMap } from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 import { MediaCacheKind, MediaCacheService } from '../../core/services/media-cache.service';
@@ -13,17 +13,6 @@ export class FeedService {
   private readonly httpClient = inject(HttpClient);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly baseUri = `${environment.apiUrl}/feed`;
-
-  /**
-   * Fetches a paginated list of posts for the current user's feed.
-   *
-   * GET /feed?page={page}&postsPerPage={postsPerPage}
-   *
-   * @param isPublic - Fetches the public feed if true, otherwise the private feed
-   * @param page - Zero-based page index (default: 0)
-   * @param postsPerPage - Number of posts per page (default: 20)
-   * @returns A promise resolving to an array of mapped {@link Post} objects
-   */
 
   getFeed(isPublic: boolean, page = 0, postsPerPage = 20) {
     return this.httpClient
@@ -37,57 +26,51 @@ export class FeedService {
       );
   }
 
-  /** Helper **/
-
-  /**
-   *
-   * Maps a raw API response object to a typed {@link Post} model.
-   * Applies fallback values for optional fields that may be absent in the response.
-   *
-   * @param item - Raw response object from the feed API
-   * @returns A fully structured {@link Post} object
-   */
   private mapToPost(item: any): Post {
     return {
-      postId: item.postId,
-      userId: item.userId ?? item.username,
-      isExternal: !item.userId,
-      username: item.username,
-      userProfilePic: item.userProfilePic ?? '',
-      userDeleted: item.userDeleted ?? false,
-      createdAt: item.createdAt,
-      caption: item.caption ?? '',
-      isPublic: item.isPublic,
-      likes: 0,
-      upvotes: item.upvotes ?? 0,
-      downvotes: item.downvotes ?? 0,
-      userVote: item.userVote ?? null,
-      labelIds: item.labelIds ?? [],
-      topicIds: item.topicIds ?? [],
-      videoImageRef: this.resolveVideoImageRef(item),
+      postId:           item.postId,
+      userId:           item.userId ?? item.username,
+      isExternal:       !item.userId,
+      username:         item.username,
+      userProfilePic:   item.userProfilePic ?? '',
+      userDeleted:      item.userDeleted ?? false,
+      createdAt:        item.createdAt,
+      caption:          item.caption ?? '',
+      isPublic:         item.isPublic,
+      likes:            0,
+      upvotes:          item.upvotes ?? 0,
+      downvotes:        item.downvotes ?? 0,
+      userVote:         item.userVote ?? null,
+      labelIds:         item.labelIds ?? [],
+      topicIds:         item.topicIds ?? [],
+      videoImageRef:    this.resolveVideoImageRef(item),
       sourceIds: item.sourceIds?.map((s: any) => ({
-        sourceId: s.sourceId,
-        url: s.url,
-        upvotes: s.upvotes ?? 0,
-        downvotes: s.downvotes ?? 0,
-        userVote: s.userVote ?? null,
+        sourceId:          s.sourceId,
+        url:               s.url               ?? null,
+        upvotes:           s.upvotes           ?? 0,
+        downvotes:         s.downvotes         ?? 0,
+        userVote:          s.userVote          ?? null,
         wasReportedByUser: s.wasReportedByUser ?? false,
+        createdAt:         s.createdAt         ?? null,
+        journal:           s.journal           ?? null,
+        author:            s.author            ?? null,
+        title:             s.title             ?? null,
+        date:              s.date              ?? null,
       })) ?? [],
-      comments:
-        item.comments?.map((c: any) => ({
-          commentId: c.commentId,
-          userId: c.userId,
-          username: c.username,
-          userProfilePic: c.userProfilePic ?? '',
-          userDeleted: c.userDeleted ?? false,
-          createdAt: c.createdAt,
-          content: c.content,
-          parentCommentId: c.parentCommentId ?? null,
-          edited: c.edited ?? false,
-          replies: c.replies ?? [],
-        })) ?? [],
-      explanation: item.explanation,
-      wasReportedByUser: item.wasReportedByUser
+      comments: item.comments?.map((c: any) => ({
+        commentId:       c.commentId,
+        userId:          c.userId,
+        username:        c.username,
+        userProfilePic:  c.userProfilePic ?? '',
+        userDeleted:     c.userDeleted    ?? false,
+        createdAt:       c.createdAt,
+        content:         c.content,
+        parentCommentId: c.parentCommentId ?? null,
+        edited:          c.edited          ?? false,
+        replies:         c.replies         ?? [],
+      })) ?? [],
+      explanation:       item.explanation,
+      wasReportedByUser: item.wasReportedByUser,
     };
   }
 
@@ -121,15 +104,8 @@ export class FeedService {
   }
 
   private resolveVideoImageRef(item: any): string[] {
-    if (item.videoImageRef?.length > 0) {
-      return item.videoImageRef;
-    }
-
-    if (item.mediaRef) {
-      return [item.mediaRef];
-    }
-
+    if (item.videoImageRef?.length > 0) return item.videoImageRef;
+    if (item.mediaRef) return [item.mediaRef];
     return [];
   }
-
 }

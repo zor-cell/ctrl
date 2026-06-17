@@ -263,51 +263,12 @@
   <p class="post-caption">{{ post.caption }}</p>
 
   <!-- Source -->
-  @if (post.sourceIds.length > 0) {
-    <div class="post-source-row">
-      <div class="post-source-left">
-        <a class="post-source" [href]="post.sourceIds[0].url" target="_blank" rel="noopener noreferrer">
-          <i class="pi pi-external-link"></i>
-          {{ getDomain(post.sourceIds[0].url) }}
-        </a>
-        <i class="pi pi-info-circle hint-icon"
-           pTooltip="Is the source reliable and relevant to the post?"
-           tooltipPosition="right" style="margin-right: 0.4rem;margin-left: 0.2rem;"></i>
-        <button
-          class="action-btn upvote"
-          [class.active]="sourceVoteFor(post.postId) === 'up'"
-          (click)="voteSource(post, 'up')"
-          [attr.aria-label]="'Source upvote – ' + post.sourceIds[0].upvotes"
-          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'up'"
-        >
-          <i class="pi pi-check"></i>
-        </button>
-        <button
-          class="action-btn downvote"
-          [class.active]="sourceVoteFor(post.postId) === 'down'"
-          (click)="voteSource(post, 'down')"
-          [attr.aria-label]="'Source downvote – ' + post.sourceIds[0].downvotes"
-          [attr.aria-pressed]="sourceVoteFor(post.postId) === 'down'"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-
-        @if (post.sourceIds[0].wasReportedByUser) {
-          <p-tag
-            [value]="'reported'"
-            severity="danger"
-            class="post-label"
-            [pTooltip]="'You reported this source'"
-            tooltipPosition="bottom"
-          />
-        }
-      </div>
-
-      <button class="source-flag-button action-btn flag-btn" (click)="reportSource(post.sourceIds[0], post)" pTooltip="Report Source" tooltipPosition="top">
-        <i class="pi pi-flag"></i>
-      </button>
-    </div>
-  }
+  <app-post-detail-source
+    [source]="toSourceResponse(post)"
+    [postId]="post.postId"
+    [sourceVote]="sourceVoteFor(post.postId)"
+    (reportClicked)="reportSource(post.sourceIds?.[0], post)"
+  />
 
   <!-- Actions -->
   <div class="post-actions">

@@ -37,7 +37,7 @@ public class FeedService {
 
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(
-          int page, int postsPerPage, boolean publicFeed, String username) {
+      int page, int postsPerPage, boolean publicFeed, String username) {
     if (page < 0) {
       throw new InvalidRequestException("Page cannot be negative");
     }
@@ -46,73 +46,75 @@ public class FeedService {
     }
 
     User user =
-            userRepository
-                    .findByUsername(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     Optional<String> userId = Optional.of(user.getId().toString());
 
     List<RecommendedPost> recommendedPosts =
-            recommendationService.getRecommendedPosts(user, page, postsPerPage, publicFeed);
+        recommendationService.getRecommendedPosts(user, page, postsPerPage, publicFeed);
     List<String> postIds =
-            recommendedPosts.stream().map(p -> p.getPost().getPostId()).collect(Collectors.toList());
+        recommendedPosts.stream().map(p -> p.getPost().getPostId()).collect(Collectors.toList());
 
     Map<String, Boolean> postReportedByUser =
-            postIds.isEmpty()
-                    ? Map.of()
-                    : postIds.stream()
-                    .collect(
-                            Collectors.toMap(
-                                    id -> id,
-                                    id -> reportService.wasReportedByUser(user, ContentTypeEnum.POST, id)));
+        postIds.isEmpty()
+            ? Map.of()
+            : postIds.stream()
+                .collect(
+                    Collectors.toMap(
+                        id -> id,
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.POST, id)));
 
     Map<String, String> postVotes =
-            userId
-                    .map(
-                            id ->
-                                    postVoteRepository.findByIdUserIdAndIdPostIdIn(id, postIds).stream()
-                                            .collect(
-                                                    Collectors.toMap(v -> v.getId().getPostId(), PostVote::getVoteType)))
-                    .orElse(Map.of());
+        userId
+            .map(
+                id ->
+                    postVoteRepository.findByIdUserIdAndIdPostIdIn(id, postIds).stream()
+                        .collect(
+                            Collectors.toMap(v -> v.getId().getPostId(), PostVote::getVoteType)))
+            .orElse(Map.of());
 
     List<String> sourceIds =
-            recommendedPosts.stream()
-                    .filter(p -> p.getPost().getSource() != null)
-                    .map(p -> p.getPost().getSource().getSourceId())
-                    .toList();
+        recommendedPosts.stream()
+            .filter(p -> p.getPost().getSource() != null)
+            .map(p -> p.getPost().getSource().getSourceId())
+            .toList();
 
     Map<String, Boolean> sourceReportedByUser =
-            sourceIds.isEmpty()
-                    ? Map.of()
-                    : sourceIds.stream()
-                    .distinct()
-                    .collect(
-                            Collectors.toMap(
-                                    id -> id,
-                                    id -> reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, id)));
+        sourceIds.isEmpty()
+            ? Map.of()
+            : sourceIds.stream()
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        id -> id,
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, id)));
 
     Map<String, String> sourceVotes =
-            userId
-                    .map(
-                            id ->
-                                    sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(id, sourceIds).stream()
-                                            .collect(
-                                                    Collectors.toMap(
-                                                            v -> v.getId().getSourceId(), SourceVote::getVoteType)))
-                    .orElse(Map.of());
+        userId
+            .map(
+                id ->
+                    sourceVoteRepository.findByIdUserIdAndIdSourceIdIn(id, sourceIds).stream()
+                        .collect(
+                            Collectors.toMap(
+                                v -> v.getId().getSourceId(), SourceVote::getVoteType)))
+            .orElse(Map.of());
 
     LabelContext labelCtx = labelingService.buildContext(user);
 
     return recommendedPosts.stream()
-            .map(
-                    rp ->
-                            feedMapper.toFeedPostResponse(
-                                    rp,
-                                    postVotes,
-                                    postReportedByUser,
-                                    sourceVotes,
-                                    sourceReportedByUser,
-                                    labelingService.computeLabels(rp.getPost(), labelCtx,
-                                            postReportedByUser.getOrDefault(rp.getPost().getPostId(), false))))
-            .toList();
+        .map(
+            rp ->
+                feedMapper.toFeedPostResponse(
+                    rp,
+                    postVotes,
+                    postReportedByUser,
+                    sourceVotes,
+                    sourceReportedByUser,
+                    labelingService.computeLabels(
+                        rp.getPost(),
+                        labelCtx,
+                        postReportedByUser.getOrDefault(rp.getPost().getPostId(), false))))
+        .toList();
   }
 }

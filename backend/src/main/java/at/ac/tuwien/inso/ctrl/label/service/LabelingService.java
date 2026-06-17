@@ -23,10 +23,10 @@ public class LabelingService {
   public LabelContext buildContext(User user) {
     Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
-            followRelationRepository.findFollowedIds(user.getId()),
-            followRelationRepository.findSecondDegreeIds(user.getId()),
-            p95 != null ? p95 : 0,
-            LocalDateTime.now());
+        followRelationRepository.findFollowedIds(user.getId()),
+        followRelationRepository.findSecondDegreeIds(user.getId()),
+        p95 != null ? p95 : 0,
+        LocalDateTime.now());
   }
 
   public Set<PostLabelType> computeLabels(Post post, LabelContext ctx, boolean postReportedByUser) {
@@ -46,8 +46,8 @@ public class LabelingService {
     if (post.isExternalPost()) labels.add(PostLabelType.MASTODON);
 
     if (post.getUpvotes() != null
-            && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
-      labels.add(PostLabelType.POPULAR);
+        && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
+    labels.add(PostLabelType.POPULAR);
 
     if (post.getComments() != null && post.getComments().size() > 5)
       labels.add(PostLabelType.HIGHLY_DISCUSSED);

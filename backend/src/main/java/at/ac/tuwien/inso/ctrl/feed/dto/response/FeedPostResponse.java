@@ -2,12 +2,12 @@ package at.ac.tuwien.inso.ctrl.feed.dto.response;
 
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record FeedPostResponse(
     String postId,
-    // either an internal user or an external author
     String userId,
     String username,
     String userProfilePic,
@@ -31,8 +31,13 @@ public record FeedPostResponse(
       String url,
       Integer upvotes,
       Integer downvotes,
-      String userVote, // "up", "down" or null,
-      boolean wasReportedByUser) {}
+      String userVote,
+      boolean wasReportedByUser,
+      LocalDateTime createdAt,
+      String journal,
+      String author,
+      String title,
+      LocalDate date) {}
 
   public record CommentResponse(
       String commentId,

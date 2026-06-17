@@ -27,7 +27,7 @@ $radius-sm:    10px;
   position: absolute;
   top: 0;
   right: 0;
-  height: 48px; // match PrimeNG tab bar height
+  height: 48px;
   display: flex;
   align-items: center;
   padding-right: 4px;
@@ -50,13 +50,11 @@ $radius-sm:    10px;
   flex-direction: column;
   gap: 16px;
 
-  // Scroll-snap container
-  height: calc(100vh - 120px); // minus header + tabs height
+  height: calc(100vh - 120px);
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
 
-  // Hide scrollbar but keep functionality
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
@@ -66,7 +64,6 @@ $radius-sm:    10px;
   border-radius: $radius;
   border: 1px solid $border;
 
-  // Snap each post into view
   scroll-snap-align: start;
   scroll-snap-stop: always;
   flex-shrink: 0;
@@ -198,41 +195,6 @@ $radius-sm:    10px;
   white-space: pre-line;
 }
 
-// ─── Source Link ──────────────────────────────────────
-.post-source {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin: 16px 0 16px 12px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid $border;
-  font-size: 0.75rem;
-  color: $text-muted;
-  text-decoration: none;
-  transition: all 0.2s;
-
-  i { font-size: 0.7rem; }
-
-  &:hover {
-    color: var(--p-primary-color, #6366f1);
-    border-color: var(--p-primary-color, #6366f1);
-  }
-}
-
-.post-source-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px 14px;
-
-  .post-source-left {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
 // ─── Labels ───────────────────────────────────────────
 .post-labels {
   display: flex;
@@ -277,7 +239,7 @@ $radius-sm:    10px;
 
   i { font-size: 0.9rem; }
 
-  &.heart:hover { border-color: $downvote; color: $downvote; }
+  &.heart:hover  { border-color: $downvote; color: $downvote; }
   &.heart.active { color: $downvote; border-color: $downvote; }
 
   &.upvote:hover   { color: $upvote;   border-color: $upvote; }
@@ -309,7 +271,6 @@ $radius-sm:    10px;
 
 // ─── Infinite Scroll Sentinel ─────────────────────────
 .scroll-sentinel {
-  // Excluded from scroll-snap so it doesn't snap into view on its own
   scroll-snap-align: none;
   height: 80px;
   display: flex;
@@ -376,7 +337,6 @@ $radius-sm:    10px;
   }
 }
 
-/* Styles for bidirectional bar */
 .bi-bar-container {
   position: relative;
   height: 12px;
