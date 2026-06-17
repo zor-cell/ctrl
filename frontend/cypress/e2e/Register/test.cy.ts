@@ -33,17 +33,27 @@ describe('Register', () => {
   };
 
   let userWasCreated = false;
+  let verified = false
 
   afterEach(() => {
     if (!userWasCreated) return;
 
-    return cy.fetchVerificationToken({
-      username: testUser.username,
-      email: testUser.email,
-    })
-      .then((token) => cy.verifyEmail(testUser.username, token))
-      .then(() => cy.deleteUser(testUser.username, testUser.password))
-      .then(() => userWasCreated = false);
+    if (verified) {
+      return cy.deleteUser(testUser.username, testUser.password)
+        .then(() => {
+          userWasCreated = false;
+          verified = false;
+          return;
+        });
+    } else {
+      return cy.fetchVerificationToken({
+        username: testUser.username,
+        email: testUser.email,
+      })
+        .then((token) => cy.verifyEmail(testUser.username, token))
+        .then(() => cy.deleteUser(testUser.username, testUser.password))
+        .then(() => userWasCreated = false);
+    }
   });
 
 
@@ -138,6 +148,57 @@ describe('Register', () => {
       cy.contains(passwordValidationMessage).should('be.visible');
       cy.get('button[type="submit"]').should('be.disabled');
     });
+  });
+
+  it("Register should generate token", () => {
+    cy.visit('/register');
+    fillRegisterForm();
+
+    cy.get('button[type="submit"]').click();
+
+    userWasCreated = true;
+
+    cy.url().should('eq', `${Cypress.config().baseUrl}/email_verification/${testUser.username}/${testUser.email}`);
+
+    cy.wait(3000)
+
+    cy.request({
+      method: 'POST',
+      url: '/api/auth/login',
+      failOnStatusCode: true,
+      body: {
+        username: 'TestUser',
+        password: 'test12345678',
+      },
+    })
+  .then((loginResponse) => {
+      console.log('fetchVerificationToken /api/auth/login response:', loginResponse);
+      return loginResponse;
+    })
+      .then((loginResponse) =>
+        cy.request({
+          method: 'GET',
+          url: '/api/auth/verification-token',
+          failOnStatusCode: true,
+          headers: {
+            Authorization: 'Bearer ' + loginResponse.body.token,
+          },
+          body: {
+            username: testUser.username,
+            email: testUser.email,
+          },
+        })
+      )
+      .then((tokenResponse) => {
+        console.log('fetchVerificationToken /api/auth/verification-token response:', tokenResponse);
+        expect(tokenResponse.status).to.eq(200);
+
+        cy.get("input#code").type(tokenResponse.body);
+        cy.get("button[type='submit']").click();
+
+        cy.url().should('eq', `${Cypress.config().baseUrl}/login`);
+        verified = true;
+      });
   });
 
 
