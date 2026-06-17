@@ -69,6 +69,19 @@ public class UserSeederConfig {
                         .build());
               }
 
+              // create e2e test user
+              userRepository.save(
+                  User.builder()
+                      .username("TestUser")
+                      .password(passwordEncoder.encode("test12345678"))
+                      .name("E2E Test User")
+                      .email("test@system.local")
+                      .birthdate(LocalDate.of(2000, 4, 23))
+                      .isVerified(true)
+                      .emailVerified(true)
+                      .role(Role.TEST)
+                      .build());
+
               // create test users
               List<User> chatUsers =
                   List.of(
