@@ -27,7 +27,8 @@ import { CommentResponse } from '../../dto/PostResponse';
 import { UserService } from '../../../user/user.service';
 import { FollowBadgeComponent } from '../../../feed/components/follow-badge/follow-badge.component';
 import { PostShareDialogComponent } from '../post-detail-share/post-share-dialog.component';
-import { PostCommentComponent} from '../post-detail-comment/post-comment.component';
+import { PostCommentComponent } from '../post-detail-comment/post-comment.component';
+import { PostDetailSourceComponent } from '../post-detail-source/post-detail-source.component';
 import { PostStateService } from '../../services/post-state.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -46,6 +47,7 @@ import { firstValueFrom } from 'rxjs';
 
     PostShareDialogComponent,
     PostCommentComponent,
+    PostDetailSourceComponent,
     DialogModule,
     FollowBadgeComponent,
   ],
@@ -93,8 +95,7 @@ export class PostDetailViewComponent implements OnChanges {
   protected readonly postUpvotes   = signal(0);
   protected readonly postDownvotes = signal(0);
 
-  private votingInProgress       = false;
-  private sourceVotingInProgress = false;
+  private votingInProgress = false;
 
   // ─── Delete ───────────────────────────────────────────────────────────────
   protected readonly deleteConfirmVisible = signal(false);
@@ -132,7 +133,7 @@ export class PostDetailViewComponent implements OnChanges {
       if (post.userProfilePicture) post.userProfilePicture = await this.resolveMedia(post.userProfilePicture) ?? post.userProfilePicture;
 
       this.post.set(post);
-      console.log(post)
+      console.log(post);
 
       const sourceVoteFromDetail = (post.source as { userVote?: 'up' | 'down' | null })?.userVote ?? null;
       this.postState.initVote(postId, post.userVote ?? null, sourceVoteFromDetail);
@@ -166,20 +167,11 @@ export class PostDetailViewComponent implements OnChanges {
 
   // ─── Comment count (from shared store) ────────────────────────────────────
 
-  /**
-   * Called by the template. Returns the live comment count from the shared
-   * store so that both the detail-view action bar and the feed card stay
-   * in sync without a round-trip.
-   */
   protected get liveCommentCount(): number {
     const fromStore = this.postState.getCommentCount(this.postId ?? '');
     return fromStore ?? this.commentsComponent?.count ?? 0;
   }
 
-  /**
-   * Called by PostCommentComponent (or its parent) whenever the user
-   * successfully submits a comment.
-   */
   protected onCommentAdded(): void {
     if (this.postId) {
       this.postState.incrementCommentCount(this.postId);
@@ -201,7 +193,6 @@ export class PostDetailViewComponent implements OnChanges {
     const isSameVote = prevVote === voteType;
     const optimistic = this.calcOptimisticVote(prevUp, prevDown, prevVote, voteType, isSameVote);
 
-    // Write to shared store (feed will reflect this immediately)
     this.postState.setUserVote(post.postId, optimistic.userVote);
     this.postUpvotes.set(optimistic.upvotes);
     this.postDownvotes.set(optimistic.downvotes);
@@ -219,30 +210,6 @@ export class PostDetailViewComponent implements OnChanges {
       this.postDownvotes.set(prevDown);
     } finally {
       this.votingInProgress = false;
-      this.cdr.markForCheck();
-    }
-  }
-
-  protected async voteSource(voteType: VoteType): Promise<void> {
-    const sourceId = this.post()?.source?.sourceId;
-    if (!sourceId || this.sourceVotingInProgress) return;
-    this.sourceVotingInProgress = true;
-
-    const prevVote   = this.sourceVote();
-    const isSameVote = prevVote === voteType;
-
-    // Write to shared store (feed will reflect this immediately)
-    this.postState.setSourceVote(this.postId!, isSameVote ? null : voteType);
-    this.cdr.markForCheck();
-
-    try {
-      const result = await this.postService.voteSource(sourceId, voteType);
-      this.postState.setSourceVote(this.postId!, result.userVote ?? null);
-    } catch (err) {
-      console.error('Source-vote failed; reverting:', err);
-      this.postState.setSourceVote(this.postId!, prevVote);
-    } finally {
-      this.sourceVotingInProgress = false;
       this.cdr.markForCheck();
     }
   }
@@ -368,5 +335,4 @@ export class PostDetailViewComponent implements OnChanges {
       this.router.navigate(['/profile', p.username]);
     }
   }
-
 }

@@ -70,43 +70,12 @@
   <p class="post-caption">{{ p.caption }}</p>
 
   <!-- Source -->
-  @if (p.source?.singleSources?.length) {
-    <div class="post-source-row">
-      <div class="post-source-left">
-        <a class="post-source" [href]="p.source!.singleSources[0].url" target="_blank" rel="noopener noreferrer">
-          <i class="pi pi-external-link"></i>
-          {{ getDomain(p.source!.singleSources[0].url) }}
-        </a>
-        @if (p.source?.wasReportedByUser) {
-          <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this source" tooltipPosition="bottom" />
-        }
-        <i class="pi pi-info-circle hint-icon"
-           pTooltip="Is the source reliable and relevant to the post?"
-           tooltipPosition="right"></i>
-        <button
-          class="action-btn upvote"
-          [class.active]="sourceVote() === 'up'"
-          (click)="voteSource('up')"
-          aria-label="Source upvote"
-          [attr.aria-pressed]="sourceVote() === 'up'"
-        >
-          <i class="pi pi-check"></i>
-        </button>
-        <button
-          class="action-btn downvote"
-          [class.active]="sourceVote() === 'down'"
-          (click)="voteSource('down')"
-          aria-label="Source downvote"
-          [attr.aria-pressed]="sourceVote() === 'down'"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-      <button class="action-btn flag-btn source-flag-btn" (click)="requestReportSource()" pTooltip="Report Source" tooltipPosition="top">
-        <i class="pi pi-flag"></i>
-      </button>
-    </div>
-  }
+  <app-post-detail-source
+    [source]="p.source"
+    [postId]="p.postId"
+    [sourceVote]="sourceVote()"
+    (reportClicked)="requestReportSource()"
+  />
 
   <!-- Actions -->
   <div class="post-actions">
