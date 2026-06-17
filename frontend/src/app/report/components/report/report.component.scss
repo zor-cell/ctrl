@@ -89,10 +89,6 @@
   margin: 0;
 }
 
-.reason-dropdown {
-  width: 100%;
-}
-
 .selected-reason {
   padding: 0.9rem 1rem;
   border: 1px solid rgba(203, 213, 225, 0.8);
@@ -142,24 +138,10 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 900px) {
-  .report-actions {
-    justify-content: stretch;
-
-    p-button {
-      flex: 1;
-    }
-  }
-}
-
 .reason-buttons {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-
-  &.reason-buttons--compact {
-    grid-template-columns: 1fr;
-  }
 }
 
 .reason-btn {
@@ -190,8 +172,32 @@
   }
 }
 
+// ─── Mobile ───────────────────────────────────────────
 @media (max-width: 600px) {
   .reason-buttons {
     grid-template-columns: 1fr;
+  }
+
+  .report-actions {
+    justify-content: stretch;
+
+    p-button {
+      flex: 1;
+    }
+  }
+}
+
+// ─── Dialog size ───────────────
+:host ::ng-deep .report-dialog {
+  width: min(56rem, 92vw);
+
+  @media (max-width: 600px) {
+    width: 92vw;
+    max-height: min(38rem, 85vh);
+
+    .p-dialog-content {
+      overflow-y: auto;
+      max-height: calc(min(38rem, 85vh) - 4rem);
+    }
   }
 }

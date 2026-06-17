@@ -20,7 +20,6 @@
 </p-dialog>
 
 <app-report
-  [compact]="false"
   [contentType]="ContentTypeEnum.POST"
   [contentId]="reportPostData()?.postId"
   [contentTitle]="reportPostData()?.caption"
@@ -30,7 +29,6 @@
 />
 
 <app-report
-  [compact]="false"
   [contentType]="ContentTypeEnum.SOURCE"
   [contentId]="reportSourceData()?.sourceId"
   [contentTitle]="reportSourceData()?.url"
@@ -40,7 +38,6 @@
 />
 
 <app-report
-  [compact]="false"
   [contentType]="ContentTypeEnum.COMMENT"
   [contentId]="reportCommentData()?.commentId"
   [contentTitle]="reportCommentData()?.content"

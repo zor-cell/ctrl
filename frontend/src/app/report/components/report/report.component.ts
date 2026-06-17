@@ -38,7 +38,6 @@ export class ReportComponent implements OnInit, OnChanges {
   @Input() userProfilePic: string | undefined;
   @Input() username: string | undefined;
   @Input() visible = false;
-  @Input() compact = false;
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() reportSubmitted = new EventEmitter<{ contentType: ContentTypeEnum; contentId: string }>();
 
