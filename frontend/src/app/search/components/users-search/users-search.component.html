@@ -78,12 +78,13 @@
         @for (user of searchResults(); track user.id) {
           <div class="user-item">
             <p-avatar
-              [image]="user.profilePicture || undefined"
-              [label]="user.name?.charAt(0) || user.username.charAt(0)"
+              [image]="getAvatar(user)"
+              [label]="!getAvatar(user) ? ((user.name || user.username).charAt(0)) : ''"
               shape="circle"
-              styleClass="user-avatar" />
+              styleClass="user-avatar clickable"
+              (click)="navigateToProfile(user.username); $event.stopPropagation()" />
 
-            <div class="user-info">
+            <div class="user-info clickable" (click)="navigateToProfile(user.username)">
               <span class="name">{{ user.name || user.username }}</span>
               <span class="username">&#64;{{ user.username }}</span>
               @if (user.isVerified) {

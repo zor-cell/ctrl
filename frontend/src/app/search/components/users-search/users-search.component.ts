@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -15,6 +16,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { UserSearchResult } from '../../../user/dto/Relationship';
 import { FriendRequestEventBusService } from '../../../user/friend-request-event-bus.service';
 import { RelationshipService } from '../../../user/relationship.service';
+import { MediaCacheService } from '../../../core/services/media-cache.service';
 
 /**
  * Users Search Component
@@ -48,17 +50,18 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
   private relationshipService = inject(RelationshipService);
+  private mediaCache = inject(MediaCacheService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  // Updated defaults: excludeFriends=true, excludeFollowed=true
   searchQuery = signal<string>('');
-  excludeFriends = signal<boolean>(true);
-  excludeFollowed = signal<boolean>(true);
+  excludeFriends = signal<boolean>(false);
+  excludeFollowed = signal<boolean>(false);
   verifiedOnly = signal<boolean>(false);
 
   searchResults = signal<UserSearchResult[]>([]);
   isSearching = signal<boolean>(false);
+  resolvedAvatars = signal<Record<string, string | null>>({});
 
   private _destroy$ = new Subject<void>();
   private refreshTrigger$ = new Subject<void>();
@@ -212,6 +215,8 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
           this.isSearching.set(false);
           // Update URL with current scroll position after search
           this.updateUrlState();
+          // Resolve profile picture URLs via media cache
+          this.resolveAvatars(results);
         },
         error: () => {
           this.notificationService.showError('Search failed');
@@ -309,6 +314,31 @@ export class UsersSearchComponent implements OnInit, OnDestroy {
 
   hasPendingSentRequest(user: UserSearchResult): boolean {
     return this.hasStatus(user, 'PENDING_REQUEST_SENT');
+  }
+
+  navigateToProfile(username: string): void {
+    this.router.navigate(['/profile', username]);
+  }
+
+  private async resolveAvatars(users: UserSearchResult[]): Promise<void> {
+    const usersWithPicture = users.filter(u => u.profilePicture);
+    const entries = await Promise.all(
+      usersWithPicture.map(async (u) => {
+        const resolved = await this.resolveMedia(u.profilePicture);
+        return [u.id, resolved] as [string, string | null];
+      })
+    );
+    this.resolvedAvatars.set(Object.fromEntries(entries));
+  }
+
+  private resolveMedia(url: string | null | undefined): Promise<string | null> {
+    if (!url) return Promise.resolve(null);
+    const kind = /\.(mp4|webm|mov)(\?|#|$)/i.test(url) ? 'video' : 'image';
+    return firstValueFrom(this.mediaCache.resolveMediaUrl(url, kind, 'high')).catch(() => null);
+  }
+
+  getAvatar(user: UserSearchResult): string | undefined {
+    return this.resolvedAvatars()[user.id] ?? undefined;
   }
 
   /**
