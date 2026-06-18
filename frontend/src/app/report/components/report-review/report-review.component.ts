@@ -109,14 +109,12 @@ export class ReportReviewComponent implements OnInit {
   async changeToSources() {
     const reports = await this.reportService.getReportedSource();
     this.reportedSources.set(reports);
-    console.log(reports);
     this.currentTab.set(ContentTypeEnum.SOURCE);
   }
 
   async changeToAccounts() {
     const reports = await this.reportService.getReportedAccounts();
     this.reportedAccounts.set(reports);
-    console.log(reports);
     this.currentTab.set(ContentTypeEnum.ACCOUNT);
   }
 

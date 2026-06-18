@@ -85,7 +85,6 @@ export class FollowedPageComponent implements OnInit, OnDestroy {
     });
 
     this.eventBus.state$.pipe(takeUntil(this._destroy$)).subscribe((state) => {
-      console.log(state);
     });
 
     // Setup debounced friend search
