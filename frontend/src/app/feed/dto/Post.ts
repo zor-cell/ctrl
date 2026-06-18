@@ -23,4 +23,5 @@ export interface Post {
   comments: PostComment[];
   explanation: PostExplanation;
   wasReportedByUser: boolean;
+  userProfileUrl: string;
 }

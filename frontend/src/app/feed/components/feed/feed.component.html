@@ -179,20 +179,47 @@
   <!-- Post Header -->
   <div class="post-header">
     <div class="post-user">
-      <p-avatar
-        [image]="post.userProfilePic"
-        shape="circle"
-        size="normal"
-        [style]="{ width: '42px', height: '42px' }"
-      />
+      @if (post.userDeleted) {
+        <p-avatar
+          [image]="post.userProfilePic"
+          shape="circle"
+          size="normal"
+          [style]="{ width: '42px', height: '42px' }"
+        />
+      } @else if (post.isExternal) {
+        <a [href]="post.userProfileUrl" class="post-user-link" target="_blank" rel="noopener noreferrer">
+          <p-avatar
+            [image]="post.userProfilePic"
+            shape="circle"
+            size="normal"
+            [style]="{ width: '42px', height: '42px' }"
+          />
+        </a>
+      } @else {
+        <a [routerLink]="['/profile', post.username]" class="post-user-link">
+          <p-avatar
+            [image]="post.userProfilePic"
+            shape="circle"
+            size="normal"
+            [style]="{ width: '42px', height: '42px' }"
+          />
+        </a>
+      }
       <div class="post-meta">
-        @if (post.isExternal || post.userDeleted) {
+        @if (post.userDeleted) {
           <span
             class="post-username"
-            [pTooltip]="post.userDeleted ? 'The user has deleted their account' : ''"
+            [pTooltip]="'The user has deleted their account'"
             tooltipPosition="bottom">
             {{ post.username }}
           </span>
+        } @else if (post.isExternal) {
+          <a class="post-username post-username--link"
+             [href]="post.userProfileUrl"
+             target="_blank"
+             rel="noopener noreferrer">
+            {{ post.username }}
+          </a>
         } @else {
           <a class="post-username post-username--link"
              [routerLink]="['/profile', post.username]">
