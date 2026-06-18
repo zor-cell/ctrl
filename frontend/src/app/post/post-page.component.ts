@@ -14,7 +14,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import {Observable, Subscription, catchError, finalize, forkJoin, of, switchMap} from 'rxjs';
+import { Observable, Subscription, catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 
 import { MediaCacheService } from '../core/services/media-cache.service';
 import { previewMediaUrl } from '../core/utils/media-preview-url.utils';
@@ -23,34 +23,30 @@ import { NotificationService } from '../core/services/notification.service';
 import { PublicUserProfile } from '../user/dto/PublicUserProfile';
 import { UserService } from '../user/user.service';
 import { ReportComponent } from '../report/components/report/report.component';
-import {ContentTypeEnum} from '../report/dto/report';
+import { ContentTypeEnum } from '../report/dto/report';
 import { USERNAME_PATTERN, USERNAME_VALIDATION_MESSAGE } from '../user/validators';
 import { PostResponse } from './dto/PostResponse';
 import { PostCaptionFormatPipe } from './post-caption-format.pipe';
 import { TopicResponse } from '../topic/dto/TopicResponse';
 import { PostComposerComponent } from './post-composer.component';
-import { PostDetailDialogComponent} from './components/post-detail-dialog/post-detail-dialog.component';
+import { PostDetailDialogComponent } from './components/post-detail-dialog/post-detail-dialog.component';
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
-import {FollowBadgeComponent} from '../feed/components/follow-badge/follow-badge.component';
-import {RelationshipService} from '../user/relationship.service';
-import {AuthService} from '../auth/auth.service';
-import {Tag} from 'primeng/tag';
-import {FriendRequestEventBusService} from '../user/friend-request-event-bus.service';
-import {Menu} from 'primeng/menu';
-import {Friend} from '../user/dto/Relationship';
-import {Chat, ChatParticipant} from '../chat/models/chat.models';
-import {ChatService} from '../chat/services/chat.service';
-import {Message} from 'primeng/message';
-import {ConfirmationService} from 'primeng/api';
-import {ConfirmDialog} from 'primeng/confirmdialog';
+import { FollowBadgeComponent } from '../feed/components/follow-badge/follow-badge.component';
+import { RelationshipService } from '../user/relationship.service';
+import { AuthService } from '../auth/auth.service';
+import { Tag } from 'primeng/tag';
+import { FriendRequestEventBusService } from '../user/friend-request-event-bus.service';
+import { Menu } from 'primeng/menu';
+import { Friend } from '../user/dto/Relationship';
+import { Chat, ChatParticipant } from '../chat/models/chat.models';
+import { ChatService } from '../chat/services/chat.service';
+import { Message } from 'primeng/message';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
-type ProfileFriendStatus =
-  | 'NONE'
-  | 'FRIEND'
-  | 'PENDING_REQUEST_SENT'
-  | 'PENDING_REQUEST_INCOMING';
+type ProfileFriendStatus = 'NONE' | 'FRIEND' | 'PENDING_REQUEST_SENT' | 'PENDING_REQUEST_INCOMING';
 
 interface SharedPostPayload {
   postId: string;
@@ -173,7 +169,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
       : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
-    const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
+    const bio = this.publicProfileMode()
+      ? this.publicProfile()?.bio?.trim()
+      : this.userService.user()?.bio?.trim();
     return bio && bio.length > 0 ? bio : 'No bio yet.';
   });
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
@@ -635,7 +633,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected onPostDeletedFromDialog(postId: string): void {
     this.revokePostMediaObjectUrl(postId);
     this.revokePostCardMediaUrl(postId);
-    this.myPosts.update(posts => posts.filter(p => p.postId !== postId));
+    this.myPosts.update((posts) => posts.filter((p) => p.postId !== postId));
     this.selectedPostId.set(null);
   }
 
@@ -1165,7 +1163,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
     if (visiblePosts.length !== this.myPosts().length) {
       // Close dialog if the currently open post is no longer visible
       const openId = this.selectedPostId();
-      if (openId && !visiblePosts.some(p => p.postId === openId)) {
+      if (openId && !visiblePosts.some((p) => p.postId === openId)) {
         this.selectedPostId.set(null);
       }
       this.myPosts.set(visiblePosts);
