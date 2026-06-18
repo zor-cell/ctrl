@@ -89,7 +89,7 @@
       } @else if (publicProfileMode()) {
         <div class="post-profile-card__actions">
           @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
-            @if (publicProfileFriendStatus() == 'FRIEND') {
+            @if (publicProfileFriendStatus() === 'FRIEND') {
               <p-button
                 label="Send Message"
                 icon="pi pi-comment"
@@ -97,7 +97,7 @@
                 size="small"
                 (onClick)="openDirectMessage()"
               />
-            } @else if (publicProfileFriendStatus() == 'PENDING_REQUEST_SENT') {
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_SENT') {
               <p-button
                 label="Request Sent"
                 icon="pi pi-clock"
@@ -106,7 +106,7 @@
                 [loading]="friendActionBusy()"
                 (onClick)="cancelProfileFriendRequest()"
               />
-            } @else if (publicProfileFriendStatus() == 'PENDING_REQUEST_INCOMING') {
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_INCOMING') {
               <p-button
                 label="Accept Request"
                 icon="pi pi-check"
