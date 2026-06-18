@@ -173,7 +173,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
       : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
-    const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
+    const bio = this.publicProfileMode()
+      ? this.publicProfile()?.bio?.trim()
+      : this.userService.user()?.bio?.trim();
     return bio && bio.length > 0 ? bio : 'No bio yet.';
   });
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
