@@ -103,6 +103,7 @@ public class FeedService {
     LabelContext labelCtx = labelingService.buildContext(user);
 
     return recommendedPosts.stream()
+        .filter(rp -> !Boolean.TRUE.equals(postReportedByUser.get(rp.getPost().getPostId())))
         .map(
             rp ->
                 feedMapper.toFeedPostResponse(

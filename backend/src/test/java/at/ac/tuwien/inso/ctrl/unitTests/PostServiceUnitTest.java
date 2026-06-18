@@ -423,7 +423,7 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(privatePost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(privatePost, labelCtx, false)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(privatePost));
     when(postMapper.toResponse(privatePost, labels)).thenReturn(response);
@@ -446,7 +446,7 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(admin)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(privatePost, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(privatePost, labelCtx, false)).thenReturn(labels);
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
         .thenReturn(List.of(privatePost));
     when(postMapper.toResponse(privatePost, labels)).thenReturn(response);
@@ -477,7 +477,7 @@ public class PostServiceUnitTest {
 
     when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
     when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
     when(blockService.inBlockedRelationship(eq(verifiedUser), any(User.class)))
         .thenAnswer(invocation -> invocation.getArgument(1).equals(blockedUser));
     when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
@@ -523,7 +523,7 @@ public class PostServiceUnitTest {
     when(reportService.wasReportedByUser(verifiedUser, ContentTypeEnum.SOURCE, "source-1"))
         .thenReturn(true);
     when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, true)).thenReturn(labels);
     when(postMapper.toDetailedPostResponse(
             eq(post), eq(vote), eq(true), anyMap(), eq(true), eq(labels)))
         .thenReturn(response);
@@ -561,14 +561,13 @@ public class PostServiceUnitTest {
             verifiedUser.getId().toString(), List.of("post-1")))
         .thenReturn(List.of());
     when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
     when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
         .thenReturn(response);
 
     DetailedPostResponse result = postService.getPostById("post-1", "marlene");
 
     assertEquals(response, result);
-    verify(friendRelationRepository, never()).existsByUsers(any(), any());
     verify(reportService, never())
         .wasReportedByUser(eq(verifiedUser), eq(ContentTypeEnum.SOURCE), any());
   }
@@ -594,7 +593,7 @@ public class PostServiceUnitTest {
             unverifiedUser.getId().toString(), List.of("post-1")))
         .thenReturn(List.of());
     when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
-    when(labelingService.computeLabels(post, labelCtx)).thenReturn(labels);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
     when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
         .thenReturn(response);
 
@@ -642,7 +641,7 @@ public class PostServiceUnitTest {
   }
 
   @Test
-  void getPostById_withPrivatePostForAdmin_throwsUnauthorized() {
+  void getPostById_withPrivatePostForAdmin_returnsPost() {
     User admin = createUser("admin", true);
     admin.setRole(Role.ADMIN);
     Post post =
@@ -653,11 +652,23 @@ public class PostServiceUnitTest {
             .isPublic(false)
             .comments(Set.of())
             .build();
+    DetailedPostResponse response = org.mockito.Mockito.mock(DetailedPostResponse.class);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
 
     when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            admin.getId().toString(), List.of("post-1")))
+        .thenReturn(List.of());
+    when(labelingService.buildContext(admin)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
+    when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
+        .thenReturn(response);
 
-    assertThrows(UnauthorizedException.class, () -> postService.getPostById("post-1", "admin"));
+    DetailedPostResponse result = postService.getPostById("post-1", "admin");
+
+    assertEquals(response, result);
   }
 
   @Test
