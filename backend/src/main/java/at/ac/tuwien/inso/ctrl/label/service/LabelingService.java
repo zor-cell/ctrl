@@ -6,6 +6,7 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,11 +20,14 @@ public class LabelingService {
 
   private final PostRepository postRepository;
   private final FollowRelationRepository followRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
 
   public LabelContext buildContext(User user) {
     Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
+        user.getId(),
         followRelationRepository.findFollowedIds(user.getId()),
+        friendRelationRepository.findFriendIds(user),
         followRelationRepository.findSecondDegreeIds(user.getId()),
         p95 != null ? p95 : 0,
         LocalDateTime.now());
@@ -64,12 +68,16 @@ public class LabelingService {
       }
     }
 
-    // Extended Network label: User → follows → X → follows → Creator
+    // Extended Network label
     if (post.getUser() != null) {
       UUID creatorId = post.getUser().getId();
-      boolean isSecondDegree = ctx.secondDegreeIds().contains(creatorId);
+      boolean isOwnPost = creatorId.equals(ctx.viewerId());
       boolean isDirectFollow = ctx.followedIds().contains(creatorId);
-      if (isSecondDegree && !isDirectFollow) labels.add(PostLabelType.EXTENDED_NETWORK);
+      boolean isDirectFriend = ctx.friendIds().contains(creatorId);
+      boolean isSecondDegree = ctx.secondDegreeIds().contains(creatorId);
+
+      if (!isOwnPost && !isDirectFollow && !isDirectFriend && isSecondDegree)
+        labels.add(PostLabelType.EXTENDED_NETWORK);
     }
 
     return labels;

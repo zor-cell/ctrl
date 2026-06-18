@@ -55,12 +55,11 @@ export class WhyDialogComponent {
 
     const scale = 100 / 6;
 
-    // Max achievable score given current weights — used to normalise displayed numbers to /100
     const weightSum =
       weights['Interests'] + weights['Recency'] + weights['Source Quality'] +
       weights['Popularity'] + weights['Exploration'] + weights['Topics'];
     const maxAchievable = Math.round(weightSum / 6);
-    // Factor that maps the current max onto 100
+
     const normFactor = maxAchievable > 0 ? 100 / maxAchievable : 1;
 
     const raw = [
@@ -74,7 +73,6 @@ export class WhyDialogComponent {
 
     return raw.map(r => ({
       ...r,
-      // Displayed number scaled to /100 — bar widths (scoreFillPct, maxFillPct) are unchanged
       score: r.score * normFactor,
       maxFillPct: r.weight,
       scoreFillPct: (Math.abs(r.score) / scale) * 100,

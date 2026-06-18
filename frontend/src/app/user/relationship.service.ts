@@ -182,7 +182,6 @@ export class RelationshipService implements OnDestroy {
       tap(blocked => {
         this._blocked.set(blocked);
         this.cacheProfilePictures(blocked);
-        console.log('Blocked users loaded:', blocked);
       })
     );
   }

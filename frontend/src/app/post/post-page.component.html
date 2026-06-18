@@ -60,13 +60,18 @@
 
       @if (canEditProfile()) {
         <div class="post-profile-card__actions">
-          <p-button
-            icon="pi pi-users"
-            ariaLabel="Open community"
-            severity="secondary"
-            [rounded]="true"
-            routerLink="/followed"
-          />
+          <div class="community-btn-wrapper">
+            <p-button
+              icon="pi pi-users"
+              ariaLabel="Open community"
+              severity="secondary"
+              [rounded]="true"
+              routerLink="/followed"
+            />
+            @if (pendingCount() > 0) {
+              <span class="pending-badge" aria-label="{{ pendingCount() }} pending friend requests">{{ pendingCount() }}</span>
+            }
+          </div>
           <p-button
             icon="pi pi-cog"
             ariaLabel="Open profile settings"
@@ -84,52 +89,41 @@
       } @else if (publicProfileMode()) {
         <div class="post-profile-card__actions">
           @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
-            <app-follow-badge
-              class="post-profile-card__follow-action"
-              [username]="actionUsername"
-              [isExternal]="publicProfileFriendStatus() !== 'NONE'"
-              appearance="action"
-            />
-            @switch (publicProfileFriendStatus()) {
-              @case ('FRIEND') {
-                <p-button
-                  label="Remove Friend"
-                  icon="pi pi-user-minus"
-                  severity="secondary"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="removeProfileFriend()"
-                />
-              }
-              @case ('PENDING_REQUEST_INCOMING') {
-                <p-button
-                  label="Accept Request"
-                  icon="pi pi-user-plus"
-                  severity="info"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="acceptProfileFriendRequest()"
-                />
-              }
-              @case ('PENDING_REQUEST_SENT') {
-                <p-button
-                  label="Cancel Request"
-                  icon="pi pi-times"
-                  severity="secondary"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="cancelProfileFriendRequest()"
-                />
-              }
-              @default {
-                <p-button
-                  label="Add Friend"
-                  icon="pi pi-user-plus"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="sendProfileFriendRequest()"
-                />
-              }
+            @if (publicProfileFriendStatus() === 'FRIEND') {
+              <p-button
+                label="Send Message"
+                icon="pi pi-comment"
+                severity="secondary"
+                size="small"
+                (onClick)="openDirectMessage()"
+              />
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_SENT') {
+              <p-button
+                label="Request Sent"
+                icon="pi pi-clock"
+                severity="secondary"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="cancelProfileFriendRequest()"
+              />
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_INCOMING') {
+              <p-button
+                label="Accept Request"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="acceptProfileFriendRequest()"
+              />
+            } @else {
+              <p-button
+                label="Add Friend"
+                icon="pi pi-user-plus"
+                severity="secondary"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="sendProfileFriendRequest()"
+              />
             }
           }
           <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />

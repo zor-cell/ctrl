@@ -71,6 +71,7 @@ export class FeedService {
       })) ?? [],
       explanation:       item.explanation,
       wasReportedByUser: item.wasReportedByUser,
+      userProfileUrl: item.userProfileUrl,
     };
   }
 

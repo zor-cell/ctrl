@@ -203,6 +203,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
     | null = null;
   private pendingChatId: string | null = null;
+  private pendingUsername: string | null = null;
   private readonly hasMoreMessages = signal(true);
 
   protected readonly friends = this.relationshipService.friends;
@@ -321,6 +322,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
         if (chatId) {
           this.pendingChatId = chatId;
+          if (this.chats().length > 0) {
+            this.openPendingChat();
+          }
+        } else if (username) {
+          this.pendingUsername = username;
           if (this.chats().length > 0) {
             this.openPendingChat();
           }
@@ -1492,20 +1498,50 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private openPendingChat(): void {
-    const chatId = this.pendingChatId;
-    if (!chatId || this.pendingSharedPost) {
+    if (this.pendingSharedPost) {
       return;
     }
 
-    const chat = this.chats().find(existingChat => existingChat.chatId === chatId);
-    this.pendingChatId = null;
-    if (!chat) {
+    const chatId = this.pendingChatId;
+    if (chatId) {
+      const chat = this.chats().find(existingChat => existingChat.chatId === chatId);
+      this.pendingChatId = null;
+      if (!chat) {
+        this.clearChatQueryParam();
+        return;
+      }
+
+      this.selectChat(chat);
       this.clearChatQueryParam();
       return;
     }
 
-    this.selectChat(chat);
-    this.clearChatQueryParam();
+    const username = this.pendingUsername;
+    if (username) {
+      this.pendingUsername = null;
+      const existingChat = this.directChatForUsername(username);
+      if (existingChat) {
+        this.selectChat(existingChat);
+        this.clearUserQueryParam();
+        return;
+      }
+
+      this.chatService.createChat({ usernames: [username] })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: chat => {
+            // Don't upsert into the list yet — only add it once the user
+            // actually sends a message (handled via the realtime summary).
+            // This prevents an empty chat from jumping to the top of the list.
+            this.selectChat(chat);
+            this.clearUserQueryParam();
+          },
+          error: () => {
+            this.notificationService.showError('Failed to open chat');
+            this.clearUserQueryParam();
+          },
+        });
+    }
   }
 
   private directChatForUsername(username: string): Chat | null {
@@ -1533,6 +1569,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { chat: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private clearUserQueryParam(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { user: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -1777,7 +1822,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     return Array.from(byGroupKey.values()).sort(
-      (left, right) => this.chatActivityTime(right) - this.chatActivityTime(left),
+      (left, right) => this.compareChatsByActivity(left, right),
     );
   }
 
@@ -1899,7 +1944,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     return Array.from(byOtherUser.values()).sort(
-      (left, right) => this.chatActivityTime(right) - this.chatActivityTime(left),
+      (left, right) => this.compareChatsByActivity(left, right),
     );
   }
 
@@ -1920,6 +1965,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private chatActivityTime(chat: Chat): number {
     const date = chat.lastMessage?.date ?? chat.createdAt;
     return parseBackendDate(date).getTime();
+  }
+
+  private compareChatsByActivity(left: Chat, right: Chat): number {
+    const leftHasMessage = left.lastMessage != null;
+    const rightHasMessage = right.lastMessage != null;
+    if (leftHasMessage !== rightHasMessage) {
+      return leftHasMessage ? -1 : 1;
+    }
+    return this.chatActivityTime(right) - this.chatActivityTime(left);
   }
 
   private handleRealtimeMessage(payload: ChatRealtimePayload): void {

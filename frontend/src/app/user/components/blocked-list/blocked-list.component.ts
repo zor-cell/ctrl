@@ -2,6 +2,7 @@ import {Component, effect, inject, input, signal, ViewChild} from '@angular/core
 import {CommonModule} from '@angular/common';
 import {Button} from 'primeng/button';
 import {Menu, MenuModule} from 'primeng/menu';
+import {Dialog} from 'primeng/dialog';
 import {RelationshipService} from '../../relationship.service';
 import {Router} from '@angular/router';
 import {NotificationService} from '../../../core/services/notification.service';
@@ -13,7 +14,7 @@ import {usernameInitial} from '../../../core/utils/username-initial.utils';
 @Component({
   selector: 'app-blocked-list',
   standalone: true,
-  imports: [CommonModule, Button, MenuModule],
+  imports: [CommonModule, Button, MenuModule, Dialog],
   templateUrl: './blocked-list.component.html',
   styleUrl: './blocked-list.component.scss',
 })
@@ -31,12 +32,14 @@ export class BlockedListComponent {
   profilePictureUrls = signal<Record<string, string>>({});
   failedProfilePictures = signal<Set<string>>(new Set());
   selectedUsername: string | null = null;
+  unblockDialogVisible = signal(false);
+  unblocking = signal(false);
 
   menuItems = [
     {
       label: 'Unblock',
       icon: 'pi pi-user-minus',
-      command: () => this.unblock(),
+      command: () => this.requestUnblock(),
     },
   ];
 
@@ -51,19 +54,40 @@ export class BlockedListComponent {
     this.menu.toggle(event);
   }
 
-  unblock() {
-    if (this.selectedUsername) {
-      this.relationshipService.unblock(this.selectedUsername).subscribe({
-        next: () => {
-          this.notificationService.showSuccess(`Unblocked ${this.selectedUsername}`);
-          this.eventBus.unblock();
-          this.relationshipService.loadBlocked().subscribe();
-        },
-        error: () => {
-          this.notificationService.showError(`Failed to unblock ${this.selectedUsername}`);
-        },
-      });
+  requestUnblock(): void {
+    this.unblockDialogVisible.set(true);
+  }
+
+  cancelUnblock(): void {
+    if (!this.unblocking()) {
+      this.unblockDialogVisible.set(false);
     }
+  }
+
+  onUnblockDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelUnblock();
+      return;
+    }
+    this.unblockDialogVisible.set(true);
+  }
+
+  confirmUnblock(): void {
+    if (!this.selectedUsername || this.unblocking()) return;
+    this.unblocking.set(true);
+    this.relationshipService.unblock(this.selectedUsername).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Unblocked ${this.selectedUsername}`);
+        this.eventBus.unblock();
+        this.relationshipService.loadBlocked().subscribe();
+        this.unblockDialogVisible.set(false);
+        this.unblocking.set(false);
+      },
+      error: () => {
+        this.notificationService.showError(`Failed to unblock ${this.selectedUsername}`);
+        this.unblocking.set(false);
+      },
+    });
   }
 
   navigateToProfile(username: string) {
@@ -128,4 +152,3 @@ export class BlockedListComponent {
 
 
 }
-

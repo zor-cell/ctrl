@@ -150,6 +150,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private readonly rel = inject(RelationshipService);
   protected readonly friends = this.rel.friends;
+  protected readonly pendingCount = computed(() => this.relationshipService.pendingRequestCount());
   private readonly profileFriendStatusOverride = signal<{
     username: string;
     status: ProfileFriendStatus;
@@ -173,7 +174,9 @@ export class PostPageComponent implements OnDestroy, OnInit {
       : (this.avatarPreviewUrl() ?? this.profilePictureObjectUrl() ?? null),
   );
   protected readonly userBio = computed(() => {
-    const bio = (this.publicProfile()?.bio ?? this.userService.user()?.bio)?.trim();
+    const bio = this.publicProfileMode()
+      ? this.publicProfile()?.bio?.trim()
+      : this.userService.user()?.bio?.trim();
     return bio && bio.length > 0 ? bio : 'No bio yet.';
   });
   protected readonly publicProfileMode = computed(() => this.publicProfileUsername() !== null);
@@ -322,6 +325,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   ngOnInit() {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
     this.loadTopics();
+    this.relationshipService.loadPendingRequestCount().subscribe();
 
     this.routeParamsSubscription = this.route.paramMap.subscribe((params) => {
       this.loadProfileForRoute(params.get('username'));
@@ -459,6 +463,36 @@ export class PostPageComponent implements OnDestroy, OnInit {
           this.notificationService.showError('Failed to remove friend');
         },
       });
+  }
+
+  protected openDirectMessage(): void {
+    const username = this.profileActionUsername();
+    if (!username || this.publicProfileFriendStatus() !== 'FRIEND') {
+      return;
+    }
+
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
+
+    this.chatService.getChats().subscribe({
+      next: (chats) => {
+        const directChat = chats.find((chat) => {
+          if (chat.groupChat) return false;
+          return chat.participants.some(
+            (p) => p.username.toLowerCase() === username.toLowerCase() &&
+              (currentUserId ? p.id.toLowerCase() !== currentUserId : true),
+          );
+        });
+
+        const queryParams = directChat
+          ? { chat: directChat.chatId }
+          : { user: username };
+
+        this.router.navigate(['/chat'], { queryParams });
+      },
+      error: () => {
+        this.router.navigate(['/chat'], { queryParams: { user: username } });
+      },
+    });
   }
 
   protected onPostCreated() {

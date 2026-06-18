@@ -2,6 +2,7 @@ import { Component, effect, inject, input, signal, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Menu, MenuModule } from 'primeng/menu';
+import { Dialog } from 'primeng/dialog';
 import { Router } from '@angular/router';
 
 import { RelationshipService } from '../../relationship.service';
@@ -14,7 +15,7 @@ import { Friend } from '../../dto/Relationship';
 @Component({
   selector: 'app-friend-list',
   standalone: true,
-  imports: [CommonModule, Button, MenuModule],
+  imports: [CommonModule, Button, MenuModule, Dialog],
   templateUrl: './friend-list.component.html',
   styleUrl: './friend-list.component.scss',
 })
@@ -34,12 +35,14 @@ export class FriendListComponent {
   profilePictureUrls = signal<Record<string, string>>({});
   failedProfilePictures = signal<Set<string>>(new Set());
   selectedUsername: string | null = null;
+  unfriendDialogVisible = signal(false);
+  removing = signal(false);
 
   menuItems = [
     {
       label: 'Remove Friend',
       icon: 'pi pi-user-minus',
-      command: () => this.removeFriend(),
+      command: () => this.requestUnfriend(),
     },
   ];
 
@@ -54,19 +57,40 @@ export class FriendListComponent {
     this.menu.toggle(event);
   }
 
-  removeFriend() {
-    if (this.selectedUsername) {
-      this.relationshipService.unfriend(this.selectedUsername).subscribe({
-        next: () => {
-          this.notificationService.showSuccess(`Removed ${this.selectedUsername} from friends`);
-          this.eventBus.unfollowed();
-          this.relationshipService.loadFriends().subscribe();
-        },
-        error: () => {
-          this.notificationService.showError('Failed to remove friend');
-        },
-      });
+  requestUnfriend(): void {
+    this.unfriendDialogVisible.set(true);
+  }
+
+  cancelUnfriend(): void {
+    if (!this.removing()) {
+      this.unfriendDialogVisible.set(false);
     }
+  }
+
+  onUnfriendDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelUnfriend();
+      return;
+    }
+    this.unfriendDialogVisible.set(true);
+  }
+
+  confirmUnfriend(): void {
+    if (!this.selectedUsername || this.removing()) return;
+    this.removing.set(true);
+    this.relationshipService.unfriend(this.selectedUsername).subscribe({
+      next: () => {
+        this.notificationService.showSuccess(`Removed ${this.selectedUsername} from friends`);
+        this.eventBus.unfollowed();
+        this.relationshipService.loadFriends().subscribe();
+        this.unfriendDialogVisible.set(false);
+        this.removing.set(false);
+      },
+      error: () => {
+        this.notificationService.showError('Failed to remove friend');
+        this.removing.set(false);
+      },
+    });
   }
 
   navigateToProfile(username: string) {
