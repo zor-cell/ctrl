@@ -1,8 +1,9 @@
-import { inject, effect, Injectable } from "@angular/core";
-import { AuthService } from "../../auth/auth.service";
-import { fromEvent, Observable, retry, Subscription, switchMap, timer } from "rxjs";
-import { HttpClient } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
+import { inject, effect, Injectable } from '@angular/core';
+import { AuthService } from '../../auth/auth.service';
+import { EMPTY, fromEvent, Observable, Subscription, catchError, switchMap, timer } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { SILENT_ERROR_CONTEXT } from '../interceptors';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
@@ -23,7 +24,7 @@ export class SessionService {
 
       onCleanup(() => {
         this.stopHeartbeat();
-      })
+      });
     });
 
     fromEvent(document, 'visibilitychange').subscribe(() => {
@@ -39,10 +40,18 @@ export class SessionService {
     if (this.heartbeat$) return;
 
     if (this.authService.isAuthenticated()) {
-      this.heartbeat$ = timer(this.INTERVAL_MS, this.INTERVAL_MS).pipe(
-        switchMap(() => this.sendHeartbeat()),
-        retry({ count: 3, delay: 5000 }),
-      ).subscribe();
+      this.heartbeat$ = timer(this.INTERVAL_MS, this.INTERVAL_MS)
+        .pipe(
+          switchMap(() => this.sendHeartbeat()),
+          catchError((error: unknown) => {
+            if (error instanceof HttpErrorResponse) {
+              this.stopHeartbeat();
+            }
+
+            return EMPTY;
+          }),
+        )
+        .subscribe();
     }
   }
 
@@ -52,6 +61,12 @@ export class SessionService {
   }
 
   private sendHeartbeat(): Observable<void> {
-    return this.httpClient.post<void>(environment.apiUrl + '/session/heartbeat', {});
+    return this.httpClient.post<void>(
+      environment.apiUrl + '/session/heartbeat',
+      {},
+      {
+        context: SILENT_ERROR_CONTEXT,
+      },
+    );
   }
 }

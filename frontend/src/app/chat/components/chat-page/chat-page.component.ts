@@ -45,11 +45,43 @@ import { ChatGroupCreateDialogComponent } from '../chat-group-create-dialog/chat
 import { ChatMembersDialogComponent } from '../chat-members-dialog/chat-members-dialog.component';
 import { PostDetailDialogComponent } from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
 
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥'];
-const MORE_REACTION_EMOJIS = [
-  '👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '👏', '🙏', '💯', '✨',
-  '😄', '😁', '🥳', '😍', '🤔', '😎', '😭', '😅', '🙌', '💪', '✅', '👀',
-  '🤯', '😬', '🤝', '😴', '🤮', '🤩', '😇', '😱', '🤗', '😤', '🫶', '💀',
+const REACTION_EMOJIS = [
+  '👍',
+  '❤️',
+  '😂',
+  '😮',
+  '😢',
+  '😡',
+  '🎉',
+  '🔥',
+  '👏',
+  '🙏',
+  '💯',
+  '✨',
+  '😄',
+  '😁',
+  '🥳',
+  '😍',
+  '🤔',
+  '😎',
+  '😭',
+  '😅',
+  '🙌',
+  '💪',
+  '✅',
+  '👀',
+  '🤯',
+  '😬',
+  '🤝',
+  '😴',
+  '🤮',
+  '🤩',
+  '😇',
+  '😱',
+  '🤗',
+  '😤',
+  '🫶',
+  '💀',
 ];
 const MAX_GROUP_MEMBERS = 50;
 const MESSAGE_PAGE_SIZE = 30;
@@ -128,6 +160,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly loadingOlderMessages = signal(false);
   protected readonly sendingMessage = signal(false);
   protected readonly friendDropdownOpen = signal(false);
+  protected readonly directChatsExpanded = signal(true);
+  protected readonly groupChatsExpanded = signal(true);
   protected readonly groupDialogVisible = signal(false);
   protected readonly membersDialogVisible = signal(false);
   protected readonly groupConfirmationAction = signal<GroupConfirmationAction | null>(null);
@@ -135,19 +169,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly addMemberSearch = signal('');
   protected readonly selectedAddMemberUsernames = signal<string[]>([]);
   protected readonly addingMembers = signal(false);
-  protected readonly reactionPickerMessageId = signal<string | null>(null);
+  protected readonly reactionBarMessageId = signal<string | null>(null);
   protected readonly hoveredMessageId = signal<string | null>(null);
   protected readonly loadingMembersDialog = signal(false);
   protected readonly sharedPostDraft = signal<SharedPostPayload | null>(null);
   protected readonly selectedChatPostId = signal<string | null>(null);
 
   protected readonly reactionEmojis = REACTION_EMOJIS;
-  protected readonly moreReactionEmojis = MORE_REACTION_EMOJIS;
   protected readonly maxGroupMembers = MAX_GROUP_MEMBERS;
   protected readonly avatarUrlFn = (id: string) => this.avatarUrl(id);
   protected readonly initialForFn = (user: ChatParticipant | Friend) => this.initialFor(user);
-  protected readonly isGroupFriendSelectedFn = (username: string) => this.isGroupFriendSelected(username);
-  protected readonly canSelectGroupFriendFn = (username: string) => this.canSelectGroupFriend(username);
+  protected readonly isGroupFriendSelectedFn = (username: string) =>
+    this.isGroupFriendSelected(username);
+  protected readonly canSelectGroupFriendFn = (username: string) =>
+    this.canSelectGroupFriend(username);
   protected readonly isGroupOwnerFn = (participant: ChatParticipant, chat: Chat) =>
     this.isGroupOwner(participant, chat);
   protected readonly isFriendParticipantFn = (participant: ChatParticipant) =>
@@ -170,7 +205,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly avatarUrls = signal<Record<string, string>>({});
   private readonly avatarRefs = signal<Record<string, string | null>>({});
   protected readonly groupImageUrls = signal<Record<string, string>>({});
+  private readonly groupImageRefs = signal<Record<string, string | null>>({});
+  private readonly failedGroupImageUrls = signal<Record<string, true>>({});
   protected readonly sharedPostMediaUrls = signal<Record<string, string>>({});
+  private readonly failedSharedPostAvatarUrls = signal<Record<string, true>>({});
   private readonly failedSharedPostMediaUrls = signal<Record<string, true>>({});
   private readonly pendingSharedPostMediaKeys = new Set<string>();
   protected readonly groupConfirmationTitle = computed(() => {
@@ -195,13 +233,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     if (action === 'deleteDirect') return 'Delete chat';
     return 'Leave group';
   });
-  private pendingSharedPost:
-    | {
+  private pendingSharedPost: {
     username?: string;
     chatId?: string;
     post: SharedPostPayload;
-  }
-    | null = null;
+  } | null = null;
   private pendingChatId: string | null = null;
   private pendingUsername: string | null = null;
   private readonly hasMoreMessages = signal(true);
@@ -224,28 +260,28 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly filteredFriends = computed(() => {
     const query = this.normalizedSearchQuery();
     return this.friends()
-      .filter(friend => this.matchesFriend(friend, query))
+      .filter((friend) => this.matchesFriend(friend, query))
       .sort((left, right) => this.compareFriendsByChatAvailability(left, right));
   });
 
   protected readonly filteredChats = computed(() => {
     const query = this.normalizedSearchQuery();
-    return this.applyChatListDedupe(this.chats().filter(chat => this.matchesChat(chat, query)));
+    return this.applyChatListDedupe(this.chats().filter((chat) => this.matchesChat(chat, query)));
   });
 
   protected readonly filteredDirectChats = computed(() =>
     this.dedupeDirectChats(
-      this.filteredChats().filter(chat => !chat.groupChat && this.isValidDirectChat(chat)),
+      this.filteredChats().filter((chat) => !chat.groupChat && this.isValidDirectChat(chat)),
     ),
   );
 
   protected readonly filteredGroupChats = computed(() =>
-    this.dedupeGroupChats(this.filteredChats().filter(chat => chat.groupChat)),
+    this.dedupeGroupChats(this.filteredChats().filter((chat) => chat.groupChat)),
   );
 
   protected readonly filteredGroupFriends = computed(() => {
     const query = this.groupMemberSearch().trim().toLowerCase();
-    return this.friends().filter(friend => this.matchesFriend(friend, query));
+    return this.friends().filter((friend) => this.matchesFriend(friend, query));
   });
 
   protected readonly filteredAddMemberFriends = computed(() => {
@@ -254,12 +290,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    const memberUsernames = new Set(chat.participants.map(participant => participant.username));
+    const memberUsernames = new Set(chat.participants.map((participant) => participant.username));
     const query = this.addMemberSearch().trim().toLowerCase();
 
     return this.friends()
-      .filter(friend => !memberUsernames.has(friend.username))
-      .filter(friend => this.matchesFriend(friend, query));
+      .filter((friend) => !memberUsernames.has(friend.username))
+      .filter((friend) => this.matchesFriend(friend, query));
   });
 
   protected readonly selectedAddMemberCountForDialog = computed(() => {
@@ -279,7 +315,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     return chat.participants
-      .filter(participant => !this.isDeletedParticipant(participant))
+      .filter((participant) => !this.isDeletedParticipant(participant))
       .sort((left, right) => {
         const leftIsOwner = this.isGroupOwner(left, chat);
         const rightIsOwner = this.isGroupOwner(right, chat);
@@ -305,40 +341,44 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.route.queryParamMap
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(params => {
-        const username = params.get('user');
-        const chatId = params.get('chat');
-        const post = this.readSharedPostFromHistory();
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const username = params.get('user');
+      const chatId = params.get('chat');
+      const post = this.readSharedPostFromHistory();
 
-        if ((username || chatId) && post) {
-          this.pendingSharedPost = { username: username ?? undefined, chatId: chatId ?? undefined, post };
-          if (this.chats().length > 0) {
-            this.openPendingSharedPostChat();
-          }
-          return;
+      if ((username || chatId) && post) {
+        this.pendingSharedPost = {
+          username: username ?? undefined,
+          chatId: chatId ?? undefined,
+          post,
+        };
+        if (this.chats().length > 0) {
+          this.openPendingSharedPostChat();
         }
+        return;
+      }
 
-        if (chatId) {
-          this.pendingChatId = chatId;
-          if (this.chats().length > 0) {
-            this.openPendingChat();
-          }
-        } else if (username) {
-          this.pendingUsername = username;
-          if (this.chats().length > 0) {
-            this.openPendingChat();
-          }
+      if (chatId) {
+        this.pendingChatId = chatId;
+        if (this.chats().length > 0) {
+          this.openPendingChat();
         }
-      });
+      } else if (username) {
+        this.pendingUsername = username;
+        if (this.chats().length > 0) {
+          this.openPendingChat();
+        }
+      }
+    });
 
     this.loadFriends();
     this.loadBlockedUsers();
     this.loadChats();
-    this.chatRealtimeBridge.setMessageHandler(payload => this.handleRealtimeMessage(payload));
-    this.chatRealtimeBridge.setChatListHandler(chat => this.handleRealtimeChatSummary(chat));
-    this.chatRealtimeBridge.setChatRemovedHandler(chatId => this.handleRealtimeChatRemoved(chatId));
+    this.chatRealtimeBridge.setMessageHandler((payload) => this.handleRealtimeMessage(payload));
+    this.chatRealtimeBridge.setChatListHandler((chat) => this.handleRealtimeChatSummary(chat));
+    this.chatRealtimeBridge.setChatRemovedHandler((chatId) =>
+      this.handleRealtimeChatRemoved(chatId),
+    );
     this.chatRealtimeBridge.ensureConnected();
     void this.syncRealtimeSubscription();
   }
@@ -386,10 +426,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.chatService.createChat({ usernames: [friend.username] })
+    this.chatService
+      .createChat({ usernames: [friend.username] })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: chat => {
+        next: (chat) => {
           this.searchQuery.set('');
           this.friendDropdownOpen.set(false);
           this.upsertChat(chat);
@@ -400,9 +441,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected directChatFor(friend: Friend): Chat | null {
-    const matches = this.chats().filter(chat =>
-      !chat.groupChat
-      && chat.participants.some(participant => participant.username === friend.username)
+    const matches = this.chats().filter(
+      (chat) =>
+        !chat.groupChat &&
+        chat.participants.some((participant) => participant.username === friend.username),
     );
 
     return this.pickLatestDirectChat(matches);
@@ -425,13 +467,25 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected selectChat(chat: Chat): void {
     const normalizedChat = this.normalizeChat(chat);
     this.friendDropdownOpen.set(false);
-    this.reactionPickerMessageId.set(null);
+    this.reactionBarMessageId.set(null);
     this.messages.set([]);
     this.hasMoreMessages.set(true);
     this.loadingOlderMessages.set(false);
     this.selectedChat.set(normalizedChat);
     this.chatRealtimeBridge.watchChat(normalizedChat.chatId);
     this.loadMessages(normalizedChat.chatId);
+  }
+
+  protected backToChatList(): void {
+    this.selectedChat.set(null);
+    this.messages.set([]);
+    this.reactionBarMessageId.set(null);
+    this.chatRealtimeBridge.unwatchChat();
+    this.router.navigate([], {
+      queryParams: { chat: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected onMessageListScroll(): void {
@@ -523,15 +577,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const optimisticChat = this.upsertChat({
       ...chat,
       participants: chat.participants.filter(
-        member => this.normalizeId(member.id) !== this.normalizeId(participant.id)
+        (member) => this.normalizeId(member.id) !== this.normalizeId(participant.id),
       ),
     });
     this.selectedChat.set(optimisticChat);
 
-    this.chatService.removeMember(chat.chatId, participant.id)
+    this.chatService
+      .removeMember(chat.chatId, participant.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: updatedChat => {
+        next: (updatedChat) => {
           const normalizedChat = this.upsertChat(updatedChat);
           if (this.selectedChat()?.chatId === normalizedChat.chatId) {
             this.selectedChat.set(normalizedChat);
@@ -624,12 +679,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected toggleAddMemberFriend(username: string): void {
-    this.selectedAddMemberUsernames.update(usernames =>
+    this.selectedAddMemberUsernames.update((usernames) =>
       usernames.includes(username)
-        ? usernames.filter(selectedUsername => selectedUsername !== username)
+        ? usernames.filter((selectedUsername) => selectedUsername !== username)
         : this.canSelectAdditionalMember()
           ? [...usernames, username]
-          : usernames
+          : usernames,
     );
   }
 
@@ -639,18 +694,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    return this.activeParticipantCount(chat) + this.selectedAddMemberUsernames().length
-      < MAX_GROUP_MEMBERS;
+    return (
+      this.activeParticipantCount(chat) + this.selectedAddMemberUsernames().length <
+      MAX_GROUP_MEMBERS
+    );
   }
 
   protected canAddMembersToGroup(): boolean {
     const chat = this.selectedChat();
     const selectedCount = this.selectedAddMemberUsernames().length;
     return Boolean(
-      chat?.groupChat
-      && selectedCount > 0
-      && this.activeParticipantCount(chat) + selectedCount <= MAX_GROUP_MEMBERS
-      && !this.addingMembers()
+      chat?.groupChat &&
+      selectedCount > 0 &&
+      this.activeParticipantCount(chat) + selectedCount <= MAX_GROUP_MEMBERS &&
+      !this.addingMembers(),
     );
   }
 
@@ -662,13 +719,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.addingMembers.set(true);
-    this.chatService.addMembers(chat.chatId, usernames)
+    this.chatService
+      .addMembers(chat.chatId, usernames)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.addingMembers.set(false))
+        finalize(() => this.addingMembers.set(false)),
       )
       .subscribe({
-        next: updatedChat => {
+        next: (updatedChat) => {
           this.resetAddMemberSelection();
           const normalizedChat = this.upsertChat(updatedChat);
           this.selectedChat.set(normalizedChat);
@@ -704,9 +762,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const participantUsername = participant.username.toLowerCase();
     const participantId = this.normalizeId(participant.id);
-    return this.friends().some(friend =>
-      friend.username.toLowerCase() === participantUsername
-      || this.normalizeId(friend.id) === participantId
+    return this.friends().some(
+      (friend) =>
+        friend.username.toLowerCase() === participantUsername ||
+        this.normalizeId(friend.id) === participantId,
     );
   }
 
@@ -719,9 +778,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected canOpenParticipantProfile(participant: ChatParticipant | null): boolean {
-    return !!participant
-      && !this.isDeletedParticipant(participant)
-      && !this.isBlockedParticipant(participant);
+    return (
+      !!participant &&
+      !this.isDeletedParticipant(participant) &&
+      !this.isBlockedParticipant(participant)
+    );
   }
 
   protected participantProfileTooltip(participant: ChatParticipant): string {
@@ -737,7 +798,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected groupImageUrl(chat: Chat): string | null {
-    return this.groupImageUrls()[chat.chatId] ?? null;
+    const url = this.groupImageUrls()[chat.chatId] ?? null;
+    return url && !this.failedGroupImageUrls()[url] ? url : null;
+  }
+
+  protected onGroupImageError(chat: Chat, imageUrl: string): void {
+    this.failedGroupImageUrls.update((urls) => ({ ...urls, [imageUrl]: true }));
+    this.groupImageUrls.update((urls) => {
+      const remaining = { ...urls };
+      delete remaining[chat.chatId];
+      return remaining;
+    });
+    this.loadGroupImage(chat);
   }
 
   protected otherParticipant(chat: Chat): ChatParticipant | null {
@@ -752,7 +824,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const currentUserId = this.userService.user()?.id;
     const currentUsername = this.currentUsername()?.toLowerCase();
     const others = participants.filter(
-      participant => !this.isCurrentParticipant(participant, currentUserId, currentUsername),
+      (participant) => !this.isCurrentParticipant(participant, currentUserId, currentUsername),
     );
 
     return others[0] ?? null;
@@ -832,18 +904,20 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected toggleGroupFriend(username: string): void {
-    this.selectedGroupUsernames.update(usernames =>
+    this.selectedGroupUsernames.update((usernames) =>
       usernames.includes(username)
-        ? usernames.filter(selectedUsername => selectedUsername !== username)
+        ? usernames.filter((selectedUsername) => selectedUsername !== username)
         : usernames.length + 1 < MAX_GROUP_MEMBERS
           ? [...usernames, username]
-          : usernames
+          : usernames,
     );
   }
 
   protected canSelectGroupFriend(username: string): boolean {
-    return this.isGroupFriendSelected(username)
-      || this.selectedGroupUsernames().length + 1 < MAX_GROUP_MEMBERS;
+    return (
+      this.isGroupFriendSelected(username) ||
+      this.selectedGroupUsernames().length + 1 < MAX_GROUP_MEMBERS
+    );
   }
 
   protected selectedGroupMemberCount(): number {
@@ -855,9 +929,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected canCreateGroup(): boolean {
-    return this.isGroupNameValid()
-      && this.selectedGroupUsernames().length > 0
-      && this.selectedGroupMemberCount() <= MAX_GROUP_MEMBERS;
+    return (
+      this.isGroupNameValid() &&
+      this.selectedGroupUsernames().length > 0 &&
+      this.selectedGroupMemberCount() <= MAX_GROUP_MEMBERS
+    );
   }
 
   protected createGroup(): void {
@@ -868,17 +944,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.chatService.createChat({ name, usernames })
+    this.chatService
+      .createChat({ name, usernames })
       .pipe(
-        switchMap(chat =>
-          imageFile
-            ? this.chatService.uploadGroupImage(chat.chatId, imageFile)
-            : of(chat)
+        switchMap((chat) =>
+          imageFile ? this.chatService.uploadGroupImage(chat.chatId, imageFile) : of(chat),
         ),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
       .subscribe({
-        next: chat => {
+        next: (chat) => {
           this.closeGroupDialog();
           this.upsertChat(chat);
           this.selectChat(chat);
@@ -894,10 +969,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.groupActionInProgress.set(true);
-    this.chatService.deleteChat(chat.chatId)
+    this.chatService
+      .deleteChat(chat.chatId)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.groupActionInProgress.set(false))
+        finalize(() => this.groupActionInProgress.set(false)),
       )
       .subscribe({
         next: () => {
@@ -915,10 +991,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.groupActionInProgress.set(true);
-    this.chatService.leaveChat(chat.chatId)
+    this.chatService
+      .leaveChat(chat.chatId)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.groupActionInProgress.set(false))
+        finalize(() => this.groupActionInProgress.set(false)),
       )
       .subscribe({
         next: () => {
@@ -936,10 +1013,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.groupActionInProgress.set(true);
-    this.chatService.leaveChat(chat.chatId)
+    this.chatService
+      .leaveChat(chat.chatId)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.groupActionInProgress.set(false))
+        finalize(() => this.groupActionInProgress.set(false)),
       )
       .subscribe({
         next: () => {
@@ -971,8 +1049,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const currentUserId = this.userService.user()?.id;
     const currentUserIsTarget = currentUserId
       ? message.systemTargets.some(
-        target => this.normalizeId(target.id) === this.normalizeId(currentUserId),
-      )
+          (target) => this.normalizeId(target.id) === this.normalizeId(currentUserId),
+        )
       : false;
 
     switch (message.systemEvent) {
@@ -985,17 +1063,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         }
         return `${actorLabel} added ${this.formatTargetList(message.systemTargets)}`;
       case 'MEMBER_REMOVED': {
-        const removed = message.systemTargets.length > 0
-          ? this.formatTargetList(message.systemTargets)
-          : 'a member';
-        return message.own
-          ? `You removed ${removed}`
-          : `${actorLabel} removed ${removed}`;
+        const removed =
+          message.systemTargets.length > 0
+            ? this.formatTargetList(message.systemTargets)
+            : 'a member';
+        return message.own ? `You removed ${removed}` : `${actorLabel} removed ${removed}`;
       }
       case 'MEMBER_LEFT':
-        return message.own
-          ? 'You left the group'
-          : `${actorLabel} left the group`;
+        return message.own ? 'You left the group' : `${actorLabel} left the group`;
       default:
         return message.content;
     }
@@ -1011,7 +1086,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const currentUserId = this.userService.user()?.id;
-    const labels = targets.map(target => {
+    const labels = targets.map((target) => {
       if (currentUserId && this.normalizeId(target.id) === this.normalizeId(currentUserId)) {
         return 'you';
       }
@@ -1034,11 +1109,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.chatService.reactToMessage(chat.chatId, message.messageId, emoji)
+    this.chatService
+      .reactToMessage(chat.chatId, message.messageId, emoji)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: updatedMessage => {
-          this.reactionPickerMessageId.set(null);
+        next: (updatedMessage) => {
+          this.reactionBarMessageId.set(null);
           this.hoveredMessageId.set(null);
           this.updateMessageInState(updatedMessage);
         },
@@ -1046,26 +1122,42 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  protected toggleMoreReactionPicker(message: ChatMessage, event: MouseEvent): void {
+  protected toggleReactionBar(message: ChatMessage, event: MouseEvent): void {
     event.stopPropagation();
     this.hoveredMessageId.set(message.messageId);
-    this.reactionPickerMessageId.update(messageId =>
-      messageId === message.messageId ? null : message.messageId
+    this.reactionBarMessageId.update((messageId) =>
+      messageId === message.messageId ? null : message.messageId,
     );
   }
 
-  protected isMoreReactionPickerOpen(message: ChatMessage): boolean {
-    return this.reactionPickerMessageId() === message.messageId;
+  protected isReactionBarOpen(message: ChatMessage): boolean {
+    return this.reactionBarMessageId() === message.messageId;
+  }
+
+  protected reactionEmojisFor(message: ChatMessage): string[] {
+    const activeEmojis = message.reactions
+      .filter((reaction) => reaction.reactedByCurrentUser)
+      .map((reaction) => reaction.emoji)
+      .filter((emoji) => REACTION_EMOJIS.includes(emoji));
+
+    if (activeEmojis.length === 0) {
+      return this.reactionEmojis;
+    }
+
+    return [
+      ...activeEmojis,
+      ...this.reactionEmojis.filter((emoji) => !activeEmojis.includes(emoji)),
+    ];
   }
 
   @HostListener('document:click')
   protected closeMoreReactionPicker(): void {
-    this.reactionPickerMessageId.set(null);
+    this.reactionBarMessageId.set(null);
   }
 
   protected hasReactedWith(message: ChatMessage, emoji: string): boolean {
-    return message.reactions.some(reaction =>
-      reaction.emoji === emoji && reaction.reactedByCurrentUser
+    return message.reactions.some(
+      (reaction) => reaction.emoji === emoji && reaction.reactedByCurrentUser,
     );
   }
 
@@ -1086,7 +1178,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const chat = this.selectedChat();
     const note = this.messageText().trim();
     const sharedPost = this.sharedPostDraft();
-    if (!chat || this.isDirectChatReadOnly(chat) || (!note && !sharedPost) || this.sendingMessage()) {
+    if (
+      !chat ||
+      this.isDirectChatReadOnly(chat) ||
+      (!note && !sharedPost) ||
+      this.sendingMessage()
+    ) {
       return;
     }
 
@@ -1094,16 +1191,17 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     this.messageText.set('');
     this.sharedPostDraft.set(null);
 
-    this.chatService.sendMessage(chat.chatId, {
-      content: note,
-      postIdToShare: sharedPost?.postId ?? null,
-    })
+    this.chatService
+      .sendMessage(chat.chatId, {
+        content: note,
+        postIdToShare: sharedPost?.postId ?? null,
+      })
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.sendingMessage.set(false))
+        finalize(() => this.sendingMessage.set(false)),
       )
       .subscribe({
-        next: message => {
+        next: (message) => {
           const normalizedMessage = this.normalizeMessage(message);
           this.loadSharedPostMedia(normalizedMessage.sharedPost);
           this.appendMessageIfMissing(normalizedMessage);
@@ -1118,7 +1216,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected sendMessageOnEnter(event: KeyboardEvent): void {
-    const isEnterKey = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter';
+    const isEnterKey =
+      event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter';
     if (!isEnterKey || event.shiftKey) {
       return;
     }
@@ -1139,12 +1238,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
         note: message.content,
       };
       this.ensureSharedPostPayloadMedia(parsed.post);
+      this.ensureSharedPostAuthorAvatar(parsed.post);
       return parsed;
     }
 
     const parsed = this.parseSharedPostContent(message.content);
     if (parsed) {
       this.ensureSharedPostPayloadMedia(parsed.post);
+      this.ensureSharedPostAuthorAvatar(parsed.post);
     }
     return parsed;
   }
@@ -1187,7 +1288,19 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const profileUserId = this.sharedPostAuthorUserId(sharedPost.post);
-    return profileUserId ? this.avatarUrl(profileUserId) : null;
+    const cachedAvatarUrl = profileUserId ? this.avatarUrl(profileUserId) : null;
+    return cachedAvatarUrl && !this.failedSharedPostAvatarUrls()[cachedAvatarUrl]
+      ? cachedAvatarUrl
+      : null;
+  }
+
+  protected onSharedPostAuthorAvatarError(sharedPost: ParsedSharedPost, avatarUrl: string): void {
+    this.failedSharedPostAvatarUrls.update((urls) => ({ ...urls, [avatarUrl]: true }));
+
+    const profileUserId = this.sharedPostAuthorUserId(sharedPost.post);
+    if (profileUserId && sharedPost.post.profilePicture) {
+      this.loadAvatar(profileUserId, sharedPost.post.profilePicture);
+    }
   }
 
   protected sharedPostMediaUrl(sharedPost: ParsedSharedPost): string | null {
@@ -1204,16 +1317,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected sharedPostHasMediaSlot(sharedPost: ParsedSharedPost): boolean {
-    return this.canViewSharedPost(sharedPost)
-      && Boolean(
-        sharedPost.post.mediaRef
-        || sharedPost.post.mediaUrl
-        || this.resolvedSharedPostMediaUrl(sharedPost.post),
-      );
+    return (
+      this.canViewSharedPost(sharedPost) &&
+      Boolean(
+        sharedPost.post.mediaRef ||
+        sharedPost.post.mediaUrl ||
+        this.resolvedSharedPostMediaUrl(sharedPost.post),
+      )
+    );
   }
 
   protected onSharedPostMediaError(sharedPost: ParsedSharedPost, mediaUrl: string): void {
-    this.failedSharedPostMediaUrls.update(urls => ({ ...urls, [mediaUrl]: true }));
+    this.failedSharedPostMediaUrls.update((urls) => ({ ...urls, [mediaUrl]: true }));
     this.ensureSharedPostPayloadMedia(sharedPost.post);
   }
 
@@ -1242,8 +1357,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     // Mark the deleted post as REMOVED in all messages so the template shows
     // the "Post unavailable" state without requiring a full reload.
-    this.messages.update(messages =>
-      messages.map(message => {
+    this.messages.update((messages) =>
+      messages.map((message) => {
         if (!message.sharedPost || message.sharedPost.postId !== postId) {
           return message;
         }
@@ -1255,7 +1370,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
             unavailableReason: 'REMOVED' as const,
           },
         };
-      })
+      }),
     );
   }
 
@@ -1285,10 +1400,13 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected messagePreviewForMessage(message: ChatMessage): string {
     if (message.sharedPost) {
-      return message.content || `Shared post from ${this.sharedPostAuthorName({
-        post: this.sharedPostPayloadFromResponse(message.sharedPost),
-        note: '',
-      })}`;
+      return (
+        message.content ||
+        `Shared post from ${this.sharedPostAuthorName({
+          post: this.sharedPostPayloadFromResponse(message.sharedPost),
+          note: '',
+        })}`
+      );
     }
 
     return this.messagePreviewForContent(message.content);
@@ -1363,13 +1481,16 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const currentUsername = currentUser.username.toLowerCase();
     return [post.profileUsername, post.username]
       .filter((username): username is string => typeof username === 'string')
-      .some(username => username.replace(/^@/, '').toLowerCase() === currentUsername);
+      .some((username) => username.replace(/^@/, '').toLowerCase() === currentUsername);
   }
 
   private isDeletedSharedPostAuthor(post: SharedPostPayload): boolean {
     return [post.profileUsername, post.username]
       .filter((username): username is string => typeof username === 'string')
-      .some(username => username.replace(/^@/, '').trim().toLowerCase() === DELETED_USER_LABEL.toLowerCase());
+      .some(
+        (username) =>
+          username.replace(/^@/, '').trim().toLowerCase() === DELETED_USER_LABEL.toLowerCase(),
+      );
   }
 
   private formatSharedPostUsername(username: string): string {
@@ -1396,40 +1517,44 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private loadFriends(): void {
-    this.relationshipService.loadFriends()
+    this.relationshipService
+      .loadFriends()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: friends => friends.forEach(friend => this.loadAvatar(friend.id, friend.profilePicture)),
+        next: (friends) =>
+          friends.forEach((friend) => this.loadAvatar(friend.id, friend.profilePicture)),
         error: () => this.notificationService.showError('Failed to load friends'),
       });
   }
 
   private loadBlockedUsers(): void {
-    this.relationshipService.loadBlocked()
+    this.relationshipService
+      .loadBlocked()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: blockedUsers =>
-          blockedUsers.forEach(user => this.loadAvatar(user.id, user.profilePicture)),
+        next: (blockedUsers) =>
+          blockedUsers.forEach((user) => this.loadAvatar(user.id, user.profilePicture)),
         error: () => this.notificationService.showError('Failed to load blocked users'),
       });
   }
 
   private loadChats(): void {
     this.loadingChats.set(true);
-    this.chatService.getChats()
+    this.chatService
+      .getChats()
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.loadingChats.set(false))
+        finalize(() => this.loadingChats.set(false)),
       )
       .subscribe({
-        next: chats => {
-          const normalizedChats = chats.map(chat => this.normalizeChat(chat));
+        next: (chats) => {
+          const normalizedChats = chats.map((chat) => this.normalizeChat(chat));
           const dedupedChats = this.applyChatListDedupe(normalizedChats);
           this.chats.set(dedupedChats);
           this.chatUnreadService.syncFromChats(dedupedChats);
-          dedupedChats.forEach(chat => {
-            chat.participants.forEach(participant =>
-              this.loadAvatar(participant.id, participant.profilePicture)
+          dedupedChats.forEach((chat) => {
+            chat.participants.forEach((participant) =>
+              this.loadAvatar(participant.id, participant.profilePicture),
             );
             if (chat.groupOwner) {
               this.loadAvatar(chat.groupOwner.id, chat.groupOwner.profilePicture);
@@ -1439,7 +1564,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
           const selectedChat = this.selectedChat();
           if (selectedChat) {
-            const refreshedChat = dedupedChats.find(chat => chat.chatId === selectedChat.chatId);
+            const refreshedChat = dedupedChats.find((chat) => chat.chatId === selectedChat.chatId);
             if (refreshedChat) {
               this.selectedChat.set(refreshedChat);
             }
@@ -1459,7 +1584,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const existingChat = pending.chatId
-      ? this.chats().find(chat => chat.chatId === pending.chatId) ?? null
+      ? (this.chats().find((chat) => chat.chatId === pending.chatId) ?? null)
       : pending.username
         ? this.directChatForUsername(pending.username)
         : null;
@@ -1480,10 +1605,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.pendingSharedPost = null;
-    this.chatService.createChat({ usernames: [pending.username] })
+    this.chatService
+      .createChat({ usernames: [pending.username] })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: chat => {
+        next: (chat) => {
           this.upsertChat(chat);
           this.selectChat(chat);
           this.sharedPostDraft.set(pending.post);
@@ -1504,7 +1630,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const chatId = this.pendingChatId;
     if (chatId) {
-      const chat = this.chats().find(existingChat => existingChat.chatId === chatId);
+      const chat = this.chats().find((existingChat) => existingChat.chatId === chatId);
       this.pendingChatId = null;
       if (!chat) {
         this.clearChatQueryParam();
@@ -1546,11 +1672,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private directChatForUsername(username: string): Chat | null {
     const normalizedUsername = username.toLowerCase();
-    const matches = this.chats().filter(chat =>
-        !chat.groupChat
-        && chat.participants.some(
-          participant => participant.username.toLowerCase() === normalizedUsername
-        )
+    const matches = this.chats().filter(
+      (chat) =>
+        !chat.groupChat &&
+        chat.participants.some(
+          (participant) => participant.username.toLowerCase() === normalizedUsername,
+        ),
     );
 
     return this.pickLatestDirectChat(matches);
@@ -1586,27 +1713,28 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   private loadMessages(chatId: string): void {
     this.loadingMessages.set(true);
     this.hasMoreMessages.set(true);
-    this.chatService.getMessages(chatId, { limit: MESSAGE_PAGE_SIZE })
+    this.chatService
+      .getMessages(chatId, { limit: MESSAGE_PAGE_SIZE })
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
           if (this.selectedChat()?.chatId === chatId) {
             this.loadingMessages.set(false);
           }
-        })
+        }),
       )
       .subscribe({
-        next: messages => {
+        next: (messages) => {
           if (this.selectedChat()?.chatId !== chatId) {
             return;
           }
 
-          const normalizedMessages = messages.map(message => this.normalizeMessage(message));
+          const normalizedMessages = messages.map((message) => this.normalizeMessage(message));
           this.hasMoreMessages.set(normalizedMessages.length === MESSAGE_PAGE_SIZE);
-          this.messages.update(existingMessages =>
-            this.mergeMessages(normalizedMessages, existingMessages)
+          this.messages.update((existingMessages) =>
+            this.mergeMessages(normalizedMessages, existingMessages),
           );
-          normalizedMessages.forEach(normalizedMessage => {
+          normalizedMessages.forEach((normalizedMessage) => {
             this.loadAvatar(normalizedMessage.sender.id, normalizedMessage.sender.profilePicture);
             this.loadSharedPostMedia(normalizedMessage.sharedPost);
           });
@@ -1621,11 +1749,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const chat = this.selectedChat();
     const oldestMessage = this.messages()[0];
     if (
-      !chat
-      || !oldestMessage
-      || this.loadingMessages()
-      || this.loadingOlderMessages()
-      || !this.hasMoreMessages()
+      !chat ||
+      !oldestMessage ||
+      this.loadingMessages() ||
+      this.loadingOlderMessages() ||
+      !this.hasMoreMessages()
     ) {
       return;
     }
@@ -1635,34 +1763,35 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const previousScrollTop = list?.scrollTop ?? 0;
 
     this.loadingOlderMessages.set(true);
-    this.chatService.getMessages(chat.chatId, {
-      before: oldestMessage.date,
-      limit: MESSAGE_PAGE_SIZE,
-    })
+    this.chatService
+      .getMessages(chat.chatId, {
+        before: oldestMessage.date,
+        limit: MESSAGE_PAGE_SIZE,
+      })
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
           if (this.selectedChat()?.chatId === chat.chatId) {
             this.loadingOlderMessages.set(false);
           }
-        })
+        }),
       )
       .subscribe({
-        next: messages => {
+        next: (messages) => {
           if (this.selectedChat()?.chatId !== chat.chatId) {
             return;
           }
 
-          const normalizedMessages = messages.map(message => this.normalizeMessage(message));
+          const normalizedMessages = messages.map((message) => this.normalizeMessage(message));
           this.hasMoreMessages.set(normalizedMessages.length === MESSAGE_PAGE_SIZE);
           if (normalizedMessages.length === 0) {
             return;
           }
 
-          this.messages.update(existingMessages =>
-            this.mergeMessages(normalizedMessages, existingMessages)
+          this.messages.update((existingMessages) =>
+            this.mergeMessages(normalizedMessages, existingMessages),
           );
-          normalizedMessages.forEach(normalizedMessage => {
+          normalizedMessages.forEach((normalizedMessage) => {
             this.loadAvatar(normalizedMessage.sender.id, normalizedMessage.sender.profilePicture);
             this.loadSharedPostMedia(normalizedMessage.sharedPost);
           });
@@ -1674,15 +1803,15 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private upsertChat(nextChat: Chat): Chat {
     const normalizedChat = this.normalizeChat(nextChat);
-    this.chats.update(chats => {
-      const otherChats = chats.filter(chat => chat.chatId !== normalizedChat.chatId);
+    this.chats.update((chats) => {
+      const otherChats = chats.filter((chat) => chat.chatId !== normalizedChat.chatId);
       const nextChats = this.applyChatListDedupe([normalizedChat, ...otherChats]);
       this.chatUnreadService.syncFromChats(nextChats);
       return nextChats;
     });
 
-    normalizedChat.participants.forEach(participant =>
-      this.loadAvatar(participant.id, participant.profilePicture)
+    normalizedChat.participants.forEach((participant) =>
+      this.loadAvatar(participant.id, participant.profilePicture),
     );
     if (normalizedChat.groupOwner) {
       this.loadAvatar(normalizedChat.groupOwner.id, normalizedChat.groupOwner.profilePicture);
@@ -1693,17 +1822,33 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private loadGroupImage(chat: Chat): void {
-    if (!chat.groupImage || this.groupImageUrls()[chat.chatId]) {
+    const previousRef = this.groupImageRefs()[chat.chatId];
+    if (
+      previousRef === chat.groupImage &&
+      (!chat.groupImage || this.groupImageUrls()[chat.chatId])
+    ) {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(chat.groupImage, 'image', 'high')
+    this.groupImageRefs.update((refs) => ({ ...refs, [chat.chatId]: chat.groupImage }));
+    this.groupImageUrls.update((urls) => {
+      const remaining = { ...urls };
+      delete remaining[chat.chatId];
+      return remaining;
+    });
+
+    if (!chat.groupImage) {
+      return;
+    }
+
+    this.mediaCacheService
+      .resolveMediaUrl(chat.groupImage, 'image', 'high')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(url => {
-        if (!url) {
+      .subscribe((url) => {
+        if (!url || this.groupImageRefs()[chat.chatId] !== chat.groupImage) {
           return;
         }
-        this.groupImageUrls.update(urls => ({ ...urls, [chat.chatId]: url }));
+        this.groupImageUrls.update((urls) => ({ ...urls, [chat.chatId]: url }));
       });
   }
 
@@ -1721,8 +1866,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.avatarRefs.update(refs => ({ ...refs, [id]: profilePicture }));
-    this.avatarUrls.update(urls => {
+    this.avatarRefs.update((refs) => ({ ...refs, [id]: profilePicture }));
+    this.avatarUrls.update((urls) => {
       const remaining = { ...urls };
       delete remaining[id];
       return remaining;
@@ -1732,13 +1877,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(profilePicture, 'image', 'high')
+    this.mediaCacheService
+      .resolveMediaUrl(profilePicture, 'image', 'high')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(url => {
+      .subscribe((url) => {
         if (!url || this.avatarRefs()[id] !== profilePicture) {
           return;
         }
-        this.avatarUrls.update(urls => ({ ...urls, [id]: url }));
+        this.avatarUrls.update((urls) => ({ ...urls, [id]: url }));
       });
   }
 
@@ -1751,8 +1897,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    return friend.username.toLowerCase().includes(query)
-      || (friend.name ?? '').toLowerCase().includes(query);
+    return (
+      friend.username.toLowerCase().includes(query) ||
+      (friend.name ?? '').toLowerCase().includes(query)
+    );
   }
 
   private removeChatFromState(chatId: string): void {
@@ -1760,8 +1908,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       this.chatRealtimeBridge.unwatchChat();
     }
 
-    this.chats.update(chats => {
-      const nextChats = chats.filter(existingChat => existingChat.chatId !== chatId);
+    this.chats.update((chats) => {
+      const nextChats = chats.filter((existingChat) => existingChat.chatId !== chatId);
       this.chatUnreadService.syncFromChats(nextChats);
       return nextChats;
     });
@@ -1770,9 +1918,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private markChatReadInState(chatId: string): void {
-    this.chats.update(chats => {
-      const nextChats = chats.map(chat =>
-        chat.chatId === chatId ? { ...chat, unreadCount: 0 } : chat
+    this.chats.update((chats) => {
+      const nextChats = chats.map((chat) =>
+        chat.chatId === chatId ? { ...chat, unreadCount: 0 } : chat,
       );
       this.chatUnreadService.syncFromChats(nextChats);
       return nextChats;
@@ -1790,9 +1938,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private applyChatListDedupe(chats: Chat[]): Chat[] {
     const uniqueChats = this.dedupeChatsById(chats);
-    const groups = this.dedupeGroupChats(uniqueChats.filter(chat => chat.groupChat));
+    const groups = this.dedupeGroupChats(uniqueChats.filter((chat) => chat.groupChat));
     const direct = this.dedupeDirectChats(
-      uniqueChats.filter(chat => !chat.groupChat && this.isValidDirectChat(chat)),
+      uniqueChats.filter((chat) => !chat.groupChat && this.isValidDirectChat(chat)),
     );
     return [...groups, ...direct];
   }
@@ -1828,8 +1976,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private groupChatKey(chat: Chat): string {
     const activeParticipants = chat.participants
-      .filter(participant => !this.isDeletedParticipant(participant))
-      .map(participant => this.normalizeId(participant.id))
+      .filter((participant) => !this.isDeletedParticipant(participant))
+      .map((participant) => this.normalizeId(participant.id))
       .sort()
       .join(',');
     return `${chat.name.trim().toLowerCase()}|${activeParticipants}`;
@@ -1841,8 +1989,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private appendMessageIfMissing(message: ChatMessage): void {
     let appended = false;
-    this.messages.update(messages => {
-      if (messages.some(existing => existing.messageId === message.messageId)) {
+    this.messages.update((messages) => {
+      if (messages.some((existing) => existing.messageId === message.messageId)) {
         return messages;
       }
 
@@ -1861,11 +2009,12 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   ): ChatMessage[] {
     const messagesById = new Map<string, ChatMessage>();
 
-    existingMessages.forEach(message => messagesById.set(message.messageId, message));
-    loadedMessages.forEach(message => messagesById.set(message.messageId, message));
+    existingMessages.forEach((message) => messagesById.set(message.messageId, message));
+    loadedMessages.forEach((message) => messagesById.set(message.messageId, message));
 
     return Array.from(messagesById.values()).sort(
-      (left, right) => parseBackendDate(left.date).getTime() - parseBackendDate(right.date).getTime(),
+      (left, right) =>
+        parseBackendDate(left.date).getTime() - parseBackendDate(right.date).getTime(),
     );
   }
 
@@ -1887,7 +2036,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private restoreMessageScrollPosition(previousScrollHeight: number, previousScrollTop: number): void {
+  private restoreMessageScrollPosition(
+    previousScrollHeight: number,
+    previousScrollTop: number,
+  ): void {
     afterNextRender(
       () => {
         requestAnimationFrame(() => {
@@ -1953,9 +2105,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return chats.reduce((latest, chat) =>
-      this.isChatMoreRecent(chat, latest) ? chat : latest,
-    );
+    return chats.reduce((latest, chat) => (this.isChatMoreRecent(chat, latest) ? chat : latest));
   }
 
   private isChatMoreRecent(left: Chat, right: Chat): boolean {
@@ -1991,10 +2141,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     this.loadSharedPostMedia(normalizedMessage.sharedPost);
-    this.loadAvatar(
-      normalizedMessage.sender.id,
-      normalizedMessage.sender.profilePicture,
-    );
+    this.loadAvatar(normalizedMessage.sender.id, normalizedMessage.sender.profilePicture);
   }
 
   private handleRealtimeChatSummary(chat: Chat): void {
@@ -2015,13 +2162,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private refreshSelectedGroupChat(chatId: string): void {
     this.loadingMembersDialog.set(true);
-    this.chatService.getChat(chatId)
+    this.chatService
+      .getChat(chatId)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.loadingMembersDialog.set(false))
+        finalize(() => this.loadingMembersDialog.set(false)),
       )
       .subscribe({
-        next: chat => {
+        next: (chat) => {
           const normalizedChat = this.upsertChat(chat);
           if (this.selectedChat()?.chatId === chat.chatId) {
             this.selectedChat.set(normalizedChat);
@@ -2038,8 +2186,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       date: this.normalizeBackendDate(message.date),
       system: message.system ?? false,
       systemEvent: message.systemEvent ?? null,
-      systemTargets: (message.systemTargets ?? []).map(target => this.normalizeParticipant(target)),
-      reactions: (message.reactions ?? []).map(reaction => ({
+      systemTargets: (message.systemTargets ?? []).map((target) =>
+        this.normalizeParticipant(target),
+      ),
+      reactions: (message.reactions ?? []).map((reaction) => ({
         ...reaction,
         users: reaction.users ?? [],
       })),
@@ -2048,23 +2198,18 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   private normalizeChat(chat: Chat): Chat {
-    const ownerIds =
-      chat.ownerIds?.length
-        ? chat.ownerIds
-        : chat.ownerId
-          ? [chat.ownerId]
-          : [];
+    const ownerIds = chat.ownerIds?.length ? chat.ownerIds : chat.ownerId ? [chat.ownerId] : [];
 
     return {
       ...chat,
       participants: this.dedupeParticipantsById(
-        (chat.participants ?? []).map(participant => this.normalizeParticipant(participant))
+        (chat.participants ?? []).map((participant) => this.normalizeParticipant(participant)),
       ),
       groupOwner: chat.groupOwner ? this.normalizeParticipant(chat.groupOwner) : null,
       createdAt: this.normalizeBackendDate(chat.createdAt),
       lastMessage: chat.lastMessage ? this.normalizeMessage(chat.lastMessage) : null,
       personalMessageCount: chat.personalMessageCount ?? 0,
-      ownerIds: ownerIds.map(ownerId => this.normalizeId(ownerId)),
+      ownerIds: ownerIds.map((ownerId) => this.normalizeId(ownerId)),
     };
   }
 
@@ -2112,9 +2257,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const participantUsername = participant.username.toLowerCase();
     const participantId = this.normalizeId(participant.id);
-    return this.blockedUsers().some(blockedUser =>
-      blockedUser.username.toLowerCase() === participantUsername
-      || this.normalizeId(blockedUser.id) === participantId
+    return this.blockedUsers().some(
+      (blockedUser) =>
+        blockedUser.username.toLowerCase() === participantUsername ||
+        this.normalizeId(blockedUser.id) === participantId,
     );
   }
 
@@ -2125,18 +2271,19 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const normalizedUsername = username.toLowerCase();
     return this.blockedUsers().some(
-      blockedUser => blockedUser.username.toLowerCase() === normalizedUsername,
+      (blockedUser) => blockedUser.username.toLowerCase() === normalizedUsername,
     );
   }
 
   private activeParticipantCount(chat: Chat): number {
-    return chat.participants.filter(participant => !this.isDeletedParticipant(participant)).length;
+    return chat.participants.filter((participant) => !this.isDeletedParticipant(participant))
+      .length;
   }
 
   private normalizedOwnerIds(chat: Chat): string[] {
     return (chat.ownerIds ?? [])
-      .map(ownerId => this.normalizeId(ownerId))
-      .filter(ownerId => ownerId.length > 0);
+      .map((ownerId) => this.normalizeId(ownerId))
+      .filter((ownerId) => ownerId.length > 0);
   }
 
   private normalizeBackendDate(value: string): string {
@@ -2145,10 +2292,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private updateMessageInState(updatedMessage: ChatMessage): void {
     const normalizedMessage = this.normalizeMessage(updatedMessage);
-    this.messages.update(messages =>
-      messages.map(message =>
-        message.messageId === normalizedMessage.messageId ? normalizedMessage : message
-      )
+    this.messages.update((messages) =>
+      messages.map((message) =>
+        message.messageId === normalizedMessage.messageId ? normalizedMessage : message,
+      ),
     );
   }
 
@@ -2162,11 +2309,14 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    return chat.name.toLowerCase().includes(query)
-      || chat.participants.some(participant =>
-        participant.username.toLowerCase().includes(query)
-        || (participant.name ?? '').toLowerCase().includes(query)
-      );
+    return (
+      chat.name.toLowerCase().includes(query) ||
+      chat.participants.some(
+        (participant) =>
+          participant.username.toLowerCase().includes(query) ||
+          (participant.name ?? '').toLowerCase().includes(query),
+      )
+    );
   }
 
   private readSharedPostFromHistory(): SharedPostPayload | null {
@@ -2184,41 +2334,35 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const candidate = value as SharedPostPayload & { postId?: unknown };
-    return this.resolveSharedPostId(candidate.postId) !== null
-      && typeof candidate.username === 'string'
-      && (
-        candidate.profileUserId === undefined
-        || candidate.profileUserId === null
-        || typeof candidate.profileUserId === 'string'
-      )
-      && (
-        candidate.profilePicture === undefined
-        || candidate.profilePicture === null
-        || typeof candidate.profilePicture === 'string'
-      )
-      && typeof candidate.caption === 'string'
-      && typeof candidate.url === 'string'
-      && (
-        candidate.mediaRef === undefined
-        || candidate.mediaRef === null
-        || typeof candidate.mediaRef === 'string'
-      )
-      && (candidate.mediaUrl === null || typeof candidate.mediaUrl === 'string')
-      && (candidate.mediaKind === null || candidate.mediaKind === 'image' || candidate.mediaKind === 'video')
-      && (candidate.sharedAt === undefined || typeof candidate.sharedAt === 'string')
-      && (candidate.canView === undefined || typeof candidate.canView === 'boolean')
-      && (candidate.publicPost === undefined || typeof candidate.publicPost === 'boolean')
-      && (
-        candidate.profileUsername === undefined
-        || candidate.profileUsername === null
-        || typeof candidate.profileUsername === 'string'
-      )
-      && (
-        candidate.unavailableReason === undefined
-        || candidate.unavailableReason === null
-        || candidate.unavailableReason === 'PRIVATE'
-        || candidate.unavailableReason === 'REMOVED'
-      );
+    return (
+      this.resolveSharedPostId(candidate.postId) !== null &&
+      typeof candidate.username === 'string' &&
+      (candidate.profileUserId === undefined ||
+        candidate.profileUserId === null ||
+        typeof candidate.profileUserId === 'string') &&
+      (candidate.profilePicture === undefined ||
+        candidate.profilePicture === null ||
+        typeof candidate.profilePicture === 'string') &&
+      typeof candidate.caption === 'string' &&
+      typeof candidate.url === 'string' &&
+      (candidate.mediaRef === undefined ||
+        candidate.mediaRef === null ||
+        typeof candidate.mediaRef === 'string') &&
+      (candidate.mediaUrl === null || typeof candidate.mediaUrl === 'string') &&
+      (candidate.mediaKind === null ||
+        candidate.mediaKind === 'image' ||
+        candidate.mediaKind === 'video') &&
+      (candidate.sharedAt === undefined || typeof candidate.sharedAt === 'string') &&
+      (candidate.canView === undefined || typeof candidate.canView === 'boolean') &&
+      (candidate.publicPost === undefined || typeof candidate.publicPost === 'boolean') &&
+      (candidate.profileUsername === undefined ||
+        candidate.profileUsername === null ||
+        typeof candidate.profileUsername === 'string') &&
+      (candidate.unavailableReason === undefined ||
+        candidate.unavailableReason === null ||
+        candidate.unavailableReason === 'PRIVATE' ||
+        candidate.unavailableReason === 'REMOVED')
+    );
   }
 
   private parseSharedPostContent(content: string): ParsedSharedPost | null {
@@ -2258,12 +2402,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       return null;
     }
     const candidateMediaUrl = candidate.mediaUrl ?? null;
-    const mediaRef = candidate.mediaRef
-      ?? (
-        candidateMediaUrl && this.mediaCacheService.isBackendManagedMediaUrl(candidateMediaUrl)
-          ? candidateMediaUrl
-          : null
-      );
+    const mediaRef =
+      candidate.mediaRef ??
+      (candidateMediaUrl && this.mediaCacheService.isBackendManagedMediaUrl(candidateMediaUrl)
+        ? candidateMediaUrl
+        : null);
     const mediaUrl =
       candidateMediaUrl && !this.mediaCacheService.isBackendManagedMediaUrl(candidateMediaUrl)
         ? candidateMediaUrl
@@ -2283,24 +2426,26 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       canView: candidate.canView,
       publicPost: candidate.publicPost,
       profileUsername: candidate.profileUsername,
-      unavailableReason: candidate.unavailableReason ?? (candidate.canView === false ? 'PRIVATE' : null),
+      unavailableReason:
+        candidate.unavailableReason ?? (candidate.canView === false ? 'PRIVATE' : null),
     };
   }
 
   private sharedPostPayloadFromResponse(sharedPost: SharedPost): SharedPostPayload {
     const resolvedMediaUrl =
-      this.resolvedSharedPostMediaUrlFromParts(sharedPost.postId, sharedPost.mediaRef)
-      ?? this.sharedPostMediaUrls()[sharedPost.sharedId]
-      ?? null;
+      this.resolvedSharedPostMediaUrlFromParts(sharedPost.postId, sharedPost.mediaRef) ??
+      this.sharedPostMediaUrls()[sharedPost.sharedId] ??
+      null;
     const canView = sharedPost.canView ?? true;
     const postId = this.resolveSharedPostId(sharedPost.postId) ?? '';
-    const mediaUrl = canView
-    && sharedPost.mediaRef?.startsWith('http')
-    && !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
-      ? sharedPost.mediaRef
-      : canView
-        ? resolvedMediaUrl
-        : null;
+    const mediaUrl =
+      canView &&
+      sharedPost.mediaRef?.startsWith('http') &&
+      !this.mediaCacheService.isBackendManagedMediaUrl(sharedPost.mediaRef)
+        ? sharedPost.mediaRef
+        : canView
+          ? resolvedMediaUrl
+          : null;
 
     return {
       postId,
@@ -2338,7 +2483,10 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return this.sharedPostMediaKeyFromParts(post.postId, post.mediaRef ?? post.mediaUrl);
   }
 
-  private sharedPostMediaKeyFromParts(postId: string | null | undefined, mediaRef: string | null | undefined): string | null {
+  private sharedPostMediaKeyFromParts(
+    postId: string | null | undefined,
+    mediaRef: string | null | undefined,
+  ): string | null {
     if (!postId || !mediaRef) {
       return null;
     }
@@ -2348,7 +2496,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   private resolvedSharedPostMediaUrl(post: SharedPostPayload): string | null {
     const mediaKey = this.sharedPostMediaKey(post);
-    return mediaKey ? this.sharedPostMediaUrls()[mediaKey] ?? null : null;
+    return mediaKey ? (this.sharedPostMediaUrls()[mediaKey] ?? null) : null;
   }
 
   private resolvedSharedPostMediaUrlFromParts(
@@ -2356,7 +2504,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     mediaRef: string | null | undefined,
   ): string | null {
     const mediaKey = this.sharedPostMediaKeyFromParts(postId, mediaRef);
-    return mediaKey ? this.sharedPostMediaUrls()[mediaKey] ?? null : null;
+    return mediaKey ? (this.sharedPostMediaUrls()[mediaKey] ?? null) : null;
   }
 
   private ensureSharedPostPayloadMedia(post: SharedPostPayload): void {
@@ -2365,23 +2513,37 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     }
 
     const mediaKey = this.sharedPostMediaKey(post);
-    if (!mediaKey || this.sharedPostMediaUrls()[mediaKey] || this.pendingSharedPostMediaKeys.has(mediaKey)) {
+    if (
+      !mediaKey ||
+      this.sharedPostMediaUrls()[mediaKey] ||
+      this.pendingSharedPostMediaKeys.has(mediaKey)
+    ) {
       return;
     }
 
     this.pendingSharedPostMediaKeys.add(mediaKey);
-    this.mediaCacheService.resolveMediaUrl(post.mediaRef, post.mediaKind ?? 'image', 'normal')
+    this.mediaCacheService
+      .resolveMediaUrl(post.mediaRef, post.mediaKind ?? 'image', 'normal')
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.pendingSharedPostMediaKeys.delete(mediaKey))
+        finalize(() => this.pendingSharedPostMediaKeys.delete(mediaKey)),
       )
-      .subscribe(url => {
+      .subscribe((url) => {
         if (!url) {
           return;
         }
 
-        this.sharedPostMediaUrls.update(urls => ({ ...urls, [mediaKey]: url }));
+        this.sharedPostMediaUrls.update((urls) => ({ ...urls, [mediaKey]: url }));
       });
+  }
+
+  private ensureSharedPostAuthorAvatar(post: SharedPostPayload): void {
+    const profileUserId = this.sharedPostAuthorUserId(post);
+    if (!profileUserId || !post.profilePicture || this.avatarUrls()[profileUserId]) {
+      return;
+    }
+
+    this.loadAvatar(profileUserId, post.profilePicture);
   }
 
   private loadSharedPostMedia(sharedPost: SharedPost | null): void {
@@ -2395,20 +2557,21 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
     const mediaKey = this.sharedPostMediaKeyFromParts(sharedPost.postId, sharedPost.mediaRef);
     if (
-      !sharedPost.mediaRef
-      || this.sharedPostMediaUrls()[sharedPost.sharedId]
-      || (mediaKey !== null && this.sharedPostMediaUrls()[mediaKey])
+      !sharedPost.mediaRef ||
+      this.sharedPostMediaUrls()[sharedPost.sharedId] ||
+      (mediaKey !== null && this.sharedPostMediaUrls()[mediaKey])
     ) {
       return;
     }
 
-    this.mediaCacheService.resolveMediaUrl(sharedPost.mediaRef, sharedPost.mediaKind ?? 'image', 'normal')
+    this.mediaCacheService
+      .resolveMediaUrl(sharedPost.mediaRef, sharedPost.mediaKind ?? 'image', 'normal')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(url => {
+      .subscribe((url) => {
         if (!url) {
           return;
         }
-        this.sharedPostMediaUrls.update(urls => ({
+        this.sharedPostMediaUrls.update((urls) => ({
           ...urls,
           [sharedPost.sharedId]: url,
           ...(mediaKey ? { [mediaKey]: url } : {}),

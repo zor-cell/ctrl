@@ -33,10 +33,23 @@
       justify-content: center;
     }
 
+    .p-menubar-root-list > .p-menubar-item > .p-menubar-item-content .p-menubar-item-link {
+      display: grid;
+      place-items: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      padding: 0;
+      border-radius: 0.65rem;
+    }
+
     .p-menubar-end {
       flex: 1;
       display: flex;
       justify-content: flex-end;
+    }
+
+    .p-menubar-root-list > .p-menubar-item > .p-menubar-item-content .p-menubar-item-label {
+      display: none;
     }
   }
 }
@@ -72,7 +85,7 @@
 
 :host ::ng-deep .nav-profile-item {
   .p-menubar-item-link {
-    padding: 0.5rem;
+    padding: 0;
   }
 
   .p-menubar-item-icon {
@@ -134,6 +147,45 @@
       display: flex;
       justify-content: flex-end;
       align-items: center;
+    }
+
+    .p-menubar-root-list {
+      gap: 0.25rem;
+      padding: 0.5rem;
+    }
+
+    .p-menubar-root-list > .p-menubar-item > .p-menubar-item-content .p-menubar-item-link {
+      width: 100%;
+      min-height: 3rem;
+      gap: 0.8rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.65rem;
+    }
+
+    .p-menubar-root-list > .p-menubar-item > .p-menubar-item-content .p-menubar-item-icon {
+      width: 1.75rem;
+      min-width: 1.75rem;
+      display: inline-flex;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    .p-menubar-root-list > .p-menubar-item > .p-menubar-item-content .p-menubar-item-label {
+      display: inline-flex;
+      font-weight: 700;
+      color: var(--p-text-color);
+    }
+  }
+
+  :host ::ng-deep .nav-chat-item {
+    .p-menubar-item-link {
+      position: relative;
+    }
+
+    .p-badge {
+      top: 0.55rem;
+      left: 2.15rem;
+      transform: none;
     }
   }
 }
