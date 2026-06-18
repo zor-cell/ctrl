@@ -76,8 +76,6 @@
   }
 
   .p-menubar-item-icon {
-    width: 1.75rem;
-    height: 1.75rem;
     border-radius: 50%;
     background-image: var(--nav-profile-pic-url, none);
     background-size: cover;
@@ -100,6 +98,7 @@
 @media screen and (max-width: 959px) {
   :host ::ng-deep .p-menubar {
     flex-wrap: nowrap;
+    align-items: center;
 
     .p-menubar-button {
       display: none;
@@ -130,6 +129,11 @@
 
     .p-menubar-end {
       order: 3;
+      flex: 1;
+
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
   }
 }
