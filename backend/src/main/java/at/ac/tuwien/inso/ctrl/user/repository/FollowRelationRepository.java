@@ -63,10 +63,42 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
 
   // IDs of the accounts that the followers follow (for Extended Network)
   @Query(
-      """
-      SELECT f2.id.followedId FROM FollowRelation f1
-      JOIN FollowRelation f2 ON f1.id.followedId = f2.id.followerId
-      WHERE f1.id.followerId = :userId
-      """)
-  Set<UUID> findSecondDegreeIds(UUID userId);
+          value = """
+    SELECT DISTINCT target_id FROM (
+        -- follows.follows
+        SELECT f2.followed_id AS target_id
+        FROM follow_relations f1
+        JOIN follow_relations f2 ON f1.followed_id = f2.follower_id
+        WHERE f1.follower_id = :userId
+
+        UNION
+
+        -- follows.friends
+        SELECT CASE WHEN fr.friend_id_1 = f1.followed_id THEN fr.friend_id_2 ELSE fr.friend_id_1 END AS target_id
+        FROM follow_relations f1
+        JOIN friend_relation fr ON f1.followed_id IN (fr.friend_id_1, fr.friend_id_2)
+        WHERE f1.follower_id = :userId
+
+        UNION
+
+        -- friends.follows
+        SELECT f.followed_id AS target_id
+        FROM friend_relation fr
+        JOIN follow_relations f ON CASE WHEN fr.friend_id_1 = :userId THEN fr.friend_id_2 ELSE fr.friend_id_1 END = f.follower_id
+        WHERE fr.friend_id_1 = :userId OR fr.friend_id_2 = :userId
+
+        UNION
+
+        -- friends.friends
+        SELECT CASE WHEN fr2.friend_id_1 = friends.fr1_friend THEN fr2.friend_id_2 ELSE fr2.friend_id_1 END AS target_id
+        FROM (
+            SELECT CASE WHEN fr1.friend_id_1 = :userId THEN fr1.friend_id_2 ELSE fr1.friend_id_1 END AS fr1_friend
+            FROM friend_relation fr1
+            WHERE fr1.friend_id_1 = :userId OR fr1.friend_id_2 = :userId
+        ) friends
+        JOIN friend_relation fr2 ON fr2.friend_id_1 = friends.fr1_friend OR fr2.friend_id_2 = friends.fr1_friend
+    ) AS second_degree
+    """,
+          nativeQuery = true)
+  Set<UUID> findSecondDegreeIds(@Param("userId") UUID userId);
 }

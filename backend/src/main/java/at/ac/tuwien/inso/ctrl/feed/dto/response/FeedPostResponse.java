@@ -24,7 +24,9 @@ public record FeedPostResponse(
     List<SourceResponse> sourceIds,
     List<CommentResponse> comments,
     PostExplanation explanation,
-    boolean wasReportedByUser) {
+    boolean wasReportedByUser,
+    String userProfileUrl
+    ) {
 
   public record SourceResponse(
       String sourceId,

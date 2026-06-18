@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +21,14 @@ public class LabelingService {
 
   private final PostRepository postRepository;
   private final FollowRelationRepository followRelationRepository;
+  private final FriendRelationRepository friendRelationRepository;
 
   public LabelContext buildContext(User user) {
     Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
+            user.getId(),
         followRelationRepository.findFollowedIds(user.getId()),
+        friendRelationRepository.findFriendIds(user),
         followRelationRepository.findSecondDegreeIds(user.getId()),
         p95 != null ? p95 : 0,
         LocalDateTime.now());
@@ -45,8 +50,7 @@ public class LabelingService {
 
     if (post.isExternalPost()) labels.add(PostLabelType.MASTODON);
 
-    if (post.getUpvotes() != null
-        && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
+    if (post.getUpvotes() != null && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
     labels.add(PostLabelType.POPULAR);
 
     if (post.getComments() != null && post.getComments().size() > 5)
@@ -64,12 +68,16 @@ public class LabelingService {
       }
     }
 
-    // Extended Network label: User → follows → X → follows → Creator
+    // Extended Network label
     if (post.getUser() != null) {
       UUID creatorId = post.getUser().getId();
-      boolean isSecondDegree = ctx.secondDegreeIds().contains(creatorId);
+      boolean isOwnPost = creatorId.equals(ctx.viewerId());
       boolean isDirectFollow = ctx.followedIds().contains(creatorId);
-      if (isSecondDegree && !isDirectFollow) labels.add(PostLabelType.EXTENDED_NETWORK);
+      boolean isDirectFriend = ctx.friendIds().contains(creatorId);
+      boolean isSecondDegree = ctx.secondDegreeIds().contains(creatorId);
+
+      if (!isOwnPost && !isDirectFollow && !isDirectFriend && isSecondDegree)
+        labels.add(PostLabelType.EXTENDED_NETWORK);
     }
 
     return labels;

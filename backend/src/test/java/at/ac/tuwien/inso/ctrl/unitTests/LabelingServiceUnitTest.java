@@ -21,6 +21,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +37,7 @@ class LabelingServiceUnitTest {
 
   @Mock private PostRepository postRepository;
   @Mock private FollowRelationRepository followRelationRepository;
+  @Mock private FriendRelationRepository friendRelationRepository;
 
   @InjectMocks private LabelingService labelingService;
 
@@ -46,6 +49,7 @@ class LabelingServiceUnitTest {
     UUID secondDegreeId = UUID.randomUUID();
 
     when(postRepository.findUpvotePercentile95()).thenReturn(42);
+    when(friendRelationRepository.findFriendIds(user)).thenReturn(Set.of());
     when(followRelationRepository.findFollowedIds(user.getId())).thenReturn(Set.of(followedId));
     when(followRelationRepository.findSecondDegreeIds(user.getId()))
         .thenReturn(Set.of(secondDegreeId));
@@ -53,6 +57,7 @@ class LabelingServiceUnitTest {
     LabelContext ctx = labelingService.buildContext(user);
 
     assertTrue(ctx.followedIds().contains(followedId));
+    assertEquals(user.getId(), ctx.viewerId());
     assertTrue(ctx.secondDegreeIds().contains(secondDegreeId));
     assertEquals(42, ctx.upvoteThreshold());
     assertNotNull(ctx.now());
@@ -250,7 +255,7 @@ class LabelingServiceUnitTest {
   @ParameterizedTest
   @MethodSource("extendedNetworkLabelInputs")
   void computeLabels_shouldApplyExtendedNetworkLabel_correctly(
-      boolean inSecondDegree, boolean inDirectFollows, boolean expectLabel) {
+      boolean inSecondDegree, boolean inDirectFollows, boolean inDirectFriends, boolean expectLabel) {
     UUID creatorId = UUID.randomUUID();
     User creator = buildUser();
     creator.setId(creatorId);
@@ -260,7 +265,8 @@ class LabelingServiceUnitTest {
 
     Set<UUID> followedIds = inDirectFollows ? Set.of(creatorId) : Set.of();
     Set<UUID> secondDegreeIds = inSecondDegree ? Set.of(creatorId) : Set.of();
-    LabelContext ctx = new LabelContext(followedIds, secondDegreeIds, 0, LocalDateTime.now());
+    UUID viewerId = UUID.randomUUID();
+    LabelContext ctx = new LabelContext(viewerId, followedIds, Set.of(), secondDegreeIds, 0, LocalDateTime.now());
 
     Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
@@ -269,10 +275,13 @@ class LabelingServiceUnitTest {
 
   static Stream<Arguments> extendedNetworkLabelInputs() {
     return Stream.of(
-        Arguments.of(true, false, true),
-        Arguments.of(true, true, false),
-        Arguments.of(false, false, false),
-        Arguments.of(false, true, false));
+            Arguments.of(true,  false, false, true),   // 2nd degree, no direct → Label
+            Arguments.of(true,  true,  false, false),  // 2nd degree but direct follow → no label
+            Arguments.of(true,  false, true,  false),  // 2nd degree but direct friend → no label
+            Arguments.of(false, false, false, false),  // nothing at all → no label
+            Arguments.of(false, true,  false, false),  // direct follow only → no label
+            Arguments.of(false, false, true,  false)   // only direct friend → no label
+    );
   }
 
   @Test
@@ -337,7 +346,7 @@ class LabelingServiceUnitTest {
   }
 
   private LabelContext buildContext() {
-    return new LabelContext(Set.of(), Set.of(), 0, LocalDateTime.now());
+    return new LabelContext(UUID.randomUUID(), Set.of(), Set.of(), Set.of(), 0, LocalDateTime.now());
   }
 
   private Set<Comment> buildComments(int count) {
