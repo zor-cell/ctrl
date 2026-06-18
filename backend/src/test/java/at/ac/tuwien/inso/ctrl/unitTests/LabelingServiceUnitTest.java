@@ -13,6 +13,7 @@ import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -21,8 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -255,7 +254,10 @@ class LabelingServiceUnitTest {
   @ParameterizedTest
   @MethodSource("extendedNetworkLabelInputs")
   void computeLabels_shouldApplyExtendedNetworkLabel_correctly(
-      boolean inSecondDegree, boolean inDirectFollows, boolean inDirectFriends, boolean expectLabel) {
+      boolean inSecondDegree,
+      boolean inDirectFollows,
+      boolean inDirectFriends,
+      boolean expectLabel) {
     UUID creatorId = UUID.randomUUID();
     User creator = buildUser();
     creator.setId(creatorId);
@@ -266,7 +268,8 @@ class LabelingServiceUnitTest {
     Set<UUID> followedIds = inDirectFollows ? Set.of(creatorId) : Set.of();
     Set<UUID> secondDegreeIds = inSecondDegree ? Set.of(creatorId) : Set.of();
     UUID viewerId = UUID.randomUUID();
-    LabelContext ctx = new LabelContext(viewerId, followedIds, Set.of(), secondDegreeIds, 0, LocalDateTime.now());
+    LabelContext ctx =
+        new LabelContext(viewerId, followedIds, Set.of(), secondDegreeIds, 0, LocalDateTime.now());
 
     Set<PostLabelType> labels = labelingService.computeLabels(post, ctx, false);
 
@@ -275,13 +278,13 @@ class LabelingServiceUnitTest {
 
   static Stream<Arguments> extendedNetworkLabelInputs() {
     return Stream.of(
-            Arguments.of(true,  false, false, true),   // 2nd degree, no direct → Label
-            Arguments.of(true,  true,  false, false),  // 2nd degree but direct follow → no label
-            Arguments.of(true,  false, true,  false),  // 2nd degree but direct friend → no label
-            Arguments.of(false, false, false, false),  // nothing at all → no label
-            Arguments.of(false, true,  false, false),  // direct follow only → no label
-            Arguments.of(false, false, true,  false)   // only direct friend → no label
-    );
+        Arguments.of(true, false, false, true), // 2nd degree, no direct → Label
+        Arguments.of(true, true, false, false), // 2nd degree but direct follow → no label
+        Arguments.of(true, false, true, false), // 2nd degree but direct friend → no label
+        Arguments.of(false, false, false, false), // nothing at all → no label
+        Arguments.of(false, true, false, false), // direct follow only → no label
+        Arguments.of(false, false, true, false) // only direct friend → no label
+        );
   }
 
   @Test
@@ -346,7 +349,8 @@ class LabelingServiceUnitTest {
   }
 
   private LabelContext buildContext() {
-    return new LabelContext(UUID.randomUUID(), Set.of(), Set.of(), Set.of(), 0, LocalDateTime.now());
+    return new LabelContext(
+        UUID.randomUUID(), Set.of(), Set.of(), Set.of(), 0, LocalDateTime.now());
   }
 
   private Set<Comment> buildComments(int count) {

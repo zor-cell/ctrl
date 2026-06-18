@@ -96,9 +96,8 @@ public class FeedMapper {
         sources,
         comments,
         recommendedPost.getExplanation(),
-        postReportedByUser != null
-            && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())),
-            userProfileUrl);
+        postReportedByUser != null && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())),
+        userProfileUrl);
   }
 
   public FeedPostResponse toFeedPostResponse(

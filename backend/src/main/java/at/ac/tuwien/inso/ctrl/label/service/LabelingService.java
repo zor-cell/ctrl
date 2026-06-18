@@ -6,12 +6,11 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
-import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +25,7 @@ public class LabelingService {
   public LabelContext buildContext(User user) {
     Integer p95 = postRepository.findUpvotePercentile95();
     return new LabelContext(
-            user.getId(),
+        user.getId(),
         followRelationRepository.findFollowedIds(user.getId()),
         friendRelationRepository.findFriendIds(user),
         followRelationRepository.findSecondDegreeIds(user.getId()),
@@ -50,7 +49,8 @@ public class LabelingService {
 
     if (post.isExternalPost()) labels.add(PostLabelType.MASTODON);
 
-    if (post.getUpvotes() != null && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
+    if (post.getUpvotes() != null
+        && post.getUpvotes() >= 5) // && post.getUpvotes() >= ctx.upvoteThreshold())
     labels.add(PostLabelType.POPULAR);
 
     if (post.getComments() != null && post.getComments().size() > 5)

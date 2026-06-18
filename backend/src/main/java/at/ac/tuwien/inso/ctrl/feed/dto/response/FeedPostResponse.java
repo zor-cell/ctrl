@@ -25,8 +25,7 @@ public record FeedPostResponse(
     List<CommentResponse> comments,
     PostExplanation explanation,
     boolean wasReportedByUser,
-    String userProfileUrl
-    ) {
+    String userProfileUrl) {
 
   public record SourceResponse(
       String sourceId,

@@ -63,7 +63,8 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
 
   // IDs of the accounts that the followers follow (for Extended Network)
   @Query(
-          value = """
+      value =
+          """
     SELECT DISTINCT target_id FROM (
         -- follows.follows
         SELECT f2.followed_id AS target_id
@@ -99,6 +100,6 @@ public interface FollowRelationRepository extends JpaRepository<FollowRelation, 
         JOIN friend_relation fr2 ON fr2.friend_id_1 = friends.fr1_friend OR fr2.friend_id_2 = friends.fr1_friend
     ) AS second_degree
     """,
-          nativeQuery = true)
+      nativeQuery = true)
   Set<UUID> findSecondDegreeIds(@Param("userId") UUID userId);
 }
