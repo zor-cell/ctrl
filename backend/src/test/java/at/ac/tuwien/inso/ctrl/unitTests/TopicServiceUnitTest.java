@@ -167,4 +167,64 @@ public class TopicServiceUnitTest {
     assertEquals("Topic name already exists", exception.getMessage());
     verify(topicRepository, never()).save(any());
   }
+
+  @Test
+  void createTopic_ShouldUseDefaultEmoji_WhenEmojiIsNull() {
+    TopicCreateRequest request =
+        new TopicCreateRequest("Null Emoji Topic", null, "A topic without emoji");
+    String expectedContext = "Null Emoji Topic: A topic without emoji";
+
+    when(topicRepository.existsByName(request.name())).thenReturn(false);
+    when(embeddingService.embedText(expectedContext)).thenReturn(dummyEmbedding);
+
+    when(topicRepository.save(any(Topic.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    TopicResponse expectedResponse =
+        new TopicResponse("dummy-id", "Null Emoji Topic", "🏷️", LocalDateTime.now());
+    when(topicMapper.toTopicResponse(any(Topic.class))).thenReturn(expectedResponse);
+
+    TopicResponse result = topicService.createTopic(request);
+
+    assertEquals("🏷️", result.emoji());
+    verify(topicRepository).save(any(Topic.class));
+  }
+
+  @Test
+  void createTopic_ShouldUseDefaultEmoji_WhenEmojiIsBlank() {
+    TopicCreateRequest request =
+        new TopicCreateRequest("Blank Emoji Topic", "   ", "A topic with blank emoji");
+    String expectedContext = "Blank Emoji Topic: A topic with blank emoji";
+
+    when(topicRepository.existsByName(request.name())).thenReturn(false);
+    when(embeddingService.embedText(expectedContext)).thenReturn(dummyEmbedding);
+
+    when(topicRepository.save(any(Topic.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    TopicResponse expectedResponse =
+        new TopicResponse("dummy-id", "Blank Emoji Topic", "🏷️", LocalDateTime.now());
+    when(topicMapper.toTopicResponse(any(Topic.class))).thenReturn(expectedResponse);
+
+    TopicResponse result = topicService.createTopic(request);
+
+    assertEquals("🏷️", result.emoji());
+    verify(topicRepository).save(any(Topic.class));
+  }
+
+  @Test
+  void updateTopic_ShouldNotUpdateEmbedding_WhenDescriptionIsBlank() {
+    String topicId = testTopic.getTopicId();
+    TopicCreateRequest request = new TopicCreateRequest("Artificial Intelligence", "🧠", "   ");
+
+    when(topicRepository.findById(topicId)).thenReturn(Optional.of(testTopic));
+    when(topicRepository.findByNameIgnoreCase(request.name())).thenReturn(Optional.of(testTopic));
+    when(topicRepository.save(testTopic)).thenReturn(testTopic);
+    when(topicMapper.toTopicResponse(testTopic)).thenReturn(testTopicResponse);
+
+    topicService.updateTopic(topicId, request);
+
+    verify(embeddingService, never()).embedText(anyString());
+    verify(topicRepository).save(testTopic);
+  }
 }
