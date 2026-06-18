@@ -76,3 +76,57 @@
     background: var(--p-surface-700);
   }
 }
+
+:host ::ng-deep .unblock-dialog .p-dialog-header {
+  padding: 1.5rem 1.5rem 0.75rem;
+}
+
+:host ::ng-deep .unblock-dialog .p-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:host ::ng-deep .unblock-dialog .p-dialog-content {
+  padding: 0.75rem 1.5rem 1.5rem;
+}
+
+.unblock-confirmation {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.unblock-confirmation p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.unblock-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.text-button,
+.confirm-button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.75rem 1rem;
+}
+
+.text-button {
+  background: transparent;
+  color: var(--p-text-muted-color);
+}
+
+.text-button:disabled,
+.confirm-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

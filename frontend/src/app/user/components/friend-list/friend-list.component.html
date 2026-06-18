@@ -44,3 +44,34 @@
     </div>
   }
 </div>
+
+<p-dialog
+  header="Remove friend?"
+  [visible]="unfriendDialogVisible()"
+  (visibleChange)="onUnfriendDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!removing()"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="unfriend-dialog">
+  <div class="unfriend-confirmation">
+    <p>Remove {{ selectedUsername }} as a friend? You can always send a new friend request later.</p>
+    <div class="unfriend-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="removing()"
+        (click)="cancelUnfriend()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        [disabled]="removing()"
+        (click)="confirmUnfriend()">
+        Remove friend
+      </button>
+    </div>
+  </div>
+</p-dialog>
