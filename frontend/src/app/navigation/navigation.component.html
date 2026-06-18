@@ -1,7 +1,11 @@
-<div [class.has-profile-pic]="!!profilePictureUrl()">
+<div [class.has-profile-pic]="!!profilePictureUrl()" [class.is-admin]="authService.isAdmin()">
   <p-menubar [model]="navItems()" class="nav-bar">
     <ng-template pTemplate="start">
-      <div class="logo-text">CTRL</div>
+      @if (authService.isAuthenticated()) {
+        <div class="logo-text" routerLink="/feed" style="cursor: pointer">CTRL</div>
+      } @else {
+        <div class="logo-text">CTRL</div>
+      }
     </ng-template>
 
     <ng-template pTemplate="end">
