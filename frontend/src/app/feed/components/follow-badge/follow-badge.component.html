@@ -35,8 +35,39 @@
       } @else {
         <p-button label="Friends" size="small" [rounded]="true"
                   severity="success" [styleClass]="buttonStyleClass()"
-                  [loading]="busy()" (onClick)="unfriend()" />
+                  [loading]="busy()" (onClick)="requestUnfriend()" />
       }
     }
   }
 }
+
+<p-dialog
+  header="Remove friend?"
+  [visible]="unfriendDialogVisible()"
+  (visibleChange)="onUnfriendDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!busy()"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="unfriend-dialog">
+  <div class="unfriend-confirmation">
+    <p>Remove {{ username() }} as a friend? You can always send a new friend request later.</p>
+    <div class="unfriend-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="busy()"
+        (click)="cancelUnfriend()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        [disabled]="busy()"
+        (click)="confirmUnfriend()">
+        Remove friend
+      </button>
+    </div>
+  </div>
+</p-dialog>
