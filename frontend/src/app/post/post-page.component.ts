@@ -150,6 +150,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
 
   private readonly rel = inject(RelationshipService);
   protected readonly friends = this.rel.friends;
+  protected readonly pendingCount = computed(() => this.relationshipService.pendingRequestCount());
   private readonly profileFriendStatusOverride = signal<{
     username: string;
     status: ProfileFriendStatus;
@@ -324,6 +325,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   ngOnInit() {
     this.createOnlyMode.set(this.route.snapshot.routeConfig?.path === 'post');
     this.loadTopics();
+    this.relationshipService.loadPendingRequestCount().subscribe();
 
     this.routeParamsSubscription = this.route.paramMap.subscribe((params) => {
       this.loadProfileForRoute(params.get('username'));

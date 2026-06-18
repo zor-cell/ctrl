@@ -60,13 +60,18 @@
 
       @if (canEditProfile()) {
         <div class="post-profile-card__actions">
-          <p-button
-            icon="pi pi-users"
-            ariaLabel="Open community"
-            severity="secondary"
-            [rounded]="true"
-            routerLink="/followed"
-          />
+          <div class="community-btn-wrapper">
+            <p-button
+              icon="pi pi-users"
+              ariaLabel="Open community"
+              severity="secondary"
+              [rounded]="true"
+              routerLink="/followed"
+            />
+            @if (pendingCount() > 0) {
+              <span class="pending-badge" aria-label="{{ pendingCount() }} pending friend requests">{{ pendingCount() }}</span>
+            }
+          </div>
           <p-button
             icon="pi pi-cog"
             ariaLabel="Open profile settings"
