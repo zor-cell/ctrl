@@ -29,7 +29,7 @@
             }
           </button>
 
-          <div class="followed-info">
+          <div class="followed-info" style="cursor:pointer" (click)="navigateToProfile(user.username)">
             <span class="username">&#64;{{ user.username }}</span>
           </div>
 

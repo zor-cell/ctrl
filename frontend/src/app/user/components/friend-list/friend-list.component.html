@@ -29,7 +29,7 @@
             }
           </button>
 
-          <div class="friend-info">
+          <div class="friend-info" style="cursor:pointer" (click)="navigateToProfile(friend.username)">
             <span class="name">{{ friend.name }}</span>
             <span class="username">&#64;{{ friend.username }}</span>
           </div>

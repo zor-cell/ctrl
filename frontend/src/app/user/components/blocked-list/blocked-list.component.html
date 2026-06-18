@@ -7,18 +7,15 @@
         <p>No users match your search. Try a different search term or clear the search.</p>
       </div>
     } @else {
-    <div class="empty-state">
+      <div class="empty-state">
         <p>You have not blocked anyone yet.</p>
-    </div>
+      </div>
     }
   } @else {
     <div class="list-container">
       @for (user of blocked(); track user.id) {
         <div class="followed-item">
-          <button
-            type="button"
-            class="profile-avatar"
-            (click)="navigateToProfile(user.username)">
+          <div class="profile-avatar">
             @if (hasProfilePicture(user)) {
               <img
                 [src]="profilePictureUrl(user)"
@@ -29,7 +26,7 @@
             } @else {
               <span class="profile-avatar__initial">{{ getInitial(user) }}</span>
             }
-          </button>
+          </div>
 
           <div class="followed-info">
             <span class="username">&#64;{{ user.username }}</span>
@@ -45,4 +42,3 @@
     </div>
   }
 </div>
-
