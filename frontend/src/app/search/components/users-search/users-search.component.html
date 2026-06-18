@@ -84,7 +84,12 @@
               styleClass="user-avatar clickable"
               (click)="navigateToProfile(user.username); $event.stopPropagation()" />
 
-            <div class="user-info clickable" (click)="navigateToProfile(user.username)">
+            <div class="user-info clickable"
+                 (click)="navigateToProfile(user.username)"
+                 (keydown.enter)="navigateToProfile(user.username)"
+                 (keydown.space)="navigateToProfile(user.username)"
+                 tabindex="0"
+                 role="button">
               <span class="name">{{ user.name || user.username }}</span>
               <span class="username">&#64;{{ user.username }}</span>
               @if (user.isVerified) {

@@ -29,8 +29,13 @@
             }
           </button>
 
-          <div class="followed-info" style="cursor:pointer" (click)="navigateToProfile(user.username)">
-            <span class="username">&#64;{{ user.username }}</span>
+          <div class="followed-info" style="cursor:pointer"
+               (click)="navigateToProfile(user.username)"
+               (keydown.enter)="navigateToProfile(user.username)"
+               (keydown.space)="navigateToProfile(user.username)"
+               tabindex="0"
+               role="button">
+               <span class="username">&#64;{{ user.username }}</span>
           </div>
 
           <p-button

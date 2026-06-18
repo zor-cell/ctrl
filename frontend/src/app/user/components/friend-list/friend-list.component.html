@@ -29,7 +29,12 @@
             }
           </button>
 
-          <div class="friend-info" style="cursor:pointer" (click)="navigateToProfile(friend.username)">
+          <div class="friend-info" style="cursor:pointer"
+               (click)="navigateToProfile(friend.username)"
+               (keydown.enter)="navigateToProfile(friend.username)"
+               (keydown.space)="navigateToProfile(friend.username)"
+               tabindex="0"
+               role="button">
             <span class="name">{{ friend.name }}</span>
             <span class="username">&#64;{{ friend.username }}</span>
           </div>
