@@ -93,6 +93,13 @@
             @switch (publicProfileFriendStatus()) {
               @case ('FRIEND') {
                 <p-button
+                  label="Send Message"
+                  icon="pi pi-comment"
+                  severity="secondary"
+                  size="small"
+                  (onClick)="openDirectMessage()"
+                />
+                <p-button
                   label="Remove Friend"
                   icon="pi pi-user-minus"
                   severity="secondary"

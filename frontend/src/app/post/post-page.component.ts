@@ -463,6 +463,36 @@ export class PostPageComponent implements OnDestroy, OnInit {
       });
   }
 
+  protected openDirectMessage(): void {
+    const username = this.profileActionUsername();
+    if (!username || this.publicProfileFriendStatus() !== 'FRIEND') {
+      return;
+    }
+
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
+
+    this.chatService.getChats().subscribe({
+      next: (chats) => {
+        const directChat = chats.find((chat) => {
+          if (chat.groupChat) return false;
+          return chat.participants.some(
+            (p) => p.username.toLowerCase() === username.toLowerCase() &&
+              (currentUserId ? p.id.toLowerCase() !== currentUserId : true),
+          );
+        });
+
+        const queryParams = directChat
+          ? { chat: directChat.chatId }
+          : { user: username };
+
+        this.router.navigate(['/chat'], { queryParams });
+      },
+      error: () => {
+        this.router.navigate(['/chat'], { queryParams: { user: username } });
+      },
+    });
+  }
+
   protected onPostCreated() {
     if (this.createOnlyMode()) {
       this.router.navigate(['/profile']);
