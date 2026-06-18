@@ -1,5 +1,6 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
+import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +25,8 @@ import at.ac.tuwien.inso.ctrl.chat.entity.ChatMemberId;
 import at.ac.tuwien.inso.ctrl.chat.entity.Message;
 import at.ac.tuwien.inso.ctrl.chat.entity.Reaction;
 import at.ac.tuwien.inso.ctrl.chat.entity.ReactionId;
+import at.ac.tuwien.inso.ctrl.chat.entity.Shared;
+import at.ac.tuwien.inso.ctrl.chat.entity.SystemEventType;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatMemberRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.ChatRepository;
 import at.ac.tuwien.inso.ctrl.chat.repository.MessageRepository;
@@ -32,6 +35,7 @@ import at.ac.tuwien.inso.ctrl.chat.repository.SharedRepository;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
@@ -40,6 +44,7 @@ import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -172,6 +177,19 @@ class ChatServiceUnitTest {
   }
 
   @Test
+  void getChats_includesDirectChatAgainWhenBlockedRelationshipIsGone() {
+    Chat chat = directChat(alice, bob);
+    when(chatRepository.findActiveChatsForUserWithDetails(alice.getId())).thenReturn(List.of(chat));
+    when(blockService.inBlockedRelationship(alice, bob)).thenReturn(false);
+    stubResponseMappers();
+
+    var response = chatService.getChats(alice);
+
+    assertEquals(1, response.size());
+    assertEquals(chat.getChatId(), response.getFirst().chatId());
+  }
+
+  @Test
   void getMessages_loadsLatestPageAndReturnsAscendingMessages() {
     Chat chat = directChat(alice, bob);
     stubChatMembership(chat, true);
@@ -214,6 +232,220 @@ class ChatServiceUnitTest {
         response.stream().map(ChatMessageResponse::messageId).toList());
     verify(messageRepository).findMessageIdsBefore(chat, before, PageRequest.of(0, 15));
     verify(messageRepository, never()).findLatestMessageIds(any(), any());
+  }
+
+  @Test
+  void getMessages_withInvalidBeforeCursor_throwsInvalidRequest() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+
+    assertThrows(
+        InvalidRequestException.class,
+        () -> chatService.getMessages(alice, chat.getChatId(), "not-a-date", 15));
+    verify(messageRepository, never()).findLatestMessageIds(any(), any());
+    verify(messageRepository, never()).findMessageIdsBefore(any(), any(), any());
+  }
+
+  @Test
+  void getMessages_withLimitOutsideBounds_clampsPageSize() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 1))).thenReturn(List.of());
+    when(messageRepository.findMessageIdsBefore(
+            eq(chat), any(LocalDateTime.class), eq(PageRequest.of(0, 100))))
+        .thenReturn(List.of());
+
+    chatService.getMessages(alice, chat.getChatId(), null, -5);
+    chatService.getMessages(alice, chat.getChatId(), "2026-06-12T10:02:00", 500);
+
+    verify(messageRepository).findLatestMessageIds(chat, PageRequest.of(0, 1));
+    verify(messageRepository)
+        .findMessageIdsBefore(eq(chat), any(LocalDateTime.class), eq(PageRequest.of(0, 100)));
+  }
+
+  @Test
+  void getMessages_withPublicSharedPost_returnsVisibleSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post publicPost = post("post-public", bob, true);
+    Message message = messageWithSharedPost(chat, bob, publicPost);
+    stubSingleMessagePage(chat, message);
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(true, response.getFirst().sharedPost().canView());
+    assertEquals("shared caption", response.getFirst().sharedPost().caption());
+    assertEquals("image", response.getFirst().sharedPost().mediaKind());
+    assertEquals(null, response.getFirst().sharedPost().unavailableReason());
+  }
+
+  @Test
+  void getMessages_withPrivateSharedPostViewerIsOwner_returnsVisibleSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post privatePost = post("post-own-private", alice, false);
+    Message message = messageWithSharedPost(chat, alice, privatePost);
+    stubSingleMessagePage(chat, message);
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(true, response.getFirst().sharedPost().canView());
+    assertEquals("shared caption", response.getFirst().sharedPost().caption());
+    verify(friendRelationRepository, never()).existsByUsers(alice, alice);
+  }
+
+  @Test
+  void getMessages_withPrivateSharedPostViewerIsFriend_returnsVisibleSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post privatePost = post("post-friend-private", bob, false);
+    Message message = messageWithSharedPost(chat, bob, privatePost);
+    stubSingleMessagePage(chat, message);
+    when(friendRelationRepository.existsByUsers(bob, alice)).thenReturn(true);
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(true, response.getFirst().sharedPost().canView());
+    assertEquals("post-friend-private", response.getFirst().sharedPost().postId());
+    assertEquals(null, response.getFirst().sharedPost().unavailableReason());
+  }
+
+  @Test
+  void getMessages_withSharedPostThatWasRemoved_returnsUnavailableSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post removedPost = post("post-removed", bob, true);
+    removedPost.setIsRemoved(true);
+    Shared shared = shared(removedPost, bob);
+    Message message = message(chat, bob, false);
+    message.setShared(shared);
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 30)))
+        .thenReturn(List.of(message.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(List.of(message.getMessageId())))
+        .thenReturn(List.of(message));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(1, response.size());
+    assertEquals("post-removed", response.getFirst().sharedPost().postId());
+    assertEquals("REMOVED", response.getFirst().sharedPost().unavailableReason());
+    assertEquals(false, response.getFirst().sharedPost().canView());
+    assertEquals(null, response.getFirst().sharedPost().caption());
+    assertEquals(null, response.getFirst().sharedPost().mediaRef());
+  }
+
+  @Test
+  void getMessages_withPrivateSharedPostViewerCannotAccess_returnsUnavailableSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post privatePost = post("post-private", bob, false);
+    Shared shared = shared(privatePost, bob);
+    Message message = message(chat, bob, false);
+    message.setShared(shared);
+    when(friendRelationRepository.existsByUsers(bob, alice)).thenReturn(false);
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 30)))
+        .thenReturn(List.of(message.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(List.of(message.getMessageId())))
+        .thenReturn(List.of(message));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(1, response.size());
+    assertEquals("post-private", response.getFirst().sharedPost().postId());
+    assertEquals("PRIVATE", response.getFirst().sharedPost().unavailableReason());
+    assertEquals(false, response.getFirst().sharedPost().canView());
+    assertEquals(false, response.getFirst().sharedPost().publicPost());
+    assertEquals(null, response.getFirst().sharedPost().caption());
+    assertEquals(null, response.getFirst().sharedPost().mediaRef());
+  }
+
+  @Test
+  void getMessages_withSharedPostHardDeleted_returnsRemovedUnavailableSharedPost() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Shared shared = shared(null, bob);
+    Message message = message(chat, bob, false);
+    message.setShared(shared);
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 30)))
+        .thenReturn(List.of(message.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(List.of(message.getMessageId())))
+        .thenReturn(List.of(message));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals(1, response.size());
+    assertEquals(shared.getSharedId(), response.getFirst().sharedPost().sharedId());
+    assertEquals(null, response.getFirst().sharedPost().postId());
+    assertEquals("REMOVED", response.getFirst().sharedPost().unavailableReason());
+    assertEquals(false, response.getFirst().sharedPost().canView());
+  }
+
+  @Test
+  void getMessages_withMemberAddedByCurrentUser_formatsYouAddedTarget() {
+    User carol = createUser("carol");
+    Chat chat = groupChat(alice, alice, bob, carol);
+    Message message = systemMessage(chat, alice, SystemEventType.MEMBER_ADDED, carol);
+    stubChatMembership(chat, true);
+    stubSingleMessagePage(chat, message);
+    when(userRepository.findById(carol.getId())).thenReturn(Optional.of(carol));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals("You added carol", response.getFirst().content());
+  }
+
+  @Test
+  void getMessages_withCurrentUserAddedByOtherMember_formatsAddedYou() {
+    Chat chat = groupChat(bob, alice, bob);
+    Message message = systemMessage(chat, bob, SystemEventType.MEMBER_ADDED, alice);
+    stubChatMembership(chat, true);
+    stubSingleMessagePage(chat, message);
+    when(userRepository.findById(alice.getId())).thenReturn(Optional.of(alice));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals("bob added you", response.getFirst().content());
+  }
+
+  @Test
+  void getMessages_withMemberRemovedByOtherMember_formatsRemovedTarget() {
+    User carol = createUser("carol");
+    Chat chat = groupChat(bob, alice, bob, carol);
+    Message message = systemMessage(chat, bob, SystemEventType.MEMBER_REMOVED, carol);
+    stubChatMembership(chat, true);
+    stubSingleMessagePage(chat, message);
+    when(userRepository.findById(carol.getId())).thenReturn(Optional.of(carol));
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals("bob removed carol", response.getFirst().content());
+  }
+
+  @Test
+  void getMessages_withMemberLeft_formatsActorLeftGroup() {
+    Chat chat = groupChat(alice, alice, bob);
+    Message message = systemMessage(chat, bob, SystemEventType.MEMBER_LEFT);
+    stubChatMembership(chat, true);
+    stubSingleMessagePage(chat, message);
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals("bob left the group", response.getFirst().content());
+  }
+
+  @Test
+  void getMessages_withDeletedSystemActor_usesDeletedUserLabel() {
+    User deletedUser = createUser("deleted-user");
+    deletedUser.setDeleted(true);
+    Chat chat = groupChat(alice, alice, bob, deletedUser);
+    Message message = systemMessage(chat, deletedUser, SystemEventType.MEMBER_LEFT);
+    stubChatMembership(chat, true);
+    stubSingleMessagePage(chat, message);
+
+    List<ChatMessageResponse> response = chatService.getMessages(alice, chat.getChatId());
+
+    assertEquals("Deleted user left the group", response.getFirst().content());
+    assertEquals("Deleted user", response.getFirst().sender().username());
   }
 
   // ---------------------------------------------------------------------------
@@ -356,6 +588,48 @@ class ChatServiceUnitTest {
     assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     verify(messageRepository, never()).save(any(Message.class));
     verify(chatMessageBroadcaster, never()).publishMessageEvent(any(), any(), any());
+  }
+
+  @Test
+  void sendMessage_withPrivatePostUserCannotView_throwsForbiddenAndDoesNotSave() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    Post privatePost = post("post-private-share", bob, false);
+    when(postRepository.findById("post-private-share")).thenReturn(Optional.of(privatePost));
+    when(friendRelationRepository.existsByUsers(bob, alice)).thenReturn(false);
+
+    ResponseStatusException ex =
+        assertThrows(
+            ResponseStatusException.class,
+            () ->
+                chatService.sendMessage(
+                    alice, chat.getChatId(), new SendMessageRequest(null, "post-private-share")));
+
+    assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    verify(sharedRepository, never()).save(any(Shared.class));
+    verify(messageRepository, never()).save(any(Message.class));
+  }
+
+  @Test
+  void sendMessage_withVisiblePostToShare_persistsSharedPostAndBroadcasts() {
+    Chat chat = directChat(alice, bob);
+    stubChatMembership(chat, true);
+    stubResponseMappers();
+    Post publicPost = post("post-share", bob, true);
+    when(postRepository.findById("post-share")).thenReturn(Optional.of(publicPost));
+    when(sharedRepository.save(any(Shared.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    ChatMessageResponse response =
+        chatService.sendMessage(
+            alice, chat.getChatId(), new SendMessageRequest("look", "post-share"));
+
+    assertEquals("look", response.content());
+    assertEquals("post-share", response.sharedPost().postId());
+    assertEquals(true, response.sharedPost().canView());
+    verify(sharedRepository).save(any(Shared.class));
+    verify(chatMessageBroadcaster, atLeastOnce())
+        .publishMessageEvent(any(), eq(chat.getChatId()), any());
   }
 
   // ---------------------------------------------------------------------------
@@ -531,6 +805,146 @@ class ChatServiceUnitTest {
         () -> chatService.addMembers(alice, chat.getChatId(), request));
   }
 
+  @Test
+  void addMembers_withNewFriend_addsMemberAndCreatesSystemMessage() {
+    User carol = createUser("carol");
+    Chat chat = groupChat(alice, alice, bob);
+    stubChatMembership(chat, true);
+    stubResponseMappers();
+    when(userRepository.findByUsername("carol")).thenReturn(Optional.of(carol));
+    when(friendRelationRepository.existsByUsers(alice, carol)).thenReturn(true);
+    when(chatRepository.findByChatIdWithDetails(chat.getChatId())).thenReturn(Optional.of(chat));
+    when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(messageRepository.findWithDetailsByMessageId(any()))
+        .thenAnswer(
+            inv ->
+                Optional.of(
+                    Message.builder()
+                        .messageId(inv.getArgument(0))
+                        .chat(chat)
+                        .fromUser(alice)
+                        .content("")
+                        .date(LocalDateTime.now())
+                        .system(true)
+                        .build()));
+
+    var response =
+        chatService.addMembers(
+            alice, chat.getChatId(), new AddChatMembersRequest(List.of("carol")));
+
+    assertEquals(chat.getChatId(), response.chatId());
+    assertTrue(chat.getMembers().stream().anyMatch(member -> member.getUser().equals(carol)));
+    verify(messageRepository).save(any(Message.class));
+    verify(chatMessageBroadcaster, atLeastOnce())
+        .publishMessageEvent(any(), eq(chat.getChatId()), any());
+  }
+
+  @Test
+  void removeMember_asOwner_removesMemberAndCreatesSystemMessage() {
+    Chat chat = groupChat(alice, alice, bob);
+    stubChatMembership(chat, true);
+    stubResponseMappers();
+    stubSystemMessagePersistence(chat);
+    when(chatMemberRepository.deleteByChatIdAndUserId(chat.getChatId(), bob.getId())).thenReturn(1);
+
+    var response = chatService.removeMember(alice, chat.getChatId(), bob.getId());
+
+    assertEquals(chat.getChatId(), response.chatId());
+    verify(chatMemberRepository).deleteByChatIdAndUserId(chat.getChatId(), bob.getId());
+    verify(chatMessageBroadcaster).publishChatRemoved(bob.getUsername(), chat.getChatId());
+    verify(messageRepository).save(any(Message.class));
+  }
+
+  @Test
+  void leaveChat_asGroupMember_removesMemberAndCreatesSystemMessage() {
+    Chat chat = groupChat(alice, alice, bob);
+    stubChatMembership(chat, true);
+    stubSystemMessagePersistence(chat);
+
+    chatService.leaveChat(bob, chat.getChatId());
+
+    verify(chatMemberRepository).deleteByChatIdAndUserId(chat.getChatId(), bob.getId());
+    verify(chatMessageBroadcaster).publishChatRemoved(bob.getUsername(), chat.getChatId());
+    verify(messageRepository).save(any(Message.class));
+  }
+
+  @Test
+  void leaveChat_onDirectChat_marksCurrentUserLeft() {
+    Chat chat = directChat(alice, bob);
+    ChatMember aliceMember = chat.getMembers().getFirst();
+    stubChatMembership(chat, true);
+    when(userRepository.findById(alice.getId())).thenReturn(Optional.of(alice));
+    when(chatMemberRepository.findByChatChatIdAndUser(chat.getChatId(), alice))
+        .thenReturn(Optional.of(aliceMember));
+
+    chatService.leaveChat(alice, chat.getChatId());
+
+    assertNotNull(aliceMember.getLeftAt());
+    verify(chatMemberRepository).save(aliceMember);
+    verify(chatMessageBroadcaster).publishChatRemoved(alice.getUsername(), chat.getChatId());
+  }
+
+  @Test
+  void createAccountDeletedSystemMessages_forEmptyDirectChat_deletesChat() {
+    bob.setDeleted(true);
+    Chat chat = directChat(alice, bob);
+    when(chatRepository.findActiveChatsForUserWithDetails(bob.getId())).thenReturn(List.of(chat));
+    when(messageRepository.countByChat(chat)).thenReturn(0L);
+
+    chatService.createAccountDeletedSystemMessages(bob);
+
+    verify(chatMessageBroadcaster).publishChatRemoved(alice.getUsername(), chat.getChatId());
+    verify(chatRepository).delete(chat);
+    verify(messageRepository, never()).save(any(Message.class));
+  }
+
+  @Test
+  void createAccountDeletedSystemMessages_forDirectChatWithMessages_marksDeletedUserLeft() {
+    bob.setDeleted(true);
+    Chat chat = directChat(alice, bob);
+    ChatMember bobMember = chat.getMembers().get(1);
+    when(chatRepository.findActiveChatsForUserWithDetails(bob.getId())).thenReturn(List.of(chat));
+    when(messageRepository.countByChat(chat)).thenReturn(1L);
+    when(userRepository.findById(bob.getId())).thenReturn(Optional.of(bob));
+    when(userRepository.getReferenceById(bob.getId())).thenReturn(bob);
+    when(chatMemberRepository.findByChatChatIdAndUser(chat.getChatId(), bob))
+        .thenReturn(Optional.of(bobMember));
+    stubResponseMappers();
+    stubSystemMessagePersistence(chat);
+
+    chatService.createAccountDeletedSystemMessages(bob);
+
+    assertNotNull(bobMember.getLeftAt());
+    verify(chatMemberRepository).save(bobMember);
+    verify(messageRepository).save(any(Message.class));
+    verify(chatRepository, never()).delete(chat);
+  }
+
+  @Test
+  void createAccountDeletedSystemMessages_whenGroupOwnerDeletesAccount_promotesRemainingMembers() {
+    bob.setDeleted(true);
+    Chat chat = groupChat(bob, bob, alice);
+    ChatMember bobMember = chat.getMembers().getFirst();
+    when(chatRepository.findActiveChatsForUserWithDetails(bob.getId())).thenReturn(List.of(chat));
+    when(userRepository.findById(bob.getId())).thenReturn(Optional.of(bob));
+    when(userRepository.getReferenceById(bob.getId())).thenReturn(bob);
+    when(chatMemberRepository.findByChatChatIdAndUser(chat.getChatId(), bob))
+        .thenReturn(Optional.of(bobMember));
+    when(chatMemberRepository.existsActiveByChatChatIdAndUser(
+            eq(chat.getChatId()), any(User.class)))
+        .thenReturn(true);
+    stubResponseMappers();
+    stubSystemMessagePersistence(chat);
+
+    chatService.createAccountDeletedSystemMessages(bob);
+
+    assertNotNull(bobMember.getLeftAt());
+    verify(messageRepository, atLeastOnce()).save(any(Message.class));
+    var response = chatService.getChat(alice, chat.getChatId());
+    assertTrue(response.owner());
+    assertEquals(List.of(alice.getId()), response.ownerIds());
+  }
+
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
@@ -603,12 +1017,71 @@ class ChatServiceUnitTest {
         .build();
   }
 
+  private Message systemMessage(Chat chat, User from, SystemEventType event, User... targetUsers) {
+    Message message = message(chat, from, true);
+    message.setSystemEvent(event);
+    message.setSystemTargetUserIds(
+        Arrays.stream(targetUsers).map(User::getId).map(UUID::toString).collect(joining(",")));
+    return message;
+  }
+
+  private Message messageWithSharedPost(Chat chat, User from, Post post) {
+    Message message = message(chat, from, false);
+    message.setShared(shared(post, from));
+    return message;
+  }
+
+  private void stubSingleMessagePage(Chat chat, Message message) {
+    when(messageRepository.findLatestMessageIds(chat, PageRequest.of(0, 30)))
+        .thenReturn(List.of(message.getMessageId()));
+    when(messageRepository.findMessagesWithDetailsByIds(List.of(message.getMessageId())))
+        .thenReturn(List.of(message));
+  }
+
+  private void stubSystemMessagePersistence(Chat chat) {
+    when(chatRepository.findByChatIdWithDetails(chat.getChatId())).thenReturn(Optional.of(chat));
+    when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(messageRepository.findWithDetailsByMessageId(any()))
+        .thenAnswer(
+            inv ->
+                Optional.of(
+                    Message.builder()
+                        .messageId(inv.getArgument(0))
+                        .chat(chat)
+                        .fromUser(alice)
+                        .content("")
+                        .date(LocalDateTime.now())
+                        .system(true)
+                        .build()));
+  }
+
   private Reaction reaction(Message message, User from, String emoji) {
     return Reaction.builder()
         .id(new ReactionId(from.getId(), message.getMessageId(), emoji))
         .message(message)
         .fromUser(from)
         .content(emoji)
+        .createdAt(LocalDateTime.now())
+        .build();
+  }
+
+  private Post post(String postId, User owner, boolean isPublic) {
+    return Post.builder()
+        .postId(postId)
+        .user(owner)
+        .caption("shared caption")
+        .mediaRef("posts/media/" + postId + ".png")
+        .isPublic(isPublic)
+        .isRemoved(false)
+        .createdAt(LocalDateTime.now())
+        .build();
+  }
+
+  private Shared shared(Post post, User sharedBy) {
+    return Shared.builder()
+        .sharedId(UUID.randomUUID())
+        .post(post)
+        .sharedBy(sharedBy)
         .createdAt(LocalDateTime.now())
         .build();
   }
