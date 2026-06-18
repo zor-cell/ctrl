@@ -266,7 +266,7 @@ class LabelingServiceUnitTest {
     post.setUser(creator);
 
     Set<UUID> followedIds = inDirectFollows ? Set.of(creatorId) : Set.of();
-    Set<UUID> friendIds   = inDirectFriends ? Set.of(creatorId) : Set.of();
+    Set<UUID> friendIds = inDirectFriends ? Set.of(creatorId) : Set.of();
     Set<UUID> secondDegreeIds = inSecondDegree ? Set.of(creatorId) : Set.of();
     UUID viewerId = UUID.randomUUID();
     LabelContext ctx =
