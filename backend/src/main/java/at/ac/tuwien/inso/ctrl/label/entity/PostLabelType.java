@@ -10,7 +10,8 @@ public enum PostLabelType {
   AI_GENERATED("🤖", "AI Generated", "Creator marked this as AI-generated"),
   HIGHLY_DISCUSSED("💬", "Highly Discussed", "More than 100 comments"),
   TRUSTED_SOURCE("✅", "Trusted Source", "The community considers this source reliable"),
-  DISPUTED_SOURCE("⚠️", "Disputed Source", "The community has raised reliability concerns about this source"),
+  DISPUTED_SOURCE(
+      "⚠️", "Disputed Source", "The community has raised reliability concerns about this source"),
   EXTENDED_NETWORK("❤️", "Extended Network", "Posted by someone your follows/friends follow"),
   MASTODON("Ⓜ️", "Mastodon", "This post is from Mastodon"),
   POST_REPORTED("🚩", "Reported", "You have reported this post");

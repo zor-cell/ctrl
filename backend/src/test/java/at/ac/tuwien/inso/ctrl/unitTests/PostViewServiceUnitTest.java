@@ -37,186 +37,182 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 @ExtendWith(MockitoExtension.class)
 class PostViewServiceUnitTest {
 
-    @Mock private SeenPostRepository seenPostRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private SessionService sessionService;
-    @Mock private SessionRepository sessionRepository;
+  @Mock private SeenPostRepository seenPostRepository;
+  @Mock private UserRepository userRepository;
+  @Mock private SessionService sessionService;
+  @Mock private SessionRepository sessionRepository;
 
-    @InjectMocks private PostViewServiceImpl postViewService;
+  @InjectMocks private PostViewServiceImpl postViewService;
 
-    private User user;
+  private User user;
 
-    @BeforeEach
-    void setUp() {
-        user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("alice");
-    }
+  @BeforeEach
+  void setUp() {
+    user = new User();
+    user.setId(UUID.randomUUID());
+    user.setUsername("alice");
+  }
 
-    /** recordViews – unknown user */
-    @Test
-    void recordViews_withUnknownUsername_shouldThrowUsernameNotFoundException() {
-        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+  /** recordViews – unknown user */
+  @Test
+  void recordViews_withUnknownUsername_shouldThrowUsernameNotFoundException() {
+    when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
-        PostViewBatchRequest request = new PostViewBatchRequest(List.of());
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of());
 
-        assertThrows(
-                UsernameNotFoundException.class,
-                () -> postViewService.recordViews(request, "unknown"));
+    assertThrows(
+        UsernameNotFoundException.class, () -> postViewService.recordViews(request, "unknown"));
 
-        verify(seenPostRepository, never()).upsertView(any(), any(), anyLong());
-        verify(sessionService, never()).getOrCreateLastSession(any());
-        verify(sessionRepository, never()).save(any());
-    }
+    verify(seenPostRepository, never()).upsertView(any(), any(), anyLong());
+    verify(sessionService, never()).getOrCreateLastSession(any());
+    verify(sessionRepository, never()).save(any());
+  }
 
-    /** recordViews – empty views list */
-    @Test
-    void recordViews_withEmptyViewsList_shouldNotInteractWithSessionAtAll() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+  /** recordViews – empty views list */
+  @Test
+  void recordViews_withEmptyViewsList_shouldNotInteractWithSessionAtAll() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
 
-        PostViewBatchRequest request = new PostViewBatchRequest(List.of());
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of());
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(seenPostRepository, never()).upsertView(any(), any(), anyLong());
-        verify(sessionService, never()).getOrCreateLastSession(any());
-        verify(sessionRepository, never()).save(any());
-    }
+    verify(seenPostRepository, never()).upsertView(any(), any(), anyLong());
+    verify(sessionService, never()).getOrCreateLastSession(any());
+    verify(sessionRepository, never()).save(any());
+  }
 
-    /** recordViews – upsertView is called for every entry */
-    @ParameterizedTest
-    @MethodSource("inputArrays")
-    void recordViews_withViews_shouldCallUpsertViewForEachEntry(
-            List<PostViewRequest> views, int expectedUpsertCalls) {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(0);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  /** recordViews – upsertView is called for every entry */
+  @ParameterizedTest
+  @MethodSource("inputArrays")
+  void recordViews_withViews_shouldCallUpsertViewForEachEntry(
+      List<PostViewRequest> views, int expectedUpsertCalls) {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(0);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request = new PostViewBatchRequest(views);
+    PostViewBatchRequest request = new PostViewBatchRequest(views);
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(seenPostRepository, times(expectedUpsertCalls)).upsertView(any(), any(), anyLong());
-    }
+    verify(seenPostRepository, times(expectedUpsertCalls)).upsertView(any(), any(), anyLong());
+  }
 
-    static Stream<Arguments> inputArrays() {
-        return Stream.of(
-                Arguments.of(List.of(entry("post-1", 1000L)), 1),
-                Arguments.of(List.of(entry("post-1", 1000L), entry("post-2", 2000L)), 2),
-                Arguments.of(List.of(entry("post-1", 500L), entry("post-2", 1500L), entry("post-3", 3000L)), 3));
-    }
+  static Stream<Arguments> inputArrays() {
+    return Stream.of(
+        Arguments.of(List.of(entry("post-1", 1000L)), 1),
+        Arguments.of(List.of(entry("post-1", 1000L), entry("post-2", 2000L)), 2),
+        Arguments.of(
+            List.of(entry("post-1", 500L), entry("post-2", 1500L), entry("post-3", 3000L)), 3));
+  }
 
-    /** recordViews – correct postId and durationMs are forwarded to upsertView */
-    @Test
-    void recordViews_withViews_shouldForwardCorrectPostIdAndDurationToUpsertView() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(0);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  /** recordViews – correct postId and durationMs are forwarded to upsertView */
+  @Test
+  void recordViews_withViews_shouldForwardCorrectPostIdAndDurationToUpsertView() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(0);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request =
-                new PostViewBatchRequest(List.of(entry("post-42", 7500L)));
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of(entry("post-42", 7500L)));
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(seenPostRepository).upsertView(user.getId(), "post-42", 7500L);
-    }
+    verify(seenPostRepository).upsertView(user.getId(), "post-42", 7500L);
+  }
 
-    /** recordViews – session postsViewed is incremented correctly */
-    @ParameterizedTest
-    @MethodSource("inputArrays")
-    void recordViews_withViews_shouldIncrementPostsViewedByNumberOfViews(
-            List<PostViewRequest> views, int expectedUpsertCalls) {
-        int initialPostsViewed = 5;
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(initialPostsViewed);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  /** recordViews – session postsViewed is incremented correctly */
+  @ParameterizedTest
+  @MethodSource("inputArrays")
+  void recordViews_withViews_shouldIncrementPostsViewedByNumberOfViews(
+      List<PostViewRequest> views, int expectedUpsertCalls) {
+    int initialPostsViewed = 5;
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(initialPostsViewed);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request = new PostViewBatchRequest(views);
+    PostViewBatchRequest request = new PostViewBatchRequest(views);
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        assertEquals(initialPostsViewed + views.size(), session.getPostsViewed());
-    }
+    assertEquals(initialPostsViewed + views.size(), session.getPostsViewed());
+  }
 
-    @Test
-    void recordViews_withViews_shouldStartCountFromZeroWhenSessionIsNew() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(0);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  @Test
+  void recordViews_withViews_shouldStartCountFromZeroWhenSessionIsNew() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(0);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request =
-                new PostViewBatchRequest(List.of(entry("post-1", 1000L), entry("post-2", 2000L)));
+    PostViewBatchRequest request =
+        new PostViewBatchRequest(List.of(entry("post-1", 1000L), entry("post-2", 2000L)));
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        assertEquals(2, session.getPostsViewed());
-    }
+    assertEquals(2, session.getPostsViewed());
+  }
 
-    /** recordViews – session is persisted */
-    @Test
-    void recordViews_withViews_shouldSaveUpdatedSession() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(3);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  /** recordViews – session is persisted */
+  @Test
+  void recordViews_withViews_shouldSaveUpdatedSession() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(3);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request =
-                new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        ArgumentCaptor<SessionHistory> captor = ArgumentCaptor.forClass(SessionHistory.class);
-        verify(sessionRepository).save(captor.capture());
-        assertEquals(session, captor.getValue());
-    }
+    ArgumentCaptor<SessionHistory> captor = ArgumentCaptor.forClass(SessionHistory.class);
+    verify(sessionRepository).save(captor.capture());
+    assertEquals(session, captor.getValue());
+  }
 
-    @Test
-    void recordViews_withEmptyViewsList_shouldNeverSaveSession() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+  @Test
+  void recordViews_withEmptyViewsList_shouldNeverSaveSession() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
 
-        PostViewBatchRequest request = new PostViewBatchRequest(List.of());
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of());
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(sessionRepository, never()).save(any());
-    }
+    verify(sessionRepository, never()).save(any());
+  }
 
-    /** recordViews – user resolution */
-    @Test
-    void recordViews_withViews_shouldLookUpUserByUsername() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(0);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  /** recordViews – user resolution */
+  @Test
+  void recordViews_withViews_shouldLookUpUserByUsername() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(0);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request =
-                new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(userRepository).findByUsername("alice");
-    }
+    verify(userRepository).findByUsername("alice");
+  }
 
-    @Test
-    void recordViews_withViews_shouldPassResolvedUserToSessionService() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        SessionHistory session = buildSession(0);
-        when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
+  @Test
+  void recordViews_withViews_shouldPassResolvedUserToSessionService() {
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+    SessionHistory session = buildSession(0);
+    when(sessionService.getOrCreateLastSession(user)).thenReturn(session);
 
-        PostViewBatchRequest request =
-                new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
+    PostViewBatchRequest request = new PostViewBatchRequest(List.of(entry("post-1", 1000L)));
 
-        postViewService.recordViews(request, "alice");
+    postViewService.recordViews(request, "alice");
 
-        verify(sessionService).getOrCreateLastSession(user);
-    }
+    verify(sessionService).getOrCreateLastSession(user);
+  }
 
-    /** Helpers */
-    private static PostViewRequest entry(String postId, long durationMs) {
-        return new PostViewRequest(postId, durationMs);
-    }
+  /** Helpers */
+  private static PostViewRequest entry(String postId, long durationMs) {
+    return new PostViewRequest(postId, durationMs);
+  }
 
-    private SessionHistory buildSession(int postsViewed) {
-        SessionHistory session = new SessionHistory();
-        session.setPostsViewed(postsViewed);
-        return session;
-    }
+  private SessionHistory buildSession(int postsViewed) {
+    SessionHistory session = new SessionHistory();
+    session.setPostsViewed(postsViewed);
+    return session;
+  }
 }
