@@ -18,7 +18,7 @@
                                pTooltip="The maximum time in minutes you will be able to spend daily on CTRL."
                                tooltipPosition="right"></i>
                         </div>
-                        <span>{{ configForm.get('timeLimitMinutes')?.value}} Minute{{(configForm.get('timeLimitMinutes')?.value === 1 ? '' : 's')}}</span>
+                        <span>{{ configForm.get('timeLimitMinutes')?.value | timeFormat }}</span>
                     </div>
                     <p-slider
                             id="timeLimit"

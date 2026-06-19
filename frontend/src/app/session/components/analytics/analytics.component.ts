@@ -180,9 +180,30 @@ export class AnalyticsComponent implements OnInit {
     });
   }
 
+  protected lastTappedIndex = signal<number | null>(null);
+
   protected handleBarClick = (index: number): void => {
-    this.focusedDay.set(index);
-    this.viewMode.set('detailed');
+    //user clicked somewhere but not on the bar
+    if(index == -1) {
+      this.lastTappedIndex.set(null);
+      return;
+    }
+
+    const isTouchDevice = window.matchMedia('(max-width: 768px)').matches;
+    if (isTouchDevice) {
+      if (this.lastTappedIndex() === index) {
+        //its the second tab -> go into detail view
+        this.focusedDay.set(index);
+        this.viewMode.set('detailed');
+        this.lastTappedIndex.set(null);
+      } else {
+        //its the first tap -> let chart.js show the tooltip
+        this.lastTappedIndex.set(index);
+      }
+    } else {
+      this.focusedDay.set(index);
+      this.viewMode.set('detailed');
+    }
   };
 
   protected goBack(): void {

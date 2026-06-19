@@ -1,5 +1,5 @@
 <div class="wrapper">
-  <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+  <p-tabs lazy [value]="activeTab()" (valueChange)="onTabChange($event)">
     <p-tablist>
       <p-tab value="account">
           Account
@@ -17,16 +17,24 @@
 
     <p-tabpanels>
         <p-tabpanel value="account">
-            <app-profile></app-profile>
+            <ng-template #content>
+                <app-profile></app-profile>
+            </ng-template>
         </p-tabpanel>
         <p-tabpanel value="session">
-            <app-session-config></app-session-config>
+            <ng-template #content>
+                <app-session-config></app-session-config>
+            </ng-template>
         </p-tabpanel>
         <p-tabpanel value="algorithm">
-            <app-algorithm-config></app-algorithm-config>
+            <ng-template #content>
+                <app-algorithm-config></app-algorithm-config>
+            </ng-template>
         </p-tabpanel>
         <p-tabpanel value="analytics">
-            <app-analytics></app-analytics>
+            <ng-template #content>
+                <app-analytics></app-analytics>
+            </ng-template>
         </p-tabpanel>
     </p-tabpanels>
   </p-tabs>
