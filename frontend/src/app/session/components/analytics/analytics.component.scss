@@ -68,6 +68,15 @@ $color-interaction: var(--p-primary-color);
   padding: 1rem;
   border-radius: 1rem;
   border: 1px solid var(--border);
+
+  @media screen and (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 0;
+
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 :host ::ng-deep {
@@ -98,10 +107,51 @@ $color-interaction: var(--p-primary-color);
   gap: 1rem;
   .p-chart {
     flex-grow: 1;
+    min-width: 0;
   }
 
   .p-button-icon-only {
     background: transparent;
     color: var(--p-text-color);
+  }
+
+  @media screen and (max-width: 768px) {
+    gap: 0.25rem;
+
+    .transparentButton ::ng-deep .p-button {
+      padding: 0.25rem;
+      width: fit-content;
+
+      .p-button-icon {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+  position: relative;
+  flex-wrap: wrap;
+
+  h3 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+
+    @media screen and (max-width: 768px) {
+      position: static;
+      transform: none;
+      width: 100%;
+      text-align: center;
+      order: -1;
+      margin-bottom: 0;
+    }
   }
 }

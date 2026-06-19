@@ -165,8 +165,8 @@ export class AnalyticsChartService {
         padding: {
           top: 0,
           bottom: 0,
-          left: 60,
-          right: 60
+          left: 10,
+          right: 10
         }
       },
       plugins: {
@@ -198,7 +198,7 @@ export class AnalyticsChartService {
                 content: 'daily limit',
                 backgroundColor: 'rgba(255, 99, 132, 1)',
                 position: "start",
-                xAdjust: -58,
+                xAdjust: -10,
                 font: {
                   size: 12
                 }
