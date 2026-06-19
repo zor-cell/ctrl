@@ -62,6 +62,12 @@ declare global {
       ): Chainable<string>;
       verifyEmail(username: string, token: string): Chainable<Cypress.Response<unknown>>;
       deleteUser(username: string, password: string): Chainable<Cypress.Response<unknown>>;
+      fetchResetToken(
+        overrides?: Partial<{
+          username: string;
+          email: string;
+        }>
+      ): Chainable<string>;
     }
   }
 }
@@ -164,6 +170,47 @@ Cypress.Commands.add('fetchVerificationToken', (overrides = {}) => {
     )
     .then((tokenResponse) => {
       console.log('fetchVerificationToken /api/auth/verification-token response:', tokenResponse);
+      return (tokenResponse.status === 200 ? tokenResponse.body : '000000') as string;
+    });
+});
+
+Cypress.Commands.add('fetchResetToken', (overrides = {}) => {
+  const timestamp = Date.now();
+  const defaultUsername = Cypress.env('TEST_USER') || ('test_user_' + timestamp);
+
+  const targetUsername = overrides.username || defaultUsername;
+  const targetEmail = overrides.email || Cypress.env('TEST_EMAIL') || (targetUsername + '@example.com');
+
+  return cy
+      .request({
+        method: 'POST',
+        url: '/api/auth/login',
+        failOnStatusCode: true,
+        body: {
+          username: 'TestUser',
+          password: 'test12345678',
+        },
+      })
+    .then((loginResponse) => {
+      console.log('fetchResetToken /api/auth/login response:', loginResponse);
+      return loginResponse;
+    })
+    .then((loginResponse) =>
+      cy.request({
+        method: 'GET',
+        url: '/api/auth/password-token',
+        failOnStatusCode: true,
+        headers: {
+          Authorization: 'Bearer ' + loginResponse.body.token,
+        },
+        body: {
+          username: targetUsername,
+          email: targetEmail,
+        },
+      })
+    )
+    .then((tokenResponse) => {
+      console.log('fetchVerificationToken /api/auth/password-token response:', tokenResponse);
       return (tokenResponse.status === 200 ? tokenResponse.body : '000000') as string;
     });
 });

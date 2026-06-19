@@ -10,13 +10,12 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
-
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,14 +141,16 @@ public class ResetPasswordService {
   public String getPasswordToken(@Valid PasswordResetEmailRequest sendEmailRequest) {
     Optional<User> user = userRepository.findByEmail(sendEmailRequest.email());
     if (user.isEmpty()) {
-      throw new ResourceNotFoundException("User with email " + sendEmailRequest.email() + " not found");
+      throw new ResourceNotFoundException(
+          "User with email " + sendEmailRequest.email() + " not found");
     }
 
     PasswordReset reset =
         passwordResetRepository
             .findFirstByUser_IdAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(
                 user.get().getId(), LocalDateTime.now())
-            .orElseThrow(() -> new ResourceNotFoundException("No active password reset token found"));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("No active password reset token found"));
 
     return reset.getToken();
   }

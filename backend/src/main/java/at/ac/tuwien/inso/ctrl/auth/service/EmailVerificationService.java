@@ -12,6 +12,7 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -19,14 +20,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -223,21 +221,22 @@ public class EmailVerificationService {
   }
 
   public String getVerificationToken(@Valid SendEmailRequest sendEmailRequest) {
-        User user =
-            userRepository
-                .findByUsername(sendEmailRequest.username())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
+    User user =
+        userRepository
+            .findByUsername(sendEmailRequest.username())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
 
-        EmailVerification verification =
-            emailVerificationRepository
-                .findEmailVerificationByUser_Id(user.getId())
-                .orElseThrow(
-                    () ->
-                        new ResourceNotFoundException(
-                            "Verification failed. User does not exist or Token is invalid"));
+    EmailVerification verification =
+        emailVerificationRepository
+            .findEmailVerificationByUser_Id(user.getId())
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
 
-        LOGGER.info("Verification token for user {}: {}", sendEmailRequest.username(), verification.getCode());
+    LOGGER.info(
+        "Verification token for user {}: {}", sendEmailRequest.username(), verification.getCode());
 
-        return verification.getCode();
+    return verification.getCode();
   }
 }

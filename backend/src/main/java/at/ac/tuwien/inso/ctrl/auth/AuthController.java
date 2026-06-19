@@ -66,7 +66,8 @@ public class AuthController {
 
   @PreAuthorize("hasRole('TEST')")
   @GetMapping("/password-token")
-  public String getPasswordResetToken(@Valid @RequestBody PasswordResetEmailRequest sendEmailRequest) {
+  public String getPasswordResetToken(
+      @Valid @RequestBody PasswordResetEmailRequest sendEmailRequest) {
     LOGGER.trace("Get password token request: {}", sendEmailRequest);
     return passwordResetService.getPasswordToken(sendEmailRequest);
   }
