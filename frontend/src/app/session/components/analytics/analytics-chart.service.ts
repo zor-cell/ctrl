@@ -159,7 +159,6 @@ export class AnalyticsChartService {
     return {
       clip: false,
       responsive: true,
-      resizeDelay: 100,
       maintainAspectRatio: false,
       layout: {
         padding: {
@@ -217,6 +216,8 @@ export class AnalyticsChartService {
         if (elements.length > 0) {
           const idx = elements[0].index;
           onBarClick(idx);
+        } else {
+          onBarClick(-1);
         }
       },
       onHover: (event: ChartEvent, chartElement: ActiveElement[]) => {
@@ -236,7 +237,6 @@ export class AnalyticsChartService {
   ): ChartOptions<'bar'> {
     return {
       responsive: true,
-      resizeDelay: 100,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
@@ -262,7 +262,7 @@ export class AnalyticsChartService {
         y: {
           display: false,
         },
-      },
+      }
     };
   }
 
@@ -284,7 +284,6 @@ export class AnalyticsChartService {
     return {
       indexAxis: 'y',
       responsive: true,
-      resizeDelay: 100,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },

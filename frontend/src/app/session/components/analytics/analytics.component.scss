@@ -87,20 +87,6 @@ $color-interaction: var(--p-primary-color);
   }
 }
 
-
-.chart-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 1rem;
-
-  h3 {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-}
-
 .chart-wrapper {
   display: flex;
   align-items: center;
@@ -152,6 +138,8 @@ $color-interaction: var(--p-primary-color);
       text-align: center;
       order: -1;
       margin-bottom: 0;
+
+      font-size: 1rem;
     }
   }
 }
