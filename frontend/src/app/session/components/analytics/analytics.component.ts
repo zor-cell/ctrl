@@ -134,11 +134,11 @@ export class AnalyticsComponent implements OnInit {
   previousButtonVisible = computed(() => {
     switch (this.activeKey()) {
       case 'overview-days':
-        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() / 7) - 1; //TODO: buggy for sure
+        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() + 1 / 7) - 1;
       case 'overview-average':
         return false;
       case 'detailed-days':
-        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() / 7) - 1 || this.focusedDay() > 0;
+        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() + 1 / 7) - 1 || this.focusedDay() > 0;
       case 'detailed-average':
         return this.focusedDay() > 0;
     }
@@ -186,7 +186,7 @@ export class AnalyticsComponent implements OnInit {
 
   protected handleBarClick = (index: number): void => {
     //user clicked somewhere but not on the bar
-    if(index == -1) {
+    if (index == -1) {
       this.lastTappedIndex.set(null);
       return;
     }
