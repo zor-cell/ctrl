@@ -12,6 +12,7 @@ import {SessionStateService} from "../../session-state.service";
 import {UsageComponent} from "../usage/usage.component";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {ConfirmDialog} from "primeng/confirmdialog";
+import {TimeFormatPipe} from "../../../core/utils/time-format.pipe";
 
 @Component({
   selector: 'app-session-config',
@@ -25,7 +26,8 @@ import {ConfirmDialog} from "primeng/confirmdialog";
     Tooltip,
     Slider,
     UsageComponent,
-    ConfirmDialog
+    ConfirmDialog,
+    TimeFormatPipe
   ],
   providers: [ConfirmationService],
   templateUrl: './config.component.html',
