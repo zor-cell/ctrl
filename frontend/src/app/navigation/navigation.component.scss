@@ -76,8 +76,6 @@
   }
 
   .p-menubar-item-icon {
-    width: 1.75rem;
-    height: 1.75rem;
     border-radius: 50%;
     background-image: var(--nav-profile-pic-url, none);
     background-size: cover;
@@ -99,21 +97,63 @@
 
 @media screen and (max-width: 959px) {
   :host ::ng-deep .p-menubar {
+    flex-wrap: nowrap;
+    align-items: center;
+
     .p-menubar-button {
-      order: 1;
-      margin-left: 0;
-      margin-right: 0;
+      display: none;
     }
 
     .p-menubar-start {
-      order: 2;
+      order: 1;
       flex: 1;
       display: flex;
-      justify-content: start;
+      justify-content: flex-start;
+    }
+
+    .p-menubar-root-list {
+      order: 2;
+      display: flex !important;
+      flex-direction: row !important;
+      position: static !important;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      width: auto !important;
+    }
+
+    .p-menubar-item {
+      width: auto !important;
     }
 
     .p-menubar-end {
       order: 3;
+      flex: 1;
+
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
+  }
+}
+
+:host ::ng-deep .p-menubar-root-list {
+  .p-menubar-item-label:empty {
+    display: none;
+  }
+}
+
+// Admin hat ein Icon mehr → Logo verschwindet früher
+@media screen and (max-width: 460px) {
+  .is-admin .logo-text {
+    display: none;
+  }
+}
+
+// Kein Admin → Logo verschwindet erst ab 400px
+@media screen and (max-width: 400px) {
+  .logo-text {
+    display: none;
   }
 }

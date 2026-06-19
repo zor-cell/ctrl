@@ -1,8 +1,8 @@
 // ─── Tokens ───────────────────────────────────────────
-$border:     var(--border);
+$border: var(--border);
 $text-muted: #888;
-$downvote:   #e05858;
-$radius-sm:  10px;
+$downvote: #e05858;
+$radius-sm: 10px;
 
 // ─── Loading / Empty ──────────────────────────────────
 .pdv-loading {
@@ -18,8 +18,14 @@ $radius-sm:  10px;
   gap: 10px;
   color: $text-muted;
 
-  i { font-size: 2rem; opacity: 0.4; }
-  p { font-size: 0.88rem; margin: 0; }
+  i {
+    font-size: 2rem;
+    opacity: 0.4;
+  }
+  p {
+    font-size: 0.88rem;
+    margin: 0;
+  }
 }
 
 // ─── Comments List ────────────────────────────────────
@@ -41,9 +47,15 @@ $radius-sm:  10px;
     margin-top: 10px;
     padding-left: 4px;
 
-    .comment-username { font-size: 0.8rem; }
-    .comment-content  { font-size: 0.82rem; }
-    .comment-time     { font-size: 0.72rem; }
+    .comment-username {
+      font-size: 0.8rem;
+    }
+    .comment-content {
+      font-size: 0.82rem;
+    }
+    .comment-time {
+      font-size: 0.72rem;
+    }
   }
 }
 
@@ -68,7 +80,9 @@ $radius-sm:  10px;
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -107,7 +121,9 @@ $radius-sm:  10px;
   display: flex;
   align-items: center;
   gap: 4px;
-  &:hover { color: var(--p-primary-color); }
+  &:hover {
+    color: var(--p-primary-color);
+  }
 }
 
 .comment-action-btn {
@@ -122,8 +138,12 @@ $radius-sm:  10px;
   align-items: center;
   transition: color 0.15s;
 
-  &.edit-btn:hover   { color: var(--p-primary-color); }
-  &.delete-btn:hover { color: $downvote; }
+  &.edit-btn:hover {
+    color: var(--p-primary-color);
+  }
+  &.delete-btn:hover {
+    color: $downvote;
+  }
 }
 
 .edit-form {
@@ -163,7 +183,9 @@ $radius-sm:  10px;
   cursor: pointer;
   color: $text-muted;
   font-size: 0.85rem;
-  &:hover { color: $downvote; }
+  &:hover {
+    color: $downvote;
+  }
 }
 
 .comment-input-row {
@@ -215,12 +237,56 @@ $radius-sm:  10px;
 .delete-confirm-btn {
   border-color: transparent;
   color: #888;
-  &:hover { color: #e05858; border-color: transparent; background: transparent; }
+  &:hover {
+    color: #e05858;
+    border-color: transparent;
+    background: transparent;
+  }
 
   &--solid {
     border-color: #e05858;
     color: #e05858;
-    &:hover { background: #e05858; color: #fff; }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &:hover {
+      background: #e05858;
+      color: #fff;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@media (max-width: 760px) {
+  .comments-list {
+    max-height: 9rem;
+    padding: 0.85rem 1rem;
+    gap: 0.85rem;
+    scrollbar-width: none;
+  }
+
+  .comments-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pdv-empty {
+    padding: 0.55rem 0;
+
+    i {
+      font-size: 1.8rem;
+    }
+  }
+
+  .comment-input-footer {
+    padding: 0.75rem 1rem 0.85rem;
+  }
+
+  .comment-input-row {
+    align-items: center;
+  }
+
+  .comment-input {
+    min-height: 2.5rem;
+    font-size: 0.95rem;
   }
 }

@@ -17,6 +17,15 @@
     margin-bottom: 1rem;
   }
 
+  @media screen and (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
 }
 
 .usage-wrapper {
@@ -114,4 +123,24 @@
       }
     }
   }
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .snooze-banner-content {
+      align-items: center;
+    }
+
+    ::ng-deep p-button {
+      width: 75%;
+      align-self: center;
+
+      .p-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
 }
+

@@ -1,4 +1,4 @@
-<main class="chat-page">
+<main class="chat-page" [class.chat-page--has-selection]="selectedChat()">
   <aside class="chat-sidebar" aria-label="Chats">
     <div class="sidebar-header">
       <h1>Chats</h1>
@@ -14,7 +14,8 @@
           [ngModel]="searchQuery()"
           (focus)="onSearchFocus()"
           (blur)="onSearchBlur()"
-          (ngModelChange)="onSearchChange($event)" />
+          (ngModelChange)="onSearchChange($event)"
+        />
       </p-iconField>
 
       @if (friendDropdownOpen()) {
@@ -69,29 +70,60 @@
         <p class="sidebar-empty">No chats yet</p>
       } @else {
         @if (filteredDirectChats().length > 0) {
-          <div class="section-title">
-            <i class="pi pi-user section-title-icon" aria-hidden="true"></i>
-            Direct
-          </div>
-          <div class="chat-list">
-            @for (chat of filteredDirectChats(); track chat.chatId) {
-              <ng-container
-                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
-            }
-          </div>
+          <button
+            type="button"
+            class="section-title section-toggle"
+            [attr.aria-expanded]="directChatsExpanded()"
+            aria-controls="direct-chat-list"
+            (click)="directChatsExpanded.update((expanded) => !expanded)"
+          >
+            <span class="section-title-copy">
+              <i class="pi pi-user section-title-icon" aria-hidden="true"></i>
+              Direct
+            </span>
+            <i
+              class="pi section-toggle-icon"
+              [class.pi-chevron-down]="directChatsExpanded()"
+              [class.pi-chevron-right]="!directChatsExpanded()"
+              aria-hidden="true"
+            ></i>
+          </button>
+          @if (directChatsExpanded()) {
+            <div id="direct-chat-list" class="chat-list">
+              @for (chat of filteredDirectChats(); track chat.chatId) {
+                <ng-container *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+              }
+            </div>
+          }
         }
 
         @if (filteredGroupChats().length > 0) {
-          <div class="section-title" [class.section-title--spaced]="filteredDirectChats().length > 0">
-            <i class="pi pi-users section-title-icon" aria-hidden="true"></i>
-            Groups
-          </div>
-          <div class="chat-list">
-            @for (chat of filteredGroupChats(); track chat.chatId) {
-              <ng-container
-                *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
-            }
-          </div>
+          <button
+            type="button"
+            class="section-title section-toggle"
+            [class.section-title--spaced]="filteredDirectChats().length > 0"
+            [attr.aria-expanded]="groupChatsExpanded()"
+            aria-controls="group-chat-list"
+            (click)="groupChatsExpanded.update((expanded) => !expanded)"
+          >
+            <span class="section-title-copy">
+              <i class="pi pi-users section-title-icon" aria-hidden="true"></i>
+              Groups
+            </span>
+            <i
+              class="pi section-toggle-icon"
+              [class.pi-chevron-down]="groupChatsExpanded()"
+              [class.pi-chevron-right]="!groupChatsExpanded()"
+              aria-hidden="true"
+            ></i>
+          </button>
+          @if (groupChatsExpanded()) {
+            <div id="group-chat-list" class="chat-list">
+              @for (chat of filteredGroupChats(); track chat.chatId) {
+                <ng-container *ngTemplateOutlet="chatListRow; context: { $implicit: chat }" />
+              }
+            </div>
+          }
         }
       }
     </section>
@@ -103,10 +135,15 @@
         [class.chat-row--group]="chat.groupChat"
         [class.active]="isSelected(chat)"
         [class.chat-row--unread]="hasUnreadMessages(chat)"
-        (click)="selectChat(chat)">
+        (click)="selectChat(chat)"
+      >
         <span class="avatar" [class.avatar--group]="chat.groupChat" aria-hidden="true">
           @if (chat.groupChat && groupImageUrl(chat)) {
-            <img [src]="groupImageUrl(chat)" alt="" />
+            <img
+              [src]="groupImageUrl(chat)"
+              alt=""
+              (error)="onGroupImageError(chat, groupImageUrl(chat)!)"
+            />
           } @else if (!chat.groupChat) {
             @let other = otherParticipant(chat);
             @if (other && avatarUrl(other.id)) {
@@ -154,16 +191,32 @@
       <header class="chat-header">
         <button
           type="button"
+          class="chat-back-button"
+          (click)="backToChatList()"
+          aria-label="Back to chats"
+        >
+          <i class="pi pi-arrow-left"></i>
+        </button>
+
+        <button
+          type="button"
           class="avatar avatar-large avatar-button"
           [class.avatar-button--group]="chat.groupChat"
           [class.avatar-button--direct]="!chat.groupChat"
-          [class.avatar-button--disabled]="!chat.groupChat && !canOpenParticipantProfile(otherParticipant(chat))"
+          [class.avatar-button--disabled]="
+            !chat.groupChat && !canOpenParticipantProfile(otherParticipant(chat))
+          "
           (click)="chat.groupChat ? openMembersDialog() : openDirectChatProfile(chat)"
           [pTooltip]="chat.groupChat ? '' : directChatProfileTooltip(chat)"
           tooltipPosition="bottom"
-          [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'">
+          [attr.aria-label]="chat.groupChat ? 'View group members' : 'View profile'"
+        >
           @if (chat.groupChat && groupImageUrl(chat)) {
-            <img [src]="groupImageUrl(chat)" alt="" />
+            <img
+              [src]="groupImageUrl(chat)"
+              alt=""
+              (error)="onGroupImageError(chat, groupImageUrl(chat)!)"
+            />
           } @else if (!chat.groupChat) {
             @let other = otherParticipant(chat);
             @if (other && avatarUrl(other.id)) {
@@ -183,7 +236,8 @@
             [class.chat-header-link--disabled]="!canOpenParticipantProfile(otherParticipant(chat))"
             (click)="openDirectChatProfile(chat)"
             [pTooltip]="directChatProfileTooltip(chat)"
-            tooltipPosition="bottom">
+            tooltipPosition="bottom"
+          >
             <h2>{{ chatDisplayName(chat) }}</h2>
             @if (directChatSubtitle(chat); as subtitle) {
               <p>{{ subtitle }}</p>
@@ -204,7 +258,8 @@
               type="button"
               class="header-icon-button"
               (click)="openMembersDialog()"
-              aria-label="View members">
+              aria-label="View members"
+            >
               <i class="pi pi-users"></i>
             </button>
           }
@@ -216,7 +271,8 @@
               (click)="requestDeleteSelectedGroup()"
               pTooltip="Delete group for everyone"
               tooltipPosition="bottom"
-              aria-label="Delete group for everyone">
+              aria-label="Delete group for everyone"
+            >
               <i class="pi pi-trash"></i>
             </button>
           }
@@ -228,7 +284,8 @@
               (click)="requestLeaveGroup()"
               pTooltip="Leave group"
               tooltipPosition="bottom"
-              aria-label="Leave group">
+              aria-label="Leave group"
+            >
               <i class="pi pi-sign-out"></i>
             </button>
           }
@@ -240,7 +297,8 @@
               (click)="requestDeleteDirectChatForSelf()"
               pTooltip="Delete chat for yourself"
               tooltipPosition="bottom"
-              aria-label="Delete chat for yourself">
+              aria-label="Delete chat for yourself"
+            >
               <i class="pi pi-trash"></i>
             </button>
           }
@@ -255,10 +313,6 @@
             <p class="message-page-loader">Loading older messages</p>
           }
 
-          @if (messages().length === 0) {
-            <p class="message-empty">No messages yet</p>
-          }
-
           @for (message of messages(); track message.messageId) {
             @if (message.system) {
               <div class="message-system">
@@ -268,74 +322,64 @@
               <article
                 class="message-row"
                 [class.own]="isOwnMessage(message)"
-                [class.message-row--shared-post]="hasSharedPost(message)">
+                [class.message-row--shared-post]="hasSharedPost(message)"
+              >
                 @if (!isOwnMessage(message)) {
                   <span class="avatar message-avatar" aria-hidden="true">
-                  @if (avatarUrl(message.sender.id)) {
-                    <img [src]="avatarUrl(message.sender.id)" alt="" />
-                  } @else {
-                    {{ initialFor(message.sender) }}
-                  }
-                </span>
+                    @if (avatarUrl(message.sender.id)) {
+                      <img [src]="avatarUrl(message.sender.id)" alt="" />
+                    } @else {
+                      {{ initialFor(message.sender) }}
+                    }
+                  </span>
                 }
 
                 <div
                   class="message-stack"
                   [class.message-stack--own]="isOwnMessage(message)"
-                  [class.message-stack--reaction-open]="isMoreReactionPickerOpen(message)"
+                  [class.message-stack--reaction-open]="isReactionBarOpen(message)"
                   tabindex="0"
                   (mouseenter)="setHoveredMessage(message.messageId)"
                   (mouseleave)="clearHoveredMessage(message.messageId)"
                   (click)="setHoveredMessage(message.messageId)"
                   (keydown.enter)="setHoveredMessage(message.messageId)"
-                  (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)">
+                  (keydown.space)="$event.preventDefault(); setHoveredMessage(message.messageId)"
+                >
+                  <button
+                    type="button"
+                    class="message-reaction-trigger"
+                    [class.message-reaction-trigger--visible]="
+                      hoveredMessageId() === message.messageId || isReactionBarOpen(message)
+                    "
+                    (mouseenter)="setHoveredMessage(message.messageId)"
+                    (click)="toggleReactionBar(message, $event)"
+                    aria-label="React to message"
+                    pTooltip="React"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-face-smile"></i>
+                  </button>
+
                   <div
                     class="reaction-bar"
                     tabindex="-1"
+                    (mouseenter)="setHoveredMessage(message.messageId)"
                     (click)="$event.stopPropagation()"
                     (keydown)="$event.stopPropagation()"
-                    [class.reaction-bar--visible]="
-                    reactionPickerMessageId() === message.messageId
-                    || hoveredMessageId() === message.messageId
-                  ">
-                    @for (emoji of reactionEmojis; track emoji) {
+                    [class.reaction-bar--visible]="isReactionBarOpen(message)"
+                  >
+                    @for (emoji of reactionEmojisFor(message); track emoji) {
                       <button
                         type="button"
                         class="reaction-bar-item"
                         [class.reaction-bar-item--active]="hasReactedWith(message, emoji)"
                         (click)="toggleReaction(message, emoji)"
-                        [attr.aria-label]="'React with ' + emoji">
+                        [attr.aria-label]="'React with ' + emoji"
+                      >
                         {{ emoji }}
                       </button>
                     }
-                    <button
-                      type="button"
-                      class="reaction-bar-item reaction-bar-item--more"
-                      (click)="toggleMoreReactionPicker(message, $event)"
-                      aria-label="Choose another emoji"
-                      pTooltip="Choose another emoji"
-                      tooltipPosition="top">
-                      <i class="pi pi-plus"></i>
-                    </button>
                   </div>
-                  @if (isMoreReactionPickerOpen(message)) {
-                    <div
-                      class="emoji-picker emoji-picker--message"
-                      tabindex="-1"
-                      (click)="$event.stopPropagation()"
-                      (keydown)="$event.stopPropagation()">
-                      @for (emoji of moreReactionEmojis; track emoji) {
-                        <button
-                          type="button"
-                          class="emoji-picker-item"
-                          [class.emoji-picker-item--active]="hasReactedWith(message, emoji)"
-                          (click)="toggleReaction(message, emoji)"
-                          [attr.aria-label]="'React with ' + emoji">
-                          {{ emoji }}
-                        </button>
-                      }
-                    </div>
-                  }
 
                   <div class="message-bubble">
                     <div class="message-meta">
@@ -353,25 +397,40 @@
                         [attr.tabindex]="canViewSharedPost(sharedPost) ? 0 : null"
                         (click)="openSharedPostDetail(sharedPost)"
                         (keydown.enter)="openSharedPostDetail(sharedPost)"
-                        (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)">
+                        (keydown.space)="$event.preventDefault(); openSharedPostDetail(sharedPost)"
+                      >
                         @if (canViewSharedPost(sharedPost)) {
                           <div class="shared-post-header">
-                          <span class="shared-post-avatar" aria-hidden="true">
-                            @if (sharedPostAuthorAvatarUrl(sharedPost)) {
-                              <img [src]="sharedPostAuthorAvatarUrl(sharedPost)!" alt="" />
-                            } @else {
-                              {{ sharedPostAuthorInitial(sharedPost) }}
-                            }
-                          </span>
+                            <span class="shared-post-avatar" aria-hidden="true">
+                              @if (sharedPostAuthorAvatarUrl(sharedPost)) {
+                                <img
+                                  [src]="sharedPostAuthorAvatarUrl(sharedPost)!"
+                                  alt=""
+                                  (error)="
+                                    onSharedPostAuthorAvatarError(
+                                      sharedPost,
+                                      sharedPostAuthorAvatarUrl(sharedPost)!
+                                    )
+                                  "
+                                />
+                              } @else {
+                                {{ sharedPostAuthorInitial(sharedPost) }}
+                              }
+                            </span>
                             <span class="shared-post-author-copy">
-                            <span class="shared-post-author-name">{{ sharedPostAuthorName(sharedPost) }}</span>
-                          </span>
+                              <span class="shared-post-author-name">{{
+                                sharedPostAuthorName(sharedPost)
+                              }}</span>
+                            </span>
                           </div>
 
                           @if (sharedPostHasMediaSlot(sharedPost)) {
                             <div
                               class="shared-post-media"
-                              [class.shared-post-media--video]="sharedPost.post.mediaKind === 'video'">
+                              [class.shared-post-media--video]="
+                                sharedPost.post.mediaKind === 'video'
+                              "
+                            >
                               @if (sharedPostMediaUrl(sharedPost); as mediaUrl) {
                                 @if (sharedPost.post.mediaKind === 'video') {
                                   <div class="shared-post-video-preview">
@@ -380,17 +439,19 @@
                                       muted
                                       playsinline
                                       preload="metadata"
-                                      (error)="onSharedPostMediaError(sharedPost, mediaUrl)"></video>
+                                      (error)="onSharedPostMediaError(sharedPost, mediaUrl)"
+                                    ></video>
                                     <span class="shared-post-video-play" aria-hidden="true">
-                                    <i class="pi pi-play"></i>
-                                  </span>
+                                      <i class="pi pi-play"></i>
+                                    </span>
                                   </div>
                                 } @else {
                                   <img
                                     [src]="mediaUrl"
                                     alt=""
                                     loading="lazy"
-                                    (error)="onSharedPostMediaError(sharedPost, mediaUrl)" />
+                                    (error)="onSharedPostMediaError(sharedPost, mediaUrl)"
+                                  />
                                 }
                               } @else {
                                 <div class="shared-post-media-placeholder" aria-hidden="true"></div>
@@ -404,21 +465,30 @@
                           </div>
                         } @else {
                           <div class="shared-post-unavailable">
-                          <span class="shared-post-unavailable-icon" aria-hidden="true">
-                            <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
-                          </span>
+                            <span class="shared-post-unavailable-icon" aria-hidden="true">
+                              <i [class]="sharedPostUnavailableIcon(sharedPost)"></i>
+                            </span>
                             <div class="shared-post-unavailable-copy">
-                              <span class="shared-post-author">{{ sharedPostUnavailableTitle(sharedPost) }}</span>
+                              <span class="shared-post-author">{{
+                                sharedPostUnavailableTitle(sharedPost)
+                              }}</span>
                               <p>{{ sharedPostUnavailableMessage(sharedPost) }}</p>
-                              @if (sharedPost.post.unavailableReason !== 'REMOVED' && sharedPostProfileRoute(sharedPost); as profileRoute) {
-                                <a [routerLink]="profileRoute" (click)="$event.stopPropagation()">View profile</a>
+                              @if (
+                                sharedPost.post.unavailableReason !== 'REMOVED' &&
+                                  sharedPostProfileRoute(sharedPost);
+                                as profileRoute
+                              ) {
+                                <a [routerLink]="profileRoute" (click)="$event.stopPropagation()"
+                                  >View profile</a
+                                >
                               } @else if (sharedPostProfileTooltip(sharedPost)) {
                                 <span
                                   class="shared-post-profile-unavailable"
                                   [pTooltip]="sharedPostProfileTooltip(sharedPost)"
-                                  tooltipPosition="top">
-                                Profile unavailable
-                              </span>
+                                  tooltipPosition="top"
+                                >
+                                  Profile unavailable
+                                </span>
                               }
                             </div>
                           </div>
@@ -443,7 +513,8 @@
                           (click)="toggleReaction(message, reaction.emoji)"
                           [attr.aria-label]="'React with ' + reaction.emoji"
                           [pTooltip]="reactionTooltip(reaction)"
-                          tooltipPosition="top">
+                          tooltipPosition="top"
+                        >
                           <span class="reaction-chip-emoji">{{ reaction.emoji }}</span>
                           <span class="reaction-chip-count">{{ reaction.count }}</span>
                         </button>
@@ -464,27 +535,29 @@
         } @else {
           <div class="composer-main">
             @if (sharedPostDraft(); as sharedPost) {
-              <article class="composer-shared-post" [class.composer-shared-post--no-media]="!sharedPost.mediaUrl">
+              <article
+                class="composer-shared-post"
+                [class.composer-shared-post--no-media]="!sharedPost.mediaUrl"
+              >
                 @if (sharedPost.mediaUrl) {
                   <div
                     class="composer-shared-post-media"
-                    [class.composer-shared-post-media--video]="sharedPost.mediaKind === 'video'">
+                    [class.composer-shared-post-media--video]="sharedPost.mediaKind === 'video'"
+                  >
                     @if (sharedPost.mediaKind === 'video') {
                       <div class="shared-post-video-preview">
                         <video
                           [src]="sharedPostVideoPreviewUrl(sharedPost.mediaUrl)"
                           muted
                           playsinline
-                          preload="metadata"></video>
+                          preload="metadata"
+                        ></video>
                         <span class="shared-post-video-play" aria-hidden="true">
                           <i class="pi pi-play"></i>
                         </span>
                       </div>
                     } @else {
-                      <img
-                        [src]="sharedPost.mediaUrl"
-                        [alt]="sharedPost.caption"
-                        loading="lazy" />
+                      <img [src]="sharedPost.mediaUrl" [alt]="sharedPost.caption" loading="lazy" />
                     }
                   </div>
                 }
@@ -498,7 +571,8 @@
                   type="button"
                   class="composer-shared-post-remove"
                   (click)="clearSharedPostDraft()"
-                  aria-label="Remove shared post">
+                  aria-label="Remove shared post"
+                >
                   <i class="pi pi-times"></i>
                 </button>
               </article>
@@ -511,7 +585,8 @@
               [ngModel]="messageText()"
               (ngModelChange)="messageText.set($event)"
               (keydown)="sendMessageOnEnter($event)"
-              name="message"></textarea>
+              name="message"
+            ></textarea>
           </div>
 
           <p-button
@@ -519,7 +594,8 @@
             icon="pi pi-send"
             [rounded]="true"
             [disabled]="(!messageText().trim() && !sharedPostDraft()) || sendingMessage()"
-            aria-label="Send message" />
+            aria-label="Send message"
+          />
         }
       </form>
     } @else {
@@ -558,7 +634,8 @@
   (clearImage)="clearGroupImageSelection()"
   (toggleFriend)="toggleGroupFriend($event)"
   (cancelled)="closeGroupDialog()"
-  (createGroup)="createGroup()" />
+  (createGroup)="createGroup()"
+/>
 
 <app-chat-members-dialog
   [chat]="selectedChat()"
@@ -584,7 +661,8 @@
   (removeMember)="removeMemberFromGroup($event)"
   (addMemberSearchChange)="addMemberSearch.set($event)"
   (toggleAddMemberFriend)="toggleAddMemberFriend($event)"
-  (addMembers)="addMembersToGroup()" />
+  (addMembers)="addMembersToGroup()"
+/>
 
 <app-chat-confirmation-dialog
   [title]="groupConfirmationTitle()"
@@ -594,4 +672,5 @@
   [inProgress]="groupActionInProgress()"
   (visibleChange)="onGroupConfirmationVisibilityChange($event)"
   (cancelled)="closeGroupConfirmation()"
-  (confirmed)="confirmGroupAction()" />
+  (confirmed)="confirmGroupAction()"
+/>

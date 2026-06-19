@@ -1,4 +1,5 @@
 import {ButtonModule} from 'primeng/button';
+import {Dialog} from 'primeng/dialog';
 import {Component, computed, inject, input, signal} from '@angular/core';
 import {RelationshipService} from '../../../user/relationship.service';
 import {UserService} from '../../../user/user.service';
@@ -7,7 +8,7 @@ import {firstValueFrom} from 'rxjs';
 @Component({
   selector: 'app-follow-badge',
   standalone: true,
-  imports: [ButtonModule],
+  imports: [ButtonModule, Dialog],
   templateUrl: './follow-badge.component.html',
   styleUrl: './follow-badge.component.scss',
 })
@@ -19,6 +20,34 @@ export class FollowBadgeComponent {
   private readonly rel = inject(RelationshipService);
   private readonly userService = inject(UserService);
   readonly busy = signal(false);
+  readonly unfriendDialogVisible = signal(false);
+
+  requestUnfriend(): void {
+    this.unfriendDialogVisible.set(true);
+  }
+
+  cancelUnfriend(): void {
+    if (!this.busy()) {
+      this.unfriendDialogVisible.set(false);
+    }
+  }
+
+  onUnfriendDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelUnfriend();
+      return;
+    }
+    this.unfriendDialogVisible.set(true);
+  }
+
+  async confirmUnfriend() {
+    this.busy.set(true);
+    try {
+      await firstValueFrom(this.rel.unfriend(this.username()));
+      this.rel['eventBus'].unfriend();
+      this.unfriendDialogVisible.set(false);
+    } finally { this.busy.set(false); }
+  }
 
   readonly actionMode = computed(() => this.appearance() === 'action');
   readonly buttonStyleClass = computed(() =>
@@ -66,15 +95,6 @@ export class FollowBadgeComponent {
     this.busy.set(true);
     try {
       await firstValueFrom(this.rel.acceptFriendRequest(this.username()));
-    } finally { this.busy.set(false); }
-  }
-
-  async unfriend() {
-    if (!confirm('Remove ' + this.username() + ' as a friend?')) return;
-    this.busy.set(true);
-    try {
-      await firstValueFrom(this.rel.unfriend(this.username()));
-      this.rel['eventBus'].unfriend();
     } finally { this.busy.set(false); }
   }
 }

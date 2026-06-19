@@ -76,6 +76,8 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
+
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
@@ -94,8 +96,8 @@ public class FeedMapper {
         sources,
         comments,
         recommendedPost.getExplanation(),
-        postReportedByUser != null
-            && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())));
+        postReportedByUser != null && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())),
+        userProfileUrl);
   }
 
   public FeedPostResponse toFeedPostResponse(
@@ -141,6 +143,8 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
+
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
@@ -159,7 +163,8 @@ public class FeedMapper {
         sources,
         comments,
         null,
-        false);
+        false,
+        userProfileUrl);
   }
 
   public FeedPostResponse.CommentResponse toCommentResponse(Comment comment) {

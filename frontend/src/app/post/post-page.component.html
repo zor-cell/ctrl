@@ -1,15 +1,11 @@
 <p-confirmDialog></p-confirmDialog>
 <section class="post-page" [class.post-page--create-only]="createOnlyMode()">
   @if (!createOnlyMode()) {
-    <header class="post-profile-card">
+    <header class="post-profile-card" [class.post-profile-card--public]="publicProfileMode()">
       <div class="post-profile-card__avatar">
         <div class="profile-avatar profile-avatar--display" aria-hidden="true">
           @if (currentProfilePicture()) {
-            <img
-              [src]="currentProfilePicture()!"
-              alt=""
-              class="profile-avatar__image"
-            />
+            <img [src]="currentProfilePicture()!" alt="" class="profile-avatar__image" />
           } @else {
             <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
           }
@@ -28,7 +24,7 @@
       </div>
 
       <div class="post-profile-card__copy">
-        <h1 style="display: flex; align-items: center; gap: 10px;">
+        <h1>
           {{ username() }}
           @if (!canEditProfile()) {
             <app-follow-badge [username]="username()" />
@@ -59,14 +55,19 @@
       </div>
 
       @if (canEditProfile()) {
-        <div class="post-profile-card__actions">
-          <p-button
-            icon="pi pi-users"
-            ariaLabel="Open community"
-            severity="secondary"
-            [rounded]="true"
-            routerLink="/followed"
-          />
+        <div class="post-profile-card__actions post-profile-card__actions--owner">
+          <div class="community-btn-wrapper">
+            <p-button
+              icon="pi pi-users"
+              ariaLabel="Open community"
+              severity="secondary"
+              [rounded]="true"
+              routerLink="/followed"
+            />
+            @if (pendingCount() > 0) {
+              <span class="pending-badge" aria-label="{{ pendingCount() }} pending friend requests">{{ pendingCount() }}</span>
+            }
+          </div>
           <p-button
             icon="pi pi-cog"
             ariaLabel="Open profile settings"
@@ -75,6 +76,7 @@
             (onClick)="openProfileSettings()"
           />
           <p-button
+            class="post-profile-card__create-action"
             label="Create Post"
             icon="pi pi-plus"
             size="large"
@@ -84,52 +86,41 @@
       } @else if (publicProfileMode()) {
         <div class="post-profile-card__actions">
           @if (!isOwnPublicProfile() && profileActionUsername(); as actionUsername) {
-            <app-follow-badge
-              class="post-profile-card__follow-action"
-              [username]="actionUsername"
-              [isExternal]="publicProfileFriendStatus() !== 'NONE'"
-              appearance="action"
-            />
-            @switch (publicProfileFriendStatus()) {
-              @case ('FRIEND') {
-                <p-button
-                  label="Remove Friend"
-                  icon="pi pi-user-minus"
-                  severity="secondary"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="removeProfileFriend()"
-                />
-              }
-              @case ('PENDING_REQUEST_INCOMING') {
-                <p-button
-                  label="Accept Request"
-                  icon="pi pi-user-plus"
-                  severity="info"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="acceptProfileFriendRequest()"
-                />
-              }
-              @case ('PENDING_REQUEST_SENT') {
-                <p-button
-                  label="Cancel Request"
-                  icon="pi pi-times"
-                  severity="secondary"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="cancelProfileFriendRequest()"
-                />
-              }
-              @default {
-                <p-button
-                  label="Add Friend"
-                  icon="pi pi-user-plus"
-                  size="small"
-                  [loading]="friendActionBusy()"
-                  (onClick)="sendProfileFriendRequest()"
-                />
-              }
+            @if (publicProfileFriendStatus() === 'FRIEND') {
+              <p-button
+                label="Send Message"
+                icon="pi pi-comment"
+                severity="secondary"
+                size="small"
+                (onClick)="openDirectMessage()"
+              />
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_SENT') {
+              <p-button
+                label="Request Sent"
+                icon="pi pi-clock"
+                severity="secondary"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="cancelProfileFriendRequest()"
+              />
+            } @else if (publicProfileFriendStatus() === 'PENDING_REQUEST_INCOMING') {
+              <p-button
+                label="Accept Request"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="acceptProfileFriendRequest()"
+              />
+            } @else {
+              <p-button
+                label="Add Friend"
+                icon="pi pi-user-plus"
+                severity="secondary"
+                size="small"
+                [loading]="friendActionBusy()"
+                (onClick)="sendProfileFriendRequest()"
+              />
             }
           }
           <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
@@ -155,9 +146,7 @@
       </div>
 
       @if (loadingPosts()) {
-        <div class="posts-empty-card" aria-live="polite">
-          Loading your posts...
-        </div>
+        <div class="posts-empty-card" aria-live="polite">Loading your posts...</div>
       } @else if (myPosts().length === 0) {
         <div class="posts-empty-card">
           <h3>{{ emptyPostsTitle() }}</h3>
@@ -200,7 +189,9 @@
                     class="post-visibility-badge"
                     [class.post-visibility-badge--public]="post.isPublic"
                     [class.post-visibility-badge--private]="!post.isPublic"
-                    [pTooltip]="post.isPublic ? 'This is a public post.' : 'This is a private post.'"
+                    [pTooltip]="
+                      post.isPublic ? 'This is a public post.' : 'This is a private post.'
+                    "
                     tooltipPosition="top"
                     [attr.aria-label]="post.isPublic ? 'Public post' : 'Private post'"
                   >
@@ -212,7 +203,6 @@
                   class="post-card__caption"
                   [innerHTML]="post.caption | postCaptionFormat"
                 ></div>
-
               </div>
             </button>
           }
@@ -241,11 +231,7 @@
         (click)="openAvatarPicker()"
       >
         @if (currentProfilePicture()) {
-          <img
-            [src]="currentProfilePicture()!"
-            alt=""
-            class="profile-avatar__image"
-          />
+          <img [src]="currentProfilePicture()!" alt="" class="profile-avatar__image" />
         } @else {
           <span class="profile-avatar__initial">{{ avatarInitial() }}</span>
         }
@@ -308,10 +294,7 @@
         (input)="updateBioDraft($event)"
         aria-label="Edit bio"
       ></textarea>
-      <span
-        class="profile-bio-editor__meta"
-        [class.profile-bio-editor__meta--error]="bioTooLong()"
-      >
+      <span class="profile-bio-editor__meta" [class.profile-bio-editor__meta--error]="bioTooLong()">
         {{ bioLength() }} / {{ maxBioLength }}
       </span>
     </label>
@@ -344,7 +327,7 @@
 <app-report
   [contentType]="ContentTypeEnum.ACCOUNT"
   [contentId]="publicProfile()?.id"
-  [contentTitle]="publicProfile()?.bio ?? (username() + ' has no bio')"
+  [contentTitle]="publicProfile()?.bio ?? username() + ' has no bio'"
   [userProfilePic]="currentProfilePicture() ?? undefined"
   [username]="username()"
   [visible]="reportDialogVisible()"
@@ -376,11 +359,7 @@
       }
 
       @for (target of filteredShareTargets(); track target.id) {
-        <button
-          type="button"
-          class="share-target-row"
-          (click)="sharePostWithTarget(target)"
-        >
+        <button type="button" class="share-target-row" (click)="sharePostWithTarget(target)">
           <span class="share-avatar" aria-hidden="true">
             @if (shareTargetAvatarUrl(target) && !shareTargetAvatarFailed(target)) {
               <img
@@ -416,10 +395,7 @@
   (visibleChange)="!$event && cancelPostDeletion()"
 >
   <div class="delete-confirmation">
-    <p>
-      This action is irreversible. Are you sure you want to permanently delete
-      this post?
-    </p>
+    <p>This action is irreversible. Are you sure you want to permanently delete this post?</p>
     <div class="delete-confirmation__actions">
       <p-button
         label="Cancel"
@@ -450,12 +426,10 @@
   (visibleChange)="!$event && cancelBlockConfirmation()"
 >
   <div class="delete-confirmation">
-    <p>
-      Are you sure you want to block this user?
-    </p>
+    <p>Are you sure you want to block this user?</p>
     <p-message severity="warn">
-      This action will end the friend or follow relationship if one exists.
-      Interactions of the user with your posts will be permanently deleted.
+      This action will end the friend or follow relationship if one exists. Interactions of the user
+      with your posts will be permanently deleted.
     </p-message>
     <div class="delete-confirmation__actions">
       <p-button
@@ -484,5 +458,6 @@
   [modal]="!createOnlyMode()"
   [dismissableMask]="!createOnlyMode()"
   (visibleChange)="onComposerVisibleChange($event)"
-  (created)="onPostCreated()">
+  (created)="onPostCreated()"
+>
 </app-post-composer>

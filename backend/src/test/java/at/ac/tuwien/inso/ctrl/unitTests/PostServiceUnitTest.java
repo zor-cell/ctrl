@@ -7,34 +7,50 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import at.ac.tuwien.inso.ctrl.common.vote.VoteManager;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
+import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
+import at.ac.tuwien.inso.ctrl.exception.UnauthorizedException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
 import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.dto.request.CreatePostRequest;
+import at.ac.tuwien.inso.ctrl.post.dto.response.DetailedPostResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
 import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
 import at.ac.tuwien.inso.ctrl.post.service.impl.PostServiceImpl;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
+import at.ac.tuwien.inso.ctrl.source.dto.request.CreateSingleSourceRequest;
+import at.ac.tuwien.inso.ctrl.source.dto.request.CreateSourceRequest;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
 import at.ac.tuwien.inso.ctrl.source.service.SourceService;
 import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
+import at.ac.tuwien.inso.ctrl.user.dto.Role;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.UserPreferenceService;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -65,6 +81,8 @@ public class PostServiceUnitTest {
   @Mock private FileStorageService fileStorageService;
   @Mock private UserPreferenceService userPreferenceService;
   @Mock private LabelingService labelingService;
+  @Mock private BlockService blockService;
+  @Mock private ReportService reportService;
 
   @InjectMocks private PostServiceImpl postService;
 
@@ -200,6 +218,95 @@ public class PostServiceUnitTest {
   }
 
   @Test
+  void createPost_ShouldMakePostPrivate_WhenIsPublicIsNull() {
+    CreatePostRequest request =
+        new CreatePostRequest("Default private", null, null, false, List.of(), null);
+    PostResponse response = createResponse("Default private", false, false, null);
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(sourceService.createSource(null)).thenReturn(source);
+    when(embeddingService.embedText("Default private")).thenReturn(new float[] {1.0f});
+    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
+
+    postService.createPost(request, "marlene");
+
+    ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
+    verify(postRepository).save(postCaptor.capture());
+    assertFalse(postCaptor.getValue().isPublic());
+    verify(fileStorageService, never()).movePostMediaToPublicBucket(any());
+  }
+
+  @Test
+  void createPost_ShouldDeduplicateTopicIdsBeforeLoadingTopics() {
+    CreatePostRequest request =
+        new CreatePostRequest(
+            "Duplicate topics", null, false, false, List.of("topic-1", "topic-1"), null);
+    Topic topic = Topic.builder().topicId("topic-1").name("Politics").build();
+    PostResponse response = createResponse("Duplicate topics", false, false, null);
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(sourceService.createSource(null)).thenReturn(source);
+    when(topicRepository.findAllById(List.of("topic-1"))).thenReturn(List.of(topic));
+    when(embeddingService.embedText("Duplicate topics")).thenReturn(new float[] {1.0f});
+    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
+
+    postService.createPost(request, "marlene");
+
+    ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
+    verify(postRepository).save(postCaptor.capture());
+    assertEquals(1, postCaptor.getValue().getPostTopics().size());
+    verify(topicRepository).findAllById(List.of("topic-1"));
+  }
+
+  @Test
+  void createPost_WithVideoMedia_UsesTextEmbeddingAndStillMovesPublicMedia() {
+    CreatePostRequest request =
+        new CreatePostRequest("Video post", "posts/media/video.mp4", true, false, List.of(), null);
+    PostResponse response = createResponse("Video post", true, false, "posts/media/video.mp4");
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(sourceService.createSource(null)).thenReturn(source);
+    when(embeddingService.embedText("Video post")).thenReturn(new float[] {2.0f});
+    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
+
+    postService.createPost(request, "marlene");
+
+    verify(embeddingService).embedText("Video post");
+    verify(fileStorageService, never()).resolveInternalPostMediaUrl(any());
+    verify(fileStorageService).movePostMediaToPublicBucket("posts/media/video.mp4");
+  }
+
+  @Test
+  void createPost_WithSourceRequest_DelegatesSourceCreation() {
+    CreateSourceRequest sourceRequest =
+        new CreateSourceRequest(
+            null,
+            null,
+            List.of(
+                new CreateSingleSourceRequest(
+                    "Journal", "Author", "Title", "https://x.test", null)));
+    CreatePostRequest request =
+        new CreatePostRequest("Post with source", null, false, false, List.of(), sourceRequest);
+    PostResponse response = createResponse("Post with source", false, false, null);
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(sourceService.createSource(sourceRequest)).thenReturn(source);
+    when(embeddingService.embedText("Post with source")).thenReturn(new float[] {1.0f});
+    when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(postMapper.toResponse(any(Post.class))).thenReturn(response);
+
+    postService.createPost(request, "marlene");
+
+    ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
+    verify(postRepository).save(postCaptor.capture());
+    assertEquals(source, postCaptor.getValue().getSource());
+    verify(sourceService).createSource(sourceRequest);
+  }
+
+  @Test
   void createPost_ShouldThrowException_WhenTopicDoesNotExist() {
     CreatePostRequest request =
         new CreatePostRequest(
@@ -308,6 +415,263 @@ public class PostServiceUnitTest {
   }
 
   @Test
+  void getProfilePostsForUser_whenViewerIsProfileOwner_returnsMappedAllPosts() {
+    Post privatePost = Post.builder().postId("post-1").caption("Private").isPublic(false).build();
+    PostResponse response = createResponse("Private", false, false, null);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(privatePost, labelCtx, false)).thenReturn(labels);
+    when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(privatePost));
+    when(postMapper.toResponse(privatePost, labels)).thenReturn(response);
+
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", verifiedUser);
+
+    assertEquals(List.of(response), result);
+    verify(friendRelationRepository, never()).existsByUsers(any(), any());
+    verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
+  }
+
+  @Test
+  void getProfilePostsForUser_whenViewerIsAdmin_returnsMappedAllPosts() {
+    User admin = createUser("admin", true);
+    admin.setRole(Role.ADMIN);
+    Post privatePost = Post.builder().postId("post-1").caption("Private").isPublic(false).build();
+    PostResponse response = createResponse("Private", false, false, null);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(labelingService.buildContext(admin)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(privatePost, labelCtx, false)).thenReturn(labels);
+    when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(privatePost));
+    when(postMapper.toResponse(privatePost, labels)).thenReturn(response);
+
+    List<PostResponse> result = postService.getProfilePostsForUser("marlene", admin);
+
+    assertEquals(List.of(response), result);
+    verify(postRepository).findAllByUserUsernameOrderByCreatedAtDesc("marlene");
+    verify(postRepository, never()).findAllByUserUsernameAndIsPublicTrueOrderByCreatedAtDesc(any());
+  }
+
+  @Test
+  void getPostsForUser_filtersCommentsFromBlockedUsersAndBlockedParents() {
+    User commenter = createUser("commenter", true);
+    User blockedUser = createUser("blocked", true);
+    Comment visibleComment = comment("comment-1", commenter, null);
+    Comment blockedComment = comment("comment-2", blockedUser, null);
+    Comment replyToBlockedParent = comment("comment-3", commenter, blockedComment);
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .caption("Post")
+            .comments(Set.of(visibleComment, blockedComment, replyToBlockedParent))
+            .build();
+    PostResponse response = createResponse("Post", false, false, null);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
+    when(blockService.inBlockedRelationship(eq(verifiedUser), any(User.class)))
+        .thenAnswer(invocation -> invocation.getArgument(1).equals(blockedUser));
+    when(postRepository.findAllByUserUsernameOrderByCreatedAtDesc("marlene"))
+        .thenReturn(List.of(post));
+    when(postMapper.toResponse(post, labels)).thenReturn(response);
+
+    List<PostResponse> result = postService.getPostsForUser("marlene");
+
+    assertEquals(List.of(response), result);
+    assertEquals(Set.of(visibleComment), post.getComments());
+  }
+
+  @Test
+  void getPostById_withPublicPost_mapsVoteAndReportState() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .source(source)
+            .caption("Post")
+            .isPublic(true)
+            .comments(Set.of(comment("comment-1", unverifiedUser, null)))
+            .build();
+    PostVote vote =
+        PostVote.builder()
+            .id(new PostVoteId("post-1", verifiedUser.getId().toString()))
+            .post(post)
+            .voteType("up")
+            .build();
+    DetailedPostResponse response = org.mockito.Mockito.mock(DetailedPostResponse.class);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            verifiedUser.getId().toString(), List.of("post-1")))
+        .thenReturn(List.of(vote));
+    when(reportService.wasReportedByUser(verifiedUser, ContentTypeEnum.POST, "post-1"))
+        .thenReturn(true);
+    when(reportService.wasReportedByUser(verifiedUser, ContentTypeEnum.COMMENT, "comment-1"))
+        .thenReturn(true);
+    when(reportService.wasReportedByUser(verifiedUser, ContentTypeEnum.SOURCE, "source-1"))
+        .thenReturn(true);
+    when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, true)).thenReturn(labels);
+    when(postMapper.toDetailedPostResponse(
+            eq(post), eq(vote), eq(true), anyMap(), eq(true), eq(labels)))
+        .thenReturn(response);
+
+    DetailedPostResponse result = postService.getPostById("post-1", "marlene");
+
+    assertEquals(response, result);
+    verify(postMapper)
+        .toDetailedPostResponse(
+            eq(post),
+            eq(vote),
+            eq(true),
+            eq(java.util.Map.of("comment-1", true)),
+            eq(true),
+            eq(labels));
+  }
+
+  @Test
+  void getPostById_withPrivateOwnPostAndNoSource_mapsEmptyReportState() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .caption("Private")
+            .isPublic(false)
+            .comments(Set.of())
+            .build();
+    DetailedPostResponse response = org.mockito.Mockito.mock(DetailedPostResponse.class);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+    when(postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            verifiedUser.getId().toString(), List.of("post-1")))
+        .thenReturn(List.of());
+    when(labelingService.buildContext(verifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
+    when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
+        .thenReturn(response);
+
+    DetailedPostResponse result = postService.getPostById("post-1", "marlene");
+
+    assertEquals(response, result);
+    verify(reportService, never())
+        .wasReportedByUser(eq(verifiedUser), eq(ContentTypeEnum.SOURCE), any());
+  }
+
+  @Test
+  void getPostById_withPrivateFriendPost_returnsPost() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .caption("Private")
+            .isPublic(false)
+            .comments(Set.of())
+            .build();
+    DetailedPostResponse response = org.mockito.Mockito.mock(DetailedPostResponse.class);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+    when(friendRelationRepository.existsByUsers(unverifiedUser, verifiedUser)).thenReturn(true);
+    when(postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            unverifiedUser.getId().toString(), List.of("post-1")))
+        .thenReturn(List.of());
+    when(labelingService.buildContext(unverifiedUser)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
+    when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
+        .thenReturn(response);
+
+    DetailedPostResponse result = postService.getPostById("post-1", "new-user");
+
+    assertEquals(response, result);
+  }
+
+  @Test
+  void getPostById_withPrivatePostForNonFriend_throwsUnauthorized() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .caption("Private")
+            .isPublic(false)
+            .comments(Set.of())
+            .build();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("new-user")).thenReturn(Optional.of(unverifiedUser));
+
+    assertThrows(UnauthorizedException.class, () -> postService.getPostById("post-1", "new-user"));
+    verify(postMapper, never())
+        .toDetailedPostResponse(any(), any(), anyBoolean(), anyMap(), anyBoolean(), any());
+  }
+
+  @Test
+  void getPostById_withRemovedPost_throwsNotFound() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .caption("Removed")
+            .isRemoved(true)
+            .comments(Set.of())
+            .build();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("marlene")).thenReturn(Optional.of(verifiedUser));
+
+    assertThrows(NotFoundException.class, () -> postService.getPostById("post-1", "marlene"));
+    verify(postMapper, never())
+        .toDetailedPostResponse(any(), any(), anyBoolean(), anyMap(), anyBoolean(), any());
+  }
+
+  @Test
+  void getPostById_withPrivatePostForAdmin_returnsPost() {
+    User admin = createUser("admin", true);
+    admin.setRole(Role.ADMIN);
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .caption("Private")
+            .isPublic(false)
+            .comments(Set.of())
+            .build();
+    DetailedPostResponse response = org.mockito.Mockito.mock(DetailedPostResponse.class);
+    LabelContext labelCtx = org.mockito.Mockito.mock(LabelContext.class);
+    Set<PostLabelType> labels = Set.of();
+
+    when(postRepository.findById("post-1")).thenReturn(Optional.of(post));
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(postVoteRepository.findByIdUserIdAndIdPostIdIn(
+            admin.getId().toString(), List.of("post-1")))
+        .thenReturn(List.of());
+    when(labelingService.buildContext(admin)).thenReturn(labelCtx);
+    when(labelingService.computeLabels(post, labelCtx, false)).thenReturn(labels);
+    when(postMapper.toDetailedPostResponse(post, null, false, java.util.Map.of(), false, labels))
+        .thenReturn(response);
+
+    DetailedPostResponse result = postService.getPostById("post-1", "admin");
+
+    assertEquals(response, result);
+  }
+
+  @Test
   void deletePost_withOwnPost_deletesPost() {
     Post post = Post.builder().postId("post-1").user(verifiedUser).build();
     when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
@@ -315,6 +679,7 @@ public class PostServiceUnitTest {
 
     postService.deletePost("post-1", "marlene");
 
+    verify(seenPostRepository).deleteByPostId("post-1");
     verify(postRepository).delete(post);
     verify(fileStorageService, never()).deletePostMedia(any());
     verify(fileStorageService, never()).deletePublicPostMedia(any());
@@ -359,6 +724,26 @@ public class PostServiceUnitTest {
   }
 
   @Test
+  void deletePost_withExternalMedia_doesNotDeleteMediaFromStorage() {
+    Post post =
+        Post.builder()
+            .postId("post-1")
+            .user(verifiedUser)
+            .mediaRef("https://cdn.example.test/file.png")
+            .isPublic(true)
+            .build();
+    when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
+        .thenReturn(Optional.of(post));
+
+    postService.deletePost("post-1", "marlene");
+
+    verify(seenPostRepository).deleteByPostId("post-1");
+    verify(postRepository).delete(post);
+    verify(fileStorageService, never()).deletePostMedia(any());
+    verify(fileStorageService, never()).deletePublicPostMedia(any());
+  }
+
+  @Test
   void deletePost_withMissingOrForeignPost_throwsResourceNotFoundException() {
     when(postRepository.findByPostIdAndUserUsername("post-1", "marlene"))
         .thenReturn(Optional.empty());
@@ -376,7 +761,18 @@ public class PostServiceUnitTest {
     user.setId(UUID.randomUUID());
     user.setUsername(username);
     user.setVerified(verified);
+    user.setRole(Role.USER);
     return user;
+  }
+
+  private Comment comment(String commentId, User user, Comment parentComment) {
+    return Comment.builder()
+        .commentId(commentId)
+        .user(user)
+        .content("Comment")
+        .createdAt(LocalDateTime.of(2026, 4, 25, 12, 0))
+        .parentComment(parentComment)
+        .build();
   }
 
   private PostResponse createResponse(

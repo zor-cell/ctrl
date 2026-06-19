@@ -7,18 +7,15 @@
         <p>No users match your search. Try a different search term or clear the search.</p>
       </div>
     } @else {
-    <div class="empty-state">
+      <div class="empty-state">
         <p>You have not blocked anyone yet.</p>
-    </div>
+      </div>
     }
   } @else {
     <div class="list-container">
       @for (user of blocked(); track user.id) {
         <div class="followed-item">
-          <button
-            type="button"
-            class="profile-avatar"
-            (click)="navigateToProfile(user.username)">
+          <div class="profile-avatar">
             @if (hasProfilePicture(user)) {
               <img
                 [src]="profilePictureUrl(user)"
@@ -29,7 +26,7 @@
             } @else {
               <span class="profile-avatar__initial">{{ getInitial(user) }}</span>
             }
-          </button>
+          </div>
 
           <div class="followed-info">
             <span class="username">&#64;{{ user.username }}</span>
@@ -46,3 +43,33 @@
   }
 </div>
 
+<p-dialog
+  header="Unblock user?"
+  [visible]="unblockDialogVisible()"
+  (visibleChange)="onUnblockDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!unblocking()"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="unblock-dialog">
+  <div class="unblock-confirmation">
+    <p>Unblock {{ selectedUsername }}? The User will be able to interact with you and your posts again.</p>
+    <div class="unblock-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="unblocking()"
+        (click)="cancelUnblock()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="confirm-button"
+        [disabled]="unblocking()"
+        (click)="confirmUnblock()">
+        Unblock
+      </button>
+    </div>
+  </div>
+</p-dialog>
