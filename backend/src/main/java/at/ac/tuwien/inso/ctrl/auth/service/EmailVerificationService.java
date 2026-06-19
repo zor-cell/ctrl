@@ -12,6 +12,7 @@ import at.ac.tuwien.inso.ctrl.exception.UserAlreadyVerifiedException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -55,7 +55,6 @@ public class EmailVerificationService {
    * @throws UserAlreadyVerifiedException if the user is already verified
    * @throws CommunicationException if the email fails to send
    */
-  @Async
   public void sendVerificationEmail(SendEmailRequest sendEmailRequest) {
     LOGGER.info("Sending verification email to: {}", sendEmailRequest.email());
     if (!requireEmailVerification) {
@@ -132,7 +131,7 @@ public class EmailVerificationService {
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
-                        "Verification failed. User does not exist or Token is invalid"));
+                        "1Verification failed. User does not exist or Token is invalid"));
 
     EmailVerification verification =
         emailVerificationRepository
@@ -140,7 +139,7 @@ public class EmailVerificationService {
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
-                        "Verification failed. User does not exist or Token is invalid"));
+                        "2Verification failed. User does not exist or Token is invalid"));
 
     if (verification.getCode().equals(emailVerificationRequest.code())
         && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
@@ -150,7 +149,7 @@ public class EmailVerificationService {
       return new EmailVerificationResponse(true);
     } else {
       throw new InvalidEmailVerificationCodeException(
-          "Verification failed. User does not exist or Token is invalid");
+          "3Verification failed. User does not exist or Token is invalid");
     }
   }
 
@@ -219,5 +218,25 @@ public class EmailVerificationService {
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-256 not available", e);
     }
+  }
+
+  public String getVerificationToken(@Valid SendEmailRequest sendEmailRequest) {
+    User user =
+        userRepository
+            .findByUsername(sendEmailRequest.username())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found for verification"));
+
+    EmailVerification verification =
+        emailVerificationRepository
+            .findEmailVerificationByUser_Id(user.getId())
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Verification failed. User does not exist or Token is invalid"));
+
+    LOGGER.info(
+        "Verification token for user {}: {}", sendEmailRequest.username(), verification.getCode());
+
+    return verification.getCode();
   }
 }

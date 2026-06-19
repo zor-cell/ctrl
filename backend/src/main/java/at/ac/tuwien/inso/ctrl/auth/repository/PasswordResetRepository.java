@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.auth.repository;
 
 import at.ac.tuwien.inso.ctrl.auth.entity.PasswordReset;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,7 @@ public interface PasswordResetRepository extends JpaRepository<PasswordReset, UU
   Optional<PasswordReset> findByToken(String rawToken);
 
   Optional<PasswordReset> findPasswordResetByUser(User user);
+
+  Optional<PasswordReset> findFirstByUser_IdAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(
+      UUID userId, LocalDateTime now);
 }

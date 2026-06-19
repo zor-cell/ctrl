@@ -10,6 +10,7 @@ import at.ac.tuwien.inso.ctrl.exception.ResourceNotFoundException;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
@@ -135,5 +136,22 @@ public class ResetPasswordService {
     Context context = new Context();
     context.setVariable("redirectUrl", baseUrl + "/reset-password?token=" + code);
     return context;
+  }
+
+  public String getPasswordToken(@Valid PasswordResetEmailRequest sendEmailRequest) {
+    Optional<User> user = userRepository.findByEmail(sendEmailRequest.email());
+    if (user.isEmpty()) {
+      throw new ResourceNotFoundException(
+          "User with email " + sendEmailRequest.email() + " not found");
+    }
+
+    PasswordReset reset =
+        passwordResetRepository
+            .findFirstByUser_IdAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(
+                user.get().getId(), LocalDateTime.now())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("No active password reset token found"));
+
+    return reset.getToken();
   }
 }

@@ -9,6 +9,7 @@ import {NotificationService} from '../../../core/services/notification.service';
 import {EmailVerificationRequest} from '../../dto/EmailVerificationRequest';
 import {AuthService} from '../../auth.service';
 import {EmailVerificationPageData} from '../../dto/EmailVerificationPageData';
+import {finalize} from 'rxjs';
 
 @Component({
   selector: 'app-email-verification',
@@ -58,12 +59,20 @@ export class EmailVerificationComponent implements OnDestroy, OnInit {
       code: code,
     };
 
-    this.authService.verify_email(verificationRequest).subscribe(isValid => {
-      if (isValid) {
-        this.router.navigate(['/login']);
-        return;
-      }
-    });
+    this.submitting.set(true);
+
+    this.authService.verify_email(verificationRequest)
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe({
+        next: isValid => {
+          if (isValid) {
+            this.router.navigate(['/login']);
+          }
+        },
+        error: err => {
+          console.log('Email verification failed', err);
+        },
+      });
   }
 
   resendEmail() {

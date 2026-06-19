@@ -86,10 +86,6 @@ export class RegisterComponent {
       email: registerRequest.email
     } as EmailVerificationPageData;
 
-    this.authService.resendVerificationEmail(email_registration_data).subscribe({
-      error: () => {
-        this.router.navigate(['register']);
-      },
-    });
+    this.authService.resendVerificationEmail(email_registration_data).subscribe();
   }
 }
