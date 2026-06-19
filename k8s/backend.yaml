@@ -76,6 +76,11 @@ spec:
                 configMapKeyRef:
                   name: ctrl-config
                   key: garage-presign-url
+            - name: GARAGE_INTERNAL_PRESIGN_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ctrl-config
+                  key: garage-internal-presign-url
             - name: ID_AUSTRIA_SECRET
               valueFrom:
                 secretKeyRef:
@@ -113,8 +118,8 @@ spec:
               memory: "512Mi"
               cpu: "500m"
             limits:
-              memory: "1Gi"
-              cpu: "1000m"
+              memory: "2000Mi"
+              cpu: "2000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -130,9 +135,22 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
+          volumeMounts:
+            - name: credentials
+              mountPath: /app/resources/credentials.json
+              subPath: credentials.json
+              readOnly: true
+            - name: gmail-tokens
+              mountPath: /tokens
       imagePullSecrets:
         - name: image-pull-secret
-
+      volumes:
+        - name: credentials
+          secret:
+            secretName: backend-credentials
+        - name: gmail-tokens
+          persistentVolumeClaim:
+            claimName: gmail-tokens-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -149,3 +167,16 @@ spec:
     - port: 8080
       targetPort: 8080
   type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gmail-tokens-pvc
+  namespace: ctrl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi

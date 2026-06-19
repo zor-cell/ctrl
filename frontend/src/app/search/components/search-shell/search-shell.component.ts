@@ -66,7 +66,6 @@ import { filter } from 'rxjs/operators';
 
     .search-content {
       min-height: 400px;
-      padding-top: 1rem;
     }
 
     ::ng-deep .p-tab {

@@ -305,7 +305,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                             (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
                 AND pt.topic_id = ANY(ARRAY[:topicList])
               ORDER BY totalScore DESC
-              LIMIT 200
+              LIMIT :pageSize OFFSET :offset
           """,
       nativeQuery = true)
   List<Post> searchPostsBySimilarityAndTopics(
@@ -371,7 +371,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
                             OR
                             (br.user_id = p.user_id AND br.blocked_user_id = :userId)))
               ORDER BY totalScore DESC
-              LIMIT 200
+              LIMIT :pageSize OFFSET :offset
           """,
       nativeQuery = true)
   List<Post> searchPostsBySimilarity(

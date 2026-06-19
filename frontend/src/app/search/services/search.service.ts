@@ -10,7 +10,6 @@ interface CachedPostSearch {
   request: PostSearchRequest;
   results: Observable<PostPreview[]>;
   timestamp: number;
-  scrollY: number;
 }
 
 @Injectable({
@@ -23,6 +22,7 @@ export class SearchService {
   // Cache for post search results (5 minute expiration)
   private readonly CACHE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
   private postSearchCache: CachedPostSearch | null = null;
+  private savedPageNr = 0;
 
   /**
    * Searches for posts based on query embedding similarity with optional topic filtering.
@@ -49,8 +49,7 @@ export class SearchService {
     this.postSearchCache = {
       request: { ...request },
       results: results,
-      timestamp: Date.now(),
-      scrollY: 0,
+      timestamp: Date.now()
     };
   }
 
@@ -85,20 +84,12 @@ export class SearchService {
     this.postSearchCache = null;
   }
 
-  /**
-   * Save scroll position for the current cached search.
-   */
-  saveScrollPosition(scrollY: number): void {
-    if (this.postSearchCache) {
-      this.postSearchCache.scrollY = scrollY;
-    }
+  setSavedPageNr(pageNr: number): void {
+    this.savedPageNr = pageNr;
   }
 
-  /**
-   * Get the saved scroll position from cache.
-   */
-  getSavedScrollPosition(): number {
-    return this.postSearchCache?.scrollY || 0;
+  getSavedPageNr(): number {
+    return this.savedPageNr;
   }
 
   /**
@@ -110,7 +101,9 @@ export class SearchService {
       (a.topicIds || []).sort(),
       (b.topicIds || []).sort()
     );
-    return sameQuery && sameTopics;
+    const samePage = a.page === b.page;
+    const samePageAmount = a.postsPerPage === b.postsPerPage;
+    return sameQuery && sameTopics && samePage && samePageAmount;
   }
 
   /**
