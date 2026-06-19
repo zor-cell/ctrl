@@ -106,7 +106,9 @@ export class AnalyticsComponent implements OnInit {
         return (this.cache()['detailed-days']?.[this.focusedWeek()].at(this.focusedDay()) as WeekDayDetailResponse)?.title ?? '';
       case 'detailed-average': {
         const detailedAverage = (this.cache()['detailed-average']?.[0].at(this.focusedDay()) as AverageDayDetailResponse);
-        if (detailedAverage.daysInPeriod === 0) {
+        if (!detailedAverage) {
+          return 'Usage Analytics';
+        } else if (detailedAverage.daysInPeriod === 0) {
           return 'No sessions on ' + detailedAverage.title + '\'s so far!';
         } else if (detailedAverage.daysInPeriod === 1) {
           return 'Average ' + detailedAverage.title + ' across the last week';
