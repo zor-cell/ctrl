@@ -38,7 +38,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
-class CommentUnitTests {
+class CommentUnitTest {
 
   @Mock private CommentRepository commentRepository;
   @Mock private PostRepository postRepository;
