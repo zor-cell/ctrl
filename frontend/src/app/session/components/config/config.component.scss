@@ -1,0 +1,88 @@
+$slider-height: 8px;
+$color-interaction:   #6366f1; // indigo
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  min-height: calc(100vh - 58px);
+  padding: 1rem;
+  gap: 2rem;
+}
+
+.slider-field {
+  margin-bottom: 1.25rem;
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .slider-label-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    label {
+      font-weight: 600;
+      color: var(--text-color);
+      margin: 0;
+    }
+  }
+}
+
+.hint-icon {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #9ca3af);
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--primary-color, #6366f1);
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-field p-floatlabel {
+  flex: 1;
+}
+
+
+@mixin slider-color($color) {
+  ::ng-deep {
+    .p-slider {
+      height: $slider-height !important;
+      border-radius: calc($slider-height / 2) !important;
+    }
+    .p-slider-range {
+      background: $color !important;
+      border-radius: calc($slider-height / 2) !important;
+    }
+    .p-slider-handle {
+      width: calc($slider-height * 2) !important;
+      height: calc($slider-height * 2) !important;
+      margin-top: calc($slider-height * -1) !important;
+      border-color: $color !important;
+      &:hover, &:focus {
+        box-shadow: 0 0 0 4px color-mix(in srgb, #{$color} 20%, transparent) !important;
+      }
+    }
+  }
+
+  .level-badge {
+    background: color-mix(in srgb, #{$color} 12%, transparent);
+    color: $color;
+  }
+}
+
+.slider-temp {
+  @include slider-color($color-interaction);
+}

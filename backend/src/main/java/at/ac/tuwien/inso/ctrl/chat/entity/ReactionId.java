@@ -21,5 +21,8 @@ public class ReactionId implements Serializable {
   private UUID fromUserId;
 
   @Column(name = "message_id")
-  private String messageId;
+  private UUID messageId;
+
+  @Column(name = "content")
+  private String content;
 }

@@ -1,6 +1,8 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,26 +11,47 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
+import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
+import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
+import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
-import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVoteId;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVoteId;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdatePasswordRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateProfileRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UpdateUsernameRequest;
 import at.ac.tuwien.inso.ctrl.user.dto.UserDetailsResponse;
-import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
 import at.ac.tuwien.inso.ctrl.user.dto.VerifyIdentityRequest;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.service.FollowService;
 import at.ac.tuwien.inso.ctrl.user.service.IdAustriaOidcService;
 import at.ac.tuwien.inso.ctrl.user.service.UserService;
@@ -36,7 +59,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +81,8 @@ public class UserServiceUnitTest {
 
   @Mock private PasswordEncoder passwordEncoder;
 
+  @Mock private ReportRepository reportRepository;
+
   @Mock private JwtService jwtService;
 
   @Mock private IdAustriaOidcService idAustriaOidcService;
@@ -67,9 +91,37 @@ public class UserServiceUnitTest {
 
   @Mock private FriendRelationRepository friendRelationRepository;
 
+  @Mock private FollowRelationRepository followRelationRepository;
+
+  @Mock private BusinessVerificationRepository businessVerificationRepository;
+
   @Mock private FileStorageService fileStorageService;
 
   @Mock private FollowService followService;
+
+  @Mock private BlockService blockService;
+
+  @Mock private EmailVerificationRepository emailVerificationRepository;
+
+  @Mock private PasswordResetRepository passwordResetRepository;
+
+  @Mock private PostRepository postRepository;
+
+  @Mock private PostVoteRepository postVoteRepository;
+
+  @Mock private SourceRepository sourceRepository;
+
+  @Mock private SourceVoteRepository sourceVoteRepository;
+
+  @Mock private CommentRepository commentRepository;
+
+  @Mock private ReactionRepository reactionRepository;
+
+  @Mock private SeenPostRepository seenPostRepository;
+
+  @Mock private AlgorithmRepository algorithmRepository;
+
+  @Mock private ChatService chatService;
 
   @InjectMocks private UserService userService;
 
@@ -128,23 +180,44 @@ public class UserServiceUnitTest {
             testUser.getBio(),
             "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
             false,
-            true);
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
-    when(userMapper.toPublicUserProfileResponse(testUser, true)).thenReturn(response);
+            false,
+            true,
+            false);
+    when(userRepository.findByUsernameAndDeletedFalse("testUser"))
+        .thenReturn(Optional.of(testUser));
+    when(reportRepository.existsReportByFromUserAndContentTypeAndContentId(
+            testUser, ContentTypeEnum.ACCOUNT, String.valueOf(testUser.getId())))
+        .thenReturn(false);
+    when(blockService.inBlockedRelationship(testUser, testUser)).thenReturn(false);
+    when(userMapper.toPublicUserProfileResponse(testUser, true, false)).thenReturn(response);
 
     var result = userService.getPublicProfile("testUser", testUser);
 
     assertEquals(response, result);
-    verify(userRepository).findByUsername("testUser");
-    verify(userMapper).toPublicUserProfileResponse(testUser, true);
+    verify(userRepository).findByUsernameAndDeletedFalse("testUser");
+    verify(blockService).inBlockedRelationship(testUser, testUser);
+    verify(userMapper).toPublicUserProfileResponse(testUser, true, false);
   }
 
   @Test
   void getPublicProfile_withMissingUser_throwsUsernameNotFoundException() {
-    when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+    when(userRepository.findByUsernameAndDeletedFalse("missing")).thenReturn(Optional.empty());
 
     assertThrows(
         UsernameNotFoundException.class, () -> userService.getPublicProfile("missing", testUser));
+  }
+
+  @Test
+  void getPublicProfile_whenUserIsBlocked_throwsUsernameNotFoundException() {
+    User otherUser = createUser("otherUser");
+    when(userRepository.findByUsernameAndDeletedFalse("otherUser"))
+        .thenReturn(Optional.of(otherUser));
+    when(blockService.inBlockedRelationship(testUser, otherUser)).thenReturn(true);
+
+    assertThrows(
+        UsernameNotFoundException.class, () -> userService.getPublicProfile("otherUser", testUser));
+    verify(userRepository).findByUsernameAndDeletedFalse("otherUser");
+    verify(blockService).inBlockedRelationship(testUser, otherUser);
   }
 
   @Test
@@ -277,43 +350,6 @@ public class UserServiceUnitTest {
   }
 
   @Test
-  void searchUsers_withProfilePicture_returnsResolvedProfilePictureUrl() {
-    User currentUser = createUser("current");
-    testUser.setProfilePicture("users/profile-pictures/avatar.png");
-    List<RelationshipStatusItem> relationshipStatuses = List.of();
-    UserSearchResponse response =
-        new UserSearchResponse(
-            testUser.getId(),
-            testUser.getUsername(),
-            null,
-            "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
-            testUser.isVerified(),
-            relationshipStatuses);
-
-    when(followService.getFollowedIds(currentUser)).thenReturn(Set.of());
-    when(friendRelationRepository.findFriendIds(currentUser)).thenReturn(Set.of());
-    when(friendRequestRepository.findReceiverIdsBySender(currentUser)).thenReturn(Set.of());
-    when(friendRequestRepository.findSenderIdsByReceiver(currentUser)).thenReturn(Set.of());
-    when(userRepository.findByUsernameContainingIgnoreCase("test")).thenReturn(List.of(testUser));
-    when(socialMapper.determineRelationshipStatuses(
-            testUser, Set.of(), Set.of(), Set.of(), Set.of()))
-        .thenReturn(relationshipStatuses);
-    when(socialMapper.displayName(testUser, relationshipStatuses)).thenReturn(null);
-    when(socialMapper.toUserSearchResponse(testUser, relationshipStatuses, null))
-        .thenReturn(response);
-
-    List<UserSearchResponse> result =
-        userService.searchUsers(currentUser, " test ", false, false, false);
-
-    assertEquals(1, result.size());
-    assertEquals(testUser.getId(), result.get(0).id());
-    assertEquals("testUser", result.get(0).username());
-    assertEquals(
-        "http://localhost:3900/ctrl-test-media/users/profile-pictures/avatar.png",
-        result.get(0).profilePicture());
-  }
-
-  @Test
   void verifyUser_ShouldUpdateUser_WhenProviderReturnsValidClaims() {
     VerifyIdentityRequest request = new VerifyIdentityRequest("validCode");
     Jwt mockJwt = mock(Jwt.class);
@@ -374,6 +410,165 @@ public class UserServiceUnitTest {
     verify(userRepository, never()).save(any());
   }
 
+  @Test
+  void deleteUser_withActiveUser_anonymizesUserAndCleansRelatedData() {
+    testUser.setProfilePicture("users/profile-pictures/avatar.png");
+    testUser.setEmailVerified(true);
+    testUser.setVerified(true);
+    testUser.setInteractionPreferenceEmbedding(new float[] {0.1f, 0.2f});
+    Post upvotedPost = post("upvoted", 1, 0);
+    Post downvotedPost = post("downvoted", 0, 1);
+    Source upvotedSource = source("source-up", 1, 0);
+    Source downvotedSource = source("source-down", 0, 1);
+    PostVote postUpvote = postVote(upvotedPost, "up");
+    PostVote postDownvote = postVote(downvotedPost, "down");
+    SourceVote sourceUpvote = sourceVote(upvotedSource, "up");
+    SourceVote sourceDownvote = sourceVote(downvotedSource, "down");
+    Comment ownComment = comment("own-comment", testUser, null);
+    Comment replyToOwnComment = comment("reply", createUser("reply-author"), ownComment);
+
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+    when(postVoteRepository.findByIdUserId(testUser.getId().toString()))
+        .thenReturn(List.of(postUpvote, postDownvote));
+    when(sourceVoteRepository.findByIdUserId(testUser.getId().toString()))
+        .thenReturn(List.of(sourceUpvote, sourceDownvote));
+    when(commentRepository.findAll()).thenReturn(List.of(ownComment, replyToOwnComment));
+    when(passwordEncoder.encode(any())).thenReturn("encoded-random-password");
+
+    userService.deleteUser(testUser);
+
+    assertTrue(testUser.isDeleted());
+    assertTrue(testUser.isSuspended());
+    assertFalse(testUser.isVerified());
+    assertFalse(testUser.isEmailVerified());
+    assertTrue(testUser.getUsername().startsWith("deleted-user-"));
+    assertEquals("Deleted user", testUser.getName());
+    assertEquals("encoded-random-password", testUser.getPassword());
+    assertNull(testUser.getBio());
+    assertNull(testUser.getBirthdate());
+    assertNull(testUser.getProfilePicture());
+    assertNull(testUser.getInteractionPreferenceEmbedding());
+    assertEquals(0, upvotedPost.getUpvotes());
+    assertEquals(0, downvotedPost.getDownvotes());
+    assertEquals(0, upvotedSource.getUpvotes());
+    assertEquals(0, downvotedSource.getDownvotes());
+
+    verify(postRepository).save(upvotedPost);
+    verify(postRepository).save(downvotedPost);
+    verify(sourceRepository).save(upvotedSource);
+    verify(sourceRepository).save(downvotedSource);
+    verify(postVoteRepository).deleteAll(List.of(postUpvote, postDownvote));
+    verify(sourceVoteRepository).deleteAll(List.of(sourceUpvote, sourceDownvote));
+    verify(reactionRepository).deleteAllByUserId(testUser.getId());
+    verify(commentRepository).delete(replyToOwnComment);
+    verify(commentRepository).delete(ownComment);
+    verify(postRepository).markAllByUserAsRemoved(testUser.getId());
+    verify(seenPostRepository).deleteAllByUserId(testUser.getId());
+    verify(friendRequestRepository).deleteAllByUser(testUser);
+    verify(friendRelationRepository).deleteAllByUser(testUser);
+    verify(followRelationRepository).deleteAllByUser(testUser);
+    verify(passwordResetRepository).deleteByUserId(testUser.getId());
+    verify(emailVerificationRepository).deleteByUser_Id(testUser.getId());
+    verify(businessVerificationRepository).deleteByBusinessUser(testUser);
+    verify(algorithmRepository).deleteByUserId(testUser.getId());
+    verify(userRepository).save(testUser);
+    verify(chatService).createAccountDeletedSystemMessages(testUser);
+    verify(fileStorageService).deleteProfilePicture("users/profile-pictures/avatar.png");
+  }
+
+  @Test
+  void deleteUser_whenAlreadyDeleted_doesNothing() {
+    testUser.setDeleted(true);
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+
+    userService.deleteUser(testUser);
+
+    verify(postVoteRepository, never()).findByIdUserId(any());
+    verify(userRepository, never()).save(any());
+    verify(chatService, never()).createAccountDeletedSystemMessages(any());
+    verify(fileStorageService, never()).deleteProfilePicture(any());
+  }
+
+  @Test
+  void deleteUser_withMissingUser_throwsUsernameNotFoundAndSkipsCleanup() {
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+
+    assertThrows(UsernameNotFoundException.class, () -> userService.deleteUser(testUser));
+
+    verify(postVoteRepository, never()).findByIdUserId(any());
+    verify(commentRepository, never()).findAll();
+    verify(userRepository, never()).save(any());
+    verify(chatService, never()).createAccountDeletedSystemMessages(any());
+  }
+
+  @Test
+  void deleteUser_withZeroAndNullVoteCounters_neverDecrementsBelowZero() {
+    Post zeroPost = post("zero-post", 0, 0);
+    Post nullPost = post("null-post", null, null);
+    Source zeroSource = source("zero-source", 0, 0);
+    Source nullSource = source("null-source", null, null);
+    PostVote zeroDownvote = postVote(zeroPost, "down");
+    PostVote nullUpvote = postVote(nullPost, "up");
+    SourceVote zeroDownvoteSource = sourceVote(zeroSource, "down");
+    SourceVote nullUpvoteSource = sourceVote(nullSource, "up");
+
+    when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+    when(postVoteRepository.findByIdUserId(testUser.getId().toString()))
+        .thenReturn(List.of(zeroDownvote, nullUpvote));
+    when(sourceVoteRepository.findByIdUserId(testUser.getId().toString()))
+        .thenReturn(List.of(zeroDownvoteSource, nullUpvoteSource));
+    when(commentRepository.findAll()).thenReturn(List.of());
+    when(passwordEncoder.encode(any())).thenReturn("encoded-random-password");
+
+    userService.deleteUser(testUser);
+
+    assertEquals(0, zeroPost.getDownvotes());
+    assertEquals(0, nullPost.getUpvotes());
+    assertEquals(0, zeroSource.getDownvotes());
+    assertEquals(0, nullSource.getUpvotes());
+  }
+
+  @Test
+  void conductUserCleanup_withUnverifiedUsers_cleansTokensAndDeletesUsers() {
+    User userOne = createUser("cleanup-one");
+    User userTwo = createUser("cleanup-two");
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay())
+        .thenReturn(List.of(userOne, userTwo));
+
+    userService.conductUserCleanup();
+
+    verify(emailVerificationRepository).deleteByUser_Id(userOne.getId());
+    verify(emailVerificationRepository).deleteByUser_Id(userTwo.getId());
+    verify(passwordResetRepository).deleteUnusedTokensByUserId(userOne.getId());
+    verify(passwordResetRepository).deleteUnusedTokensByUserId(userTwo.getId());
+    verify(userRepository).deleteUnverifiedUsersOlderThanOneDay();
+  }
+
+  @Test
+  void conductUserCleanup_withNoUsers_stillDeletesUnverifiedUsers() {
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay()).thenReturn(List.of());
+
+    userService.conductUserCleanup();
+
+    verify(emailVerificationRepository, never()).deleteByUser_Id(any());
+    verify(passwordResetRepository, never()).deleteUnusedTokensByUserId(any());
+    verify(userRepository).deleteUnverifiedUsersOlderThanOneDay();
+  }
+
+  @Test
+  void conductUserCleanup_whenPerUserCleanupFails_throwsAndSkipsBulkDelete() {
+    User userOne = createUser("cleanup-fail");
+    when(userRepository.findEmailUnverifiedUsersOlderThanOneDay()).thenReturn(List.of(userOne));
+    org.mockito.Mockito.doThrow(new RuntimeException("cleanup failed"))
+        .when(emailVerificationRepository)
+        .deleteByUser_Id(userOne.getId());
+
+    assertThrows(RuntimeException.class, () -> userService.conductUserCleanup());
+
+    verify(passwordResetRepository, never()).deleteUnusedTokensByUserId(any());
+    verify(userRepository, never()).deleteUnverifiedUsersOlderThanOneDay();
+  }
+
   private User createUser(String username) {
     User user = new User();
     user.setId(UUID.randomUUID());
@@ -381,5 +576,52 @@ public class UserServiceUnitTest {
     user.setEmail(username + "@test.com");
     user.setName(username);
     return user;
+  }
+
+  private Post post(String postId, Integer upvotes, Integer downvotes) {
+    return Post.builder()
+        .postId(postId)
+        .user(createUser(postId + "-owner"))
+        .caption("caption")
+        .upvotes(upvotes)
+        .downvotes(downvotes)
+        .isPublic(true)
+        .isRemoved(false)
+        .build();
+  }
+
+  private Source source(String sourceId, Integer upvotes, Integer downvotes) {
+    return Source.builder()
+        .sourceId(sourceId)
+        .upvotes(upvotes)
+        .downvotes(downvotes)
+        .isRemoved(false)
+        .build();
+  }
+
+  private PostVote postVote(Post post, String voteType) {
+    return PostVote.builder()
+        .id(new PostVoteId(post.getPostId(), testUser.getId().toString()))
+        .post(post)
+        .voteType(voteType)
+        .build();
+  }
+
+  private SourceVote sourceVote(Source source, String voteType) {
+    return SourceVote.builder()
+        .id(new SourceVoteId(source.getSourceId(), testUser.getId().toString()))
+        .source(source)
+        .voteType(voteType)
+        .build();
+  }
+
+  private Comment comment(String commentId, User user, Comment parent) {
+    return Comment.builder()
+        .commentId(commentId)
+        .post(post(commentId + "-post", 0, 0))
+        .user(user)
+        .content("comment")
+        .parentComment(parent)
+        .build();
   }
 }

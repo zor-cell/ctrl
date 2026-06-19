@@ -1,49 +1,51 @@
 package at.ac.tuwien.inso.ctrl.feed.mapper;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.label.entity.PostLabelType;
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.entity.RecommendedPost;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class FeedMapper {
-
-  private final FileStorageService fileStorageService;
+  private static final String DELETED_USER_LABEL = "Deleted user";
 
   public FeedPostResponse toFeedPostResponse(
       RecommendedPost recommendedPost,
       Map<String, String> postVotes,
-      Map<String, String> sourceVotes) {
+      Map<String, Boolean> postReportedByUser,
+      Map<String, String> sourceVotes,
+      Map<String, Boolean> sourceReportedByUser,
+      Set<PostLabelType> computedLabels) {
+
     Post post = recommendedPost.getPost();
 
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String profilePic =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
 
     String postUserVote = postVotes.get(post.getPostId());
 
     List<LabelResponse> labels =
-        post.getPostLabels().stream()
+        computedLabels.stream()
             .map(
-                pl ->
+                type ->
                     new LabelResponse(
-                        pl.getLabel().getLabelId(),
-                        pl.getLabel().getName(),
-                        pl.getLabel().getEmoji(),
-                        pl.getLabel().getExplanation()))
+                        type.name(), type.getName(), type.getEmoji(), type.getExplanation()))
             .toList();
 
     List<FeedPostResponse.SourceResponse> sources =
@@ -56,7 +58,15 @@ public class FeedMapper {
                             s.getUrl(),
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
-                            sourceVotes.get(post.getSource().getSourceId())))
+                            sourceVotes.get(post.getSource().getSourceId()),
+                            sourceReportedByUser != null
+                                && Boolean.TRUE.equals(
+                                    sourceReportedByUser.get(post.getSource().getSourceId())),
+                            post.getSource().getCreatedAt(),
+                            s.getJournal(),
+                            s.getAuthor(),
+                            s.getTitle(),
+                            s.getDate()))
                 .toList()
             : List.of();
 
@@ -66,20 +76,16 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
-    String mediaRef = post.getMediaRef();
-
-    // Only internal posts receive presigned URLs
-    if (!post.isExternalPost() && mediaRef != null) {
-      mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
-    }
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
 
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
         username,
         profilePic,
+        deletedUser,
         post.getCaption(),
-        mediaRef,
+        post.getMediaRef(),
         post.isPublic(),
         post.getUpvotes(),
         post.getDownvotes(),
@@ -89,33 +95,27 @@ public class FeedMapper {
         labels,
         sources,
         comments,
-        recommendedPost.getExplanation());
+        recommendedPost.getExplanation(),
+        postReportedByUser != null && Boolean.TRUE.equals(postReportedByUser.get(post.getPostId())),
+        userProfileUrl);
   }
 
   public FeedPostResponse toFeedPostResponse(
       Post post, Map<String, String> postVotes, Map<String, String> sourceVotes) {
+    boolean deletedUser = isDeletedInternalAuthor(post);
     String authorId = post.isExternalPost() ? null : post.getUser().getId().toString();
     String username =
         post.isExternalPost()
             ? post.getExternalAuthor().getDisplayName()
-            : post.getUser().getUsername();
+            : deletedUser ? DELETED_USER_LABEL : post.getUser().getUsername();
     String profilePic =
         post.isExternalPost()
             ? post.getExternalAuthor().getAvatarUrl()
-            : post.getUser().getProfilePicture();
+            : deletedUser ? null : post.getUser().getProfilePicture();
 
     String postUserVote = postVotes.get(post.getPostId());
 
-    List<LabelResponse> labels =
-        post.getPostLabels().stream()
-            .map(
-                pl ->
-                    new LabelResponse(
-                        pl.getLabel().getLabelId(),
-                        pl.getLabel().getName(),
-                        pl.getLabel().getEmoji(),
-                        pl.getLabel().getExplanation()))
-            .toList();
+    List<LabelResponse> labels = List.of();
 
     List<FeedPostResponse.SourceResponse> sources =
         post.getSource() != null
@@ -127,7 +127,13 @@ public class FeedMapper {
                             s.getUrl(),
                             post.getSource().getUpvotes(),
                             post.getSource().getDownvotes(),
-                            sourceVotes.get(post.getSource().getSourceId())))
+                            sourceVotes.get(post.getSource().getSourceId()),
+                            false,
+                            post.getSource().getCreatedAt(),
+                            s.getJournal(),
+                            s.getAuthor(),
+                            s.getTitle(),
+                            s.getDate()))
                 .toList()
             : List.of();
 
@@ -137,20 +143,16 @@ public class FeedMapper {
     List<String> topicIds =
         post.getPostTopics().stream().map(pt -> pt.getTopic().getName()).toList();
 
-    String mediaRef = post.getMediaRef();
-
-    // Only internal posts receive presigned URLs
-    if (!post.isExternalPost() && mediaRef != null) {
-      mediaRef = fileStorageService.resolveFileUrl(post.getMediaRef());
-    }
+    String userProfileUrl = post.isExternalPost() ? post.getExternalAuthor().getProfileUrl() : null;
 
     return new FeedPostResponse(
         post.getPostId(),
         authorId,
         username,
         profilePic,
+        deletedUser,
         post.getCaption(),
-        mediaRef,
+        post.getMediaRef(),
         post.isPublic(),
         post.getUpvotes(),
         post.getDownvotes(),
@@ -160,17 +162,25 @@ public class FeedMapper {
         labels,
         sources,
         comments,
-        null);
+        null,
+        false,
+        userProfileUrl);
   }
 
   public FeedPostResponse.CommentResponse toCommentResponse(Comment comment) {
+    boolean deletedUser = comment.getUser().isDeleted();
     return new FeedPostResponse.CommentResponse(
         comment.getCommentId(),
         comment.getUser().getId().toString(),
-        comment.getUser().getUsername(),
-        fileStorageService.resolveFileUrl(comment.getUser().getProfilePicture()),
+        deletedUser ? DELETED_USER_LABEL : comment.getUser().getUsername(),
+        deletedUser ? null : comment.getUser().getProfilePicture(),
+        deletedUser,
         comment.getContent(),
         comment.getCreatedAt(),
         comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);
+  }
+
+  private boolean isDeletedInternalAuthor(Post post) {
+    return !post.isExternalPost() && post.getUser().isDeleted();
   }
 }

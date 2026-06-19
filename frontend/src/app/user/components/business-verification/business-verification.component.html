@@ -32,7 +32,9 @@
                   }
                 </button>
                 <div class="user-details">
-                  <h3>{{ verification.user.name || verification.user.username }}</h3>
+                  <h3 class="account-link"
+                    [routerLink]="['/profile', verification.user.username]"
+                  >{{ verification.user.name || verification.user.username }}</h3>
                   <p class="username">@{{ verification.user.username }}</p>
                   <p class="email">{{ verification.user.email }}</p>
                 </div>

@@ -4,8 +4,9 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { CreatePostRequest } from './dto/CreatePostRequest';
 import { PostResponse } from './dto/PostResponse';
-import { TopicResponse } from './dto/TopicResponse';
-import {firstValueFrom} from 'rxjs';
+import { TopicResponse } from '../topic/dto/TopicResponse';
+import { firstValueFrom } from 'rxjs';
+import { DetailedPostResponse } from './dto/DetailedPostResponse';
 
 export type VoteType = 'up' | 'down';
 
@@ -37,17 +38,14 @@ export class PostService {
    *
    * @returns An observable that emits an array of {@link TopicResponse} objects
    */
+  getTopics() {
+    return this.httpClient.get<TopicResponse[]>(this.topicUri);
+  }
 
   deletePost(postId: string) {
     return this.httpClient.delete<void>(`${this.baseUri}/${postId}`);
   }
 
-  getTopics() {
-    return this.httpClient.get<TopicResponse[]>(this.topicUri);
-  }
-
-
-  
   getMyPosts() {
     return this.httpClient.get<PostResponse[]>(`${this.baseUri}/me`);
   }
@@ -55,6 +53,20 @@ export class PostService {
   getProfilePostsForUser(username: string) {
     return this.httpClient.get<PostResponse[]>(
       `${this.baseUri}/user/${encodeURIComponent(username)}`
+    );
+  }
+
+  /**
+   * Fetches a single post by its ID.
+   *
+   * GET /posts/{postId}
+   *
+   * @param postId - The unique identifier of the post
+   * @returns A promise that resolves to the {@link PostResponse}
+   */
+  async getPostById(postId: string): Promise<DetailedPostResponse> {
+    return firstValueFrom(
+      this.httpClient.get<DetailedPostResponse>(`${this.baseUri}/${postId}`)
     );
   }
 

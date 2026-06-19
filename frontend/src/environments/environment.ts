@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: 'https://www.ctrl-ase.dev/api',
+  wsUrl: 'wss://www.ctrl-ase.dev/ws',
   idAustria: {
     clientId: 'https://www.ctrl-ase.dev',
     redirectUri: 'https://www.ctrl-ase.dev/verification-callback',
@@ -9,5 +10,8 @@ export const environment = {
   },
   auth: {
     requireEmailVerification: true
+  },
+  heartbeat: {
+    interval: 60000 // 1 min in ms
   }
 };

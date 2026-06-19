@@ -17,7 +17,6 @@ export interface ReportedPostResponse {
   userProfilePic: string;
   caption: string;
   mediaRef: string | null;
-  mediaUrl: string | null;
   isPublic: boolean;
   upvotes: number;
   downvotes: number;

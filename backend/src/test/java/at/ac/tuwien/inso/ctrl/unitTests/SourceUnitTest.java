@@ -88,9 +88,6 @@ class SourceUnitTest {
       when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
     }
 
-    // source and user found but voteType invalid
-    // lenient() because these stubs are only reached if the service validates voteType (expected to
-    // FAIL until implemented)
     if (expectedException == IllegalArgumentException.class) {
       lenient()
           .when(sourceRepository.findById(sourceId))

@@ -80,6 +80,11 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- Spring test framework -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -247,31 +252,49 @@
 				</configuration>
 			</plugin>
 
-			<!-- used to build the docker image into the GitLab registry -->
 			<plugin>
-    			<groupId>com.google.cloud.tools</groupId>
-    			<artifactId>jib-maven-plugin</artifactId>
-    			<version>3.5.1</version>
-    			<configuration>
-						<from>
-							<image>registry.reset.inso-w.at/2026ss-ase-pr-group/26ss-ase-pr-inso-04/backend-base:latest</image>
-  						<auth>
-    						<username>${env.CI_REGISTRY_USER}</username>
-    						<password>${env.CI_REGISTRY_PASSWORD}</password>
-  						</auth>
-						</from>
-						<allowInsecureRegistries>true</allowInsecureRegistries>
-        		<extraDirectories>
-            		<paths>
-                		<path>
-                    		<from>../frontend/dist/frontend/browser</from>
-                    		<into>/app/static</into>
-                		</path>
-            		</paths>
-        		</extraDirectories>
-    			</configuration>
+    		<groupId>com.google.cloud.tools</groupId>
+    		<artifactId>jib-maven-plugin</artifactId>
+    		<version>3.5.1</version>
+    		<configuration>
+					<from>
+						<image>registry.reset.inso-w.at/2026ss-ase-pr-group/26ss-ase-pr-inso-04/backend-base:latest</image>
+  					<auth>
+    					<username>${env.CI_REGISTRY_USER}</username>
+    					<password>${env.CI_REGISTRY_PASSWORD}</password>
+  					</auth>
+					</from>
+					<allowInsecureRegistries>true</allowInsecureRegistries>
+        	<extraDirectories>
+            	<paths>
+                	<path>
+                    	<from>../frontend/dist/frontend/browser</from>
+                    	<into>/app/static</into>
+                	</path>
+            	</paths>
+        	</extraDirectories>
+    		</configuration>
+    	</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

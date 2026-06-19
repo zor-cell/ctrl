@@ -13,6 +13,7 @@ import { InputIcon } from 'primeng/inputicon';
 import { RelationshipService } from '../../relationship.service';
 import { FriendRequestEventBusService } from '../../friend-request-event-bus.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UserSearchResult } from '../../dto/Relationship';
 
@@ -57,6 +58,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   searchResults = this.relationshipService.searchResults;
   failedProfilePictures = signal<Set<string>>(new Set());
   profilePictureUrls = signal<Record<string, string>>({});
+  acceptedFriendUsernames = signal<Set<string>>(new Set());
 
   private searchInput$ = new Subject<string>();
   private refreshTrigger$ = new Subject<void>();
@@ -102,7 +104,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this._destroy$),
         filter((event) =>
-          ['accepted', 'declined', 'cancelled', 'sent', 'followed', 'unfollowed'].includes(event.type)
+          ['declined', 'cancelled', 'sent', 'followed', 'unfollowed'].includes(event.type)
         )
       )
       .subscribe(() => {
@@ -205,11 +207,16 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   }
 
   acceptIncomingRequest(user: UserSearchResult) {
-    this.relationshipService.acceptFriendRequest(user.username).subscribe({
+    const username = user.username;
+
+    this.markUserAsFriend(username);
+
+    this.relationshipService.acceptFriendRequest(username).subscribe({
       next: () => {
-        this.notificationService.showSuccess(`Accepted friend request from ${user.username}`);
+        this.notificationService.showSuccess(`Accepted friend request from ${username}`);
       },
       error: () => {
+        this.unmarkUserAsFriend(username);
         this.notificationService.showError('Failed to accept friend request');
       },
     });
@@ -218,7 +225,29 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   private hasStatus(user: UserSearchResult, status: string): boolean {
     return user.relationshipStatuses.some(item => item.status === status);
   }
-  
+
+  private markUserAsFriend(username: string): void {
+    this.acceptedFriendUsernames.update(usernames => {
+      const updatedUsernames = new Set(usernames);
+      updatedUsernames.add(username.toLowerCase());
+      return updatedUsernames;
+    });
+    this.relationshipService.markSearchResultAsFriend(username);
+  }
+
+  private unmarkUserAsFriend(username: string): void {
+    this.acceptedFriendUsernames.update(usernames => {
+      const updatedUsernames = new Set(usernames);
+      updatedUsernames.delete(username.toLowerCase());
+      return updatedUsernames;
+    });
+    this.refreshTrigger$.next();
+  }
+
+  private wasAcceptedAsFriend(user: UserSearchResult): boolean {
+    return this.acceptedFriendUsernames().has(user.username.toLowerCase());
+  }
+
   openUserProfile(user: UserSearchResult) {
     this.router.navigate(['/profile', user.username]);
   }
@@ -229,8 +258,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
 
   profilePictureUrl(user: UserSearchResult): string | null {
     return this.profilePictureUrls()[user.id]
-      ?? this.directProfilePictureUrl(user.profilePicture)
-      ?? this.defaultProfilePictureUrl(user);
+      ?? this.directProfilePictureUrl(user.profilePicture);
   }
 
   markProfilePictureFailed(user: UserSearchResult): void {
@@ -242,7 +270,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
   }
 
   getInitial(user: UserSearchResult): string {
-    return (user.name?.charAt(0) || user.username.charAt(0)).toUpperCase();
+    return usernameInitial(user.username);
   }
 
   canFollow(user: UserSearchResult): boolean {
@@ -250,7 +278,7 @@ export class UserSearchComponent implements OnInit, OnDestroy {
     // Actually, looking at the original logic: it was 'NONE' && isVerified
     // So we can follow if: isVerified AND not FOLLOWED AND not FRIEND AND no pending requests
     const hasExistingRelation = this.hasStatus(user, 'FOLLOWED') ||
-                                  this.hasStatus(user, 'FRIEND') ||
+                                  this.isFriend(user) ||
                                   this.hasStatus(user, 'PENDING_REQUEST_SENT') ||
                                   this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
     return user.isVerified && !hasExistingRelation;
@@ -258,17 +286,21 @@ export class UserSearchComponent implements OnInit, OnDestroy {
 
   canAddFriend(user: UserSearchResult): boolean {
     // Can add friend if not already friends and no pending requests
-    return !this.hasStatus(user, 'FRIEND') &&
+    return !this.isFriend(user) &&
            !this.hasStatus(user, 'PENDING_REQUEST_SENT') &&
            !this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasIncomingRequest(user: UserSearchResult): boolean {
-    return this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
+    return !this.wasAcceptedAsFriend(user) && this.hasStatus(user, 'PENDING_REQUEST_INCOMING');
   }
 
   hasPendingSentRequest(user: UserSearchResult): boolean {
     return this.hasStatus(user, 'PENDING_REQUEST_SENT');
+  }
+
+  isFriend(user: UserSearchResult): boolean {
+    return this.wasAcceptedAsFriend(user) || this.hasStatus(user, 'FRIEND');
   }
 
   navigateToProfile(username: string): void {
@@ -311,13 +343,4 @@ export class UserSearchComponent implements OnInit, OnDestroy {
     return url;
   }
 
-  private defaultProfilePictureUrl(user: UserSearchResult): string {
-    const avatarIndex = this.avatarIndex(user.id || user.username);
-    return `/assets/users/user${avatarIndex}ProfilePic.jpeg`;
-  }
-
-  private avatarIndex(seed: string): number {
-    const sum = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0);
-    return (sum % 3) + 1;
-  }
 }

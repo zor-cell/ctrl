@@ -13,7 +13,8 @@ data:
 
   #filestorage - garage
   garage-bucket-name: ctrl-dev-media-private
-  garage-presign-url: https://ctrl-media.web.garage.ctrl-ase.dev/
+  garage-presign-url: https://www.ctrl-ase.dev/
+  garage-internal-presign-url: http://filestorage-service:3900/
   #embedding - infinity
   infinity-model-id: jinaai/jina-clip-v1
   infinity-batch-size: "32"

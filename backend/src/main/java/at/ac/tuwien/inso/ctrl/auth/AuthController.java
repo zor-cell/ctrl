@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -54,6 +55,21 @@ public class AuthController {
   public void resendVerificationEmail(@Valid @RequestBody SendEmailRequest sendEmailRequest) {
     LOGGER.trace("Resend verification email request: {}", sendEmailRequest);
     emailVerificationService.sendVerificationEmail(sendEmailRequest);
+  }
+
+  @PreAuthorize("hasRole('TEST')")
+  @GetMapping("/verification-token")
+  public String getVerificationToken(@Valid @RequestBody SendEmailRequest sendEmailRequest) {
+    LOGGER.trace("Get verification token request: {}", sendEmailRequest);
+    return emailVerificationService.getVerificationToken(sendEmailRequest);
+  }
+
+  @PreAuthorize("hasRole('TEST')")
+  @GetMapping("/password-token")
+  public String getPasswordResetToken(
+      @Valid @RequestBody PasswordResetEmailRequest sendEmailRequest) {
+    LOGGER.trace("Get password token request: {}", sendEmailRequest);
+    return passwordResetService.getPasswordToken(sendEmailRequest);
   }
 
   @PostMapping("/login")

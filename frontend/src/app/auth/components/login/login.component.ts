@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 
 import {AuthService} from '../../auth.service'
 import {LoginRequest} from "../../dto/LoginRequest";
@@ -10,6 +10,7 @@ import {Message} from "primeng/message";
 import {Router, RouterLink} from "@angular/router";
 import {Password} from "primeng/password";
 import {switchMap} from "rxjs";
+import {ChatSessionService} from '../../../chat/services/chat-session.service';
 import {UserService} from "../../../user/user.service";
 
 @Component({
@@ -27,11 +28,17 @@ import {UserService} from "../../../user/user.service";
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private userService = inject(UserService);
   private fb = inject(NonNullableFormBuilder);
   private router = inject(Router);
+  private readonly chatSessionService = inject(ChatSessionService);
+
+  ngOnInit() {
+    this.chatSessionService.teardown();
+    this.userService.clearUser();
+  }
 
   protected loginForm = this.fb.group({
     username: ['', Validators.required],
@@ -49,8 +56,14 @@ export class LoginComponent {
     this.authService
       .login(loginRequest)
       .pipe(switchMap(() => this.userService.loadUser()))
-      .subscribe(() => {
-        this.router.navigate(['/profile']);
+      .subscribe({
+        next: () => {
+          this.chatSessionService.bootstrap();
+          this.router.navigate(['/profile']);
+        },
+        error: () => {
+          this.loginForm.controls.password.reset();
+        },
       });
   }
 }

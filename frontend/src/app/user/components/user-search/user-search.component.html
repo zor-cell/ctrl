@@ -112,6 +112,14 @@
             </div>
 
             <div class="user-actions">
+              @if (isFriend(user)) {
+                <p-button
+                  icon="pi pi-check"
+                  label="Friend"
+                  severity="success"
+                  [disabled]="true"
+                  size="small" />
+              }
               @if (canFollow(user)) {
                 <p-button
                   icon="pi pi-plus"

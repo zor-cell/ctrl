@@ -1,0 +1,132 @@
+.profile-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border: 1px solid var(--p-surface-300);
+  border-radius: 999px;
+  color: var(--p-text-color);
+  padding: 0;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.35);
+  }
+}
+
+.profile-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar__initial {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.followed-list {
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--p-text-color-secondary);
+  }
+
+  .list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .followed-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--p-surface-100);
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--p-surface-200);
+    }
+
+    .followed-info {
+      flex: 1;
+
+      .username {
+        font-weight: 500;
+        color: var(--p-text-color);
+      }
+    }
+  }
+}
+
+:host-context(.app-dark) .followed-item {
+  background: var(--p-surface-800);
+
+  &:hover {
+    background: var(--p-surface-700);
+  }
+}
+
+:host ::ng-deep .unblock-dialog .p-dialog-header {
+  padding: 1.5rem 1.5rem 0.75rem;
+}
+
+:host ::ng-deep .unblock-dialog .p-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:host ::ng-deep .unblock-dialog .p-dialog-content {
+  padding: 0.75rem 1.5rem 1.5rem;
+}
+
+.unblock-confirmation {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.unblock-confirmation p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.unblock-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.text-button,
+.confirm-button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.75rem 1rem;
+}
+
+.text-button {
+  background: transparent;
+  color: var(--p-text-muted-color);
+}
+
+.text-button:disabled,
+.confirm-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

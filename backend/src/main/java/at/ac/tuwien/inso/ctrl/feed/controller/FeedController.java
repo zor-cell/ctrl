@@ -2,6 +2,7 @@ package at.ac.tuwien.inso.ctrl.feed.controller;
 
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.service.FeedService;
+import at.ac.tuwien.inso.ctrl.session.annotations.CheckSessionLimits;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,7 @@ public class FeedController {
    * @return a list of {@link FeedPostResponse} objects with HTTP 200 OK
    */
   @GetMapping
+  @CheckSessionLimits
   public ResponseEntity<List<FeedPostResponse>> getFeed(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int postsPerPage,

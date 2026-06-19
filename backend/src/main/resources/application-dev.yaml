@@ -12,7 +12,7 @@ garage:
   presign-url: ${GARAGE_PRESIGN_URL:http://localhost:3900}
   internal-presign-url: ${GARAGE_INTERNAL_PRESIGN_URL:http://garage:3900}
   public-url: http://localhost:8080/api/files/media-url?ref=
-  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT2M}
+  presigned-url-duration: ${GARAGE_PRESIGNED_URL_DURATION:PT30M}
   access-key: ${GARAGE_ACCESS_KEY}
   secret-key: ${GARAGE_SECRET_KEY}
   bucket-name: ${GARAGE_PRIVATE_BUCKET_NAME:${GARAGE_BUCKET_NAME:ctrl-dev-media-private}}
@@ -23,10 +23,14 @@ application:
   security:
     id-austria:
       issuer-uri: "http://localhost:8081/realms/id-austria-mock"
+      jwk-uri: "http://localhost:8081/realms/id-austria-mock"
       token-uri: "http://localhost:8081/realms/id-austria-mock/protocol/openid-connect/token"
       redirect-uri: "http://localhost:4200/verification-callback"
   auth:
     require-email-verification: false
+  session:
+    max-time-between-heartbeats: 3 #minutes
+    snooze-time: 5 #minutes
 
 infinity:
   url: http://localhost:7997

@@ -2,11 +2,13 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService } from '../../core/services/notification.service';
-import {Report, ReportAction, ReportStatus} from '../dto/report';
-import {firstValueFrom, tap} from 'rxjs';
+import { Report, ReportAction, ReportStatus } from '../dto/report';
+import { firstValueFrom, tap } from 'rxjs';
 import { ReportedPostResponse } from '../dto/ReportedPostResponse';
-import {ReportedSourceResponse} from '../dto/ReportedSourceResponse';
-import {ReportSummaryResponse} from '../dto/ReportSummaryResponse';
+import { ReportedSourceResponse } from '../dto/ReportedSourceResponse';
+import { ReportSummaryResponse } from '../dto/ReportSummaryResponse';
+import { ReportedCommentResponse } from '../dto/ReportedCommentResponse';
+import {ReportedAccountResponse} from '../dto/ReportedAccountResponse';
 
 @Injectable({
   providedIn: 'root',
@@ -26,10 +28,14 @@ export class ReportService {
     );
   }
 
-  public updateStatus(status: ReportStatus, action: ReportAction, id: string) {
+  public updateStatus(status: ReportStatus, action: ReportAction, id: string, description?: string) {
+    const body = { status, action, description };
+    if (description) {
+      body.description = description;
+    }
     return this.httpClient.put<void>(
       `${this.baseUri}/${id}`,
-      { status, action },
+      body,
       { headers: { 'Content-Type': 'application/json' } },
     ).pipe(
       tap(() => {
@@ -52,7 +58,7 @@ export class ReportService {
 
   async getReportedSource(
     status = ReportStatus.CREATED,
-    page=0,
+    page = 0,
     postsPerPage = 20,
   ): Promise<ReportedSourceResponse[]> {
     return await firstValueFrom(
@@ -62,14 +68,32 @@ export class ReportService {
     );
   }
 
+  async getReportedAccounts(
+    status = ReportStatus.CREATED,
+    page = 0,
+    postsPerPage = 20,
+  ): Promise<ReportedAccountResponse[]> {
+    return await firstValueFrom(
+      this.httpClient.get<ReportedAccountResponse[]>(
+        `${this.baseUri}/accounts?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
+      ),
+    );
+  }
+
+  async getReportedComments(
+    status = ReportStatus.CREATED,
+    page = 0,
+    postsPerPage = 20,
+  ): Promise<ReportedCommentResponse[]> {
+    return await firstValueFrom(
+      this.httpClient.get<ReportedCommentResponse[]>(
+        `${this.baseUri}/comments?status=${status}&page=${page}&postsPerPage=${postsPerPage}`,
+      ),
+    );
+  }
+
   getReportSummary(id: string) {
-    return this.httpClient.get<ReportSummaryResponse[]>(`${this.baseUri}/${id}/summary`).pipe(
-        tap(() => {
-          this.notificationService.showSuccess(
-            'Report Updated Successfully!',
-          );
-        }),
-      )
+    return this.httpClient.get<ReportSummaryResponse[]>(`${this.baseUri}/${id}/summary`).pipe()
 
 
   }

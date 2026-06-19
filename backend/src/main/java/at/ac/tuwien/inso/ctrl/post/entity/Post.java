@@ -53,6 +53,7 @@ public class Post implements Votable {
   @Column(name = "is_ai_generated")
   private Boolean isAiGenerated = false;
 
+  @Builder.Default
   @Column(name = "is_removed")
   private Boolean isRemoved = false;
 
@@ -70,15 +71,15 @@ public class Post implements Votable {
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
-  private Set<PostLabel> postLabels = new LinkedHashSet<>();
-
-  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
   private Set<PostTopic> postTopics = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private Set<Comment> comments = new LinkedHashSet<>();
+
+  @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private Set<PostVote> votes = new LinkedHashSet<>();
 
   public boolean isAiGenerated() {
     return Boolean.TRUE.equals(isAiGenerated);

@@ -23,19 +23,12 @@
         <span class="composer-step__number">1</span>
         <div>
           <h2>Add an image or video</h2>
-          <p>
-            This is optional. You can also continue without media and create a
-            text-only post.
-          </p>
+          <p>This is optional. You can also continue without media and create a text-only post.</p>
         </div>
       </div>
 
       <div class="media-dropzone-wrap">
-        <button
-          type="button"
-          class="media-dropzone"
-          (click)="openMediaPicker()"
-        >
+        <button type="button" class="media-dropzone" (click)="openMediaPicker()">
           @if (previewUrl() && previewKind() === 'image') {
             <img
               [src]="previewUrl()!"
@@ -43,18 +36,13 @@
               class="media-dropzone__preview"
             />
           } @else if (previewUrl() && previewKind() === 'video') {
-            <video
-              [src]="previewUrl()!"
-              controls
-              class="media-dropzone__preview"
-            ></video>
+            <video [src]="previewUrl()!" controls class="media-dropzone__preview"></video>
           } @else {
-            <span class="media-dropzone__icon">🖼️</span>
+            <i class="media-dropzone__icon pi pi-image" aria-hidden="true"></i>
             <span class="media-dropzone__title">Select image or video</span>
             <span class="media-dropzone__text">
               Click to choose a file from your device. Supported:
-              {{ acceptedPostMediaFormatsLabel }} · max
-              {{ maxPostMediaSizeLabel }}.
+              {{ acceptedPostMediaFormatsLabel }} · max {{ maxPostMediaSizeLabel }}.
             </span>
           }
         </button>
@@ -82,11 +70,7 @@
       }
 
       <div class="composer-actions">
-        <p-button
-          label="Choose Media"
-          severity="secondary"
-          (onClick)="openMediaPicker()"
-        />
+        <p-button label="Choose Media" severity="secondary" (onClick)="openMediaPicker()" />
         <p-button
           [label]="continueButtonLabel()"
           icon="pi pi-arrow-right"
@@ -101,42 +85,54 @@
         <span class="composer-step__number">2</span>
         <div>
           <h2>Add post details</h2>
-          <p>
-            Write your caption, decide on visibility, add sources, and choose
-            topics.
-          </p>
+          <p>Write your caption, decide on visibility, add sources, and choose topics.</p>
         </div>
       </div>
 
       <div class="composer-preview">
         @if (previewUrl() && previewKind() === 'image') {
-          <img
-            [src]="previewUrl()!"
-            alt="Selected image preview"
-            class="composer-preview__media"
-          />
+          <img [src]="previewUrl()!" alt="Selected image preview" class="composer-preview__media" />
         } @else if (previewUrl() && previewKind() === 'video') {
-          <video
-            [src]="previewUrl()!"
-            controls
-            class="composer-preview__media"
-          ></video>
+          <video [src]="previewUrl()!" controls class="composer-preview__media"></video>
         }
       </div>
 
       <div class="composer-form__grid">
         <div class="field">
-          <p-floatlabel variant="on">
-            <textarea
-              pTextarea
-              inputId="caption"
-              formControlName="caption"
-              rows="5"
-              [maxlength]="maxCaptionLength"
-              class="field__textarea"
-            ></textarea>
-            <label for="caption">Caption *</label>
-          </p-floatlabel>
+          <div class="caption-editor">
+            <div class="caption-toolbar" aria-label="Caption formatting">
+              <button
+                type="button"
+                class="caption-toolbar__button"
+                title="Heading"
+                aria-label="Add heading"
+                (click)="insertHeading()"
+              >
+                H
+              </button>
+              <button
+                type="button"
+                class="caption-toolbar__button"
+                title="Bullet list"
+                aria-label="Add bullet list"
+                (click)="insertBulletList()"
+              >
+                <i class="pi pi-list"></i>
+              </button>
+            </div>
+            <p-floatlabel variant="on">
+              <textarea
+                #captionTextarea
+                pTextarea
+                inputId="caption"
+                formControlName="caption"
+                rows="8"
+                [maxlength]="maxCaptionLength"
+                class="field__textarea"
+              ></textarea>
+              <label for="caption">Caption *</label>
+            </p-floatlabel>
+          </div>
           <p class="field__hint">
             Required · {{ captionLength() }} / {{ maxCaptionLength }} characters
           </p>
@@ -169,10 +165,7 @@
           <div class="visibility-card visibility-card--locked">
             <div>
               <h3>Visibility</h3>
-              <p>
-                Because your account is not verified, this post will be saved as
-                private.
-              </p>
+              <p>Because your account is not verified, this post will be saved as private.</p>
             </div>
           </div>
         }
@@ -216,9 +209,7 @@
           @if (selectedTopicsSummary()) {
             <p class="field__hint">Selected: {{ selectedTopicsSummary() }}</p>
           } @else if (!loadingTopics && topicOptions.length === 0) {
-            <p class="field__hint">
-              No topics were returned by the backend.
-            </p>
+            <p class="field__hint">No topics were returned by the backend.</p>
           }
         </div>
       </div>
@@ -276,54 +267,54 @@
                   <p-floatlabel variant="on">
                     <input
                       pInputText
-                      id="journal-{{$index}}"
+                      id="journal-{{ $index }}"
                       formControlName="journal"
                       [maxlength]="maxSourceJournalLength"
                     />
-                    <label for="journal-{{$index}}">Journal</label>
+                    <label for="journal-{{ $index }}">Journal</label>
                   </p-floatlabel>
 
                   <p-floatlabel variant="on">
                     <input
                       pInputText
-                      id="author-{{$index}}"
+                      id="author-{{ $index }}"
                       formControlName="author"
                       [maxlength]="maxSourceAuthorLength"
                     />
-                    <label for="author-{{$index}}">Author</label>
+                    <label for="author-{{ $index }}">Author</label>
                   </p-floatlabel>
 
                   <p-floatlabel variant="on">
                     <input
                       pInputText
-                      id="title-{{$index}}"
+                      id="title-{{ $index }}"
                       formControlName="title"
                       [maxlength]="maxSourceTitleLength"
                     />
-                    <label for="title-{{$index}}">Title *</label>
+                    <label for="title-{{ $index }}">Title *</label>
                   </p-floatlabel>
 
                   <p-floatlabel variant="on">
                     <input
                       pInputText
-                      id="url-{{$index}}"
+                      id="url-{{ $index }}"
                       formControlName="url"
                       [maxlength]="maxSourceUrlLength"
                     />
-                    <label for="url-{{$index}}">URL</label>
+                    <label for="url-{{ $index }}">URL</label>
                   </p-floatlabel>
 
                   <div class="source-card__date-field">
                     <p-floatlabel variant="on">
                       <p-datepicker
-                        inputId="date-{{$index}}"
+                        inputId="date-{{ $index }}"
                         formControlName="date"
                         dateFormat="dd.mm.yy"
                         [showIcon]="false"
                         appendTo="body"
                         class="source-card__date-picker"
                       />
-                      <label for="date-{{$index}}">Date</label>
+                      <label for="date-{{ $index }}">Date</label>
                     </p-floatlabel>
                   </div>
                 </div>
@@ -335,9 +326,7 @@
                 }
 
                 @if (hasSourceError($index, 'sourceAuthorOrUrlRequired')) {
-                  <p class="source-card__error">
-                    Add either an author or a URL for this source.
-                  </p>
+                  <p class="source-card__error">Add either an author or a URL for this source.</p>
                 }
 
                 @if (submitAttempted() && sourceLengthErrorMessage($index); as message) {

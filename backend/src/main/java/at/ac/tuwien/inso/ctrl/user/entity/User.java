@@ -56,8 +56,13 @@ public class User implements UserDetails {
   @Column(name = "is_email_verified", nullable = false)
   private boolean emailVerified = false;
 
+  @Builder.Default
   @Column(name = "is_suspended", nullable = false)
   private boolean isSuspended = false;
+
+  @Builder.Default
+  @Column(name = "is_deleted")
+  private Boolean deleted = false;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role")
@@ -110,7 +115,7 @@ public class User implements UserDetails {
 
   @Override
   public boolean isAccountNonLocked() {
-    return !isSuspended;
+    return !isSuspended && !isDeleted();
   }
 
   @Override
@@ -120,6 +125,14 @@ public class User implements UserDetails {
 
   @Override
   public boolean isEnabled() {
-    return true;
+    return !isDeleted();
+  }
+
+  public boolean isDeleted() {
+    return Boolean.TRUE.equals(deleted);
+  }
+
+  public void setDeleted(boolean deleted) {
+    this.deleted = deleted;
   }
 }

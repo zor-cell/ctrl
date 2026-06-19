@@ -2,27 +2,17 @@
 
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {firstValueFrom, map, switchMap} from 'rxjs';
+import { firstValueFrom, map, switchMap } from 'rxjs';
 import { Post } from '../dto/Post';
 import { environment } from '../../../environments/environment';
 import { MediaCacheKind, MediaCacheService } from '../../core/services/media-cache.service';
+import { previewMediaUrl } from '../../core/utils/media-preview-url.utils';
 
 @Injectable({ providedIn: 'root' })
 export class FeedService {
   private readonly httpClient = inject(HttpClient);
   private readonly mediaCacheService = inject(MediaCacheService);
   private readonly baseUri = `${environment.apiUrl}/feed`;
-
-  /**
-   * Fetches a paginated list of posts for the current user's feed.
-   *
-   * GET /feed?page={page}&postsPerPage={postsPerPage}
-   *
-   * @param isPublic - Fetches the public feed if true, otherwise the private feed
-   * @param page - Zero-based page index (default: 0)
-   * @param postsPerPage - Number of posts per page (default: 20)
-   * @returns A promise resolving to an array of mapped {@link Post} objects
-   */
 
   getFeed(isPublic: boolean, page = 0, postsPerPage = 20) {
     return this.httpClient
@@ -36,47 +26,52 @@ export class FeedService {
       );
   }
 
-  /** Helper **/
-
-  /**
-   *
-   * Maps a raw API response object to a typed {@link Post} model.
-   * Applies fallback values for optional fields that may be absent in the response.
-   *
-   * @param item - Raw response object from the feed API
-   * @returns A fully structured {@link Post} object
-   */
   private mapToPost(item: any): Post {
     return {
-      postId: item.postId,
-      userId: item.userId ?? item.username,
-      isExternal: !item.userId,
-      username: item.username,
-      userProfilePic: item.userProfilePic ?? '',
-      createdAt: item.createdAt,
-      caption: item.caption ?? '',
-      isPublic: item.isPublic,
-      likes: 0,
-      upvotes: item.upvotes ?? 0,
-      downvotes: item.downvotes ?? 0,
-      userVote: item.userVote ?? null,
-      labelIds: item.labelIds?.map((l: any) => [l.name, l.explanation]) ?? [],
-      topicIds: item.topicIds ?? [],
-      videoImageRef: this.resolveVideoImageRef(item),
-      sourceIds: item.sourceIds ?? [],
-      comments:
-        item.comments?.map((c: any) => ({
-          commentId: c.commentId,
-          userId: c.userId,
-          username: c.username,
-          userProfilePic: c.userProfilePic ?? '',
-          createdAt: c.createdAt,
-          content: c.content,
-          parentCommentId: c.parentCommentId ?? null,
-          edited: c.edited ?? false,
-          replies: c.replies ?? [],
-        })) ?? [],
-      explanation: item.explanation
+      postId:           item.postId,
+      userId:           item.userId ?? item.username,
+      isExternal:       !item.userId,
+      username:         item.username,
+      userProfilePic:   item.userProfilePic ?? '',
+      userDeleted:      item.userDeleted ?? false,
+      createdAt:        item.createdAt,
+      caption:          item.caption ?? '',
+      isPublic:         item.isPublic,
+      likes:            0,
+      upvotes:          item.upvotes ?? 0,
+      downvotes:        item.downvotes ?? 0,
+      userVote:         item.userVote ?? null,
+      labelIds:         item.labelIds ?? [],
+      topicIds:         item.topicIds ?? [],
+      videoImageRef:    this.resolveVideoImageRef(item),
+      sourceIds: item.sourceIds?.map((s: any) => ({
+        sourceId:          s.sourceId,
+        url:               s.url               ?? null,
+        upvotes:           s.upvotes           ?? 0,
+        downvotes:         s.downvotes         ?? 0,
+        userVote:          s.userVote          ?? null,
+        wasReportedByUser: s.wasReportedByUser ?? false,
+        createdAt:         s.createdAt         ?? null,
+        journal:           s.journal           ?? null,
+        author:            s.author            ?? null,
+        title:             s.title             ?? null,
+        date:              s.date              ?? null,
+      })) ?? [],
+      comments: item.comments?.map((c: any) => ({
+        commentId:       c.commentId,
+        userId:          c.userId,
+        username:        c.username,
+        userProfilePic:  c.userProfilePic ?? '',
+        userDeleted:     c.userDeleted    ?? false,
+        createdAt:       c.createdAt,
+        content:         c.content,
+        parentCommentId: c.parentCommentId ?? null,
+        edited:          c.edited          ?? false,
+        replies:         c.replies         ?? [],
+      })) ?? [],
+      explanation:       item.explanation,
+      wasReportedByUser: item.wasReportedByUser,
+      userProfileUrl: item.userProfileUrl,
     };
   }
 
@@ -86,9 +81,10 @@ export class FeedService {
         post.userProfilePic = await this.resolveMedia(post.userProfilePic, 'image', 'high') ?? '';
         post.videoImageRef = (
           await Promise.all(
-            post.videoImageRef.map(mediaUrl =>
-              this.resolveMedia(mediaUrl, this.mediaKind(mediaUrl), 'normal')
-            )
+            post.videoImageRef.map(async mediaUrl => {
+              const resolvedMediaUrl = await this.resolveMedia(mediaUrl, this.mediaKind(mediaUrl), 'normal');
+              return previewMediaUrl(resolvedMediaUrl);
+            })
           )
         ).filter((mediaUrl): mediaUrl is string => mediaUrl !== null);
       })
@@ -109,22 +105,8 @@ export class FeedService {
   }
 
   private resolveVideoImageRef(item: any): string[] {
-    // Case 1: The Feed API already provides ready-made URLs in videoImageRef
-    if (item.videoImageRef?.length > 0) {
-      return item.videoImageRef;
-    }
-    // Case 2: mediaUrl is present
-    if (item.mediaUrl) {
-      return [item.mediaUrl];
-    }
-    // Case 3: mediaRef – either a complete URL or a raw path
-    if (item.mediaRef) {
-      if (item.mediaRef.startsWith('http')) {
-        return [item.mediaRef]; // Already done → use straight away
-      }
-      return [`${environment.apiUrl}/files/media-url?ref=${encodeURIComponent(item.mediaRef)}`];
-    }
+    if (item.videoImageRef?.length > 0) return item.videoImageRef;
+    if (item.mediaRef) return [item.mediaRef];
     return [];
   }
-
 }

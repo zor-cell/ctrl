@@ -1,0 +1,146 @@
+<div class="posts-search">
+  <!-- Search Controls -->
+  <div class="search-controls">
+    <div class="search-row">
+      <!-- Search Input -->
+      <div class="search-input-wrapper">
+        <p-iconField iconPosition="left">
+          <p-inputIcon styleClass="pi pi-search" />
+          <input
+            #searchInput
+            type="text"
+            pInputText
+            placeholder="Search posts..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchInputChange($event)"
+            (keyup.enter)="onSearch()"
+            class="search-input" />
+          @if (searchQuery()) {
+            <button
+              type="button"
+              class="clear-button"
+              (click)="clearSearch(searchInput)"
+              title="Clear search">
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </p-iconField>
+      </div>
+
+      <!-- Topic Filter -->
+      <div class="topic-filter-wrapper">
+        <p-multiSelect
+          [options]="sortedTopics()"
+          [ngModel]="selectedTopics()"
+          (ngModelChange)="onTopicsChange($event)"
+          optionLabel="name"
+          optionValue="topicId"
+          placeholder="Select topics..."
+          [filter]="true"
+          filterBy="name"
+          [showHeader]="true"
+          [showToggleAll]="false"
+          [style]="{'width':'100%'}"
+          styleClass="topic-multiselect"
+          [disabled]="isSearching()">
+          <ng-template let-topic pTemplate="item">
+            <div class="topic-item" [class.selected-topic]="isTopicSelected(topic.topicId)">
+              <span class="topic-name">{{ topic.name }}</span>
+            </div>
+          </ng-template>
+          <ng-template let-selected pTemplate="selectedItems">
+            @if (selectedTopics().length === 1) {
+              <span class="single-topic">{{ getTopicDisplayName(selectedTopics()[0]) }}</span>
+            } @else if (selectedTopics().length === 2) {
+              <span class="two-topics">{{ getTopicDisplayName(selectedTopics()[0]) }}, {{ getTopicDisplayName(selectedTopics()[1]) }}</span>
+            } @else if (selectedTopics().length > 0) {
+              <span class="multiple-topics">{{ selectedTopics().length }} topics selected</span>
+            }
+          </ng-template>
+        </p-multiSelect>
+      </div>
+
+      <!-- Search Button -->
+      <div class="search-button-wrapper">
+        <p-button
+          icon="pi pi-search"
+          (onClick)="onSearch()"
+          label="Search"
+          [loading]="isSearching()"
+          [disabled]="!canSearch()" />
+      </div>
+    </div>
+  </div>
+
+    @if(sessionState.isLimitActive()) {
+        <div class="empty-state initial">
+            <i class="pi pi-lock"></i>
+            <p>Session limit reached.</p>
+        </div>
+    } @else {
+
+  <!-- Loading State (initial search) -->
+  @if (isSearching() && currentPage() === 0) {
+    <div class="loading-state">
+      <p-progressSpinner styleClass="custom-spinner" />
+      <p>Searching posts... This may take a moment.</p>
+    </div>
+  }
+
+  <!-- Empty State (before search) -->
+  @if (!hasSearched() && !isSearching()) {
+    <div class="empty-state initial">
+      <i class="pi pi-search"></i>
+      <h3>Search for Posts</h3>
+      <p>Enter search terms (3+ characters) or select topics to find posts.</p>
+    </div>
+  }
+
+  <!-- Empty State (after search with no results) -->
+  @if (hasSearched() && !isSearching() && searchResults().length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>No posts found matching your search criteria.</p>
+      <p class="hint">Try adjusting your search terms or topics.</p>
+    </div>
+  }
+
+      <!-- Results Grid -->
+  @if (hasSearched() && searchResults().length > 0) {
+    <div class="results-container" #resultsContainer>
+      <div class="posts-preview-grid">
+        @for (preview of searchResults(); track preview.postId) {
+          <app-post-preview-card
+            [post]="preview"
+            (open)="onPostSelected(preview)" />
+        }
+      </div>
+
+      <!-- Load More -->
+      @if (hasMoreResults() && !isSearching()) {
+        <div class="load-more">
+          <p-button
+            label="Load more"
+            icon="pi pi-chevron-down"
+            (onClick)="loadMore()"
+            severity="secondary"
+            [text]="true" />
+        </div>
+      }
+
+      <!-- Loading more indicator -->
+      @if (isSearching() && currentPage() > 0) {
+        <div class="loading-more">
+          <p-progressSpinner styleClass="small-spinner" />
+          <span>Loading more...</span>
+        </div>
+      }
+    </div>
+  }
+    }
+</div>
+
+<app-post-detail-dialog
+  [postId]="selectedPostId()"
+  (dismissed)="onDialogDismissed()"
+  (postDeleted)="onPostDeleted($event)" />

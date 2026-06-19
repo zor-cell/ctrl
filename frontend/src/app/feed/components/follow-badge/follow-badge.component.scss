@@ -1,0 +1,81 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+:host ::ng-deep .follow-btn.p-button {
+  font-size: 0.78rem !important;
+  height: 26px !important;
+  padding: 0 10px !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+:host ::ng-deep .follow-btn--action.p-button {
+  height: 2.25rem !important;
+  padding: 0 0.85rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+}
+
+:host ::ng-deep .unfriend-dialog .p-dialog-header {
+  padding: 1.5rem 1.5rem 0.75rem;
+}
+
+:host ::ng-deep .unfriend-dialog .p-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:host ::ng-deep .unfriend-dialog .p-dialog-content {
+  padding: 0.75rem 1.5rem 1.5rem;
+}
+
+.unfriend-confirmation {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.unfriend-confirmation p {
+  margin: 0;
+  color: var(--text-color-secondary, #64748b);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.unfriend-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.text-button,
+.danger-button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.75rem 1rem;
+}
+
+.text-button {
+  background: transparent;
+  color: var(--p-text-muted-color);
+}
+
+.danger-button {
+  background: #dc2626;
+  color: #fff;
+}
+
+.text-button:disabled,
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

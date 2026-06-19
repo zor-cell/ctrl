@@ -1,21 +1,37 @@
 package at.ac.tuwien.inso.ctrl.user.service;
 
+import at.ac.tuwien.inso.ctrl.algorithm.repository.AlgorithmRepository;
 import at.ac.tuwien.inso.ctrl.auth.dto.AuthResponse;
 import at.ac.tuwien.inso.ctrl.auth.dto.SendEmailRequest;
 import at.ac.tuwien.inso.ctrl.auth.repository.EmailVerificationRepository;
 import at.ac.tuwien.inso.ctrl.auth.repository.PasswordResetRepository;
 import at.ac.tuwien.inso.ctrl.auth.service.EmailVerificationService;
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
+import at.ac.tuwien.inso.ctrl.chat.repository.ReactionRepository;
+import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidPasswordException;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.ResourceAlreadyExistsException;
 import at.ac.tuwien.inso.ctrl.file.FileStorageService;
+import at.ac.tuwien.inso.ctrl.post.entity.Comment;
+import at.ac.tuwien.inso.ctrl.post.entity.Post;
+import at.ac.tuwien.inso.ctrl.post.entity.PostVote;
+import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.post.repository.SeenPostRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.repository.ReportRepository;
+import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
+import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.dto.*;
-import at.ac.tuwien.inso.ctrl.user.dto.RelationshipStatusItem;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
-import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
+import at.ac.tuwien.inso.ctrl.user.repository.BusinessVerificationRepository;
+import at.ac.tuwien.inso.ctrl.user.repository.FollowRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRelationRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -23,6 +39,8 @@ import jakarta.transaction.Transactional;
 import java.lang.invoke.MethodHandles;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -42,18 +60,30 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserService {
   private final UserMapper userMapper;
-  private final RelationshipMapper socialMapper;
   private final UserRepository userRepository;
   private final FriendRequestRepository friendRequestRepository;
   private final FriendRelationRepository friendRelationRepository;
+  private final FollowRelationRepository followRelationRepository;
+  private final BusinessVerificationRepository businessVerificationRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final IdAustriaOidcService idAustriaOidcService;
   private final FileStorageService fileStorageService;
+  private final BlockService blockService;
   private final FollowService followService;
   private final EmailVerificationService emailVerificationService;
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetRepository passwordResetRepository;
+  private final ReportRepository reportRepository;
+  private final PostRepository postRepository;
+  private final PostVoteRepository postVoteRepository;
+  private final SourceRepository sourceRepository;
+  private final SourceVoteRepository sourceVoteRepository;
+  private final CommentRepository commentRepository;
+  private final ReactionRepository reactionRepository;
+  private final SeenPostRepository seenPostRepository;
+  private final AlgorithmRepository algorithmRepository;
+  private final ChatService chatService;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -67,15 +97,30 @@ public class UserService {
   }
 
   public PublicUserProfileResponse getPublicProfile(String username, User currentUser) {
+
     User user =
         userRepository
-            .findByUsername(username)
+            .findByUsernameAndDeletedFalse(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+    if (user.isSuspended()) {
+      throw new UsernameNotFoundException("User not found");
+    }
+
+    if (blockService.inBlockedRelationship(currentUser, user)) {
+      throw new UsernameNotFoundException("User not found");
+    }
+
     boolean canSeePrivatePosts =
         currentUser != null
             && (user.getId().equals(currentUser.getId())
-                || friendRelationRepository.existsByUsers(user, currentUser));
-    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts);
+                || friendRelationRepository.existsByUsers(user, currentUser)
+                || currentUser.getRole() == Role.ADMIN);
+    boolean wasReportedByUser =
+        currentUser != null
+            && reportRepository.existsReportByFromUserAndContentTypeAndContentId(
+                currentUser, ContentTypeEnum.ACCOUNT, String.valueOf(user.getId()));
+    return userMapper.toPublicUserProfileResponse(user, canSeePrivatePosts, wasReportedByUser);
   }
 
   @Transactional
@@ -128,10 +173,71 @@ public class UserService {
   @Transactional
   public UserDetailsResponse updateProfilePicture(User currentUser, MultipartFile file) {
     User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
     String profilePictureRef = fileStorageService.uploadProfilePicture(file);
     user.setProfilePicture(profilePictureRef);
 
     User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
+    return userMapper.toUserDetailsResponse(updatedUser);
+  }
+
+  @Transactional
+  public void deleteCurrentUser(User currentUser) {
+    deleteUser(currentUser);
+  }
+
+  @Transactional
+  public void deleteUser(User userToDelete) {
+    User user = getUserInternal(userToDelete.getId());
+    if (user.isDeleted()) {
+      return;
+    }
+
+    UUID userId = user.getId();
+    String userIdString = userId.toString();
+    String previousProfilePictureRef = user.getProfilePicture();
+
+    removePostVotes(userIdString);
+    removeSourceVotes(userIdString);
+    reactionRepository.deleteAllByUserId(userId);
+    deleteCommentsWithReplies(userId);
+    postRepository.markAllByUserAsRemoved(userId);
+    seenPostRepository.deleteAllByUserId(userId);
+    friendRequestRepository.deleteAllByUser(user);
+    friendRelationRepository.deleteAllByUser(user);
+    followRelationRepository.deleteAllByUser(user);
+    passwordResetRepository.deleteByUserId(userId);
+    emailVerificationRepository.deleteByUser_Id(userId);
+    businessVerificationRepository.deleteByBusinessUser(user);
+    algorithmRepository.deleteByUserId(userId);
+
+    user.setUsername("deleted-user-" + userId);
+    user.setEmail("deleted-" + userId + "@deleted.local");
+    user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+    user.setName("Deleted user");
+    user.setBio(null);
+    user.setBirthdate(null);
+    user.setProfilePicture(null);
+    user.setInteractionPreferenceEmbedding(null);
+    user.setVerified(false);
+    user.setEmailVerified(false);
+    user.setSuspended(true);
+    user.setDeleted(true);
+
+    userRepository.save(user);
+    chatService.createAccountDeletedSystemMessages(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
+  }
+
+  @Transactional
+  public UserDetailsResponse deleteProfilePicture(User currentUser) {
+    User user = getUserInternal(currentUser.getId());
+    String previousProfilePictureRef = user.getProfilePicture();
+    user.setProfilePicture(null);
+
+    User updatedUser = userRepository.save(user);
+    fileStorageService.deleteProfilePicture(previousProfilePictureRef);
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 
@@ -204,47 +310,79 @@ public class UserService {
     return userMapper.toUserDetailsResponse(updatedUser);
   }
 
-  public List<UserSearchResponse> searchUsers(
-      User currentUser,
-      String query,
-      boolean excludeFriends,
-      boolean excludeFollowed,
-      boolean verifiedOnly) {
-
-    String searchTerm = query != null ? query.trim().toLowerCase() : "";
-
-    Set<UUID> followedIds = followService.getFollowedIds(currentUser);
-    Set<UUID> friendIds = friendRelationRepository.findFriendIds(currentUser);
-    Set<UUID> pendingRequestSentIds = friendRequestRepository.findReceiverIdsBySender(currentUser);
-    Set<UUID> pendingRequestIncomingIds =
-        friendRequestRepository.findSenderIdsByReceiver(currentUser);
-
-    List<User> allUsers = userRepository.findByUsernameContainingIgnoreCase(searchTerm);
-
-    return allUsers.stream()
-        .filter(user -> !user.getId().equals(currentUser.getId()))
-        .filter(user -> !excludeFriends || !friendIds.contains(user.getId()))
-        .filter(user -> !excludeFollowed || !followedIds.contains(user.getId()))
-        .filter(user -> !verifiedOnly || user.isVerified())
-        .map(
-            user -> {
-              List<RelationshipStatusItem> statuses =
-                  socialMapper.determineRelationshipStatuses(
-                      user,
-                      followedIds,
-                      friendIds,
-                      pendingRequestSentIds,
-                      pendingRequestIncomingIds);
-              String displayName = socialMapper.displayName(user, statuses);
-              return socialMapper.toUserSearchResponse(user, statuses, displayName);
-            })
-        .toList();
-  }
-
   private User getUserInternal(UUID userId) {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+  }
+
+  private void removePostVotes(String userId) {
+    List<PostVote> votes = postVoteRepository.findByIdUserId(userId);
+    for (PostVote vote : votes) {
+      Post post = vote.getPost();
+      if ("up".equals(vote.getVoteType())) {
+        post.setUpvotes(decrementCounter(post.getUpvotes()));
+      } else if ("down".equals(vote.getVoteType())) {
+        post.setDownvotes(decrementCounter(post.getDownvotes()));
+      }
+      postRepository.save(post);
+    }
+    postVoteRepository.deleteAll(votes);
+  }
+
+  private void removeSourceVotes(String userId) {
+    List<SourceVote> votes = sourceVoteRepository.findByIdUserId(userId);
+    for (SourceVote vote : votes) {
+      Source source = vote.getSource();
+      if ("up".equals(vote.getVoteType())) {
+        source.setUpvotes(decrementCounter(source.getUpvotes()));
+      } else if ("down".equals(vote.getVoteType())) {
+        source.setDownvotes(decrementCounter(source.getDownvotes()));
+      }
+      sourceRepository.save(source);
+    }
+    sourceVoteRepository.deleteAll(votes);
+  }
+
+  private void deleteCommentsWithReplies(UUID userId) {
+    List<Comment> comments = commentRepository.findAll();
+    Set<String> commentIdsToDelete = new HashSet<>();
+    for (Comment comment : comments) {
+      if (comment.getUser().getId().equals(userId)) {
+        commentIdsToDelete.add(comment.getCommentId());
+      }
+    }
+
+    boolean changed;
+    do {
+      changed = false;
+      for (Comment comment : comments) {
+        Comment parent = comment.getParentComment();
+        if (parent != null && commentIdsToDelete.contains(parent.getCommentId())) {
+          changed |= commentIdsToDelete.add(comment.getCommentId());
+        }
+      }
+    } while (changed);
+
+    comments.stream()
+        .filter(comment -> commentIdsToDelete.contains(comment.getCommentId()))
+        .sorted(Comparator.comparingInt(this::commentDepth).reversed())
+        .forEach(commentRepository::delete);
+  }
+
+  private int commentDepth(Comment comment) {
+    int depth = 0;
+    Comment parent = comment.getParentComment();
+    Set<String> visitedParentIds = new HashSet<>();
+    while (parent != null && visitedParentIds.add(parent.getCommentId())) {
+      depth++;
+      parent = parent.getParentComment();
+    }
+    return depth;
+  }
+
+  private int decrementCounter(Integer value) {
+    return Math.max(0, (value == null ? 0 : value) - 1);
   }
 
   @Scheduled(cron = "0 0 2 * * *")

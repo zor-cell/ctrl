@@ -1,0 +1,135 @@
+$border: var(--border);
+
+// ─── Preview Card ───────────────────────────────────────
+.preview-card {
+  border: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 24rem;
+  padding: 0;
+  border-radius: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  background: var(--p-content-background);
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.13);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline-offset: 3px;
+  }
+
+  // When media is present, enforce max-height and manage space
+  &.has-media {
+    max-height: 24rem;
+
+    .preview-card__caption-wrapper {
+      flex: 0 0 auto;
+      max-height: 5rem;
+    }
+  }
+
+  // When no media, use full height without max constraint
+  &.no-media {
+    max-height: none;
+
+    .preview-card__caption-wrapper {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// ─── User Header ────────────────────────────────────────
+.preview-card__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-bottom: 1px solid var(--p-content-border-color, $border);
+  flex-shrink: 0;
+  min-height: 3rem;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.preview-card__user--disabled {
+  cursor: default;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--p-avatar-background, var(--primary-color, #6366f1));
+  color: var(--p-avatar-color, #ffffff);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.preview-card__username {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ─── Media ──────────────────────────────────────────────
+.preview-card__media-wrapper {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--p-surface-100, #f1f5f9);
+}
+
+.preview-card__media {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+// ─── Caption ────────────────────────────────────────────
+.preview-card__caption-wrapper {
+  padding: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.preview-card__caption {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--p-text-color);
+  white-space: pre-line;
+
+  // Always truncate to 3 lines for consistency
+  display: -webkit-box;
+  -webkit-line-clamp: 10;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

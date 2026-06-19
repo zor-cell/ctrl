@@ -13,7 +13,9 @@
                 </p-floatlabel>
 
                 @if (registerForm.controls.username.invalid && registerForm.controls.username.touched && registerForm.controls.username.dirty) {
-                    <p-message severity="error" size="small" variant="simple">Username is required.</p-message>
+                    <p-message severity="error" size="small" variant="simple">
+                        {{ USERNAME_VALIDATION_MESSAGE }}
+                    </p-message>
                 }
             </div>
 
@@ -39,7 +41,9 @@
                 </p-floatlabel>
 
                 @if (registerForm.controls.password.invalid && registerForm.controls.password.touched && registerForm.controls.password.dirty) {
-                    <p-message severity="error" size="small" variant="simple">Password is required.</p-message>
+                  <p-message severity="error" size="small" variant="simple">
+                    {{ PASSWORD_VALIDATION_MESSAGE }}
+                  </p-message>
                 }
             </div>
 
@@ -58,6 +62,7 @@
             <div>
                 <p-floatlabel variant="on">
                     <p-date-picker
+                            id="birthdate"
                             inputId="birthdate"
                             formControlName="birthdate"
                             [showIcon]="true"
@@ -74,7 +79,7 @@
                 }
             </div>
 
-            <p-button type="submit" label="Register" fluid></p-button>
+            <p-button type="submit" label="Register" fluid [disabled]="registerForm.invalid"></p-button>
 
             <div class="register-link">
                 Already have an account?

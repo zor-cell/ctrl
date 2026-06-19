@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
-import {adminGuard, authGuard} from './auth/auth.guard';
-import {LoginComponent} from "./auth/components/login/login.component";
-import {RegisterComponent} from "./auth/components/registration/register.component";
-import {EmailVerificationComponent} from './auth/components/email-verification/email-verification.component';
-import {PasswordResetComponent} from './auth/components/password-reset/password-reset.component';
-import {ForgotPasswordComponent} from './auth/components/forgot-password/forgot-password.component';
+import { adminGuard, authGuard } from './auth/auth.guard';
+import { LoginComponent } from "./auth/components/login/login.component";
+import { RegisterComponent } from "./auth/components/registration/register.component";
+import { EmailVerificationComponent } from './auth/components/email-verification/email-verification.component';
+import { PasswordResetComponent } from './auth/components/password-reset/password-reset.component';
+import { ForgotPasswordComponent } from './auth/components/forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -31,6 +31,12 @@ export const routes: Routes = [
       import('./user/components/business-verification/business-verification.component').then(m => m.BusinessVerificationComponent),
   },
   {
+    path: 'topics',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./topic/components/topic-management/topic-management.component').then(m => m.TopicManagement),
+  },
+  {
     path: 'post',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -52,24 +58,22 @@ export const routes: Routes = [
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./user/components/profile/profile.component').then(
-        m => m.ProfileComponent,
+      import('./settings/components/settings/settings.component').then(
+        m => m.SettingsComponent,
       ),
   },
   {
     path: 'search',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./user/components/search-page/search-page.component').then(
-        m => m.SearchPageComponent,
-      ),
+    loadChildren: () =>
+      import('./search/search.routes').then(m => m.searchRoutes),
   },
   {
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./chat/chat-placeholder.component').then(
-        m => m.ChatPlaceholderComponent,
+      import('./chat/components/chat-page/chat-page.component').then(
+        m => m.ChatPageComponent,
       ),
   },
   { path: 'email_verification/:username/:email', component: EmailVerificationComponent },

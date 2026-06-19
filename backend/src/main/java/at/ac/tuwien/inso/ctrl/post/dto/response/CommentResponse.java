@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 public record CommentResponse(
     String commentId,
     String username,
+    boolean userDeleted,
     String content,
     LocalDateTime createdAt,
-    String parentCommentId) {}
+    String parentCommentId,
+    boolean wasReportedByUser // true if the current user has reported this comment
+    ) {}

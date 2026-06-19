@@ -1,7 +1,9 @@
 package at.ac.tuwien.inso.ctrl.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -121,5 +123,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleNotFound(RuntimeException ex, WebRequest request) {
     return handleExceptionInternal(
         ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(value = {UnauthorizedException.class})
+  protected ResponseEntity<Object> handleUnauthorized(RuntimeException ex, WebRequest request) {
+    return handleExceptionInternal(
+        ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+  }
+
+  @ExceptionHandler(SessionLimitExceededException.class)
+  public ResponseEntity<Object> handleSessionLimitExceeded(
+      SessionLimitExceededException ex, WebRequest request) {
+    Map<String, String> responseBody = new HashMap<>();
+    responseBody.put("errorCode", "SESSION_LIMIT_EXCEEDED");
+    responseBody.put("message", ex.getMessage());
+
+    return handleExceptionInternal(
+        ex, responseBody, new HttpHeaders(), HttpStatus.TOO_MANY_REQUESTS, request);
   }
 }

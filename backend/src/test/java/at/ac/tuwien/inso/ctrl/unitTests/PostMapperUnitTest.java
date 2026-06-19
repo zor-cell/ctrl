@@ -1,22 +1,16 @@
 package at.ac.tuwien.inso.ctrl.unitTests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostResponse;
 import at.ac.tuwien.inso.ctrl.post.entity.Comment;
-import at.ac.tuwien.inso.ctrl.post.entity.Label;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
-import at.ac.tuwien.inso.ctrl.post.entity.PostLabel;
-import at.ac.tuwien.inso.ctrl.post.entity.PostLabelId;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopic;
 import at.ac.tuwien.inso.ctrl.post.entity.PostTopicId;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.source.entity.SingleSource;
 import at.ac.tuwien.inso.ctrl.source.entity.Source;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,18 +18,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class PostMapperUnitTest {
-
-  @Mock private FileStorageService fileStorageService;
 
   @Test
   void toResponse_withPostContent_resolvesMediaUrlAndSortsNestedValues() {
-    PostMapper postMapper = new PostMapper(fileStorageService);
+    PostMapper postMapper = new PostMapper();
     User user = createUser("marlene");
     Source source = createSource();
     Post post =
@@ -51,12 +39,8 @@ public class PostMapperUnitTest {
             .downvotes(1)
             .createdAt(LocalDateTime.of(2026, 4, 25, 12, 0))
             .build();
-    post.setPostLabels(createPostLabels(post));
     post.setPostTopics(createPostTopics(post));
     post.setComments(createComments(post, user));
-    when(fileStorageService.resolveFileUrl("posts/media/file.png"))
-        .thenReturn("http://localhost:3900/ctrl-test-media/posts/media/file.png");
-
     PostResponse response = postMapper.toResponse(post);
 
     assertEquals("post-1", response.postId());
@@ -65,14 +49,12 @@ public class PostMapperUnitTest {
     assertEquals("source-1", response.sourceId());
     assertEquals("Caption", response.caption());
     assertEquals("posts/media/file.png", response.mediaRef());
-    assertEquals("http://localhost:3900/ctrl-test-media/posts/media/file.png", response.mediaUrl());
-    assertEquals(List.of("alpha", "zulu"), response.labelIds());
+    assertEquals(List.of(), response.labelIds());
     assertEquals(List.of("topic-a", "topic-z"), response.topicIds());
     assertEquals("older comment", response.comments().get(0).content());
     assertEquals("newer comment", response.comments().get(1).content());
     assertEquals("Alpha source", response.source().singleSources().get(0).title());
     assertEquals("Zulu source", response.source().singleSources().get(1).title());
-    verify(fileStorageService).resolveFileUrl("posts/media/file.png");
   }
 
   private User createUser(String username) {
@@ -109,23 +91,6 @@ public class PostMapperUnitTest {
                 .date(LocalDate.of(2026, 4, 24))
                 .build()));
     return source;
-  }
-
-  private LinkedHashSet<PostLabel> createPostLabels(Post post) {
-    Label zulu = Label.builder().labelId("zulu").name("Zulu").emoji("Z").build();
-    Label alpha = Label.builder().labelId("alpha").name("Alpha").emoji("A").build();
-    return new LinkedHashSet<>(
-        List.of(
-            PostLabel.builder()
-                .id(new PostLabelId("post-1", "zulu"))
-                .post(post)
-                .label(zulu)
-                .build(),
-            PostLabel.builder()
-                .id(new PostLabelId("post-1", "alpha"))
-                .post(post)
-                .label(alpha)
-                .build()));
   }
 
   private LinkedHashSet<PostTopic> createPostTopics(Post post) {

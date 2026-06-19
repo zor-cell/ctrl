@@ -1,0 +1,58 @@
+<section class="account-actions">
+  <div class="account-item account-item--logout">
+    <p-button
+      label="Logout"
+      severity="danger"
+      [outlined]="true"
+      icon="pi pi-sign-out"
+      (onClick)="logout()"
+    />
+  </div>
+
+  <div class="account-item account-item--danger">
+    <div class="item-details">
+      <strong>Delete account</strong>
+      <span>Your posts, comments and reactions will no longer be visible.</span>
+    </div>
+    <p-button
+      label="Delete account"
+      severity="danger"
+      icon="pi pi-trash"
+      (onClick)="requestAccountDeletion()"
+    />
+  </div>
+</section>
+
+<p-dialog
+  header="Delete account?"
+  [visible]="deleteDialogVisible()"
+  (visibleChange)="onDeleteDialogVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!deletingAccount()"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="delete-account-dialog">
+  <div class="delete-account-confirmation">
+    <p>
+      This will delete your account. Your chats and groups will stay available to other members,
+      but your name will be shown as Deleted user.
+    </p>
+    <div class="delete-account-actions">
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="deletingAccount()"
+        (click)="cancelAccountDeletion()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        [disabled]="deletingAccount()"
+        (click)="confirmAccountDeletion()">
+        Delete account
+      </button>
+    </div>
+  </div>
+</p-dialog>

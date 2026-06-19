@@ -1,0 +1,146 @@
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+
+  span {
+    font-size: 0.8rem;
+    color: var(--p-text-muted-color);
+    margin-bottom: 1rem;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  h3 {
+    margin-bottom: 1rem;
+  }
+
+  @media screen and (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+    }
+  }
+}
+
+.usage-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1rem;
+
+  h3 {
+    margin-top: 0;
+  }
+}
+
+
+.bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex-grow: 1;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
+}
+
+.progress-track {
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--p-surface-200);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.time {
+    background-color: var(--p-accents-indigo);
+}
+
+.progress-fill.posts {
+    background-color: var(--p-accents-teal);
+}
+
+.progress-fill.exceeded {
+    background-color: var(--p-accents-rose);
+}
+
+
+.snooze-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem;
+  background-color: var(--orange-50);
+  border: 1px solid var(--orange-200);
+  border-radius: var(--border-radius);
+  margin-bottom: 2rem;
+  gap: 1rem;
+
+  .snooze-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .snooze-icon {
+      font-size: 1.75rem;
+      color: var(--orange-500);
+    }
+
+    .snooze-text {
+      display: flex;
+      flex-direction: column;
+
+      .snooze-title {
+        font-weight: bold;
+        color: var(--orange-900);
+        margin-bottom: 0.25rem;
+      }
+
+      .snooze-description {
+        font-size: 0.875rem;
+        color: var(--orange-700);
+      }
+    }
+  }
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .snooze-banner-content {
+      align-items: center;
+    }
+
+    ::ng-deep p-button {
+      width: 75%;
+      align-self: center;
+
+      .p-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
+

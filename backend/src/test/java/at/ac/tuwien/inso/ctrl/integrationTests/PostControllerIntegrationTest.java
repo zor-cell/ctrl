@@ -123,6 +123,104 @@ public class PostControllerIntegrationTest {
   }
 
   @Test
+  void createPost_ShouldReturnBadRequest_WhenCaptionIsTooLong() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+    String tooLongCaption = "a".repeat(10001);
+
+    mockMvc
+        .perform(
+            post("/posts")
+                .principal(authenticationFor(user))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "caption": "%s",
+                      "mediaRef": null,
+                      "isPublic": false,
+                      "isAiGenerated": false,
+                      "topicIds": [],
+                      "source": null
+                    }
+                    """
+                        .formatted(tooLongCaption)))
+        .andExpect(status().isBadRequest())
+        .andExpect(
+            content().string(containsString("caption must not be longer than 10000 characters")));
+
+    verify(postService, never()).createPost(any(), any());
+  }
+
+  @Test
+  void createPost_ShouldReturnBadRequest_WhenTopicIdIsBlank() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+
+    mockMvc
+        .perform(
+            post("/posts")
+                .principal(authenticationFor(user))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "caption": "A valid caption",
+                      "mediaRef": null,
+                      "isPublic": false,
+                      "isAiGenerated": false,
+                      "topicIds": [" "],
+                      "source": null
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string(containsString("must not be blank")));
+
+    verify(postService, never()).createPost(any(), any());
+  }
+
+  @Test
+  void createPost_ShouldReturnBadRequest_WhenNestedSourceTitleIsTooLong() throws Exception {
+    User user = createUser("marlene");
+    authenticate(user);
+    String tooLongTitle = "t".repeat(501);
+
+    mockMvc
+        .perform(
+            post("/posts")
+                .principal(authenticationFor(user))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "caption": "A valid caption",
+                      "mediaRef": null,
+                      "isPublic": false,
+                      "isAiGenerated": false,
+                      "topicIds": [],
+                      "source": {
+                        "upvotes": null,
+                        "downvotes": null,
+                        "singleSources": [
+                          {
+                            "journal": "Journal",
+                            "author": "Author",
+                            "title": "%s",
+                            "url": "https://example.test",
+                            "date": null
+                          }
+                        ]
+                      }
+                    }
+                    """
+                        .formatted(tooLongTitle)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string(containsString("must not be longer than 500 characters")));
+
+    verify(postService, never()).createPost(any(), any());
+  }
+
+  @Test
   void createPost_ShouldReturnNotFound_WhenServiceRejectsUnknownTopic() throws Exception {
     User user = createUser("marlene");
     authenticate(user);
@@ -173,7 +271,7 @@ public class PostControllerIntegrationTest {
     authenticate(user);
     PostResponse response = createPostResponse(user, "post-1", "Profile post");
 
-    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of(response));
+    when(postService.getProfilePostsForUser("marlene", user)).thenReturn(List.of(response));
 
     mockMvc
         .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
@@ -181,7 +279,7 @@ public class PostControllerIntegrationTest {
         .andExpect(jsonPath("$[0].postId").value("post-1"))
         .andExpect(jsonPath("$[0].caption").value("Profile post"));
 
-    verify(postService).getProfilePostsForUser("marlene", "marlene");
+    verify(postService).getProfilePostsForUser("marlene", user);
   }
 
   @Test
@@ -189,14 +287,14 @@ public class PostControllerIntegrationTest {
     User user = createUser("marlene");
     authenticate(user);
 
-    when(postService.getProfilePostsForUser("marlene", "marlene")).thenReturn(List.of());
+    when(postService.getProfilePostsForUser("marlene", user)).thenReturn(List.of());
 
     mockMvc
         .perform(get("/posts/user/marlene").principal(authenticationFor(user)))
         .andExpect(status().isOk())
         .andExpect(content().json("[]"));
 
-    verify(postService).getProfilePostsForUser("marlene", "marlene");
+    verify(postService).getProfilePostsForUser("marlene", user);
   }
 
   @Test
@@ -247,11 +345,11 @@ public class PostControllerIntegrationTest {
         postId,
         user.getId(),
         user.getUsername(),
+        false,
         null,
         null,
         caption,
         "posts/media/file.png",
-        "http://localhost:3900/ctrl-dev-media/posts/media/file.png",
         true,
         false,
         List.of(),

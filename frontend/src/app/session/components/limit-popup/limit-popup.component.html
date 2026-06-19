@@ -1,0 +1,47 @@
+<p-dialog
+        [visible]="sessionState.showModal()"
+        [modal]="true"
+        [closable]="false"
+        [closeOnEscape]="false"
+        [style]="{ width: '25rem' }">
+
+    <ng-template pTemplate="header">
+        <div class="popup-header">
+            <i class="pi pi-stopwatch"></i>
+            <span> Session limit reached</span>
+        </div>
+    </ng-template>
+
+    <div class="popup-content">
+        <div>{{ sessionState.limitMessage() }}.
+            You will not be able to see any more posts until tomorrow.
+        </div>
+
+        <div class="popup-options">
+            <p-checkbox
+                    [(ngModel)]="dontShowAgain"
+                    [binary]="true"
+                    inputId="dontShowAgainCheck">
+            </p-checkbox>
+            <label for="dontShowAgainCheck">Don't show this popup again today</label>
+        </div>
+
+        <div class="popup-actions">
+            <p-button
+                    label="I understand"
+                    (onClick)="hardCutoff()"
+                    [style.width]="!sessionConfig()?.allowSnooze ? '100%' : 'auto'" fluid>
+            </p-button>
+
+            @if(sessionConfig()?.allowSnooze) {
+                <p-button
+                        label="Snooze"
+                        icon="pi pi-clock"
+                        severity="danger"
+                        (onClick)="softCutoff()"
+                        [style.width]="'auto'">
+                </p-button>
+            }
+        </div>
+    </div>
+</p-dialog>

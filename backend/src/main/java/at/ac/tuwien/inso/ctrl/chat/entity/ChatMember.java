@@ -11,7 +11,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "chat_members")
+@Table(
+    name = "chat_members",
+    indexes = {
+      @Index(name = "idx_chat_members_chat_left_user", columnList = "chat_id, left_at, user_id")
+    })
 public class ChatMember {
 
   @EmbeddedId private ChatMemberId id;
@@ -28,4 +32,10 @@ public class ChatMember {
 
   @Column(name = "joined_at")
   private LocalDateTime joinedAt;
+
+  @Column(name = "last_read_at")
+  private LocalDateTime lastReadAt;
+
+  @Column(name = "left_at")
+  private LocalDateTime leftAt;
 }

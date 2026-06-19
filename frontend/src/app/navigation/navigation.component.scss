@@ -1,3 +1,7 @@
+::ng-deep .p-menubar-submenu {
+  z-index: 10 !important;
+}
+
 .nav-bar {
   border-radius: 0;
   border-left: none;
@@ -10,14 +14,13 @@
   font-weight: bold;
 }
 
-.profile-container {
+.auth-buttons {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.25rem;
 }
 
-//show main nav items in the center of menubar on desktop
+// Desktop: Nav-Icons zentriert
 @media screen and (min-width: 960px) {
   :host ::ng-deep .p-menubar {
     justify-content: space-between;
@@ -38,25 +41,119 @@
   }
 }
 
-//mobile layout switch logo and hamburger
+:host ::ng-deep .nav-chat-item {
+  .p-menubar-item-link {
+    position: relative;
+    overflow: visible;
+  }
+
+  .p-menubar-item-icon {
+    position: relative;
+  }
+
+  .p-badge {
+    position: absolute;
+    top: 0.1rem;
+    left: calc(50% + 0.35rem);
+    min-width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    padding: 0 0.2rem;
+    border: 2px solid var(--p-menubar-background, var(--p-surface-0));
+    background: var(--p-text-muted-color) !important;
+    color: var(--p-surface-0);
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    transform: translateY(-35%);
+    box-shadow: none;
+  }
+}
+
+:host ::ng-deep .nav-profile-item {
+  .p-menubar-item-link {
+    padding: 0.5rem;
+  }
+
+  .p-menubar-item-icon {
+    border-radius: 50%;
+    background-image: var(--nav-profile-pic-url, none);
+    background-size: cover;
+    background-position: center;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+:host ::ng-deep .has-profile-pic .nav-profile-item .p-menubar-item-icon {
+  color: transparent;
+
+  &::before {
+    display: none;
+  }
+}
+
 @media screen and (max-width: 959px) {
   :host ::ng-deep .p-menubar {
+    flex-wrap: nowrap;
+    align-items: center;
 
     .p-menubar-button {
-      order: 1;
-      margin-left: 0;
-      margin-right: 0;
+      display: none;
     }
 
     .p-menubar-start {
-      order: 2;
+      order: 1;
       flex: 1;
       display: flex;
-      justify-content: start;
+      justify-content: flex-start;
+    }
+
+    .p-menubar-root-list {
+      order: 2;
+      display: flex !important;
+      flex-direction: row !important;
+      position: static !important;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      width: auto !important;
+    }
+
+    .p-menubar-item {
+      width: auto !important;
     }
 
     .p-menubar-end {
       order: 3;
+      flex: 1;
+
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
+  }
+}
+
+:host ::ng-deep .p-menubar-root-list {
+  .p-menubar-item-label:empty {
+    display: none;
+  }
+}
+
+// Admin hat ein Icon mehr → Logo verschwindet früher
+@media screen and (max-width: 460px) {
+  .is-admin .logo-text {
+    display: none;
+  }
+}
+
+// Kein Admin → Logo verschwindet erst ab 400px
+@media screen and (max-width: 400px) {
+  .logo-text {
+    display: none;
   }
 }

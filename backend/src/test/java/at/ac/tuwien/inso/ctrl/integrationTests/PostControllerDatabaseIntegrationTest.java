@@ -15,8 +15,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import at.ac.tuwien.inso.ctrl.algorithm.entity.Topic;
-import at.ac.tuwien.inso.ctrl.algorithm.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.config.security.JwtService;
 import at.ac.tuwien.inso.ctrl.embedding.EmbeddingService;
@@ -24,6 +22,8 @@ import at.ac.tuwien.inso.ctrl.file.FileStorageService;
 import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.post.scheduler.MastodonScheduler;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
+import at.ac.tuwien.inso.ctrl.topic.repository.TopicRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelationId;
 import at.ac.tuwien.inso.ctrl.user.entity.FriendRelation;
@@ -106,11 +106,6 @@ public class PostControllerDatabaseIntegrationTest {
     generatedTopicId = savedTopic.getTopicId();
     verifiedUserToken = jwtService.generateToken(verifiedUser);
     otherUserToken = jwtService.generateToken(otherUser);
-    when(fileStorageService.resolveFileUrl(anyString()))
-        .thenAnswer(
-            invocation ->
-                "http://localhost:8080/api/files/media-url?ref="
-                    + invocation.getArgument(0, String.class).replace("/", "%2F"));
     when(fileStorageService.resolveInternalPostMediaUrl(anyString()))
         .thenAnswer(
             invocation ->
@@ -138,23 +133,20 @@ public class PostControllerDatabaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {
-                      "caption": "A valid caption",
-                      "mediaRef": "posts/media/file.png",
-                      "isPublic": true,
-                      "isAiGenerated": false,
-                      "topicIds": ["%s"],
-                      "source": null
-                    }
-                    """
+                                    {
+                                      "caption": "A valid caption",
+                                      "mediaRef": "posts/media/file.png",
+                                      "isPublic": true,
+                                      "isAiGenerated": false,
+                                      "topicIds": ["%s"],
+                                      "source": null
+                                    }
+                                    """
                         .formatted(generatedTopicId)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.username").value("marlene"))
         .andExpect(jsonPath("$.caption").value("A valid caption"))
         .andExpect(jsonPath("$.mediaRef").value("posts/media/file.png"))
-        .andExpect(
-            jsonPath("$.mediaUrl")
-                .value("http://localhost:8080/api/files/media-url?ref=posts%2Fmedia%2Ffile.png"))
         .andExpect(jsonPath("$.isPublic").value(true))
         .andExpect(jsonPath("$.topicIds[0]").value(generatedTopicId));
 
@@ -174,15 +166,15 @@ public class PostControllerDatabaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {
-                      "caption": "   ",
-                      "mediaRef": null,
-                      "isPublic": false,
-                      "isAiGenerated": false,
-                      "topicIds": [],
-                      "source": null
-                    }
-                    """))
+                                    {
+                                      "caption": "   ",
+                                      "mediaRef": null,
+                                      "isPublic": false,
+                                      "isAiGenerated": false,
+                                      "topicIds": [],
+                                      "source": null
+                                    }
+                                    """))
         .andExpect(status().isBadRequest())
         .andExpect(content().string(containsString("caption must not be blank")));
 
@@ -248,6 +240,23 @@ public class PostControllerDatabaseIntegrationTest {
         .andExpect(content().string("Post not found"));
 
     assertTrue(postRepository.findById("post-1").isPresent());
+  }
+
+  @Test
+  void getPostById_withRemovedPost_returnsNotFound() throws Exception {
+    // Given: A post that has been marked as removed
+    Post removedPost =
+        savePost(
+            "removed-post", "This post is removed", true, LocalDateTime.of(2026, 4, 25, 12, 0));
+    removedPost.setIsRemoved(true);
+    postRepository.save(removedPost);
+
+    // When/Then: Getting the removed post by ID should return 404
+    mockMvc
+        .perform(
+            get("/api/posts/removed-post")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + verifiedUserToken))
+        .andExpect(status().isNotFound());
   }
 
   private User saveUser(String username, boolean verified) {

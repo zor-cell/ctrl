@@ -4,8 +4,12 @@ import at.ac.tuwien.inso.ctrl.algorithm.service.RecommendationService;
 import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.feed.dto.response.FeedPostResponse;
 import at.ac.tuwien.inso.ctrl.feed.mapper.FeedMapper;
+import at.ac.tuwien.inso.ctrl.label.entity.LabelContext;
+import at.ac.tuwien.inso.ctrl.label.service.LabelingService;
 import at.ac.tuwien.inso.ctrl.post.entity.*;
 import at.ac.tuwien.inso.ctrl.post.repository.PostVoteRepository;
+import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.source.entity.SourceVote;
 import at.ac.tuwien.inso.ctrl.source.repository.SourceVoteRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
@@ -28,6 +32,8 @@ public class FeedService {
   private final UserRepository userRepository;
   private final FeedMapper feedMapper;
   private final RecommendationService recommendationService;
+  private final LabelingService labelingService;
+  private final ReportService reportService;
 
   @Transactional(readOnly = true)
   public List<FeedPostResponse> getFeed(
@@ -50,6 +56,15 @@ public class FeedService {
     List<String> postIds =
         recommendedPosts.stream().map(p -> p.getPost().getPostId()).collect(Collectors.toList());
 
+    Map<String, Boolean> postReportedByUser =
+        postIds.isEmpty()
+            ? Map.of()
+            : postIds.stream()
+                .collect(
+                    Collectors.toMap(
+                        id -> id,
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.POST, id)));
+
     Map<String, String> postVotes =
         userId
             .map(
@@ -65,6 +80,16 @@ public class FeedService {
             .map(p -> p.getPost().getSource().getSourceId())
             .toList();
 
+    Map<String, Boolean> sourceReportedByUser =
+        sourceIds.isEmpty()
+            ? Map.of()
+            : sourceIds.stream()
+                .distinct()
+                .collect(
+                    Collectors.toMap(
+                        id -> id,
+                        id -> reportService.wasReportedByUser(user, ContentTypeEnum.SOURCE, id)));
+
     Map<String, String> sourceVotes =
         userId
             .map(
@@ -75,8 +100,22 @@ public class FeedService {
                                 v -> v.getId().getSourceId(), SourceVote::getVoteType)))
             .orElse(Map.of());
 
+    LabelContext labelCtx = labelingService.buildContext(user);
+
     return recommendedPosts.stream()
-        .map(post -> feedMapper.toFeedPostResponse(post, postVotes, sourceVotes))
+        .filter(rp -> !Boolean.TRUE.equals(postReportedByUser.get(rp.getPost().getPostId())))
+        .map(
+            rp ->
+                feedMapper.toFeedPostResponse(
+                    rp,
+                    postVotes,
+                    postReportedByUser,
+                    sourceVotes,
+                    sourceReportedByUser,
+                    labelingService.computeLabels(
+                        rp.getPost(),
+                        labelCtx,
+                        postReportedByUser.getOrDefault(rp.getPost().getPostId(), false))))
         .toList();
   }
 }

@@ -1,0 +1,145 @@
+$color-interaction: var(--p-primary-color);
+::ng-deep .underline-select-button {
+
+  .p-selectbutton {
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  .p-togglebutton {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: color 0.2s !important;
+    color: var(--p-text-color-secondary);
+
+    .p-togglebutton-content {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      transition: none !important;
+    }
+
+    .p-togglebutton-label {
+      display: inline-block;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0.25rem;
+      transition: border-color 0.2s;
+    }
+
+    &:hover .p-togglebutton-label {
+      border-bottom-color: var(--p-text-color);
+    }
+  }
+
+  // More specific selector to win over the base rule
+  .p-togglebutton.p-togglebutton-checked {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transition: color 0.2s !important;
+    color: var(--p-primary-color) !important;
+
+    .p-togglebutton-content {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      transition: none !important;
+    }
+
+    // Force the underline to always show on the active label
+    .p-togglebutton-label {
+      border-bottom: 1px solid var(--p-primary-color) !important;
+    }
+  }
+
+  .p-togglebutton:focus,
+  .p-togglebutton:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+}
+
+.analytics-container {
+  margin: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+
+  @media screen and (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 0;
+
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+:host ::ng-deep {
+  .transparentButton.p-button {
+    background: transparent;
+    border: none;
+    color: var(--p-text-color);
+  }
+}
+
+.chart-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  .p-chart {
+    flex-grow: 1;
+    min-width: 0;
+  }
+
+  .p-button-icon-only {
+    background: transparent;
+    color: var(--p-text-color);
+  }
+
+  @media screen and (max-width: 768px) {
+    gap: 0.25rem;
+
+    .transparentButton ::ng-deep .p-button {
+      padding: 0.25rem;
+      width: fit-content;
+
+      .p-button-icon {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+  position: relative;
+  flex-wrap: wrap;
+
+  h3 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+
+    @media screen and (max-width: 768px) {
+      position: static;
+      transform: none;
+      width: 100%;
+      text-align: center;
+      order: -1;
+      margin-bottom: 0;
+
+      font-size: 1rem;
+    }
+  }
+}

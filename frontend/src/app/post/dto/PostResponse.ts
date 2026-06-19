@@ -3,10 +3,12 @@ export interface CommentResponse {
   userId?: string;
   username: string;
   userProfilePic?: string;
+  userDeleted?: boolean;
   content: string;
   createdAt: string;
   parentCommentId: string | null;
   edited?: boolean;
+  wasReportedByUser: boolean;
   replies?: CommentResponse[];
 }
 
@@ -14,11 +16,11 @@ export interface PostResponse {
   postId: string;
   userId: string;
   username: string;
+  userDeleted?: boolean;
   sourceId: string | null;
   source: SourceResponse | null;
   caption: string;
   mediaRef: string | null;
-  mediaUrl: string | null;
   isPublic: boolean;
   isAiGenerated: boolean;
   labelIds: string[];
@@ -43,5 +45,6 @@ export interface SourceResponse {
   upvotes: number;
   downvotes: number;
   createdAt: string;
+  wasReportedByUser: boolean;
   singleSources: SingleSourceResponse[];
 }

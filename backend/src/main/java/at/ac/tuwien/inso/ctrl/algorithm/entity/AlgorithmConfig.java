@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.algorithm.entity;
 
 import at.ac.tuwien.inso.ctrl.embedding.config.EmbeddingModelConfig;
+import at.ac.tuwien.inso.ctrl.topic.entity.Topic;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import jakarta.persistence.*;
 import java.util.LinkedHashSet;

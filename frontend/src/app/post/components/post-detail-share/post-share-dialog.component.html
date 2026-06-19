@@ -1,0 +1,53 @@
+<p-dialog
+  header="Send post"
+  [visible]="visible()"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  styleClass="share-post-dialog"
+>
+  <div class="share-dialog-content">
+    <input
+      class="share-search"
+      type="search"
+      placeholder="Search people or groups"
+      [value]="shareFriendQuery()"
+      (input)="shareFriendQuery.set($any($event.target).value)"
+    />
+
+    <div class="share-targets-list">
+      @if (filteredShareTargets().length === 0) {
+        <p class="share-empty">No people or groups found</p>
+      }
+
+      @for (target of filteredShareTargets(); track target.id) {
+        <button
+          type="button"
+          class="share-target-row"
+          (click)="sharePostWithTarget(target)"
+        >
+          <span class="share-avatar" aria-hidden="true">
+            @if (shareTargetAvatarUrl(target) && !shareTargetAvatarFailed(target)) {
+              <img
+                [src]="shareTargetAvatarUrl(target)!"
+                alt=""
+                (error)="markShareTargetAvatarFailed(target)"
+              />
+            } @else {
+              {{ shareTargetInitial(target) }}
+            }
+          </span>
+          <span class="share-target-copy">
+            <strong>{{ target.title }}</strong>
+            <span>{{ target.subtitle }}</span>
+          </span>
+          <span class="share-target-kind" [attr.aria-label]="target.kind">
+            <i class="pi" [class]="shareTargetIcon(target)"></i>
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</p-dialog>

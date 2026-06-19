@@ -11,6 +11,10 @@ $radius-sm:    10px;
   justify-content: center;
 }
 
+.p-tabpanels {
+  padding: 0;
+}
+
 // ─── Feed Wrapper ─────────────────────────────────────
 .feed-wrapper {
   max-width: 640px;
@@ -27,7 +31,7 @@ $radius-sm:    10px;
   position: absolute;
   top: 0;
   right: 0;
-  height: 48px; // match PrimeNG tab bar height
+  height: 48px;
   display: flex;
   align-items: center;
   padding-right: 4px;
@@ -50,13 +54,11 @@ $radius-sm:    10px;
   flex-direction: column;
   gap: 16px;
 
-  // Scroll-snap container
-  height: calc(100vh - 120px); // minus header + tabs height
+  height: calc(100vh - 120px);
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
 
-  // Hide scrollbar but keep functionality
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
@@ -66,7 +68,6 @@ $radius-sm:    10px;
   border-radius: $radius;
   border: 1px solid $border;
 
-  // Snap each post into view
   scroll-snap-align: start;
   scroll-snap-stop: always;
   flex-shrink: 0;
@@ -75,7 +76,43 @@ $radius-sm:    10px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
+}
 
+// ─── Skeleton Card ────────────────────────────────────
+.post-card--skeleton {
+  overflow: hidden;
+  pointer-events: none;
+
+  .skeleton-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .skeleton-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  :host ::ng-deep .skeleton-image {
+    border-radius: 0 !important;
+  }
+
+  .skeleton-body {
+    padding: 14px 16px 8px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .skeleton-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid $border;
+  }
 }
 
 // ─── Post Header ──────────────────────────────────────
@@ -137,7 +174,6 @@ $radius-sm:    10px;
   padding: 0 12px !important;
   border-color: $border !important;
   color: $text-muted !important;
-
 }
 
 // ─── Post Image ───────────────────────────────────────
@@ -151,7 +187,7 @@ $radius-sm:    10px;
   height: 100%;
   object-fit: contain;
   display: block;
-
+  background: var(--p-content-hover-background);
 }
 
 // ─── Caption ──────────────────────────────────────────
@@ -162,40 +198,6 @@ $radius-sm:    10px;
   margin: 0;
   white-space: pre-line;
 }
-
-// ─── Source Link ──────────────────────────────────────
-.post-source {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin: 16px 0 16px 12px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid $border;
-  font-size: 0.75rem;
-  color: $text-muted;
-  text-decoration: none;
-  transition: all 0.2s;
-
-  i { font-size: 0.7rem; }
-
-  &:hover {
-    color: var(--p-primary-color, #6366f1);
-    border-color: var(--p-primary-color, #6366f1);
-  }
-}
-.post-source-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px 14px;
-  .post-source-left {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
 
 // ─── Labels ───────────────────────────────────────────
 .post-labels {
@@ -241,14 +243,14 @@ $radius-sm:    10px;
 
   i { font-size: 0.9rem; }
 
-  &.heart:hover {border-color: $downvote; color: $downvote}
-  &.heart.active {color: $downvote; border-color: $downvote }
+  &.heart:hover  { border-color: $downvote; color: $downvote; }
+  &.heart.active { color: $downvote; border-color: $downvote; }
 
-  &.upvote:hover  { color: $upvote;   border-color: $upvote; }
+  &.upvote:hover   { color: $upvote;   border-color: $upvote; }
   &.downvote:hover { color: $downvote; border-color: $downvote; }
 
-  &.upvote.active { color: $upvote; border-color: $upvote }
-  &.downvote.active { color: $downvote; border-color: $downvote }
+  &.upvote.active   { color: $upvote;   border-color: $upvote; }
+  &.downvote.active { color: $downvote; border-color: $downvote; }
 
   &.flag-btn {
     background: transparent;
@@ -271,41 +273,21 @@ $radius-sm:    10px;
   p  { font-size: 0.9rem; margin: 0; }
 }
 
-// ─── Why Dialog ───────────────────────────────────────
-:host ::ng-deep .why-dialog {
-  border: 1px solid $border !important;
-  border-radius: $radius !important;
-
-  .p-dialog-header {
-    border-bottom: 1px solid $border !important;
-    border-radius: $radius $radius 0 0 !important;
-  }
-
-  .p-dialog-footer {
-    border-top: 1px solid $border !important;
-    border-radius: 0 0 $radius $radius !important;
-    padding: 12px 16px !important;
-  }
+// ─── Infinite Scroll Sentinel ─────────────────────────
+.scroll-sentinel {
+  scroll-snap-align: none;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.why-dialog-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 4px 0;
-
-  .why-icon {
-    font-size: 1.4rem;
-    color: #f0c040;
-    margin-top: 2px;
-    flex-shrink: 0;
-  }
-
-  p {
-    white-space: pre-line;
-    font-size: 0.93rem;
-    margin: 0;
-  }
+.feed-end-hint {
+  font-size: 0.78rem;
+  color: $text-muted;
+  text-align: center;
+  padding: 1rem 0;
 }
 
 // ─── Algorithm Config Dialog ──────────────────────────
@@ -323,13 +305,9 @@ $radius-sm:    10px;
   }
 }
 
-
-
-
 .dialog-grid {
   display: flex;
   flex-direction: column;
-
   gap: 2rem;
   margin: 2rem 2rem 1rem 2rem;
 }
@@ -343,7 +321,6 @@ $radius-sm:    10px;
 .score-row {
   display: flex;
   flex-direction: column;
-
   gap: 0.5rem;
 }
 
@@ -364,12 +341,6 @@ $radius-sm:    10px;
   }
 }
 
-.bi-bar-container {
-  height: 8px !important;
-  border-radius: 4px;
-}
-
-/* Styles for bidirectional bar */
 .bi-bar-container {
   position: relative;
   height: 12px;
@@ -408,4 +379,13 @@ $radius-sm:    10px;
   left: 50%;
   border-radius: 0 4px 4px 0;
   background-color: #6366F1;
+}
+
+.blurred-lock {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  opacity: 0.6;
+  transition: filter 0.3s ease;
 }

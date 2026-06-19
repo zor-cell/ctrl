@@ -2,15 +2,16 @@ package at.ac.tuwien.inso.ctrl.feed.dto.response;
 
 import at.ac.tuwien.inso.ctrl.post.dto.response.LabelResponse;
 import at.ac.tuwien.inso.ctrl.post.dto.response.PostExplanation;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record FeedPostResponse(
     String postId,
-    // either an internal user or an external author
     String userId,
     String username,
     String userProfilePic,
+    boolean userDeleted,
     String caption,
     String mediaRef,
     boolean isPublic,
@@ -22,21 +23,29 @@ public record FeedPostResponse(
     List<LabelResponse> labelIds,
     List<SourceResponse> sourceIds,
     List<CommentResponse> comments,
-    PostExplanation explanation) {
+    PostExplanation explanation,
+    boolean wasReportedByUser,
+    String userProfileUrl) {
 
   public record SourceResponse(
       String sourceId,
       String url,
       Integer upvotes,
       Integer downvotes,
-      String userVote // "up", "down" or null
-      ) {}
+      String userVote,
+      boolean wasReportedByUser,
+      LocalDateTime createdAt,
+      String journal,
+      String author,
+      String title,
+      LocalDate date) {}
 
   public record CommentResponse(
       String commentId,
       String userId,
       String username,
       String userProfilePic,
+      boolean userDeleted,
       String content,
       LocalDateTime createdAt,
       String parentCommentId) {}

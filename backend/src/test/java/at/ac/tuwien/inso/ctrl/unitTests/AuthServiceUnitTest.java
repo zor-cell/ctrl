@@ -133,7 +133,8 @@ public class AuthServiceUnitTest {
 
   @Test
   void login_ShouldReturnToken_WhenCredentialsAreValid() {
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(userRepository.findByUsernameAndDeletedFalse("testUser"))
+        .thenReturn(Optional.of(testUser));
     when(jwtService.generateToken(testUser)).thenReturn("valid.jwt.token");
 
     AuthResponse response = authService.login(validLoginRequest);
@@ -171,7 +172,7 @@ public class AuthServiceUnitTest {
 
   @Test
   void login_ShouldThrowException_WhenUserNotFoundInDatabase() {
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.empty());
+    when(userRepository.findByUsernameAndDeletedFalse("testUser")).thenReturn(Optional.empty());
 
     assertThrows(UsernameNotFoundException.class, () -> authService.login(validLoginRequest));
     verify(jwtService, never()).generateToken(any());
@@ -180,7 +181,8 @@ public class AuthServiceUnitTest {
   @Test
   void login_ShouldThrowException_WhenEmailNotVerifiedAndVerificationIsRequired() {
     testUser.setEmailVerified(false);
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(userRepository.findByUsernameAndDeletedFalse("testUser"))
+        .thenReturn(Optional.of(testUser));
 
     assertThrows(EmailNotVerifiedException.class, () -> authService.login(validLoginRequest));
     verify(jwtService, never()).generateToken(any());
@@ -191,7 +193,8 @@ public class AuthServiceUnitTest {
     ReflectionTestUtils.setField(authService, "requireEmailVerification", false);
     testUser.setEmailVerified(false);
 
-    when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+    when(userRepository.findByUsernameAndDeletedFalse("testUser"))
+        .thenReturn(Optional.of(testUser));
     when(jwtService.generateToken(testUser)).thenReturn("valid.jwt.token");
 
     AuthResponse response = authService.login(validLoginRequest);

@@ -24,11 +24,16 @@
   justify-content: center;
   align-items: center;
   width: 2.25rem;
+  min-width: 2.25rem;
   height: 2.25rem;
+  min-height: 2.25rem;
+  flex: 0 0 2.25rem;
+  aspect-ratio: 1;
   border-radius: 999px;
   background: #111827;
   color: #fff;
   font-weight: 700;
+  line-height: 1;
 }
 
 .media-dropzone-wrap {
@@ -122,9 +127,51 @@
   gap: 0.5rem;
 }
 
+.caption-editor {
+  position: relative;
+}
+
+.caption-toolbar {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--p-content-background) 88%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.caption-toolbar__button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.45rem;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.caption-toolbar__button:hover {
+  background: var(--p-content-hover-background);
+}
+
 .field__textarea,
 .field__multiselect {
   width: 100%;
+}
+
+.field__textarea {
+  min-height: 14rem;
+  padding-right: 6.25rem;
+  font-size: 1.08rem;
+  line-height: 1.5;
 }
 
 .topic-chip-list,
@@ -180,7 +227,6 @@
 }
 
 .visibility-card--locked {
-  border-left: 4px solid #f59e0b;
 }
 
 .visibility-toggle,
@@ -280,5 +326,180 @@
 
   .composer-actions {
     justify-content: stretch;
+  }
+}
+
+@media (max-width: 560px) {
+  :host ::ng-deep .p-dialog {
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem);
+    margin: 0.5rem;
+    border-radius: 0.9rem;
+  }
+
+  :host ::ng-deep .p-dialog-header {
+    padding: 1rem 1rem 0.35rem;
+  }
+
+  :host ::ng-deep .p-dialog-title {
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  :host ::ng-deep .p-dialog-content {
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .composer-step,
+  .composer-form {
+    gap: 1rem;
+  }
+
+  .composer-step__header {
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .composer-step__number {
+    width: 1.9rem;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    min-height: 1.9rem;
+    flex-basis: 1.9rem;
+    font-size: 0.95rem;
+  }
+
+  .composer-step__header h2 {
+    font-size: 1.5rem;
+    line-height: 1.12;
+  }
+
+  .composer-step__header p {
+    margin-top: 0.25rem;
+    font-size: 0.98rem;
+    line-height: 1.32;
+  }
+
+  .media-dropzone {
+    min-height: 12.5rem;
+    gap: 0.45rem;
+    padding: 1.25rem;
+    border-radius: 0.9rem;
+  }
+
+  .media-dropzone__icon {
+    font-size: 1.7rem;
+  }
+
+  .media-dropzone__title {
+    font-size: 1rem;
+  }
+
+  .media-dropzone__text {
+    max-width: 18rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .media-dropzone__preview,
+  .composer-preview__media {
+    max-height: 13rem;
+    border-radius: 0.75rem;
+  }
+
+  .composer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    width: 100%;
+  }
+
+  :host ::ng-deep .composer-actions .p-button {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .composer-form__grid,
+  .field,
+  .sources-section,
+  .sources-list {
+    gap: 0.8rem;
+  }
+
+  .caption-toolbar {
+    top: 0.5rem;
+    right: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .caption-toolbar__button {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .field__textarea {
+    min-height: 9.5rem;
+    padding-right: 5.2rem;
+    font-size: 1rem;
+  }
+
+  .field__hint {
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  .visibility-card,
+  .ai-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.85rem;
+    border-radius: 0.85rem;
+  }
+
+  .visibility-card h3,
+  .ai-card h3,
+  .sources-section__header h3 {
+    font-size: 1.1rem;
+  }
+
+  .visibility-card p,
+  .ai-card p,
+  .sources-section__header p {
+    margin-top: 0.25rem;
+    font-size: 0.92rem;
+    line-height: 1.3;
+  }
+
+  .visibility-toggle {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    justify-content: flex-end;
+    gap: 0.65rem;
+  }
+
+  .visibility-toggle span {
+    min-width: 3.5rem;
+  }
+
+  :host ::ng-deep .visibility-card .p-toggleswitch,
+  :host ::ng-deep .ai-card .p-toggleswitch {
+    justify-self: end;
+  }
+
+  .source-card {
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border-radius: 0.85rem;
+  }
+
+  .source-card__actions {
+    justify-content: stretch;
+  }
+
+  :host ::ng-deep .source-card__actions .p-button {
+    width: 100%;
   }
 }

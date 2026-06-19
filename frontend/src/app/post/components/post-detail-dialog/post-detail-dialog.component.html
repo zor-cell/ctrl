@@ -1,0 +1,48 @@
+<p-dialog
+  [visible]="postId !== null"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [showHeader]="false"
+  styleClass="post-detail-dialog"
+  [style]="{ width: 'min(82rem, 92vw)', maxHeight: '92vh' }"
+  (visibleChange)="onVisibleChange($event)"
+>
+  <app-post-detail-view
+    [postId]="postId"
+    (closeClicked)="onVisibleChange(false)"
+    (postDeleted)="onPostDeleted($event)"
+    (reportPost)="onReportPost($event)"
+    (reportSource)="onReportSource($event)"
+    (reportComment)="onReportComment($event)"
+  />
+</p-dialog>
+
+<app-report
+  [contentType]="ContentTypeEnum.POST"
+  [contentId]="reportPostData()?.postId"
+  [contentTitle]="reportPostData()?.caption"
+  [username]="reportPostData()?.username"
+  [visible]="reportPostVisible()"
+  (visibleChange)="reportPostVisible.set($event)"
+/>
+
+<app-report
+  [contentType]="ContentTypeEnum.SOURCE"
+  [contentId]="reportSourceData()?.sourceId"
+  [contentTitle]="reportSourceData()?.url"
+  [username]="reportSourceData()?.username"
+  [visible]="reportSourceVisible()"
+  (visibleChange)="reportSourceVisible.set($event)"
+/>
+
+<app-report
+  [contentType]="ContentTypeEnum.COMMENT"
+  [contentId]="reportCommentData()?.commentId"
+  [contentTitle]="reportCommentData()?.content"
+  [userProfilePic]="reportCommentData()?.userProfilePic"
+  [username]="reportCommentData()?.username"
+  [visible]="reportCommentVisible()"
+  (visibleChange)="reportCommentVisible.set($event)"
+/>

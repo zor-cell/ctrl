@@ -1,0 +1,25 @@
+:host ::ng-deep .post-detail-dialog {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+:host ::ng-deep .post-detail-dialog .p-dialog-content {
+  padding: 0;
+  max-height: 92vh;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+}
+
+@media (max-width: 760px) {
+  :host ::ng-deep .post-detail-dialog {
+    width: min(24rem, calc(100vw - 1.5rem)) !important;
+    max-height: calc(100dvh - 1.5rem);
+    border-radius: 1rem;
+  }
+
+  :host ::ng-deep .post-detail-dialog .p-dialog-content {
+    max-height: calc(100dvh - 1.5rem);
+  }
+}
