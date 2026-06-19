@@ -1,20 +1,20 @@
-import { Component, computed, effect, HostBinding, inject, signal } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { AuthService } from '../auth/auth.service';
-import { ThemeService } from '../core/services/theme.service';
-import { ButtonModule } from 'primeng/button';
-import { MenuItem } from 'primeng/api';
-import { Menubar } from 'primeng/menubar';
-import { UserService } from '../user/user.service';
-import { MediaCacheService } from '../core/services/media-cache.service';
-import { ChatUnreadService } from '../chat/services/chat-unread.service';
+import {Component, computed, effect, HostBinding, inject, signal} from '@angular/core';
+import {RouterModule} from '@angular/router';
+import {AuthService} from "../auth/auth.service";
+import {ThemeService} from '../core/services/theme.service';
+import {ButtonModule} from 'primeng/button';
+import {MenuItem} from "primeng/api";
+import {Menubar} from "primeng/menubar";
+import {UserService} from "../user/user.service";
+import {MediaCacheService} from '../core/services/media-cache.service';
+import {ChatUnreadService} from '../chat/services/chat-unread.service';
 
 @Component({
   selector: 'app-navigation',
   standalone: true,
   imports: [ButtonModule, RouterModule, Menubar],
   templateUrl: './navigation.component.html',
-  styleUrl: './navigation.component.scss',
+  styleUrl: './navigation.component.scss'
 })
 export class NavigationComponent {
   protected authService = inject(AuthService);
@@ -51,7 +51,7 @@ export class NavigationComponent {
     }
 
     this.mediaCacheService.resolveMediaUrl(rawUrl, 'image', 'high').subscribe({
-      next: (blobUrl) => queueMicrotask(() => this.profilePictureUrl.set(blobUrl)),
+      next: blobUrl => queueMicrotask(() => this.profilePictureUrl.set(blobUrl)),
       error: () => queueMicrotask(() => this.profilePictureUrl.set(null)),
     });
   }
@@ -59,32 +59,30 @@ export class NavigationComponent {
   protected navItems = computed<MenuItem[]>(() => {
     const loggedIn = this.authService.isAuthenticated();
     const currentUser = this.userService.user();
-    const unreadTotal = loggedIn && currentUser != null ? this.chatUnreadService.totalUnread() : 0;
+    const unreadTotal =
+      loggedIn && currentUser != null ? this.chatUnreadService.totalUnread() : 0;
 
     const items: MenuItem[] = [];
 
     if (loggedIn) {
       items.push(
-        { label: 'Feed', icon: 'pi pi-home', routerLink: '/feed' },
-        { label: 'Search', icon: 'pi pi-search', routerLink: '/search' },
-        { label: 'Create', icon: 'pi pi-plus', routerLink: '/post' },
+        {icon: 'pi pi-home', routerLink: '/feed'},
+        {icon: 'pi pi-search', routerLink: '/search'},
+        {icon: 'pi pi-plus', routerLink: '/post'},
         {
-          label: 'Chats',
           icon: 'pi pi-comments',
           routerLink: '/chat',
           styleClass: 'nav-chat-item',
-          badge:
-            currentUser != null && unreadTotal > 0
-              ? this.formatUnreadBadge(unreadTotal)
-              : undefined,
+          badge: currentUser != null && unreadTotal > 0
+            ? this.formatUnreadBadge(unreadTotal)
+            : undefined,
           badgeSeverity: 'secondary',
         },
         {
-          label: 'Profile',
           icon: 'pi pi-user',
           routerLink: '/profile',
           styleClass: 'nav-profile-item',
-        },
+        }
       );
 
       if (this.authService.isAdmin()) {
@@ -92,10 +90,10 @@ export class NavigationComponent {
           icon: 'pi pi-shield',
           styleClass: 'nav-admin-item',
           items: [
-            { label: 'Reports', icon: 'pi pi-flag', routerLink: '/report' },
-            { label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification' },
-            { label: 'Topics', icon: 'pi pi-tag', routerLink: '/topics' },
-          ],
+            {label: 'Reports', icon: 'pi pi-flag', routerLink: '/report'},
+            {label: 'Verification', icon: 'pi pi-shield', routerLink: '/business-verification'},
+            {label: 'Topics', icon: 'pi pi-tag', routerLink: '/topics'}
+          ]
         });
       }
     }
