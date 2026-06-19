@@ -63,11 +63,11 @@ export class WhyDialogComponent {
     const normFactor = maxAchievable > 0 ? 100 / maxAchievable : 1;
 
     const raw = [
-      { label: 'Interests',      score: p.explanation.scoreInteraction * scale, description: 'Similar content you have liked, commented on, or spent time watching is boosted.', weight: weights['Interests'] },
+      { label: 'Interaction',      score: p.explanation.scoreInteraction * scale, description: 'Similar content you have liked, commented on, or spent time watching is boosted.', weight: weights['Interests'] },
       { label: 'Recency',        score: p.explanation.scoreRecency     * scale, description: 'Newer posts get a boost.',                                                           weight: weights['Recency'] },
+      { label: 'Exploration',    score: p.explanation.scoreExploration * scale, description: explorationDescription,                                                               weight: weights['Exploration'] },
       { label: 'Source Quality', score: p.explanation.scoreSource      * scale, description: 'Reliable sources are boosted.',                                                      weight: weights['Source Quality'] },
       { label: 'Popularity',     score: p.explanation.scorePopularity  * scale, description: 'Posts with many upvotes and active discussions are boosted.',                        weight: weights['Popularity'] },
-      { label: 'Exploration',    score: p.explanation.scoreExploration * scale, description: explorationDescription,                                                               weight: weights['Exploration'] },
       { label: 'Topics',         score: p.explanation.scoreTopic       * scale, description: 'Similar topics you have selected in your profile are boosted.',                      weight: weights['Topics'] },
     ];
 

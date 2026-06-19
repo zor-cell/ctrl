@@ -83,7 +83,7 @@
                 <div class="slider-field slider-topic">
                     <div class="slider-header">
                         <div class="slider-label-group">
-                            <label for="weightTopic">Topic Interest</label>
+                            <label for="weightTopic">Topics</label>
                             <i class="pi pi-info-circle hint-icon"
                                pTooltip="Align content heavily with your explicitly followed topics."
                                tooltipPosition="right"></i>
@@ -95,12 +95,6 @@
 
                 <!-- Topics MultiSelect -->
                 <div class="slider-field">
-                    <div class="slider-label-group" style="margin-bottom: 0.5rem;">
-                        <label for="topics" style="font-weight: 600;">Topics</label>
-                        <i class="pi pi-info-circle hint-icon"
-                           pTooltip="Choose up to 5 topics you want to prioritize in your feed."
-                           tooltipPosition="right"></i>
-                    </div>
                     <p-multiSelect
                             id="topics"
                             [options]="sortedTopics()"
