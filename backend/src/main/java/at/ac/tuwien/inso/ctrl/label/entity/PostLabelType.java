@@ -9,10 +9,10 @@ public enum PostLabelType {
   OLD_POST("🗂️", "Old Post", "Created more than 6 months ago"),
   AI_GENERATED("🤖", "AI Generated", "Creator marked this as AI-generated"),
   HIGHLY_DISCUSSED("💬", "Highly Discussed", "More than 100 comments"),
-  TRUSTED_SOURCE("✅", "Trusted Source", "High Wilson score with enough votes"),
-  DISPUTED_SOURCE("⚠️", "Disputed Source", "Low Wilson score with enough votes"),
-  EXTENDED_NETWORK("❤️", "Extended Network", "Posted by someone your follows follow"),
-  MASTODON("Ⓜ️", "Mastodon", "Post from Mastodon"),
+  TRUSTED_SOURCE("✅", "Trusted Source", "The community considers this source reliable"),
+  DISPUTED_SOURCE("⚠️", "Disputed Source", "The community has raised reliability concerns about this source"),
+  EXTENDED_NETWORK("❤️", "Extended Network", "Posted by someone your follows/friends follow"),
+  MASTODON("Ⓜ️", "Mastodon", "This post is from Mastodon"),
   POST_REPORTED("🚩", "Reported", "You have reported this post");
 
   private final String emoji;
