@@ -184,9 +184,8 @@ public class SessionService {
         sessionRepository.getDailyStats(user, LocalDate.now(clock).atStartOfDay());
     if (stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L) {
       throw new SessionLimitExceededException(
-          "Your configured daily time limit of %s minute%s was exceeded"
-              .formatted(
-                  config.getTimeLimitMinutes(), config.getTimeLimitMinutes() == 1 ? "" : "s"));
+          "Your configured daily time limit of %s was exceeded"
+              .formatted(formatTimeLimit(config.getTimeLimitMinutes())));
     }
 
     if (stats.getTotalPostsViewed() >= config.getPostLimit()) {
@@ -208,5 +207,23 @@ public class SessionService {
   private boolean isExceeded(SessionConfig config, DailySessionStatsProjection stats) {
     return stats.getTotalSeconds() >= config.getTimeLimitMinutes() * 60L
         || stats.getTotalPostsViewed() >= config.getPostLimit();
+  }
+
+  private String formatTimeLimit(int totalMinutes) {
+    if (totalMinutes < 60) {
+      return totalMinutes + " minute" + (totalMinutes == 1 ? "" : "s");
+    }
+
+    int hours = totalMinutes / 60;
+    int remainingMinutes = totalMinutes % 60;
+
+    String hourStr = hours + " hour" + (hours == 1 ? "" : "s");
+
+    if (remainingMinutes > 0) {
+      String minStr = remainingMinutes + " minute" + (remainingMinutes == 1 ? "" : "s");
+      return hourStr + " and " + minStr;
+    }
+
+    return hourStr;
   }
 }
