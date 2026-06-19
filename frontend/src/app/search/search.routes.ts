@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { PostsSearchResolver } from './resolvers/posts-search.resolver';
 
 export const searchRoutes: Routes = [
   {
@@ -12,9 +11,6 @@ export const searchRoutes: Routes = [
         path: 'posts',
         loadComponent: () =>
           import('./components/posts-search/posts-search.component').then(m => m.PostsSearchComponent),
-        resolve: {
-          searchData: PostsSearchResolver,
-        },
       },
       {
         path: 'users',

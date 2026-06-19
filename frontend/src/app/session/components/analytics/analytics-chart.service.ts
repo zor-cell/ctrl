@@ -6,6 +6,7 @@ import {
   AverageDayDetailResponse,
   WeekDayResponse,
   AverageWeekDayResponse,
+  TimeBucketDto,
 } from '../../dto/analytics.dto';
 import { DatasetKey, DatasetResponse } from './analytics.types';
 import { AnnotationOptions } from 'chartjs-plugin-annotation';
@@ -69,10 +70,10 @@ export class AnalyticsChartService {
       }
       case 'detailed-average': {
         const day = (data as AverageDayDetailResponse[])[focusedDayIndex];
-        return this.buildBarChartData(
+        return this.buildAverageBarChartData(
           day.buckets,
           b => b.averageTime,
-          b => b.label.slice(0, 2)
+          b => b.label
         );
       }
       default:
@@ -118,8 +119,8 @@ export class AnalyticsChartService {
         const day = (data as AverageDayDetailResponse[])[focusedDayIndex];
         return this.buildDetailedChartOptions(
           day.buckets,
-          b => b.averageTime,
-          b => `${b.label}: ${b.averageTime.toFixed(1)} min avg, ${b.contributingSessions} ${b.contributingSessions === 1 ? 'session' : 'sessions'}`
+          b => b.label,
+          b => `${b.averageTime.toFixed(1)} min, ${b.contributingSessions} ${b.contributingSessions === 1 ? 'session' : 'sessions'}`
         );
       }
       default:
@@ -142,7 +143,28 @@ export class AnalyticsChartService {
           data: items.map(valueFn),
           backgroundColor: primary,
           borderRadius: 4,
-          barPercentage: 0.7,
+          barPercentage: 0.9,
+        },
+      ],
+    };
+  }
+
+  buildAverageBarChartData<T>(
+    items: T[],
+    valueFn: (item: T) => number,
+    labelFn: (item: T) => string
+  ): ChartData<'bar'> {
+    const { primary } = this.getColors();
+    const labels = items.map(labelFn);
+    labels.push("24:00");
+    return {
+      labels: labels,
+      datasets: [
+        {
+          data: items.map(valueFn),
+          backgroundColor: primary,
+          borderRadius: 4,
+          barPercentage: 0.9,
         },
       ],
     };
@@ -179,7 +201,7 @@ export class AnalyticsChartService {
               if (!item) return '';
               const minutes = valueFn(item);
               const count = countFn(item);
-              return `${minutes.toFixed(valueDecimal)} min, ${count} ${count === 1 ? 'session' : 'sessions'}`;
+              return `${this.decimalToDuration(minutes)}, ${count.toFixed(valueDecimal)} ${count === 1 ? 'session' : 'sessions'}`;
             },
           },
         },
@@ -194,7 +216,7 @@ export class AnalyticsChartService {
               label: {
                 display: true,
                 color: this.getColors().surface,
-                content: 'daily limit',
+                content: `limit (${this.decimalToDuration(lineHeight)})`,
                 backgroundColor: 'rgba(255, 99, 132, 1)',
                 position: "start",
                 xAdjust: -10,
@@ -230,11 +252,18 @@ export class AnalyticsChartService {
     };
   }
 
-  buildDetailedChartOptions<T>(
-    items: T[],
-    valueFn: (item: T) => number,
-    tooltipLabelFn: (item: T) => string
+  buildDetailedChartOptions(
+    items: TimeBucketDto[],
+    labelFn: (item: TimeBucketDto) => string,
+    tooltipLabelFn: (item: TimeBucketDto) => string
   ): ChartOptions<'bar'> {
+    if (items.length <= 96) {
+      items.push({
+        label: "24:00",
+        averageTime: 0,
+        contributingSessions: 0,
+      });
+    }
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -254,12 +283,23 @@ export class AnalyticsChartService {
       },
       scales: {
         x: {
+          type: 'category',
+          afterBuildTicks: (axis) => {
+            axis.ticks = axis.ticks.filter((tick) => (tick.value as number) % 4 === 0);
+          },
           ticks: {
-            maxTicksLimit: 24,
-            autoSkip: true
+            callback: (value, index, ticks) => {
+              const idx = ticks[index]?.value as number;
+              const item = items[idx];
+              return item ? labelFn(item).slice(0, 2) : '';
+            },
+          },
+          grid: {
+            offset: false,
           },
         },
         y: {
+          max: 15,
           display: false,
         },
       }
@@ -295,7 +335,7 @@ export class AnalyticsChartService {
               const start = raw[0];
               const end = raw[1];
               const duration = end - start;
-              return `${this.decimalToTime(start)} – ${this.decimalToTime(end)} (${this.decimalToMinutes(duration)} min)`;
+              return `${this.decimalToTime(start)} – ${this.decimalToTime(end)} (${this.decimalToMinutes(duration)})`;
             },
           },
         },
@@ -306,6 +346,10 @@ export class AnalyticsChartService {
           max: 24,
           ticks: {
             stepSize: 1,
+            callback: (value) => {
+              const n = Number(value);
+              return n.toString().padStart(2, '0');
+            },
           },
         },
         y: {
@@ -338,10 +382,17 @@ export class AnalyticsChartService {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   }
 
+  private decimalToDuration(decimal: number): string {
+    const min = decimal / 60;
+    const h = Math.floor(min);
+    const m = Math.round((min - h) * 60);
+    return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+  }
+
   private decimalToMinutes(decimal: number): string {
     const h = Math.floor(decimal);
     const m = Math.round((decimal - h) * 60);
     const val = h * 60 + m;
-    return '' + val;
+    return val + ' min';
   }
 }

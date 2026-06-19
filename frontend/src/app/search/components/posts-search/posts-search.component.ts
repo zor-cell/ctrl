@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed, OnDestroy, Injector, afterNextRender } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,8 +18,9 @@ import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { PostPreview } from '../../dto/PostPreview';
 import { TopicResponse } from '../../../topic/dto/TopicResponse';
 import { PostPreviewCardComponent } from '../post-preview-card/post-preview-card.component';
-import {SessionStateService} from "../../../session/session-state.service";
-import { PostDetailDialogComponent} from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
+import { SessionStateService } from "../../../session/session-state.service";
+import { PostDetailDialogComponent } from '../../../post/components/post-detail-dialog/post-detail-dialog.component';
+import { AlgorithmService } from '../../../algorithm/algorithm.service';
 
 /**
  * Posts Search Component
@@ -55,9 +56,9 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   private topicService = inject(TopicService);
   private notificationService = inject(NotificationService);
   private mediaCacheService = inject(MediaCacheService);
+  private algorithmService = inject(AlgorithmService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private injector = inject(Injector);
   protected sessionState = inject(SessionStateService);
 
   selectedPostId = signal<string | null>(null);
@@ -76,13 +77,19 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
     const selected = new Set(this.selectedTopics());
     const query = this.filterQuery().trim().toLowerCase();
 
-    // Sort: selected first, then alphabetically
+    // Sort: selected first, then favorites, then alphabetically
     let sorted = [...all].sort((a, b) => {
       const aSelected = selected.has(a.topicId);
       const bSelected = selected.has(b.topicId);
 
       if (aSelected && !bSelected) return -1;
       if (!aSelected && bSelected) return 1;
+
+      const aFavorite = this.algorithmService.config()?.topics.includes(a.topicId);
+      const bFavorite = this.algorithmService.config()?.topics.includes(b.topicId);
+
+      if (aFavorite && !bFavorite) return -1;
+      if (!aFavorite && bFavorite) return 1;
       return a.name.localeCompare(b.name);
     });
 
@@ -115,29 +122,19 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   private readonly postsPerPage = 21;
 
   ngOnInit(): void {
-    // Data is resolved by the route resolver BEFORE component renders
-    // This prevents any UI flicker of empty state
-    const resolvedData = this.route.snapshot.data['searchData'];
+    // Read URL parameters
+    this.route.queryParams.subscribe((params) => {
+      const query = params['q'];
+      console.log(query);
+      this.searchQuery.set(query ? query : '');
 
-    if (resolvedData) {
-      // Initialize from resolved data (cache or URL params)
-      this.searchQuery.set(resolvedData.query);
-      this.selectedTopics.set(resolvedData.topics);
+      const topicsParam = params['topics'];
+      console.log(topicsParam);
+      this.selectedTopics.set(topicsParam ? topicsParam.split(',') : [])
+    })
 
-      if (resolvedData.query || resolvedData.topics.length > 0) {
-        this.hasSearched.set(true);
-
-        if (resolvedData.fromCache && resolvedData.results) {
-          this.searchResults.set(resolvedData.results);
-          this.hasMoreResults.set(resolvedData.results.length === this.postsPerPage);
-          // Restore scroll position after DOM update
-          if (resolvedData.scrollY > 0) {
-            afterNextRender(() => {
-              window.scrollTo({ top: resolvedData.scrollY, behavior: 'auto' });
-            }, { injector: this.injector });
-          }
-        }
-      }
+    if (this.searchQuery().length >= 3 || this.selectedTopics().length >= 1) {
+      this.performSearch();
     }
 
     // Load available topics
@@ -195,6 +192,8 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   onTopicsChange(topics: string[]): void {
     this.selectedTopics.set(topics);
     this.currentPage.set(0);
+    this.hasSearched.set(false);
+    this.searchResults.set([]);
     this.updateUrlState();
   }
 
@@ -242,7 +241,6 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
   }
 
   private performSearch(): void {
-    this.searchResults.set([]);
     this.isSearching.set(true);
     this.hasSearched.set(true);
 
@@ -319,7 +317,6 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
       return;
     }
     this.currentPage.update(page => page + 1);
-    this.updateUrlState();
     this.performSearch();
   }
 
@@ -328,7 +325,6 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
    * Saves current scroll position in search service cache
    */
   onPostSelected(preview: PostPreview): void {
-    this.searchService.saveScrollPosition(window.scrollY);
     this.selectedPostId.set(preview.postId); // ← Dialog öffnen statt navigieren
   }
 
