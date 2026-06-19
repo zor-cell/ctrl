@@ -73,4 +73,67 @@ describe('Reset Email Tests', () => {
     });
 
   });
+
+  it("Reset password of existent user, should display if passwords don't match", () => {
+    cy.visit("/forgot-password")
+    cy.get('input#email').type(testUser.email);
+    cy.get("button[type='submit']").click();
+
+    cy.contains("Password reset sent successfully if correct email was provided. Check your emails.")
+
+    cy.url().should('eq', `${Cypress.config().baseUrl}/login`);
+
+    cy.fetchResetToken({username: testUser.username,
+      email: testUser.email,}).then((token) => {
+      cy.visit(`/reset-password?token=${token}`)
+      cy.get('#password').type("NewPassword123!");
+      cy.get("#confirmPassword").type("NewConfirmPassword123!");
+      cy.get('button[type="submit"]').click();
+      cy.contains("Passwords do not match.").should("be.visible");
+    });
+
+  });
+
+  it("Reset password of existent user, should display need valid password", () => {
+    cy.visit("/forgot-password")
+    cy.get('input#email').type(testUser.email);
+    cy.get("button[type='submit']").click();
+
+    cy.contains("Password reset sent successfully if correct email was provided. Check your emails.")
+
+    cy.url().should('eq', `${Cypress.config().baseUrl}/login`);
+
+    cy.fetchResetToken({username: testUser.username,
+      email: testUser.email,}).then((token) => {
+      cy.visit(`/reset-password?token=${token}`)
+      cy.get('#password').type("NewPassword");
+      cy.get("#confirmPassword").type("NewPassword");
+      cy.contains("Password must be at least 8 characters, contain at least one uppercase letter, one lowercase letter, one number and one special character of (!@#$%^&*()_+-=[]{};:,.?). ")
+      cy.get('#password').clear().type("!NewPassword");
+      cy.get("#confirmPassword").clear().type("!NewPassword");
+      cy.contains("Password must be at least 8 characters, contain at least one uppercase letter, one lowercase letter, one number and one special character of (!@#$%^&*()_+-=[]{};:,.?). ")
+
+      cy.get('#password').clear().type("!invalid123");
+      cy.get("#confirmPassword").clear().type("!invalid123");
+      cy.contains("Password must be at least 8 characters, contain at least one uppercase letter, one lowercase letter, one number and one special character of (!@#$%^&*()_+-=[]{};:,.?). ")
+    });
+
+  });
+
+  it("Visiting invalid token, should fail to set password", () => {
+      cy.on("uncaught:exception", (err: Error) => {
+        if (err.message.includes('api/auth/reset-password') && err.message.includes('401')) {
+          return false;
+        }
+
+        return true;
+      });
+
+      cy.visit(`/reset-password?token=invalid-token-aoosoodf-92i9ud98we`)
+      cy.get('#password').type("NewPassword123!");
+      cy.get("#confirmPassword").type("NewPassword123!");
+      cy.get('button[type="submit"]').click();
+      cy.contains("Invalid token or User").should("be.visible");
+
+  });
 })
