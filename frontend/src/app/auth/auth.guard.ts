@@ -25,6 +25,18 @@ export const authGuard: CanActivateFn = () => {
   );
 };
 
+export const guestGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  //logged in users should be sent to feed
+  if (authService.isAuthenticated()) {
+    return router.parseUrl('/feed');
+  }
+
+  return true;
+};
+
 export const adminGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
