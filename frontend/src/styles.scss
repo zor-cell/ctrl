@@ -85,3 +85,10 @@ Styles for global containers
   justify-content: center;
   align-items: center;
 }
+
+/* toast for mobile */
+@media screen and (max-width: 768px) {
+  .p-toast.p-toast-top-right {
+    width: 90% !important;
+  }
+}
