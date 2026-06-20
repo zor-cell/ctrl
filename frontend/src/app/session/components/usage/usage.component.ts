@@ -14,8 +14,7 @@ import {TimeFormatPipe} from "../../../core/utils/time-format.pipe";
     ChartModule,
     RouterLink,
     ProgressSpinner,
-    Button,
-    TimeFormatPipe
+    Button
   ],
   templateUrl: './usage.component.html',
   styleUrl: './usage.component.scss',

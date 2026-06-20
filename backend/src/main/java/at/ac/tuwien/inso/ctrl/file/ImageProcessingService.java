@@ -12,7 +12,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
-
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 
@@ -48,9 +47,10 @@ public class ImageProcessingService {
   }
 
   private BufferedImage readImage(InputStream inputStream) throws IOException {
-    BufferedImage image = Thumbnails.of(inputStream)
+    BufferedImage image =
+        Thumbnails.of(inputStream)
             .scale(1.0)
-            .useExifOrientation(true) //use for exif file support for proper orientation 
+            .useExifOrientation(true) // use for exif file support for proper orientation
             .asBufferedImage();
 
     if (image == null) {
