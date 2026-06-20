@@ -6,7 +6,6 @@ import {ProgressSpinner} from "primeng/progressspinner";
 import {Button} from "primeng/button";
 import {SessionStateService} from "../../session-state.service";
 import {Usage} from "../../dto/usage";
-import {TimeFormatPipe} from "../../../core/utils/time-format.pipe";
 
 @Component({
   selector: 'app-usage',
