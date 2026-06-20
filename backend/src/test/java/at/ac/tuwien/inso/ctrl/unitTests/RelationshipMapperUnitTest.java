@@ -240,6 +240,40 @@ public class RelationshipMapperUnitTest {
     assertEquals(createdAt, response.createdAt());
   }
 
+  @Test
+  public void toFriendResponse_withNull_returnsNull() {
+    assertNull(relationshipMapper.toFriendResponse(null));
+  }
+
+  @Test
+  public void toFollowedResponse_withNull_returnsNull() {
+    assertNull(relationshipMapper.toFollowedResponse(null));
+  }
+
+  @Test
+  public void toBlockedResponse_withNull_returnsNull() {
+    assertNull(relationshipMapper.toBlockedResponse(null));
+  }
+
+  @Test
+  public void toIncomingFriendRequestResponse_withNull_returnsNull() {
+    assertNull(relationshipMapper.toIncomingFriendRequestResponse(null));
+  }
+
+  @Test
+  public void toSentFriendRequestResponse_withNull_returnsNull() {
+    assertNull(relationshipMapper.toSentFriendRequestResponse(null));
+  }
+
+  @Test
+  public void toUserSearchResponse_withNull_returnsNull() {
+    assertNull(
+        relationshipMapper.toUserSearchResponse(
+            null,
+            List.of(new RelationshipStatusItem(RelationshipStatusItem.RelationshipStatus.FRIEND)),
+            "Name"));
+  }
+
   private boolean hasStatus(
       List<RelationshipStatusItem> statuses, RelationshipStatusItem.RelationshipStatus status) {
     return statuses.stream().anyMatch(item -> item.status() == status);
