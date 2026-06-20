@@ -2,14 +2,16 @@ import { environment } from '../../../src/environments/environment';
 
 const describePasswordReset = environment.auth.requireEmailVerification ? describe.skip : describe;
 
+interface TestUser {
+  username: string;
+  password: string;
+  email: string;
+  name: string;
+  birthdate: string;
+}
+
 describePasswordReset('Business Verification Tests', () => {
-  const testUser = {
-    username: 'testuserLoginNew',
-    password: '$TestUser123',
-    email: 'e2e.user@example.com',
-    name: 'TestUserNew',
-    birthdate: '2000-01-01',
-  };
+  let testUser: TestUser;
 
   const adminUser = {
     username: 'admin',
@@ -17,6 +19,16 @@ describePasswordReset('Business Verification Tests', () => {
   };
 
   beforeEach(function () {
+    const timestamp = Date.now();
+
+    testUser = {
+      username: `testuserLoginNew_${timestamp}`,
+      password: '$TestUser123',
+      email: `e2e.user.${timestamp}@example.com`,
+      name: 'TestUserNew',
+      birthdate: '2000-01-01',
+    };
+
     return cy
       .register(testUser)
       .then((registerResponse) => {

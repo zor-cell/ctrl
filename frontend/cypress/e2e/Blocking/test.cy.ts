@@ -2,22 +2,17 @@ import { environment } from '../../../src/environments/environment';
 
 const describePasswordReset = environment.auth.requireEmailVerification ? describe.skip : describe;
 
-describePasswordReset('Blocking Tests', () => {
-  const blockedUser = {
-    username: 'BlockedUser',
-    password: '$TestUser123',
-    email: 'blocked.user@local.test',
-    name: 'BlockedUser',
-    birthdate: '2000-01-01',
-  };
+interface TestUser {
+  username: string;
+  password: string;
+  email: string;
+  name: string;
+  birthdate: string;
+}
 
-  const blockingUser = {
-    username: 'BlockingUser',
-    password: '$TestUser123',
-    email: 'blocking.user@local.test',
-    name: 'BlockedUser',
-    birthdate: '2001-01-01',
-  };
+describePasswordReset('Blocking Tests', () => {
+  let blockedUser: TestUser;
+  let blockingUser: TestUser;
 
   const adminUser = {
     username: 'admin',
@@ -25,6 +20,24 @@ describePasswordReset('Blocking Tests', () => {
   };
 
   beforeEach(function () {
+    const timestamp = Date.now();
+
+    blockedUser = {
+      username: `BlockedUser_${timestamp}`,
+      password: '$TestUser123',
+      email: `blocked.user.${timestamp}@local.test`,
+      name: 'BlockedUser',
+      birthdate: '2000-01-01',
+    };
+
+    blockingUser = {
+      username: `BlockingUser_${timestamp}`,
+      password: '$TestUser123',
+      email: `blocking.user.${timestamp}@local.test`,
+      name: 'BlockedUser',
+      birthdate: '2001-01-01',
+    };
+
     cy
       .register(blockingUser)
       .then((registerResponse) => {
