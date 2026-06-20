@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard } from './auth/auth.guard';
+import {adminGuard, authGuard, guestGuard} from './auth/auth.guard';
 import { LoginComponent } from "./auth/components/login/login.component";
 import { RegisterComponent } from "./auth/components/registration/register.component";
 import { EmailVerificationComponent } from './auth/components/email-verification/email-verification.component';
@@ -8,8 +8,8 @@ import { ForgotPasswordComponent } from './auth/components/forgot-password/forgo
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   { path: 'reset-password', component: PasswordResetComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   {
