@@ -69,6 +69,7 @@ declare global {
           email: string;
         }>
       ): Chainable<string>;
+      createFollow(username1: string, password1: string, username2: string, password2: string): Chainable<Cypress.Response<unknown>>;
     }
   }
 }
@@ -227,6 +228,31 @@ Cypress.Commands.add('verifyEmail', (username: string, token: string) => {
     },
   });
 });
+
+Cypress.Commands.add("createFollow", (username1: string, password1: string, username2: string, password2: string) => {
+  return cy
+    .request({
+      method: 'POST',
+      url: '/api/auth/login',
+      failOnStatusCode: true,
+      body: {
+        username: username1,
+        password: password1,
+      },
+    })
+    .then((loginResponse) => {
+      console.log('fetchResetToken /api/auth/login response:', loginResponse);
+      const jwt1: string = loginResponse.body.token;
+      return cy.request({
+        method: "POST",
+        url: '/api/users/me/followed' + username2,
+        failOnStatusCode: true,
+        headers: {
+          Authorization: 'Bearer ' + jwt1,
+        },
+      })
+    })
+})
 
 Cypress.Commands.add("createFriendship", (username1: string, password1: string, username2: string, password2: string) => {
   return cy

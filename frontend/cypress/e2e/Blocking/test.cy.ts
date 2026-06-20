@@ -34,11 +34,11 @@ describePasswordReset('Blocking Tests', () => {
   });
 
   afterEach(function () {
-    cy.deleteUser(blockingUser.username, blockingUser.password).then((res) => {
+    cy.deleteUser(blockedUser.username, blockedUser.password).then((res) => {
       expect(res.status).to.eq(204);
     });
 
-    cy.deleteUser(blockedUser.username, blockedUser.password).then((res) => {
+    cy.deleteUser(blockingUser.username, blockingUser.password).then((res) => {
       expect(res.status).to.eq(204);
     });
   })
@@ -62,7 +62,7 @@ describePasswordReset('Blocking Tests', () => {
 
   });
 
-  it.only ("If user blocks other user, other user should not be viewable in detail view", () => {
+  it ("If user blocks other user, other user should not be viewable in detail view", () => {
     cy.visit('/login');
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
@@ -109,6 +109,29 @@ describePasswordReset('Blocking Tests', () => {
 
   });
 
+  it ("If user blocks follower, follow should be removed", () => {
+    cy.createFriendship(blockedUser.username, blockedUser.password, blockingUser.username, blockingUser.password).then((response) => {
+      expect(response.status).to.eq(204);
+
+      cy.visit('/login');
+      cy.get('input#username').type(blockingUser.username);
+      cy.get('input[type="password"]').type(blockingUser.password);
+      cy.get('button[type="submit"]').click();
+      cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+
+      cy.visit(`/profile/${blockedUser.username}`);
+      cy.get('[icon="pi pi-ellipsis-v"] > .p-ripple').should("be.visible").click();
+      cy.get('#pn_id_43_1 > .p-menu-item-content > .p-ripple').should("be.visible").click();
+
+      cy.contains("button", "Block").should("be.visible").click();
+
+      cy.url().should('eq', `${Cypress.config().baseUrl}/followed?tab=blocked`);
+
+      cy.visit("/followed?tab=followed");
+      cy.contains(blockedUser.username).should("not.exist")
+    });
+  });
+
   it ("If user blocks friend, friendship should get removed and comments deleted", () => {
     cy.createFriendship(blockedUser.username, blockedUser.password, blockingUser.username, blockingUser.password).then((response) => {
       expect(response.status).to.eq(204);
@@ -144,7 +167,7 @@ describePasswordReset('Blocking Tests', () => {
         .invoke('val', 'This is a test comment')
         .trigger('input')
         .trigger('change');
-      cy.get('.comment-input-row > p-button > .p-ripple').click();
+      cy.get('.comment-input-row').find('button').click();
 
       cy.visit('/login');
       cy.get('input#username').type(blockingUser.username);
@@ -170,8 +193,6 @@ describePasswordReset('Blocking Tests', () => {
       cy.contains("button", "Test comment").should("be.visible").click();
 
       cy.contains("This is a test comment").should("not.exist");
-
-
     });
 
   });
