@@ -390,9 +390,7 @@ public class RelationshipControllerIntegrationTest {
   @Test
   public void unfriend_nonExistentUser_returnsNotFound() throws Exception {
     mockMvc
-        .perform(
-            delete("/api/users/me/friends/{username}", "ghost123")
-                .with(user(currentUser)))
+        .perform(delete("/api/users/me/friends/{username}", "ghost123").with(user(currentUser)))
         .andExpect(status().isNotFound());
   }
 
@@ -462,8 +460,7 @@ public class RelationshipControllerIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    long count =
-        objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
+    long count = objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
 
     assertEquals(1, count);
   }
@@ -476,8 +473,7 @@ public class RelationshipControllerIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    long count =
-        objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
+    long count = objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
 
     assertEquals(0, count);
   }

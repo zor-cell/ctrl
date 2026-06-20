@@ -269,7 +269,9 @@ public class RelationshipMapperUnitTest {
   public void toUserSearchResponse_withNull_returnsNull() {
     assertNull(
         relationshipMapper.toUserSearchResponse(
-            null, List.of(new RelationshipStatusItem(RelationshipStatusItem.RelationshipStatus.FRIEND)), "Name"));
+            null,
+            List.of(new RelationshipStatusItem(RelationshipStatusItem.RelationshipStatus.FRIEND)),
+            "Name"));
   }
 
   private boolean hasStatus(

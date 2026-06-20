@@ -84,8 +84,7 @@ public class FriendshipServiceUnitTest {
             .expiresAt(LocalDateTime.now().plusDays(30))
             .build();
 
-    when(userRepository.findByUsername(receiver.getUsername()))
-        .thenReturn(Optional.of(receiver));
+    when(userRepository.findByUsername(receiver.getUsername())).thenReturn(Optional.of(receiver));
     when(friendRequestRepository.findBySenderAndReceiver(currentUser, receiver))
         .thenReturn(Optional.of(request));
 
