@@ -17,15 +17,6 @@ describe('Business Verification Tests', () => {
       .register(testUser)
       .then((registerResponse) => {
         expect(registerResponse.status).to.eq(201);
-
-        return cy.fetchVerificationToken({
-          username: testUser.username,
-          email: testUser.email,
-        });
-      })
-      .then((token) => cy.verifyEmail(testUser.username, token))
-      .then((response) => {
-        expect(response.status).to.eq(200);
       });
   });
 

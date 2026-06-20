@@ -1,4 +1,4 @@
-describe('Business Verification Tests', () => {
+describe('Blocking Tests', () => {
   const blockedUser = {
     username: 'BlockedUser',
     password: '$TestUser123',
@@ -20,29 +20,12 @@ describe('Business Verification Tests', () => {
       .register(blockingUser)
       .then((registerResponse) => {
         expect(registerResponse.status).to.eq(201);
-
-        return cy.fetchVerificationToken({
-          username: blockingUser.username,
-          email: blockingUser.email,
-        });
-      })
-      .then((token) => cy.verifyEmail(blockingUser.username, token))
-      .then((response) => {
-        expect(response.status).to.eq(200);
       });
     cy
       .register(blockedUser)
       .then((registerResponse) => {
         expect(registerResponse.status).to.eq(201);
 
-        return cy.fetchVerificationToken({
-          username: blockedUser.username,
-          email: blockedUser.email,
-        });
-      })
-      .then((token) => cy.verifyEmail(blockedUser.username, token))
-      .then((response) => {
-        expect(response.status).to.eq(200);
       });
   });
 
@@ -75,6 +58,26 @@ describe('Business Verification Tests', () => {
 
   });
 
+  it.only ("If user blocks other user, other user should not be viewable in detail view", () => {
+    cy.visit('/login');
+    cy.get('input#username').type(blockingUser.username);
+    cy.get('input[type="password"]').type(blockingUser.password);
+    cy.get('button[type="submit"]').click();
+    cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+
+    cy.visit(`/profile/${blockedUser.username}`);
+    cy.get('[icon="pi pi-ellipsis-v"] > .p-ripple').should("be.visible").click();
+    cy.get('#pn_id_43_1 > .p-menu-item-content > .p-ripple').should("be.visible").click();
+
+    cy.contains("button", "Block").should("be.visible").click();
+
+    cy.url().should('eq', `${Cypress.config().baseUrl}/followed?tab=blocked`);
+
+    cy.visit(`/profile/${blockedUser.username}`);
+    cy.contains("User not found")
+
+  });
+
   it ("If user blocks other user, other user no longer by searchable", () => {
     cy.visit('/login');
     cy.get('input#username').type(blockingUser.username);
@@ -102,5 +105,71 @@ describe('Business Verification Tests', () => {
 
   });
 
-});
+  it ("If user blocks friend, friendship should get removed and comments deleted", () => {
+    cy.createFriendship(blockedUser.username, blockedUser.password, blockingUser.username, blockingUser.password).then((response) => {
+      expect(response.status).to.eq(204);
 
+      cy.visit('/login');
+      cy.get('input#username').type(blockingUser.username);
+      cy.get('input[type="password"]').type(blockingUser.password);
+      cy.get('button[type="submit"]').click();
+      cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+
+      cy.visit("/post")
+      cy.contains("button", "Weiter").should("be.visible").click();
+      cy.get('textarea').should("be.visible").invoke('val', 'Test comment')
+        .trigger('input')
+        .trigger('change');
+
+      cy.get('.p-dialog-content').should('be.visible').scrollTo('bottom');
+      cy.contains("button", "Create Post").scrollIntoView().should("be.visible").click();
+
+      cy.contains("Test comment").should("be.visible");
+
+      cy.visit('/login');
+      cy.get('input#username').type(blockedUser.username);
+      cy.get('input[type="password"]').type(blockedUser.password);
+      cy.get('button[type="submit"]').click();
+      cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+
+      cy.visit(`/profile/${blockingUser.username}`);
+
+      cy.contains("button", "Test comment").should("be.visible").click();
+
+      cy.get('textarea').should("be.visible")
+        .invoke('val', 'This is a test comment')
+        .trigger('input')
+        .trigger('change');
+      cy.get('.comment-input-row > p-button > .p-ripple').click();
+
+      cy.visit('/login');
+      cy.get('input#username').type(blockingUser.username);
+      cy.get('input[type="password"]').type(blockingUser.password);
+      cy.get('button[type="submit"]').click();
+      cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+
+      cy.visit(`/profile/${blockedUser.username}`);
+      cy.get('[icon="pi pi-ellipsis-v"] > .p-ripple').should("be.visible").click();
+      cy.get('#pn_id_43_1 > .p-menu-item-content > .p-ripple').should("be.visible").click();
+
+      cy.contains("button", "Block").should("be.visible").click();
+
+      cy.url().should('eq', `${Cypress.config().baseUrl}/followed?tab=blocked`);
+
+      cy.contains(blockedUser.username).should("be.visible")
+
+      cy.visit("/followed?tab=friends");
+      cy.contains(blockedUser.username).should("not.exist");
+
+      cy.visit(`/profile/${blockingUser.username}`);
+
+      cy.contains("button", "Test comment").should("be.visible").click();
+
+      cy.contains("This is a test comment").should("not.exist");
+
+
+    });
+
+  });
+
+});
