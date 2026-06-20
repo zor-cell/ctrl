@@ -1,19 +1,9 @@
-.login-container {
+.wrapper {
   display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background-color: var(--p-surface-50);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-  border-radius: 1rem;
-  background-color: var(--p-surface-0);
-  border: 1px solid var(--p-surface-200);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  min-height: calc(100vh - 58px);
+  padding: 1rem;
 }
 
 .login-form {
@@ -75,5 +65,3 @@
     }
   }
 }
-
-

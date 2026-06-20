@@ -1,6 +1,6 @@
-<div class="login-container">
-  <div class="login-card">
-    <div class="login-header">
+<div class="wrapper">
+  <div class="form-container">
+    <div class="form-header">
       <h2>Email verification</h2>
       @if (emailData) {
         <p >We sent a verification link to <strong>{{ emailData.email }}</strong>.</p>
@@ -10,6 +10,8 @@
       }
 
     </div>
+
+      <div>
     <div class="email-resend">
 
       @if (showResendButton) {
@@ -62,5 +64,6 @@
         ></p-button>
       }
     </form>
+      </div>
   </div>
 </div>
