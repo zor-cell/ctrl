@@ -89,6 +89,8 @@
 
 :host ::ng-deep .has-profile-pic .nav-profile-item .p-menubar-item-icon {
   color: transparent;
+  width: 1.25rem;
+  height: 1.25rem;
 
   &::before {
     display: none;
