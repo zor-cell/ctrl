@@ -369,6 +369,119 @@ public class RelationshipControllerIntegrationTest {
     assertEquals(regularUser.getUsername(), blockedUsers.get(0).username());
   }
 
+  // unfriend
+
+  @Test
+  public void unfriend_withExistingFriendship_returnsNoContentAndRemovesFriendship()
+      throws Exception {
+    createFriendship(currentUser, regularUser);
+
+    mockMvc
+        .perform(
+            delete("/api/users/me/friends/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNoContent());
+
+    assertFalse(
+        friendRelationRepository.existsById(
+            new FriendRelationId(currentUser.getId(), regularUser.getId())));
+  }
+
+  @Test
+  public void unfriend_nonExistentUser_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/users/me/friends/{username}", "ghost123")
+                .with(user(currentUser)))
+        .andExpect(status().isNotFound());
+  }
+
+  // unfollow
+
+  @Test
+  public void unfollow_withExistingFollow_returnsNoContentAndRemovesFollow() throws Exception {
+    createFollow(currentUser, regularUser);
+
+    mockMvc
+        .perform(
+            delete("/api/users/me/followed/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNoContent());
+
+    assertFalse(
+        followRelationRepository.existsById(
+            new FollowRelationId(currentUser.getId(), regularUser.getId())));
+  }
+
+  @Test
+  public void unfollow_nonExistentFollow_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/users/me/followed/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNotFound());
+  }
+
+  // cancelFriendRequest
+
+  @Test
+  public void cancelFriendRequest_withExistingRequest_returnsNoContentAndRemovesRequest()
+      throws Exception {
+    createFriendRequest(currentUser, regularUser);
+
+    mockMvc
+        .perform(
+            delete("/api/users/me/friend-requests/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNoContent());
+
+    assertFalse(
+        friendRequestRepository.existsById(
+            new FriendRequestId(currentUser.getId(), regularUser.getId())));
+  }
+
+  @Test
+  public void cancelFriendRequest_nonExistentRequest_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/users/me/friend-requests/{username}", regularUser.getUsername())
+                .with(user(currentUser)))
+        .andExpect(status().isNotFound());
+  }
+
+  // getPendingRequestCount
+
+  @Test
+  public void getPendingRequestCount_withIncomingRequests_returnsCorrectCount() throws Exception {
+    createFriendRequest(regularUser, currentUser);
+    createFriendRequest(suspendedUser, currentUser);
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/users/me/friend-requests/count").with(user(currentUser)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    long count =
+        objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
+
+    assertEquals(1, count);
+  }
+
+  @Test
+  public void getPendingRequestCount_noRequests_returnsZero() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/users/me/friend-requests/count").with(user(currentUser)))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    long count =
+        objectMapper.readValue(result.getResponse().getContentAsString(), Long.class);
+
+    assertEquals(0, count);
+  }
+
   // Helper methods
 
   private void createFollow(User follower, User followed) {

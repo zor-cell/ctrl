@@ -12,7 +12,10 @@ import at.ac.tuwien.inso.ctrl.post.entity.Post;
 import at.ac.tuwien.inso.ctrl.post.mapper.PostMapper;
 import at.ac.tuwien.inso.ctrl.post.repository.PostRepository;
 import at.ac.tuwien.inso.ctrl.search.dto.PostSearchRequest;
+import at.ac.tuwien.inso.ctrl.search.dto.UserSearchRequest;
 import at.ac.tuwien.inso.ctrl.search.service.SearchService;
+import at.ac.tuwien.inso.ctrl.user.dto.UserSearchResponse;
+import at.ac.tuwien.inso.ctrl.user.service.BlockService;
 import at.ac.tuwien.inso.ctrl.user.mapper.RelationshipMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.FriendRequestRepository;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
@@ -34,6 +37,7 @@ public class SearchServiceUnitTest {
   @Mock private FollowService followService;
   @Mock private FriendRequestRepository friendRequestRepository;
   @Mock private RelationshipMapper relationshipMapper;
+  @Mock private BlockService blockService;
 
   @InjectMocks private SearchService searchService;
 
@@ -504,5 +508,39 @@ public class SearchServiceUnitTest {
     // Then
     // Offset should be page * postsPerPage = 2 * 15 = 30
     verify(postRepository).searchPostsBySimilarity(any(), any(), any(), anyInt(), anyInt());
+  }
+
+  @Test
+  void testSearchUsers_withNullQuery_returnsAllUsers() {
+    // Given
+    at.ac.tuwien.inso.ctrl.user.entity.User currentUser = buildUser();
+    at.ac.tuwien.inso.ctrl.user.entity.User otherUser = buildUser();
+    otherUser.setId(UUID.randomUUID());
+    otherUser.setUsername("otheruser");
+
+    UserSearchRequest request = new UserSearchRequest(null, false, false, false);
+
+    when(userRepository.findByUsernameContainingIgnoreCaseAndFilterSuspended(""))
+        .thenReturn(List.of(otherUser));
+    when(blockService.inBlockedRelationship(currentUser, otherUser)).thenReturn(false);
+    when(followService.getFollowedIds(currentUser)).thenReturn(Set.of());
+    when(followService.getFriendIds(currentUser)).thenReturn(Set.of());
+    when(friendRequestRepository.findReceiverIdsBySender(currentUser)).thenReturn(Set.of());
+    when(friendRequestRepository.findSenderIdsByReceiver(currentUser)).thenReturn(Set.of());
+    when(relationshipMapper.determineRelationshipStatuses(any(), any(), any(), any(), any()))
+        .thenReturn(List.of());
+    when(relationshipMapper.displayName(any(), any())).thenReturn("Test User");
+    when(relationshipMapper.toUserSearchResponse(any(), any(), any()))
+        .thenReturn(
+            new UserSearchResponse(
+                otherUser.getId(), "otheruser", "Test User", null, true, List.of()));
+
+    // When
+    List<UserSearchResponse> results = searchService.searchUsers(request, currentUser);
+
+    // Then
+    assertEquals(1, results.size());
+    assertEquals("otheruser", results.get(0).username());
+    verify(userRepository).findByUsernameContainingIgnoreCaseAndFilterSuspended("");
   }
 }
