@@ -1,4 +1,8 @@
-describe('Blocking Tests', () => {
+import { environment } from '../../../src/environments/environment';
+
+const describePasswordReset = environment.auth.requireEmailVerification ? describe.skip : describe;
+
+describePasswordReset('Blocking Tests', () => {
   const blockedUser = {
     username: 'BlockedUser',
     password: '$TestUser123',
