@@ -14,8 +14,10 @@
                         <div class="slider-label-group">
                             <label for="weightInteraction">Interaction</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Weight content based on your previous likes and comments."
-                               tooltipPosition="right"></i>
+                               pTooltip="Higher values show more content similar to what you've previously liked and commented on."
+                               tooltipPosition="right"
+                                tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightInteraction') }}</span>
                     </div>
@@ -28,8 +30,10 @@
                         <div class="slider-label-group">
                             <label for="weightRecency">Recency</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Prioritize newer posts in your feed."
-                               tooltipPosition="right"></i>
+                               pTooltip="Higher values prioritize the newest posts in your feed."
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightRecency') }}</span>
                     </div>
@@ -42,8 +46,10 @@
                         <div class="slider-label-group">
                             <label for="weightExploration">Exploration</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Discover posts from accounts you do not follow."
-                               tooltipPosition="right"></i>
+                               pTooltip="Low values focus on posts from your friends. High values show more content from accounts you do not follow."
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightExploration') }}</span>
                     </div>
@@ -56,8 +62,10 @@
                         <div class="slider-label-group">
                             <label for="weightSourceQuality">Source Quality</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Favor highly-rated sources over unverified ones."
-                               tooltipPosition="right"></i>
+                               pTooltip="Higher values favor highly-rated sources over unverified ones."
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightSourceQuality') }}</span>
                     </div>
@@ -71,8 +79,10 @@
                         <div class="slider-label-group">
                             <label for="weightTrending">Popularity</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Show highly upvoted content interacting with the community."
-                               tooltipPosition="right"></i>
+                               pTooltip="Higher values prioritize trending and highly upvoted content from the community."
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightPopularity') }}</span>
                     </div>
@@ -85,8 +95,10 @@
                         <div class="slider-label-group">
                             <label for="weightTopic">Topics</label>
                             <i class="pi pi-info-circle hint-icon"
-                               pTooltip="Align content heavily with your explicitly followed topics."
-                               tooltipPosition="right"></i>
+                               pTooltip="Higher values align your feed strictly with your selected topics."
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span class="level-badge">{{ getLabel('weightTopic') }}</span>
                     </div>

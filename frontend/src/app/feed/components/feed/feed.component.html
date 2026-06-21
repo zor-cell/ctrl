@@ -241,7 +241,7 @@
       @if (post.labelIds.length > 0 || post.wasReportedByUser) {
         <div class="post-labels">
           @for (label of post.labelIds; track label.labelId) {
-            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
+            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0" />
           }
           @if (post.wasReportedByUser) {
             <p-tag
@@ -250,6 +250,8 @@
               class="post-label"
               [pTooltip]="'You reported this post'"
               tooltipPosition="bottom"
+              tooltipEvent="focus"
+              tabindex="0"
             />
           }
         </div>

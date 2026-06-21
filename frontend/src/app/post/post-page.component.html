@@ -35,6 +35,8 @@
                 styleClass="post-label"
                 pTooltip="You have reported this account"
                 tooltipPosition="bottom"
+                tooltipEvent="focus"
+                tabindex="0"
               />
             }
           }
@@ -195,6 +197,8 @@
                     "
                     tooltipPosition="top"
                     [attr.aria-label]="post.isPublic ? 'Public post' : 'Private post'"
+                    tooltipEvent="focus"
+                    tabindex="0"
                   >
                     <i [class]="post.isPublic ? 'pi pi-globe' : 'pi pi-lock'"></i>
                   </span>

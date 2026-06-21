@@ -16,7 +16,9 @@
                             <label for="timeLimit">Time Limit</label>
                             <i class="pi pi-info-circle hint-icon"
                                pTooltip="The maximum time in minutes you will be able to spend daily on CTRL."
-                               tooltipPosition="right"></i>
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span>{{ configForm.get('timeLimitMinutes')?.value | timeFormat }}</span>
                     </div>
@@ -35,7 +37,9 @@
                             <label for="postLimit">Post Limit</label>
                             <i class="pi pi-info-circle hint-icon"
                                pTooltip="The maximum amount of posts you will be able to see daily on CTRL."
-                               tooltipPosition="right"></i>
+                               tooltipPosition="right"
+                               tooltipEvent="focus"
+                               tabindex="0"></i>
                         </div>
                         <span>{{ configForm.get('postLimit')?.value}} Post{{(configForm.get('postLimit')?.value === 1 ? '' : 's')}}</span>
                     </div>
@@ -52,7 +56,9 @@
                     <label for="allowSnooze">
                         Allow scrolling with snooze <i class="pi pi-info-circle hint-icon"
                                         pTooltip="When this checkbox is active, you can keep scrolling your feed with a snooze of 5 minutes."
-                                        tooltipPosition="right"></i>
+                                        tooltipPosition="right"
+                                        tooltipEvent="focus"
+                                        tabindex="0"></i>
                     </label>
                     <p-toggle-switch formControlName="allowSnooze" inputId="allowSnooze">></p-toggle-switch>
                 </div>

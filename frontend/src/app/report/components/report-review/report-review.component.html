@@ -142,6 +142,8 @@
               class="comment-username account-link account-link--disabled"
               pTooltip="The user has deleted their account"
               tooltipPosition="bottom"
+              tooltipEvent="focus"
+              tabindex="0"
             >
               {{ report.profileResponse.username }}
             </span>
@@ -342,6 +344,8 @@
               styleClass="post-label"
               [pTooltip]="label.description"
               tooltipPosition="bottom"
+              tooltipEvent="focus"
+              tabindex="0"
             />
           }
         </div>
