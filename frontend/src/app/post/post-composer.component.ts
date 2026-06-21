@@ -115,7 +115,7 @@ export class PostComposerComponent implements OnDestroy {
     isLongUploadPostVideo(this.selectedMediaFile()),
   );
   protected readonly continueButtonLabel = computed(() =>
-    'Weiter',
+    'Next',
   );
   protected readonly submitButtonLabel = computed(() =>
     this.waitingForMediaBeforeSubmit()

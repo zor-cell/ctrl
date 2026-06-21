@@ -359,6 +359,8 @@ $border: var(--border);
   -webkit-line-clamp: 4;
   line-height: 1.42;
   font-size: 0.95rem;
+  color: var(--p-text-color);
+  -webkit-text-fill-color: currentColor;
 }
 
 .post-card--text-only .post-card__caption {
@@ -389,6 +391,14 @@ $border: var(--border);
 :host ::ng-deep .post-card__caption p,
 :host ::ng-deep .post-card__caption li {
   overflow-wrap: anywhere;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+:host ::ng-deep .post-card__caption a[x-apple-data-detectors] {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 :host ::ng-deep .post-card__caption ul {
