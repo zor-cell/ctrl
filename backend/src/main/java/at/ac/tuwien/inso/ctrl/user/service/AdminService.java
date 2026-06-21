@@ -3,6 +3,7 @@ package at.ac.tuwien.inso.ctrl.user.service;
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
 import at.ac.tuwien.inso.ctrl.report.entity.ContentTypeEnum;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -21,6 +22,7 @@ public class AdminService {
   private final UserRepository userRepository;
   private final GmailEmailService gmailEmailService;
   private final TemplateEngine templateEngine;
+  private final ReportService reportService;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -39,6 +41,7 @@ public class AdminService {
     user.setSuspended(true);
     userRepository.save(user);
     sendEmail(user.getEmail());
+    reportService.dealWithOtherReportsOfUser(user);
   }
 
   private void sendEmail(String email) {

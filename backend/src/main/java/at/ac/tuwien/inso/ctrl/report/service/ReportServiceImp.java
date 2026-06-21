@@ -1,6 +1,7 @@
 package at.ac.tuwien.inso.ctrl.report.service;
 
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
+import at.ac.tuwien.inso.ctrl.chat.ChatService;
 import at.ac.tuwien.inso.ctrl.comments.dto.response.CommentResponse;
 import at.ac.tuwien.inso.ctrl.comments.mapper.CommentMapper;
 import at.ac.tuwien.inso.ctrl.comments.repository.CommentRepository;
@@ -28,7 +29,6 @@ import at.ac.tuwien.inso.ctrl.source.repository.SourceRepository;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.mapper.UserMapper;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
-import at.ac.tuwien.inso.ctrl.user.service.UserService;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class ReportServiceImp implements ReportService {
   private final UserMapper userMapper;
   private final ReportReasonLabelResolver reportReasonLabelResolver;
   private final ReportMapper reportMapper;
-  private final UserService userService;
+  private final ChatService chatService;
 
   @Value("${application.auth.require-email-verification:true}")
   private boolean requireEmailVerification;
@@ -185,7 +185,7 @@ public class ReportServiceImp implements ReportService {
     reportRepository.save(report);
 
     if (request.action() == ReportAction.DELETE_ACCOUNT) {
-      takeDownAccount(report);
+      suspendAccount(report);
     } else if (request.action() == ReportAction.DELETE_ITEM) {
       deleteReportedItem(report);
     }
@@ -324,7 +324,7 @@ public class ReportServiceImp implements ReportService {
         .toList();
   }
 
-  private void dealWithOtherReportsOfItem(ContentTypeEnum type, String id) {
+  public void dealWithOtherReportsOfItem(ContentTypeEnum type, String id) {
 
     List<Report> reports = reportRepository.findAllByContentIdAndContentType(id, type);
     for (Report report : reports) {
@@ -372,8 +372,12 @@ public class ReportServiceImp implements ReportService {
 
       if (user != null) {
         sendEmailToReported(report, ReportAction.DELETE_ITEM);
-        userService.deleteUser(user);
+
+        user.setSuspended(true);
+        userRepository.save(user);
         dealWithOtherReportsOfUser(user);
+        chatService.createAccountDeletedSystemMessages(user);
+        return;
 
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
@@ -383,12 +387,15 @@ public class ReportServiceImp implements ReportService {
     dealWithOtherReportsOfItem(report.getContentType(), report.getContentId());
   }
 
-  private void takeDownAccount(Report report) {
+  private void suspendAccount(Report report) {
     User user = report.getUsernameReported();
     if (user != null) {
       sendEmailToReported(report, ReportAction.DELETE_ACCOUNT);
-      userService.deleteUser(user);
+      user.setSuspended(true);
+      userRepository.save(user);
       dealWithOtherReportsOfUser(user);
+
+      chatService.createAccountDeletedSystemMessages(user);
     } else {
       ContentTypeEnum type = report.getContentType();
       if (type == ContentTypeEnum.POST) {
@@ -431,15 +438,17 @@ public class ReportServiceImp implements ReportService {
                     () ->
                         new EntityNotFoundException("Comment not found: " + report.getContentId()));
         User commentUser = comment.getUser();
-        userService.deleteUser(commentUser);
+        commentUser.setSuspended(true);
+        userRepository.save(commentUser);
         dealWithOtherReportsOfUser(commentUser);
+        chatService.createAccountDeletedSystemMessages(commentUser);
       } else {
         throw new IllegalArgumentException("User cannot be null for reported User");
       }
     }
   }
 
-  private void dealWithOtherReportsOfUser(User user) {
+  public void dealWithOtherReportsOfUser(User user) {
     List<Report> reports =
         reportRepository.findAllByUsernameReportedAndStatus(user, ReportStatus.CREATED);
     for (Report report : reports) {

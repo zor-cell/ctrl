@@ -38,6 +38,30 @@ public class CommentServiceImpl implements CommentService {
   private final ReportRepository reportRepository;
   private final ReportService reportService;
 
+  private boolean isVisibleCommentForUser(User viewer, Comment comment) {
+    if (comment.getUser() == null || Boolean.TRUE.equals(comment.getIsRemoved())) {
+      return false;
+    }
+
+    if (comment.getUser().isSuspended()) {
+      return false;
+    }
+
+    if (blockService.inBlockedRelationship(viewer, comment.getUser())) {
+      return false;
+    }
+
+    Comment parent = comment.getParentComment();
+    if (parent == null) {
+      return true;
+    }
+
+    return parent.getUser() != null
+        && !Boolean.TRUE.equals(parent.getIsRemoved())
+        && !blockService.inBlockedRelationship(viewer, parent.getUser())
+        && !parent.getUser().isSuspended();
+  }
+
   @Override
   @Transactional(readOnly = true)
   public List<CommentResponse> getCommentsForPost(String postId, User currentUser) {
@@ -47,16 +71,7 @@ public class CommentServiceImpl implements CommentService {
 
     List<Comment> all =
         commentRepository.findByPost_PostId(postId).stream()
-            .filter(
-                c ->
-                    c.getUser() != null
-                        && !blockService.inBlockedRelationship(currentUser, c.getUser()))
-            .filter(
-                c ->
-                    c.getParentComment() == null
-                        || (c.getParentComment().getUser() != null
-                            && !blockService.inBlockedRelationship(
-                                currentUser, c.getParentComment().getUser())))
+            .filter(c -> isVisibleCommentForUser(currentUser, c))
             .toList();
 
     Map<String, Boolean> commentsReportedByUser =

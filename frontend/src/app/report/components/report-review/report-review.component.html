@@ -597,13 +597,15 @@
       </div>
 
       <div class="action-buttons-row">
-        <p-button
-          [label]="'Take Down ' + formatContentType(selectedReport()!.contentType)"
-          severity="warn"
-          size="small"
-          (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM)"
-          icon="pi pi-shield"
-        />
+        @if (selectedReport()!.contentType !== 'ACCOUNT') {
+          <p-button
+            [label]="'Take Down ' + formatContentType(selectedReport()!.contentType)"
+            severity="warn"
+            size="small"
+            (onClick)="markActionTaken(selectedReport()!.reportId, ReportAction.DELETE_ITEM)"
+            icon="pi pi-shield"
+          />
+        }
         <p-button
           label="Suspend Account"
           severity="warn"

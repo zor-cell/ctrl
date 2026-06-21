@@ -30,4 +30,8 @@ public interface ReportService {
   List<ReportedSourceResponse> getReportedSources(ReportStatus status, int page, int postsPerPage);
 
   boolean wasReportedByUser(User user, ContentTypeEnum type, String contentId);
+
+  void dealWithOtherReportsOfUser(User user);
+
+  void dealWithOtherReportsOfItem(ContentTypeEnum type, String contentId);
 }

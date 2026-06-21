@@ -19,6 +19,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       SELECT u FROM User u
       WHERE u.username = :username
         AND (u.deleted = false OR u.deleted IS NULL)
+        AND (u.isSuspended = false OR u.isSuspended IS NULL)
       """)
   Optional<User> findByUsernameAndDeletedFalse(@Param("username") String username);
 
@@ -27,6 +28,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
       SELECT u FROM User u
       WHERE u.id = :id
         AND (u.deleted = false OR u.deleted IS NULL)
+        AND (u.isSuspended = false OR u.isSuspended IS NULL)
       """)
   Optional<User> findByIdAndDeletedFalse(@Param("id") UUID id);
 
