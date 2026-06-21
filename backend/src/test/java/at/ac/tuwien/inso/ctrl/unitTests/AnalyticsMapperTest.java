@@ -114,7 +114,8 @@ public class AnalyticsMapperTest {
       assertThat(apr27.sessions()).hasSize(1);
       assertThat(apr27.sessions().get(0).startTime())
           .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
-      assertThat(apr27.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+      assertThat(apr27.sessions().get(0).endTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 59));
 
       LastWeekDayDetailResponse apr28 =
           result.stream()
@@ -139,7 +140,8 @@ public class AnalyticsMapperTest {
               .orElseThrow();
       assertThat(apr27.sessions().get(0).startTime())
           .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
-      assertThat(apr27.sessions().get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+      assertThat(apr27.sessions().get(0).endTime())
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 59));
 
       LastWeekDayDetailResponse apr28 =
           result.stream()
@@ -175,7 +177,7 @@ public class AnalyticsMapperTest {
       assertThat(result.get(LocalDate.of(2026, 4, 27)).get(0).startTime())
           .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 30));
       assertThat(result.get(LocalDate.of(2026, 4, 27)).get(0).endTime())
-          .isEqualTo(LocalDateTime.of(2026, 4, 28, 0, 0));
+          .isEqualTo(LocalDateTime.of(2026, 4, 27, 23, 59));
 
       assertThat(result.get(LocalDate.of(2026, 4, 28))).hasSize(2);
       assertThat(result.get(LocalDate.of(2026, 4, 28)).get(0).startTime())
@@ -222,7 +224,7 @@ public class AnalyticsMapperTest {
                   new SessionIntervalDto(
                       LocalDateTime.of(2026, 4, 30, 23, 30), LocalDateTime.of(2026, 5, 1, 0, 30)))
               .toList();
-      assertThat(result.get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
+      assertThat(result.get(0).endTime()).isEqualTo(LocalDateTime.of(2026, 4, 30, 23, 59));
     }
 
     @Test

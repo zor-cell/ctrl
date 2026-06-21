@@ -136,33 +136,14 @@ $text-muted: #888;
 
         .relationship-badge {
           font-size: 0.75rem;
+          border: 1px solid var(--p-text-color);
           padding: 0.125rem 0.375rem;
           border-radius: 0.25rem;
           margin-top: 0.25rem;
           width: fit-content;
-
-          &.friend {
-            background: var(--p-primary-color);
-            color: white;
-          }
-
-          &.followed {
-            background: var(--p-secondary-color);
-            color: white;
-          }
-
-          &.pending-sent {
-            background: var(--p-warning-color);
-            color: white;
-          }
-
-          &.pending-incoming {
-            background: var(--p-info-color);
-            color: white;
-          }
+          color: var(--p-text-color);
         }
       }
-
       .user-actions {
         display: flex;
         gap: 0.5rem;
@@ -171,9 +152,8 @@ $text-muted: #888;
   }
 }
 
-.app-dark .user-item {
+:host-context(.app-dark) .users-search .results-section .user-item {
   background: var(--p-surface-800);
-
   &:hover {
     background: var(--p-surface-700);
   }

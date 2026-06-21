@@ -70,16 +70,19 @@ export class AnalyticsComponent implements OnInit {
     return data ? this.analyticsChartService.buildChartOptions(key, data, this.handleBarClick, this.focusedDay(), this.sessionConfig().timeLimitMinutes) : null;
   });
 
-  daysSinceAccountCreation = computed(() => {
-    const createdAt = new Date((this.userService.user() as UserDetails).createdAt);
-    const now = new Date();
+  createdAt = computed(() => {
+    return new Date((this.userService.user() as UserDetails).createdAt);
+  })
+
+  weeksSinceAccountCreation = computed(() => {
+    const createdMon = this.mondayOf(this.createdAt());
+    const thisMonday = this.mondayOf(new Date());
     const msPerDay = 1000 * 60 * 60 * 24;
 
-    const nowUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-    const createdUtc = Date.UTC(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate());
-
-    return Math.floor((nowUtc - createdUtc) / msPerDay);
+    const daysBetween = Math.round((thisMonday.getTime() - createdMon.getTime()) / msPerDay);
+    return daysBetween / 7;
   });
+
   protected focusedWeek = signal<number>(0);
   protected focusedDay = signal<number>(0);
 
@@ -93,7 +96,7 @@ export class AnalyticsComponent implements OnInit {
         } else {
           const start = (this.cache()['overview-days']?.[this.focusedWeek()].at(0) as WeekDayResponse)?.date;
           const end = (this.cache()['overview-days']?.[this.focusedWeek()].at(6) as WeekDayResponse)?.date;
-          return start && end ? `${start} - ${end}` : '';
+          return start && end ? `${this.dateToEuDate(start)} - ${this.dateToEuDate(end)}` : '';
         }
       case 'overview-average': {
         const days = ((this.cache()['overview-average']?.[0] as AverageWeekDayResponse[])?.reduce((sum, item) => sum + item.daysInPeriod, 0) ?? 0);
@@ -134,11 +137,11 @@ export class AnalyticsComponent implements OnInit {
   previousButtonVisible = computed(() => {
     switch (this.activeKey()) {
       case 'overview-days':
-        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() + 1 / 7) - 1;
+        return this.focusedWeek() < this.weeksSinceAccountCreation();
       case 'overview-average':
         return false;
       case 'detailed-days':
-        return this.focusedWeek() < Math.ceil(this.daysSinceAccountCreation() + 1 / 7) - 1 || this.focusedDay() > 0;
+        return this.focusedWeek() < this.weeksSinceAccountCreation() || this.focusedDay() > 0;
       case 'detailed-average':
         return this.focusedDay() > 0;
     }
@@ -240,5 +243,21 @@ export class AnalyticsComponent implements OnInit {
     }
 
     this.focusedDay.update(d => Math.max(d - 1, 0));
+  }
+
+  private dateToEuDate(date: string): string {
+    const year = date.slice(0, 4);
+    const month = date.slice(5, 7);
+    const day = date.slice(8);
+    return day + '.' + month + '.' + year;
+  }
+
+  private mondayOf(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const diffToMonday = (day === 0 ? -6 : 1) - day; // shift Sunday back 6 days
+    d.setDate(d.getDate() + diffToMonday);
+    return d;
   }
 }
