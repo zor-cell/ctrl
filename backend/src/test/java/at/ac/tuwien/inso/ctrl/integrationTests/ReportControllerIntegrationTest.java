@@ -421,8 +421,6 @@ public class ReportControllerIntegrationTest {
     User updatedUser = userRepository.findById(contentUser.getId()).orElseThrow();
     Report updatedReport = reportRepository.findById(report.getReportId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
-    assertTrue(updatedUser.isDeleted());
-    assertEquals("Deleted user", updatedUser.getName());
     assertEquals(ReportStatus.VALIDATED, updatedReport.getStatus());
     assertNotNull(updatedReport.getCreatedAt());
   }

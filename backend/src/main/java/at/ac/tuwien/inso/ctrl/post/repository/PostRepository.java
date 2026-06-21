@@ -190,6 +190,23 @@ public interface PostRepository extends JpaRepository<Post, String> {
                           AND r.content_id = p.post_id
                           AND r.status <> 'DECLINED'
                       )
+                      AND (p.user_id IS NULL OR EXISTS (
+                        SELECT 1
+                        FROM users u
+                        WHERE u.id = p.user_id
+                          AND u.is_suspended = false))
+
+                      AND (
+                        (p.user_id IS NOT NULL AND p.external_author_id IS NULL)
+                        OR (
+                          p.external_author_id IS NOT NULL AND EXISTS (
+                            SELECT 1
+                            FROM external_authors u
+                            WHERE u.external_author_id = p.external_author_id
+                              AND u.is_suspended = false
+                          )
+                        )
+                      )
                       AND NOT EXISTS (SELECT 1 FROM seen_posts sp WHERE sp.user_id = :userId AND sp.post_id = p.post_id)
                       AND (p.user_id IS NULL OR p.user_id != :userId)
                       AND (p.user_id IS NULL OR NOT EXISTS (
@@ -238,6 +255,22 @@ public interface PostRepository extends JpaRepository<Post, String> {
                         AND r.content_type = 'POST'
                         AND r.content_id = p.post_id
                         AND r.status <> 'DECLINED'
+                    )
+                    AND (p.user_id IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM users u
+                      WHERE u.id = p.user_id
+                        AND u.is_suspended = false))
+                    AND (
+                      (p.user_id IS NOT NULL AND p.external_author_id IS NULL)
+                      OR (
+                        p.external_author_id IS NOT NULL AND EXISTS (
+                          SELECT 1
+                          FROM external_authors u
+                          WHERE u.external_author_id = p.external_author_id
+                            AND u.is_suspended = false
+                        )
+                      )
                     )
                     AND EXISTS (
                        SELECT 1 FROM friend_relation f
@@ -297,6 +330,22 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                AND (p.user_id IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM users u
+                      WHERE u.id = p.user_id
+                        AND u.is_suspended = false))
+                AND (
+                  (p.user_id IS NOT NULL AND p.external_author_id IS NULL)
+                  OR (
+                    p.external_author_id IS NOT NULL AND EXISTS (
+                      SELECT 1
+                      FROM external_authors u
+                      WHERE u.external_author_id = p.external_author_id
+                        AND u.is_suspended = false
+                    )
+                  )
+                )
                 AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br
@@ -328,6 +377,22 @@ public interface PostRepository extends JpaRepository<Post, String> {
           WHERE p.is_removed = false
             AND p.is_public = true
             AND (p.user_id IS NULL OR p.user_id != :userId)
+            AND (p.user_id IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM users u
+                      WHERE u.id = p.user_id
+                        AND u.is_suspended = false))
+            AND (
+                  (p.user_id IS NOT NULL AND p.external_author_id IS NULL)
+                  OR (
+                    p.external_author_id IS NOT NULL AND EXISTS (
+                      SELECT 1
+                      FROM external_authors u
+                      WHERE u.external_author_id = p.external_author_id
+                        AND u.is_suspended = false
+                    )
+                  )
+                )
             AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br
@@ -364,6 +429,22 @@ public interface PostRepository extends JpaRepository<Post, String> {
               WHERE p.is_public = true
                 AND p.is_removed = false
                 AND (p.user_id IS NULL OR p.user_id != :userId)
+                                      AND (p.user_id IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM users u
+                      WHERE u.id = p.user_id
+                        AND u.is_suspended = false))
+                AND (
+                  (p.user_id IS NOT NULL AND p.external_author_id IS NULL)
+                  OR (
+                    p.external_author_id IS NOT NULL AND EXISTS (
+                      SELECT 1
+                      FROM external_authors u
+                      WHERE u.external_author_id = p.external_author_id
+                        AND u.is_suspended = false
+                    )
+                  )
+                )
                 AND (p.user_id IS NULL OR NOT EXISTS (
                       SELECT 1
                             FROM blocked_relation br

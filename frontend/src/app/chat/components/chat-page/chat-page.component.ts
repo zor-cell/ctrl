@@ -92,7 +92,7 @@ const DELETED_USER_LABEL = 'Deleted user';
 
 interface SharedPostPayload {
   postId: string;
-  username: string;
+  username: string | null;
   profileUserId?: string | null;
   profilePicture?: string | null;
   caption: string;
