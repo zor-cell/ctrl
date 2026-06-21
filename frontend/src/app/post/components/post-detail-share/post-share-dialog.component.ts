@@ -73,7 +73,7 @@ export class PostShareDialogComponent {
   // ── Public API (called by parent via open()) ──────────────────────────────
   open(): void {
     this.shareFriendQuery.set('');
-    this.loadShareChats();
+    this.loadShareTargets();
   }
 
   // ── Dialog visibility ─────────────────────────────────────────────────────
@@ -145,9 +145,9 @@ export class PostShareDialogComponent {
       this.friends().map(f => [f.username.toLowerCase(), f]),
     );
 
-    const targets = this.shareChats()
+    const targets = this.uniqueShareTargets(this.shareChats()
       .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
-      .filter((t): t is ShareTarget => t !== null);
+      .filter((t): t is ShareTarget => t !== null));
 
     const usernamesWithChats = new Set(
       targets
@@ -163,6 +163,16 @@ export class PostShareDialogComponent {
       if (a.interactionCount !== b.interactionCount) return b.interactionCount - a.interactionCount;
       if (a.lastActivityTime !== b.lastActivityTime) return b.lastActivityTime - a.lastActivityTime;
       return a.title.localeCompare(b.title);
+    });
+  }
+
+  private uniqueShareTargets(targets: ShareTarget[]): ShareTarget[] {
+    const seen = new Set<string>();
+
+    return targets.filter(target => {
+      if (seen.has(target.id)) return false;
+      seen.add(target.id);
+      return true;
     });
   }
 
@@ -249,6 +259,11 @@ export class PostShareDialogComponent {
       mediaUrl,
       mediaKind: mediaUrl ? (isVideo(mediaUrl) ? 'video' : 'image') : null,
     };
+  }
+
+  private loadShareTargets(): void {
+    this.rel.loadFriends().subscribe();
+    this.loadShareChats();
   }
 
   private loadShareChats(): void {
