@@ -101,7 +101,7 @@ $border: var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--p-surface-100, #f1f5f9);
+  background: var(--p-primary-inverseColor);
 }
 
 .preview-card__media {

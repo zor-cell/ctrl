@@ -144,6 +144,8 @@ export class PostShareDialogComponent {
     const friendsByUsername = new Map(
       this.friends().map(f => [f.username.toLowerCase(), f]),
     );
+    const currentUsername = this.userService.user()?.username?.toLowerCase();
+    const currentUserId = this.userService.user()?.id?.toLowerCase();
 
     const targets = this.uniqueShareTargets(this.shareChats()
       .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
@@ -156,7 +158,11 @@ export class PostShareDialogComponent {
     );
 
     const friendsWithoutChats = this.friends()
-      .filter(f => !usernamesWithChats.has(f.username.toLowerCase()))
+      .filter(f => {
+        const username = f.username.toLowerCase();
+        const id = f.id.toLowerCase();
+        return username !== currentUsername && id !== currentUserId && !usernamesWithChats.has(username);
+      })
       .map(f => this.shareTargetFromFriend(f));
 
     return [...targets, ...friendsWithoutChats].sort((a, b) => {
@@ -182,7 +188,7 @@ export class PostShareDialogComponent {
   ): ShareTarget | null {
     if (chat.groupChat) {
       return {
-        id: `chat:${chat.chatId}`,
+        id: `group:${this.groupShareKey(chat)}`,
         kind: 'group',
         chatId: chat.chatId,
         username: null,
@@ -198,8 +204,12 @@ export class PostShareDialogComponent {
     if (!other) return null;
 
     const friend = friendsByUsername.get(other.username.toLowerCase());
+    if (!friend || this.isCurrentUser(other)) {
+      return null;
+    }
+
     return {
-      id: `chat:${chat.chatId}`,
+      id: `direct:${friend.username.toLowerCase()}`,
       kind: 'direct',
       chatId: chat.chatId,
       username: other.username,
@@ -228,11 +238,30 @@ export class PostShareDialogComponent {
   private shareDirectPartner(chat: Chat): ChatParticipant | null {
     const currentUserId = this.userService.user()?.id?.toLowerCase();
     const byChatName = chat.participants.find(p => p.username === chat.name);
-    if (byChatName) return byChatName;
+    if (byChatName && !this.isCurrentUser(byChatName)) return byChatName;
     if (currentUserId) {
-      return chat.participants.find(p => p.id.toLowerCase() !== currentUserId) ?? null;
+      return chat.participants.find(p => !this.isCurrentUser(p)) ?? null;
     }
     return chat.participants[0] ?? null;
+  }
+
+  private groupShareKey(chat: Chat): string {
+    const participantIds = chat.participants
+      .map(participant => participant.id.toLowerCase())
+      .sort()
+      .join(':');
+
+    return `${chat.name.trim().toLowerCase()}:${participantIds}`;
+  }
+
+  private isCurrentUser(participant: ChatParticipant): boolean {
+    const currentUser = this.userService.user();
+    if (!currentUser) {
+      return false;
+    }
+
+    return participant.id.toLowerCase() === currentUser.id.toLowerCase() ||
+      participant.username.toLowerCase() === currentUser.username.toLowerCase();
   }
 
   private shareChatActivityTime(chat: Chat): number {

@@ -4,11 +4,11 @@ import lombok.Getter;
 
 @Getter
 public enum PostLabelType {
-  POPULAR("🔥", "Popular", "Top 5% upvotes of all posts"),
+  POPULAR("🔥", "Popular", "More than 5 likes"),
   RECENT("🕒", "Recent", "Created less than 6 hours ago"),
   OLD_POST("🗂️", "Old Post", "Created more than 6 months ago"),
   AI_GENERATED("🤖", "AI Generated", "Creator marked this as AI-generated"),
-  HIGHLY_DISCUSSED("💬", "Highly Discussed", "More than 100 comments"),
+  HIGHLY_DISCUSSED("💬", "Highly Discussed", "More than 5 comments"),
   TRUSTED_SOURCE("✅", "Trusted Source", "The community considers this source reliable"),
   DISPUTED_SOURCE(
       "⚠️", "Disputed Source", "The community has raised reliability concerns about this source"),

@@ -27,7 +27,6 @@
         <h1>
           {{ username() }}
           @if (!canEditProfile()) {
-            <app-follow-badge [username]="username()" />
             @if (publicProfile()?.wasReportedByUser) {
               <p-tag
                 value="🚩"
@@ -124,6 +123,32 @@
                 (onClick)="sendProfileFriendRequest()"
               />
             }
+
+            @if (publicProfile()?.isVerified && publicProfileFriendStatus() !== 'FRIEND') {
+              @if (publicProfileFollowStatus() === 'FOLLOWED') {
+                <p-button
+                  label="Following"
+                  icon="pi pi-check"
+                  size="small"
+                  severity="secondary"
+                  [rounded]="true"
+                  [loading]="followActionBusy()"
+                  (onClick)="unfollowProfile()"
+                />
+              } @else {
+                <p-button
+                  label="Follow"
+                  icon="pi pi-plus"
+                  size="small"
+                  severity="secondary"
+                  [rounded]="true"
+                  [outlined]="true"
+                  [loading]="followActionBusy()"
+                  (onClick)="followProfile()"
+                />
+              }
+            }
+
           }
           <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
           <p-button

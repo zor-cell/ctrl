@@ -57,11 +57,11 @@
 
   <!-- Media -->
   @if (p.mediaUrl) {
-    <div class="preview-image-wrapper">
+    <div class="preview-image-wrapper" [class]="'preview-image-wrapper' + imageAspectClass()">
       @if (isVideo(p.mediaUrl)) {
         <video [src]="p.mediaUrl" class="preview-image" controls playsinline preload="metadata"></video>
       } @else {
-        <img [src]="p.mediaUrl" [alt]="p.caption" class="preview-image" />
+        <img [src]="p.mediaUrl" alt="Could not load media." class="preview-image" (load)="onImageLoad($event)" />
       }
     </div>
   }
