@@ -125,11 +125,9 @@ export class PostsSearchComponent implements OnInit, OnDestroy {
     // Read URL parameters
     this.route.queryParams.subscribe((params) => {
       const query = params['q'];
-      console.log(query);
       this.searchQuery.set(query ? query : '');
 
       const topicsParam = params['topics'];
-      console.log(topicsParam);
       this.selectedTopics.set(topicsParam ? topicsParam.split(',') : [])
     })
 
