@@ -16,8 +16,8 @@ export default defineConfig({
       apiUrl: 'http://localhost:8080',
       TEST_USER: 'testuser@example.com',
       TEST_PASSWORD: 'testpassword123',
-      TEST_ADMIN: 'admin@example.com',
-      TEST_ADMIN_PASSWORD: 'adminpassword123',
+      TEST_ADMIN: 'admin',
+      TEST_ADMIN_PASSWORD: 'ctrl-test-admin-pw',
     },
   },
 });
