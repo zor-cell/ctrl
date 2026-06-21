@@ -1,11 +1,11 @@
 :host {
   position: relative;
-  z-index: 5000;
+  z-index: 400;
   display: block;
 }
 
 ::ng-deep .p-menubar-submenu {
-  z-index: 6000 !important;
+  z-index: 500 !important;
 }
 
 .nav-bar {
