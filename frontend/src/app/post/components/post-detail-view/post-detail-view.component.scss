@@ -124,18 +124,37 @@ $radius-sm: 10px;
 // ─── Media ────────────────────────────────────────────
 .preview-image-wrapper {
   width: 100%;
-  display: grid;
-  place-items: center;
-  max-height: min(34rem, 58vh);
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background: var(--p-surface-100, #f4f4f4);
+  overflow: hidden;
+
+  max-height: min(32rem, 60vh);
+
+  &--panorama {
+    max-height: min(18rem, 32vh);
+  }
+
+  &--portrait {
+    max-height: min(38rem, 70vh);
+  }
 }
 
 .preview-image {
-  width: 100%;
-  max-height: min(34rem, 58vh);
+  max-width: 100%;
+  max-height: inherit;
+  width: auto;
   height: auto;
   display: block;
+  object-fit: contain;
+
+  image-rendering: auto;
+}
+
+video.preview-image {
+  width: 100%;
+  max-height: inherit;
   object-fit: contain;
 }
 
@@ -437,6 +456,7 @@ $radius-sm: 10px;
   color: var(--p-text-color);
 }
 
+// ─── Mobile ───────────────────────────────────────────
 @media (max-width: 760px) {
   :host {
     max-height: calc(100dvh - 1.5rem);
@@ -482,13 +502,18 @@ $radius-sm: 10px;
 
   .preview-image-wrapper {
     max-height: min(36dvh, 18rem);
-    overflow: hidden;
+
+    &--panorama {
+      max-height: min(22dvh, 12rem);
+    }
+
+    &--portrait {
+      max-height: min(50dvh, 24rem);
+    }
   }
 
   .preview-image {
-    width: 100%;
-    max-height: min(36dvh, 18rem);
-    object-fit: contain;
+    max-height: inherit;
   }
 
   .post-caption {

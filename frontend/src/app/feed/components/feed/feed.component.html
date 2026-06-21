@@ -282,7 +282,7 @@
       } @else {
         <img
           [src]="post.videoImageRef[0]"
-          [alt]="(post.caption | slice:0:50) + (post.caption?.length > 50 ? '...' : '')"
+          alt="Could not load media."
           class="post-image"
           loading="lazy"
         />
@@ -291,7 +291,7 @@
   }
 
   <!-- Caption -->
-  <p class="post-caption">{{ post.caption }}</p>
+  <p class="post-caption">{{ (post.caption | slice:0:200) + (post.caption?.length > 200 ? '...' : '') }}</p>
 
   <!-- Source -->
   <app-post-detail-source

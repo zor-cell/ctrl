@@ -110,6 +110,23 @@ export class PostDetailViewComponent implements OnChanges {
   // ─── Share ────────────────────────────────────────────────────────────────
   protected readonly shareDialogVisible = signal(false);
 
+  // ─── Media aspect-ratio class ─────────────────────────────────────────────
+  // Detects landscape (very wide) and portrait (very tall) images and applies
+  // the appropriate CSS modifier class to the wrapper.
+  protected readonly imageAspectClass = signal<'--panorama' | '--portrait' | ''>('');
+
+  protected onImageLoad(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    if (ratio > 2.5) {
+      this.imageAspectClass.set('--panorama');
+    } else if (ratio < 0.55) {
+      this.imageAspectClass.set('--portrait');
+    } else {
+      this.imageAspectClass.set('');
+    }
+  }
+
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   ngOnChanges(changes: SimpleChanges): void {

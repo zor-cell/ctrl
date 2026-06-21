@@ -54,7 +54,7 @@ $radius-sm:    10px;
   flex-direction: column;
   gap: 16px;
 
-  height: calc(100vh - 120px);
+  height: calc(100svh - 120px);
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
