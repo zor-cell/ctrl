@@ -2,7 +2,7 @@
   <p-dialog
     [header]="selectedChat.name + ' – Members'"
     [visible]="visible"
-    (visibleChange)="visibleChange.emit($event)"
+    (visibleChange)="onDialogVisibleChange($event)"
     [modal]="true"
     [draggable]="false"
     [resizable]="false"
@@ -16,7 +16,7 @@
               type="button"
               class="member-profile-button"
               [class.member-profile-button--disabled]="!canOpenParticipantProfile(participant)"
-              (click)="openParticipantProfile.emit(participant)"
+              (click)="onParticipantProfileClick(participant, $event)"
               [pTooltip]="isBlockedParticipant(participant) ? '' : participantProfileTooltip(participant)"
               tooltipPosition="top"
               [attr.aria-label]="'Open profile for ' + (participant.name || participant.username)">
@@ -44,12 +44,16 @@
               </span>
             </button>
             @if (isBlockedParticipant(participant)) {
-              <div class="member-profile-popover" role="tooltip">
+              <div
+                class="member-profile-popover"
+                [class.member-profile-popover--open]="isBlockedPopoverOpen(participant)"
+                role="dialog"
+                aria-live="polite">
                 <p>You blocked this user. To see their profile, please unblock them first.</p>
                 <a
                   routerLink="/followed"
                   [queryParams]="{ tab: 'blocked' }"
-                  (click)="$event.stopPropagation()">
+                  (click)="closeBlockedPopover(); $event.stopPropagation()">
                   Manage blocked users
                 </a>
               </div>

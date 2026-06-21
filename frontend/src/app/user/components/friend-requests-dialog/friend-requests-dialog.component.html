@@ -11,23 +11,29 @@
       <div class="requests-list">
         @for (request of incomingRequests(); track request.username) {
           <div class="request-item incoming">
-            <div class="profile-avatar">
-              @if (hasProfilePicture(request)) {
-                <img
-                  [src]="profilePictureUrl(request)"
-                  alt=""
-                  class="profile-avatar__image"
-                  (error)="markProfilePictureFailed(request)"
-                />
-              } @else {
-                <span class="profile-avatar__initial">{{ getInitial(request) }}</span>
-              }
-            </div>
+            <button
+              type="button"
+              class="request-profile"
+              (click)="openProfile(request)"
+              [attr.aria-label]="'Open profile for ' + request.username">
+              <span class="profile-avatar">
+                @if (hasProfilePicture(request)) {
+                  <img
+                    [src]="profilePictureUrl(request)"
+                    alt=""
+                    class="profile-avatar__image"
+                    (error)="markProfilePictureFailed(request)"
+                  />
+                } @else {
+                  <span class="profile-avatar__initial">{{ getInitial(request) }}</span>
+                }
+              </span>
 
-            <div class="request-info">
-              <span class="username">&#64;{{ request.username }}</span>
-              <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
-            </div>
+              <span class="request-info">
+                <span class="username">&#64;{{ request.username }}</span>
+                <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
+              </span>
+            </button>
 
             <div class="request-actions">
               <p-button
@@ -59,23 +65,29 @@
       <div class="requests-list">
         @for (request of sentRequests(); track request.username) {
           <div class="request-item sent">
-            <div class="profile-avatar">
-              @if (hasProfilePicture(request)) {
-                <img
-                  [src]="profilePictureUrl(request)"
-                  alt=""
-                  class="profile-avatar__image"
-                  (error)="markProfilePictureFailed(request)"
-                />
-              } @else {
-                <span class="profile-avatar__initial">{{ getInitial(request) }}</span>
-              }
-            </div>
+            <button
+              type="button"
+              class="request-profile"
+              (click)="openProfile(request)"
+              [attr.aria-label]="'Open profile for ' + request.username">
+              <span class="profile-avatar">
+                @if (hasProfilePicture(request)) {
+                  <img
+                    [src]="profilePictureUrl(request)"
+                    alt=""
+                    class="profile-avatar__image"
+                    (error)="markProfilePictureFailed(request)"
+                  />
+                } @else {
+                  <span class="profile-avatar__initial">{{ getInitial(request) }}</span>
+                }
+              </span>
 
-            <div class="request-info">
-              <span class="username">&#64;{{ request.username }}</span>
-              <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
-            </div>
+              <span class="request-info">
+                <span class="username">&#64;{{ request.username }}</span>
+                <span class="date">{{ request.createdAt | date:'mediumDate' }}</span>
+              </span>
+            </button>
 
             <div class="request-actions">
               <p-button

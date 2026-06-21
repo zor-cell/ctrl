@@ -45,6 +45,37 @@ export class ChatMembersDialogComponent {
   @Output() toggleAddMemberFriend = new EventEmitter<string>();
   @Output() addMembers = new EventEmitter<void>();
 
+  private openBlockedPopoverId: string | null = null;
+
+  protected onDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.closeBlockedPopover();
+    }
+
+    this.visibleChange.emit(visible);
+  }
+
+  protected onParticipantProfileClick(participant: ChatParticipant, event: MouseEvent): void {
+    if (!this.isBlockedParticipant(participant)) {
+      this.closeBlockedPopover();
+      this.openParticipantProfile.emit(participant);
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.openBlockedPopoverId =
+      this.openBlockedPopoverId === participant.id ? null : participant.id;
+  }
+
+  protected isBlockedPopoverOpen(participant: ChatParticipant): boolean {
+    return this.openBlockedPopoverId === participant.id;
+  }
+
+  protected closeBlockedPopover(): void {
+    this.openBlockedPopoverId = null;
+  }
+
   protected canToggleAddMember(username: string): boolean {
     return this.isAddMemberFriendSelected(username) || this.canSelectAdditionalMember;
   }

@@ -2,6 +2,7 @@ import { Component, effect, EventEmitter, inject, OnDestroy, OnInit, Output, sig
 import { CommonModule } from '@angular/common';
 import { Button } from 'primeng/button';
 import { Divider } from 'primeng/divider';
+import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
 import { RelationshipService } from '../../relationship.service';
@@ -31,6 +32,7 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private eventBus = inject(FriendRequestEventBusService);
   private mediaCacheService = inject(MediaCacheService);
+  private router = inject(Router);
 
   @Output() closeEvent = new EventEmitter<void>();
 
@@ -105,6 +107,11 @@ export class FriendRequestsDialogComponent implements OnInit, OnDestroy {
 
   close() {
     this.closeEvent.emit();
+  }
+
+  openProfile(request: FriendRequest): void {
+    this.close();
+    this.router.navigate(['/profile', request.username]);
   }
 
   hasProfilePicture(request: FriendRequest): boolean {

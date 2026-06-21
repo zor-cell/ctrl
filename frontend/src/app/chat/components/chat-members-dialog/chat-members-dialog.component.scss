@@ -73,7 +73,7 @@ $border: var(--border);
 .member-profile-popover {
   position: absolute;
   left: 3.75rem;
-  top: calc(100% + 0.25rem);
+  top: calc(100% - 0.1rem);
   z-index: 30;
   width: min(15rem, calc(100vw - 5rem));
   padding: 0.6rem 0.7rem;
@@ -87,6 +87,13 @@ $border: var(--border);
   pointer-events: none;
   transform: translateY(0.25rem);
   transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+
+  &--open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
 
   p {
     margin: 0 0 0.35rem;
