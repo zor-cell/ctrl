@@ -23,8 +23,14 @@ describePasswordReset('Report source test', () => {
   let sourceUrl: string;
   let postCaption: string;
 
-  function login(username: string, password: string) {
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
     cy.visit('/login');
+  };
+
+  function login(username: string, password: string) {
+    logoutBeforeLogin();
     cy.get('input#username').type(username);
     cy.get('input[type="password"]').type(password);
     cy.get('button[type="submit"]').click();
@@ -63,7 +69,7 @@ describePasswordReset('Report source test', () => {
     login(reportedUser.username, reportedUser.password);
 
     cy.visit('/post');
-    cy.contains('button', 'Weiter').should('be.visible').click();
+    cy.contains('button', 'Next').should('be.visible').click();
 
     cy.get('textarea')
       .should('be.visible')

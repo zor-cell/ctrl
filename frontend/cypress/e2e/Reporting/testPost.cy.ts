@@ -15,6 +15,12 @@ describePasswordReset("Report post test", () => {
   let reportingUser: TestUser;
   let suspended = false;
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   const adminUser = {
     username: 'admin',
     password: 'ctrl-test-admin-pw',
@@ -67,7 +73,7 @@ describePasswordReset("Report post test", () => {
   })
 
   function setUp() {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -84,7 +90,7 @@ describePasswordReset("Report post test", () => {
       .should('be.visible')
       .click();
 
-    cy.visit('/login')
+    logoutBeforeLogin();
 
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
@@ -103,7 +109,7 @@ describePasswordReset("Report post test", () => {
 
   it ("Reporting of post should display reporting flag", () => {
     setUp();
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -112,7 +118,7 @@ describePasswordReset("Report post test", () => {
 
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test post')
       .trigger('input')
       .trigger('change');
@@ -125,7 +131,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("This is a test post").should("be.visible");
 
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -152,7 +158,7 @@ describePasswordReset("Report post test", () => {
 
   it ("Reporting of post should be visible in admin reporting tab", () => {
     setUp();
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -161,7 +167,7 @@ describePasswordReset("Report post test", () => {
 
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test post')
       .trigger('input')
       .trigger('change');
@@ -174,7 +180,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("This is a test post").should("be.visible");
 
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -183,6 +189,7 @@ describePasswordReset("Report post test", () => {
 
     cy.visit("/profile/"+ reportedUser.username)
 
+    cy.wait(3000)
     cy.contains("This is a test post").should("be.visible"). click();
     cy.get('.post-actions-right > .action-btn').should("be.visible").click();
     cy.contains("Bullying or Harassment").should("be.visible").click();
@@ -195,7 +202,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("button", "Submit Report").should("be.visible").click();
     cy.wait(3000)
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -213,7 +220,7 @@ describePasswordReset("Report post test", () => {
 
   it ("Reporting of post should should remain visible after dismiss", () => {
     setUp();
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -222,7 +229,7 @@ describePasswordReset("Report post test", () => {
 
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test post')
       .trigger('input')
       .trigger('change');
@@ -235,7 +242,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("This is a test post").should("be.visible");
 
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -243,7 +250,7 @@ describePasswordReset("Report post test", () => {
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
 
     cy.visit("/profile/"+ reportedUser.username)
-
+    cy.wait(3000)
     cy.contains("This is a test post").should("be.visible"). click();
     cy.get('.post-actions-right > .action-btn').should("be.visible").click();
     cy.contains("Bullying or Harassment").should("be.visible").click();
@@ -256,7 +263,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("button", "Submit Report").should("be.visible").click();
     cy.wait(3000)
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -269,7 +276,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("button", "Dismiss").should("be.visible").click();
     cy.contains("button", "Yes").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -278,12 +285,13 @@ describePasswordReset("Report post test", () => {
 
     cy.visit("/profile/"+ reportedUser.username)
 
+    cy.wait(3000)
     cy.contains("This is a test post").should("be.visible")
   })
 
   it ("Reporting of post should should not be findable after remove", () => {
     setUp();
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -292,7 +300,7 @@ describePasswordReset("Report post test", () => {
 
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test post')
       .trigger('input')
       .trigger('change');
@@ -305,7 +313,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("This is a test post").should("be.visible");
 
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -326,7 +334,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("button", "Submit Report").should("be.visible").click();
     cy.wait(3000)
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -346,7 +354,7 @@ describePasswordReset("Report post test", () => {
 
     cy.contains("This is a test post").should("not.exist")
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -366,7 +374,7 @@ describePasswordReset("Report post test", () => {
 
   it ("Reporting of post user should not be findable after suspend", () => {
     setUp();
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
@@ -375,7 +383,7 @@ describePasswordReset("Report post test", () => {
 
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test post')
       .trigger('input')
       .trigger('change');
@@ -388,7 +396,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("This is a test post").should("be.visible");
 
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -409,7 +417,7 @@ describePasswordReset("Report post test", () => {
     cy.contains("button", "Submit Report").should("be.visible").click();
     cy.wait(3000)
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -431,7 +439,7 @@ describePasswordReset("Report post test", () => {
 
     cy.contains("This is a test post").should("not.exist")
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();

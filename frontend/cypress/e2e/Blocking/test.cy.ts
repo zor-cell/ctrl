@@ -14,6 +14,12 @@ describePasswordReset('Blocking Tests', () => {
   let blockedUser: TestUser;
   let blockingUser: TestUser;
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   const adminUser = {
     username: 'admin',
     password: 'ctrl-test-admin-pw',
@@ -62,7 +68,7 @@ describePasswordReset('Blocking Tests', () => {
   })
 
   it ("If user blocks other user, other user should be under Blocked", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
     cy.get('button[type="submit"]').click();
@@ -81,7 +87,7 @@ describePasswordReset('Blocking Tests', () => {
   });
 
   it ("If user blocks other user, other user should not be viewable in detail view", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
     cy.get('button[type="submit"]').click();
@@ -101,7 +107,7 @@ describePasswordReset('Blocking Tests', () => {
   });
 
   it ("If user blocks other user, other user no longer be searchable", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
     cy.get('button[type="submit"]').click();
@@ -131,7 +137,7 @@ describePasswordReset('Blocking Tests', () => {
     cy.createFriendship(blockedUser.username, blockedUser.password, blockingUser.username, blockingUser.password).then((response) => {
       expect(response.status).to.eq(204);
 
-      cy.visit('/login');
+      logoutBeforeLogin();
       cy.get('input#username').type(blockingUser.username);
       cy.get('input[type="password"]').type(blockingUser.password);
       cy.get('button[type="submit"]').click();
@@ -154,14 +160,14 @@ describePasswordReset('Blocking Tests', () => {
     cy.createFriendship(blockedUser.username, blockedUser.password, blockingUser.username, blockingUser.password).then((response) => {
       expect(response.status).to.eq(204);
 
-      cy.visit('/login');
+      logoutBeforeLogin();
       cy.get('input#username').type(blockingUser.username);
       cy.get('input[type="password"]').type(blockingUser.password);
       cy.get('button[type="submit"]').click();
       cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
 
       cy.visit("/post")
-      cy.contains("button", "Weiter").should("be.visible").click();
+      cy.contains("button", "Next").should("be.visible").click();
       cy.get('textarea').should("be.visible").invoke('val', 'Test comment')
         .trigger('input')
         .trigger('change');
@@ -171,7 +177,7 @@ describePasswordReset('Blocking Tests', () => {
 
       cy.contains("Test comment").should("be.visible");
 
-      cy.visit('/login');
+      logoutBeforeLogin();
       cy.get('input#username').type(blockedUser.username);
       cy.get('input[type="password"]').type(blockedUser.password);
       cy.get('button[type="submit"]').click();
@@ -187,10 +193,13 @@ describePasswordReset('Blocking Tests', () => {
         .trigger('change');
       cy.get('.comment-input-row').find('button').click();
 
-      cy.visit('/login');
+      logoutBeforeLogin();
+
       cy.get('input#username').type(blockingUser.username);
       cy.get('input[type="password"]').type(blockingUser.password);
       cy.get('button[type="submit"]').click();
+      cy.wait(3000)
+
       cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
 
       cy.visit(`/profile/${blockedUser.username}`);
@@ -217,7 +226,7 @@ describePasswordReset('Blocking Tests', () => {
 
   it ("If user blocks other user, users post should not be findable", () => {
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
     cy.get('button[type="submit"]').click();
@@ -234,7 +243,7 @@ describePasswordReset('Blocking Tests', () => {
     .should('be.visible')
     .click();
 
-    cy.visit('/login')
+    logoutBeforeLogin();
 
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
@@ -250,7 +259,7 @@ describePasswordReset('Blocking Tests', () => {
       .should("be.visible")
       .click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockingUser.username);
     cy.get('input[type="password"]').type(blockingUser.password);
     cy.get('button[type="submit"]').click();
@@ -258,7 +267,7 @@ describePasswordReset('Blocking Tests', () => {
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
 
     cy.visit("/post")
-    cy.contains("button", "Weiter").should("be.visible").click();
+    cy.contains("button", "Next").should("be.visible").click();
     cy.get('textarea').should("be.visible").invoke('val', 'This is a test')
       .trigger('input')
       .trigger('change');
@@ -278,11 +287,11 @@ describePasswordReset('Blocking Tests', () => {
 
     cy.contains(blockedUser.username).should("be.visible")
 
-
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(blockedUser.username);
     cy.get('input[type="password"]').type(blockedUser.password);
     cy.get('button[type="submit"]').click();
+    cy.wait(3000)
     cy.visit("/search/posts")
     cy.get('input[type="text"]').should("be.visible").type("This is a test");
     cy.contains("button","Search").should("be.visible").click();
