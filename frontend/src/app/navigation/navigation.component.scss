@@ -1,5 +1,11 @@
+:host {
+  position: relative;
+  z-index: 5000;
+  display: block;
+}
+
 ::ng-deep .p-menubar-submenu {
-  z-index: 10 !important;
+  z-index: 6000 !important;
 }
 
 .nav-bar {
@@ -94,6 +100,50 @@
 
   &::before {
     display: none;
+  }
+}
+
+:host ::ng-deep .nav-admin-item {
+  position: relative;
+  z-index: 6000;
+
+  > .p-menubar-item-content > .p-menubar-item-link {
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+  }
+
+  > .p-menubar-item-content > .p-menubar-item-link .p-menubar-submenu-icon {
+    display: none;
+  }
+
+  > .p-menubar-submenu {
+    position: absolute !important;
+    top: calc(100% + 0.4rem) !important;
+    right: 0.2rem !important;
+    left: auto !important;
+    z-index: 7000 !important;
+    display: flex;
+    flex-direction: column;
+    width: max-content !important;
+    min-width: 12rem;
+    padding: 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--p-content-background);
+    box-shadow: 0 16px 32px rgb(15 23 42 / 16%);
+    transform: none;
+  }
+
+  > .p-menubar-submenu .p-menubar-item-link {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0.6rem;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.55rem;
+    white-space: nowrap;
   }
 }
 

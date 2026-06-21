@@ -18,7 +18,7 @@ import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { ChatService} from '../../../chat/services/chat.service';
 import { usernameInitial } from '../../../core/utils/username-initial.utils';
 import { ShareablePost, resolveShareMediaUrl } from '../../dto/ShareablePost';
-import { Friend } from '../../../user/dto/Relationship';
+import { Blocked, Friend } from '../../../user/dto/Relationship';
 import { Chat, ChatParticipant} from '../../../chat/models/chat.models';
 import {ShareTarget} from '../../dto/ShareTarget';
 import {SharedPostPayload} from '../../dto/SharedPostPayload';
@@ -46,8 +46,9 @@ export class PostShareDialogComponent {
   private readonly chatService       = inject(ChatService);
 
   // ── State ─────────────────────────────────────────────────────────────────
-  protected readonly friends    = this.rel.friends;
-  protected readonly shareChats = signal<Chat[]>([]);
+  protected readonly friends      = signal<Friend[]>([]);
+  protected readonly blockedUsers = signal<Blocked[]>([]);
+  protected readonly shareChats   = signal<Chat[]>([]);
 
   protected readonly shareFriendQuery       = signal('');
   protected readonly shareFriendAvatarUrls  = signal<Record<string, string>>({});
@@ -73,7 +74,10 @@ export class PostShareDialogComponent {
   // ── Public API (called by parent via open()) ──────────────────────────────
   open(): void {
     this.shareFriendQuery.set('');
-    this.loadShareChats();
+    this.friends.set([]);
+    this.blockedUsers.set([]);
+    this.shareChats.set([]);
+    this.loadShareTargets();
   }
 
   // ── Dialog visibility ─────────────────────────────────────────────────────
@@ -141,13 +145,17 @@ export class PostShareDialogComponent {
 
   // ── Private helpers ───────────────────────────────────────────────────────
   private shareTargets(): ShareTarget[] {
+    const unavailableUserIds = this.unavailableUserIdsFromChats();
+    const activeFriends = this.friends().filter(friend =>
+      this.isShareableFriend(friend, unavailableUserIds),
+    );
     const friendsByUsername = new Map(
-      this.friends().map(f => [f.username.toLowerCase(), f]),
+      activeFriends.map(f => [f.username.toLowerCase(), f]),
     );
 
-    const targets = this.shareChats()
+    const targets = this.uniqueShareTargets(this.shareChats()
       .map(chat => this.shareTargetFromChat(chat, friendsByUsername))
-      .filter((t): t is ShareTarget => t !== null);
+      .filter((t): t is ShareTarget => t !== null));
 
     const usernamesWithChats = new Set(
       targets
@@ -155,7 +163,7 @@ export class PostShareDialogComponent {
         .map(t => t.username!.toLowerCase()),
     );
 
-    const friendsWithoutChats = this.friends()
+    const friendsWithoutChats = activeFriends
       .filter(f => !usernamesWithChats.has(f.username.toLowerCase()))
       .map(f => this.shareTargetFromFriend(f));
 
@@ -163,6 +171,16 @@ export class PostShareDialogComponent {
       if (a.interactionCount !== b.interactionCount) return b.interactionCount - a.interactionCount;
       if (a.lastActivityTime !== b.lastActivityTime) return b.lastActivityTime - a.lastActivityTime;
       return a.title.localeCompare(b.title);
+    });
+  }
+
+  private uniqueShareTargets(targets: ShareTarget[]): ShareTarget[] {
+    const seen = new Set<string>();
+
+    return targets.filter(target => {
+      if (seen.has(target.id)) return false;
+      seen.add(target.id);
+      return true;
     });
   }
 
@@ -185,7 +203,7 @@ export class PostShareDialogComponent {
     }
 
     const other = this.shareDirectPartner(chat);
-    if (!other) return null;
+    if (!this.isShareableParticipant(other)) return null;
 
     const friend = friendsByUsername.get(other.username.toLowerCase());
     return {
@@ -225,6 +243,45 @@ export class PostShareDialogComponent {
     return chat.participants[0] ?? null;
   }
 
+  private isShareableFriend(friend: Friend, unavailableUserIds: Set<string>): boolean {
+    return !this.isUnavailableUsername(friend.username)
+      && !unavailableUserIds.has(friend.id.toLowerCase())
+      && !this.isBlockedUser(friend.id, friend.username);
+  }
+
+  private isShareableParticipant(participant: ChatParticipant | null): participant is ChatParticipant {
+    return !!participant
+      && !participant.deleted
+      && !this.isUnavailableUsername(participant.username)
+      && !this.isBlockedUser(participant.id, participant.username);
+  }
+
+  private unavailableUserIdsFromChats(): Set<string> {
+    const ids = new Set<string>();
+    this.shareChats().forEach(chat =>
+      chat.participants.forEach(participant => {
+        if (participant.deleted || this.isUnavailableUsername(participant.username)) {
+          ids.add(participant.id.toLowerCase());
+        }
+      }),
+    );
+    return ids;
+  }
+
+  private isUnavailableUsername(username: string | null | undefined): boolean {
+    const normalized = username?.trim().toLowerCase();
+    return !normalized || normalized === 'deleted user';
+  }
+
+  private isBlockedUser(userId: string, username: string): boolean {
+    const normalizedId = userId.toLowerCase();
+    const normalizedUsername = username.toLowerCase();
+    return this.blockedUsers().some(blocked =>
+      blocked.id.toLowerCase() === normalizedId
+      || blocked.username.toLowerCase() === normalizedUsername,
+    );
+  }
+
   private shareChatActivityTime(chat: Chat): number {
     const value = chat.lastMessage?.date ?? chat.createdAt;
     return new Date(value.endsWith('Z') ? value : `${value}Z`).getTime();
@@ -249,6 +306,18 @@ export class PostShareDialogComponent {
       mediaUrl,
       mediaKind: mediaUrl ? (isVideo(mediaUrl) ? 'video' : 'image') : null,
     };
+  }
+
+  private loadShareTargets(): void {
+    this.rel.loadFriends().subscribe({
+      next: friends => this.friends.set(friends),
+      error: () => this.friends.set([]),
+    });
+    this.rel.loadBlocked().subscribe({
+      next: blocked => this.blockedUsers.set(blocked),
+      error: () => this.blockedUsers.set([]),
+    });
+    this.loadShareChats();
   }
 
   private loadShareChats(): void {

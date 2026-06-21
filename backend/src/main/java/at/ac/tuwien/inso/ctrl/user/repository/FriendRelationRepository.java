@@ -19,6 +19,7 @@ public interface FriendRelationRepository extends JpaRepository<FriendRelation, 
       """
       SELECT u FROM User u
       WHERE u.isSuspended = false
+      AND (u.deleted = false OR u.deleted IS NULL)
       AND (
           EXISTS (SELECT fr1 FROM FriendRelation fr1 WHERE fr1.friend1 = :user AND fr1.friend2 = u)
           OR
@@ -31,6 +32,7 @@ public interface FriendRelationRepository extends JpaRepository<FriendRelation, 
       """
           SELECT u FROM User u
           WHERE u.isSuspended = false
+          AND (u.deleted = false OR u.deleted IS NULL)
           AND (
               EXISTS (SELECT fr1 FROM FriendRelation fr1 WHERE fr1.friend1 = :user AND fr1.friend2 = u)
               OR

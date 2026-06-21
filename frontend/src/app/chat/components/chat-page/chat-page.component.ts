@@ -260,6 +260,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   protected readonly filteredFriends = computed(() => {
     const query = this.normalizedSearchQuery();
     return this.friends()
+      .filter((friend) => this.isAvailableFriend(friend))
       .filter((friend) => this.matchesFriend(friend, query))
       .sort((left, right) => this.compareFriendsByChatAvailability(left, right));
   });
@@ -281,7 +282,9 @@ export class ChatPageComponent implements OnInit, OnDestroy {
 
   protected readonly filteredGroupFriends = computed(() => {
     const query = this.groupMemberSearch().trim().toLowerCase();
-    return this.friends().filter((friend) => this.matchesFriend(friend, query));
+    return this.friends()
+      .filter((friend) => this.isAvailableFriend(friend))
+      .filter((friend) => this.matchesFriend(friend, query));
   });
 
   protected readonly filteredAddMemberFriends = computed(() => {
@@ -294,6 +297,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const query = this.addMemberSearch().trim().toLowerCase();
 
     return this.friends()
+      .filter((friend) => this.isAvailableFriend(friend))
       .filter((friend) => !memberUsernames.has(friend.username))
       .filter((friend) => this.matchesFriend(friend, query));
   });
@@ -444,7 +448,11 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     const matches = this.chats().filter(
       (chat) =>
         !chat.groupChat &&
-        chat.participants.some((participant) => participant.username === friend.username),
+        chat.participants.some(
+          (participant) =>
+            participant.username === friend.username ||
+            this.normalizeId(participant.id) === this.normalizeId(friend.id),
+        ),
     );
 
     return this.pickLatestDirectChat(matches);
@@ -1900,6 +1908,39 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return (
       friend.username.toLowerCase().includes(query) ||
       (friend.name ?? '').toLowerCase().includes(query)
+    );
+  }
+
+  private isAvailableFriend(friend: Friend): boolean {
+    return !this.isUnavailableUsername(friend.username)
+      && !this.unavailableParticipantIds().has(this.normalizeId(friend.id))
+      && !this.isBlockedUser(friend.id, friend.username);
+  }
+
+  private unavailableParticipantIds(): Set<string> {
+    const ids = new Set<string>();
+    this.chats().forEach((chat) =>
+      chat.participants.forEach((participant) => {
+        if (this.isDeletedParticipant(participant) || this.isUnavailableUsername(participant.username)) {
+          ids.add(this.normalizeId(participant.id));
+        }
+      }),
+    );
+    return ids;
+  }
+
+  private isUnavailableUsername(username: string | null | undefined): boolean {
+    const normalizedUsername = username?.trim().toLowerCase();
+    return !normalizedUsername || normalizedUsername === DELETED_USER_LABEL.toLowerCase();
+  }
+
+  private isBlockedUser(userId: string, username: string): boolean {
+    const normalizedId = this.normalizeId(userId);
+    const normalizedUsername = username.toLowerCase();
+    return this.blockedUsers().some(
+      (blockedUser) =>
+        this.normalizeId(blockedUser.id) === normalizedId ||
+        blockedUser.username.toLowerCase() === normalizedUsername,
     );
   }
 
