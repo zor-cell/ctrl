@@ -1,5 +1,3 @@
-<p-toast></p-toast>
-
 <div class="management-layout">
     <div class="table-container">
 
@@ -26,7 +24,7 @@
                 <tr>
                     <th style="width: 5rem; text-align: center;">Icon</th>
                     <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-                    <th pSortableColumn="createdAt">Created At <p-sortIcon field="createdAt" /></th>
+                    <th pSortableColumn="createdAt" class="hidden-mobile">Created At <p-sortIcon field="createdAt" /></th>
                     <th style="width: 6rem; text-align: center;">Actions</th>
                 </tr>
                 <tr>
@@ -42,7 +40,7 @@
                                 [showClearButton]="false">
                         </p-columnFilter>
                     </th>
-                    <th></th>
+                    <th class="hidden-mobile"></th>
                     <th></th>
                 </tr>
             </ng-template>
@@ -57,7 +55,7 @@
                         }
                     </td>
                     <td style="font-weight: 600;">{{ topic.name }}</td>
-                    <td>{{ topic.createdAt | date:'dd.MM.yyyy HH:mm' }}</td>
+                    <td class="hidden-mobile">{{ topic.createdAt | date:'dd.MM.yyyy HH:mm' }}</td>
                     <td style="text-align: center;">
                         <p-button
                                 icon="pi pi-pencil"
