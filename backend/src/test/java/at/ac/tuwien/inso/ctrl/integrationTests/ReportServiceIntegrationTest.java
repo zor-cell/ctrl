@@ -540,7 +540,8 @@ public class ReportServiceIntegrationTest {
   }
 
   @Test
-  @Disabled("User deletion removes reports via reportRepository.deleteByUsernameReported, so this assertion is currently not valid")
+  @Disabled(
+      "User deletion removes reports via reportRepository.deleteByUsernameReported, so this assertion is currently not valid")
   void updateReportStatus_SuspendSource_marksSourceRemovedAndOtherSourceAsOtherReport() {
     User reporter = createUser("reporter");
     User contentUser = createUser("contentUser");
