@@ -30,7 +30,7 @@
             <span class="comment-time">{{ timeAgo(comment.createdAt) }}</span>
             @if (comment.edited) { <span class="comment-edited">edited</span> }
             @if (comment.wasReportedByUser) {
-              <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" />
+              <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0" />
             }
           </div>
 
@@ -83,7 +83,7 @@
                   <span class="comment-time">{{ timeAgo(reply.createdAt) }}</span>
                   @if (reply.edited) { <span class="comment-edited">edited</span> }
                   @if (reply.wasReportedByUser) {
-                    <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" />
+                    <p-tag value="🚩" severity="secondary" styleClass="post-label" pTooltip="You have reported this comment" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0"/>
                   }
                 </div>
                 @if (editingCommentId() === reply.commentId) {

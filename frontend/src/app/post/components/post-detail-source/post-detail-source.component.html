@@ -41,10 +41,10 @@
         </button>
         @if (source?.wasReportedByUser) {
           <p-tag value="🚩" severity="secondary" styleClass="post-label"
-                 pTooltip="You have reported this source" tooltipPosition="bottom" />
+                 pTooltip="You have reported this source" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0" />
         }
         <button class="src-flag-btn" (click)="reportClicked.emit()"
-                pTooltip="Report source" tooltipPosition="top" aria-label="Report source">
+                pTooltip="Report source" tooltipPosition="top" aria-label="Report source" tooltipEvent="focus" tabindex="0">
           <i class="pi pi-flag" aria-hidden="true"></i>
         </button>
       </div>

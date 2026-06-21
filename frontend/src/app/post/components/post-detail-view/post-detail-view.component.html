@@ -42,7 +42,7 @@
       @if (p.labelIds.length > 0) {
         <div class="post-labels">
           @for (label of p.labelIds; track label.labelId) {
-            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
+            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0" />
           }
         </div>
       }
@@ -67,7 +67,7 @@
   }
 
   <!-- Caption -->
-  <p class="post-caption">{{ p.caption }}</p>
+  <div class="post-caption" [innerHTML]="p.caption | postCaptionFormat"></div>
 
   <!-- Source -->
   <app-post-detail-source

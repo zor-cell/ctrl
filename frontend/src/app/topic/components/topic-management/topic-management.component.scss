@@ -54,3 +54,33 @@
   display: block;
   margin-top: 0.5rem;
 }
+
+@media (max-width: 768px) {
+  .management-layout {
+    padding: 1rem 0.5rem;
+  }
+
+  .table-container {
+    padding: 1rem;
+  }
+
+  .header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    text-align: center;
+
+    p-button {
+      width: 100%;
+    }
+  }
+
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  //dont show paginator pages
+  ::ng-deep .p-paginator-pages {
+    display: none !important;
+  }
+}
