@@ -92,7 +92,7 @@ const DELETED_USER_LABEL = 'Deleted user';
 
 interface SharedPostPayload {
   postId: string;
-  username: string;
+  username: string | null;
   profileUserId?: string | null;
   profilePicture?: string | null;
   caption: string;
@@ -1431,7 +1431,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
     return usernameInitial(user.username);
   }
 
-  private sharedPostAuthorUsername(post: SharedPostPayload): string {
+  private sharedPostAuthorUsername(post: SharedPostPayload): string | null {
     const currentUser = this.userService.user();
     if (currentUser && this.isCurrentUserSharedPostAuthor(post, currentUser)) {
       return currentUser.username;
@@ -1493,8 +1493,8 @@ export class ChatPageComponent implements OnInit, OnDestroy {
       );
   }
 
-  private formatSharedPostUsername(username: string): string {
-    const trimmed = username.trim();
+  private formatSharedPostUsername(username: string | null | undefined): string {
+    const trimmed = username?.trim() ?? '';
     if (!trimmed) {
       return '@unknown';
     }
