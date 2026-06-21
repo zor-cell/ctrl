@@ -3,7 +3,7 @@ import {Dialog} from 'primeng/dialog';
 import {Component, computed, inject, input, signal} from '@angular/core';
 import {RelationshipService} from '../../../user/relationship.service';
 import {UserService} from '../../../user/user.service';
-import {firstValueFrom, switchMap} from 'rxjs';
+import {firstValueFrom, of, switchMap} from 'rxjs';
 import {AuthService} from '../../../auth/auth.service';
 import {toObservable, toSignal} from '@angular/core/rxjs-interop';
 
@@ -40,7 +40,12 @@ export class FollowBadgeComponent {
 
   private readonly publicProfile = toSignal(
     toObservable(this.username).pipe(
-      switchMap(name => this.userService.getPublicProfile(name))
+      switchMap(name => {
+        if (this.isExternal()) {
+          return of(null);
+        }
+        return this.userService.getPublicProfile(name);
+      })
     ),
     { initialValue: null }
   );
