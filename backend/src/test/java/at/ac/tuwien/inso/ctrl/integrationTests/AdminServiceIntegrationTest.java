@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import at.ac.tuwien.inso.ctrl.auth.service.GmailEmailService;
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
 import at.ac.tuwien.inso.ctrl.exception.CommunicationException;
+import at.ac.tuwien.inso.ctrl.report.service.ReportService;
 import at.ac.tuwien.inso.ctrl.user.entity.User;
 import at.ac.tuwien.inso.ctrl.user.repository.UserRepository;
 import at.ac.tuwien.inso.ctrl.user.service.AdminService;
@@ -47,6 +48,7 @@ public class AdminServiceIntegrationTest {
 
   @MockitoBean private JwtDecoder jwtDecoder;
   @MockitoBean private GmailEmailService gmailEmailService;
+  @MockitoBean private ReportService reportService;
 
   @AfterEach
   public void tearDown() {
@@ -55,7 +57,7 @@ public class AdminServiceIntegrationTest {
 
   @BeforeEach
   public void before() {
-    adminService = new AdminService(userRepository, gmailEmailService, templateEngine);
+    adminService = new AdminService(userRepository, gmailEmailService, templateEngine, reportService);
     ReflectionTestUtils.setField(adminService, "requireEmailVerification", true);
     userToSuspend =
         User.builder()
