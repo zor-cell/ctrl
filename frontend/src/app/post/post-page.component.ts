@@ -35,7 +35,6 @@ import { PostShareDialogComponent } from './components/post-detail-share/post-sh
 import { postMediaKind } from './post-media.utils';
 import { PreviewKind, TopicOption } from './post-page.models';
 import { PostService } from './post.service';
-import { FollowBadgeComponent } from '../feed/components/follow-badge/follow-badge.component';
 import { RelationshipService } from '../user/relationship.service';
 import { AuthService } from '../auth/auth.service';
 import { Tag } from 'primeng/tag';
@@ -63,7 +62,6 @@ type ProfileFriendStatus = 'NONE' | 'FRIEND' | 'PENDING_REQUEST_SENT' | 'PENDING
     PostDetailDialogComponent,
     PostShareDialogComponent,
     ReportComponent,
-    FollowBadgeComponent,
     Tag,
     Message,
     ConfirmDialog,
