@@ -87,7 +87,7 @@ public class AnalyticsMapper {
     if (!LocalDate.from(session.startTime()).equals(LocalDate.from(session.endTime()))) {
       return Stream.of(
           new SessionIntervalDto(
-              session.startTime(), session.startTime().plusDays(1).withHour(0).withMinute(0)),
+              session.startTime(), session.startTime().withHour(23).withMinute(59)),
           new SessionIntervalDto(session.endTime().withHour(0).withMinute(0), session.endTime()));
     } else {
       return Stream.of(session);
@@ -138,7 +138,7 @@ public class AnalyticsMapper {
         sessions.stream()
             .map(
                 s -> new SessionIntervalDto(s.getStart(), s.getStart().plusSeconds(s.getSeconds())))
-            .flatMap(this::splitSessionAtMidnight)
+
             .toList();
 
     int timeBucketSizeInMinutes = 24 * 60 / TIME_BUCKETS_PER_DAY;
@@ -153,13 +153,17 @@ public class AnalyticsMapper {
         int bucketEndMinute = bucketStartMinute + timeBucketSizeInMinutes;
 
         int endMinuteOfDay = i.endTime().get(ChronoField.MINUTE_OF_DAY);
-        if (!i.startTime().toLocalDate().equals(i.endTime().toLocalDate())) {
+        if (weekday != i.endTime().getDayOfWeek().getValue() - 1) {
           endMinuteOfDay = 24 * 60;
+        }
+        int startMinuteOfDay = i.startTime().get(ChronoField.MINUTE_OF_DAY);
+        if (weekday != i.startTime().getDayOfWeek().getValue() - 1) {
+          startMinuteOfDay = 0;
         }
 
         int overlap =
             Math.min(endMinuteOfDay, bucketEndMinute)
-                - Math.max(i.startTime().get(ChronoField.MINUTE_OF_DAY), bucketStartMinute);
+                - Math.max(startMinuteOfDay, bucketStartMinute);
 
         if (overlap > 0) {
           buckets[weekday][startBucket].addMinutes(overlap);
@@ -171,7 +175,7 @@ public class AnalyticsMapper {
           weekday = (weekday + 1) % 7;
         }
 
-      } while (i.endTime().toLocalTime().isAfter(buckets[weekday][startBucket].getStartTime()));
+      } while (i.endTime().toLocalTime().isAfter(buckets[weekday][startBucket].getStartTime()) && weekday <= i.endTime().getDayOfWeek().getValue() - 1);
     }
     return buckets;
   }
