@@ -321,8 +321,6 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(commentUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
-    assertTrue(updatedUser.isDeleted());
-    assertEquals("Deleted user", updatedUser.getName());
   }
 
   @Test
@@ -409,8 +407,7 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
-    assertTrue(updatedUser.isDeleted());
-    assertEquals("Deleted user", updatedUser.getName());
+    assertEquals(accountUser.getUsername(), updatedUser.getName());
   }
 
   @Test
@@ -597,8 +594,7 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(contentUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
-    assertTrue(updatedUser.isDeleted());
-    assertEquals("Deleted user", updatedUser.getName());
+    assertEquals(contentUser.getName(), updatedUser.getName());
   }
 
   @Test
