@@ -67,7 +67,7 @@
   }
 
   <!-- Caption -->
-  <p class="post-caption">{{ p.caption }}</p>
+  <div class="post-caption" [innerHTML]="p.caption | postCaptionFormat"></div>
 
   <!-- Source -->
   <app-post-detail-source

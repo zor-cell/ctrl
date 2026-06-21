@@ -33,6 +33,7 @@ import { PostStateService } from '../../services/post-state.service';
 import { MediaCacheService } from '../../../core/services/media-cache.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { firstValueFrom } from 'rxjs';
+import { PostCaptionFormatPipe } from '../../post-caption-format.pipe';
 
 @Component({
   selector: 'app-post-detail-view',
@@ -50,6 +51,7 @@ import { firstValueFrom } from 'rxjs';
     PostDetailSourceComponent,
     DialogModule,
     FollowBadgeComponent,
+    PostCaptionFormatPipe,
   ],
   templateUrl: './post-detail-view.component.html',
   styleUrl: './post-detail-view.component.scss',
