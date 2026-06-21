@@ -407,7 +407,7 @@ public class ReportServiceIntegrationTest {
 
     User updatedUser = userRepository.findById(accountUser.getId()).orElseThrow();
     assertTrue(updatedUser.isSuspended());
-    assertEquals(accountUser.getUsername(), updatedUser.getName());
+    assertEquals(accountUser.getName(), updatedUser.getName());
   }
 
   @Test
