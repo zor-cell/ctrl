@@ -146,6 +146,14 @@ $radius-sm: 10px;
   line-height: 1.55;
   margin: 0;
   white-space: pre-line;
+  color: var(--p-text-color);
+  -webkit-text-fill-color: currentColor;
+}
+
+.post-caption a[x-apple-data-detectors] {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 // ─── Source ───────────────────────────────────────────
