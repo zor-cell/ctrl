@@ -52,9 +52,17 @@ public class AuthController {
 
   @PostMapping("/email")
   @ResponseStatus(HttpStatus.CREATED)
-  public void resendVerificationEmail(@Valid @RequestBody SendEmailRequest sendEmailRequest) {
+  public void resendVerificationEmail(@Valid @RequestBody SendEmailRequest sendEmailRequest)
+      throws InterruptedException {
     LOGGER.trace("Resend verification email request: {}", sendEmailRequest);
+    long startTime = System.currentTimeMillis();
     emailVerificationService.sendVerificationEmail(sendEmailRequest);
+
+    long elapsed = System.currentTimeMillis() - startTime;
+    long minTime = 3000; // ms
+    if (elapsed < minTime) {
+      Thread.sleep(minTime - elapsed);
+    }
   }
 
   @PreAuthorize("hasRole('TEST')")
@@ -95,9 +103,18 @@ public class AuthController {
   @PostMapping("/forgot-password")
   @ResponseStatus(HttpStatus.CREATED)
   public boolean sendPasswordReset(
-      @Valid @RequestBody PasswordResetEmailRequest passwordResetRequest) {
+      @Valid @RequestBody PasswordResetEmailRequest passwordResetRequest)
+      throws InterruptedException {
     LOGGER.trace("Password reset request: {}", passwordResetRequest);
+    long startTime = System.currentTimeMillis();
+
     passwordResetService.sendPasswordResetEmail(passwordResetRequest);
+
+    long elapsed = System.currentTimeMillis() - startTime;
+    long minTime = 3000;
+    if (elapsed < minTime) {
+      Thread.sleep(minTime - elapsed);
+    }
     return true;
   }
 

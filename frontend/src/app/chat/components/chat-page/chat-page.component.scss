@@ -1154,12 +1154,20 @@ $chat-viewport-offset: 72px;
 
 @media (max-width: 760px) {
   :host {
-    height: calc(100dvh - #{$chat-viewport-offset});
+    position: fixed;
+    top: $chat-viewport-offset;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: auto;
+    max-height: calc(100dvh - #{$chat-viewport-offset});
+    overscroll-behavior: none;
   }
 
   .chat-page {
     display: block;
     height: 100%;
+    overscroll-behavior: none;
   }
 
   .chat-sidebar {
@@ -1291,6 +1299,8 @@ $chat-viewport-offset: 72px;
 
   .message-list {
     padding: 4rem 0.9rem 1rem;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .message-row {
@@ -1337,6 +1347,10 @@ $chat-viewport-offset: 72px;
   .message-composer {
     gap: 0.55rem;
     padding: 0.75rem 0.9rem;
+  }
+
+  .message-composer textarea {
+    resize: none;
   }
 }
 

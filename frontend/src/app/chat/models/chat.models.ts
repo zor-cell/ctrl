@@ -16,7 +16,7 @@ export interface MessageReaction {
 export interface SharedPost {
   sharedId: string;
   postId: string;
-  username: string;
+  username: string | null;
   profileUserId: string | null;
   profilePicture: string | null;
   caption: string | null;

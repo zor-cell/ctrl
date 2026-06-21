@@ -150,7 +150,6 @@ export class ProfileComponent implements OnInit {
         next: () => {
           if (emailChanged) {
             if (environment.auth.requireEmailVerification) {
-              this.authService.logout();
               this.router.navigate(['/email_verification', this.currentUser()?.username, formValues.email]);
             }
           }

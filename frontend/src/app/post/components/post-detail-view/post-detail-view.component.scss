@@ -145,7 +145,51 @@ $radius-sm: 10px;
   font-size: 0.93rem;
   line-height: 1.55;
   margin: 0;
-  white-space: pre-line;
+  white-space: normal;
+  color: var(--p-text-color);
+  -webkit-text-fill-color: currentColor;
+}
+
+:host ::ng-deep .post-caption :where(h2, h3, p, ul) {
+  margin: 0;
+}
+
+:host ::ng-deep .post-caption :where(h2, h3) {
+  display: block;
+  margin-bottom: 0.25rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+:host ::ng-deep .post-caption h2 {
+  font-size: 1.25rem;
+}
+
+:host ::ng-deep .post-caption h3 {
+  font-size: 1.05rem;
+}
+
+:host ::ng-deep .post-caption p + p,
+:host ::ng-deep .post-caption :where(h2, h3) + p,
+:host ::ng-deep .post-caption ul + p {
+  margin-top: 0.5rem;
+}
+
+:host ::ng-deep .post-caption ul {
+  padding-left: 1.25rem;
+}
+
+:host ::ng-deep .post-caption p,
+:host ::ng-deep .post-caption li {
+  overflow-wrap: anywhere;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+.post-caption a[x-apple-data-detectors] {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 // ─── Source ───────────────────────────────────────────

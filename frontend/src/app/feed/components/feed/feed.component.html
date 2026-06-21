@@ -181,7 +181,8 @@
     <div class="post-user">
       @if (post.userDeleted) {
         <p-avatar
-          [image]="post.userProfilePic"
+          [image]="post.userProfilePic || undefined"
+          [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
           shape="circle"
           size="normal"
           [style]="{ width: '42px', height: '42px' }"
@@ -189,7 +190,8 @@
       } @else if (post.isExternal) {
         <a [href]="post.userProfileUrl" class="post-user-link" target="_blank" rel="noopener noreferrer">
           <p-avatar
-            [image]="post.userProfilePic"
+            [image]="post.userProfilePic || undefined"
+            [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
             shape="circle"
             size="normal"
             [style]="{ width: '42px', height: '42px' }"
@@ -198,7 +200,8 @@
       } @else {
         <a [routerLink]="['/profile', post.username]" class="post-user-link">
           <p-avatar
-            [image]="post.userProfilePic"
+            [image]="post.userProfilePic || undefined"
+            [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
             shape="circle"
             size="normal"
             [style]="{ width: '42px', height: '42px' }"
@@ -238,7 +241,7 @@
       @if (post.labelIds.length > 0 || post.wasReportedByUser) {
         <div class="post-labels">
           @for (label of post.labelIds; track label.labelId) {
-            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" />
+            <p-tag [value]="label.emoji" severity="secondary" styleClass="post-label" [pTooltip]="label.explanation" tooltipPosition="bottom" tooltipEvent="focus" tabindex="0" />
           }
           @if (post.wasReportedByUser) {
             <p-tag
@@ -247,6 +250,8 @@
               class="post-label"
               [pTooltip]="'You reported this post'"
               tooltipPosition="bottom"
+              tooltipEvent="focus"
+              tabindex="0"
             />
           }
         </div>
@@ -410,6 +415,7 @@
   [resizable]="false"
   [style]="{ width: '90vw', maxWidth: '520px' }"
   styleClass="algorithm-config-dialog"
+  [focusOnShow]="false"
 >
   <app-algorithm-config/>
 </p-dialog>

@@ -7,6 +7,7 @@
   [resizable]="false"
   [style]="{ width: '90vw', maxWidth: '580px' }"
   styleClass="why-dialog"
+  [focusOnShow]="false"
 >
   @if (post()) {
     <div class="dialog-grid">
@@ -19,7 +20,9 @@
                 {{ row.label }}
                 <i class="pi pi-info-circle hint-icon"
                    [pTooltip]="row.description"
-                   tooltipPosition="right"></i>
+                   tooltipPosition="right"
+                   tooltipEvent="focus"
+                   tabindex="0"></i>
               </span>
               <span
                 [class.value-pos]="row.score > 0"
@@ -59,7 +62,9 @@
           Score
           <i class="pi pi-info-circle hint-icon"
              pTooltip="This total is calculated by summing the weighted impact of your feed configuration. All posts are ranked according to this value."
-             tooltipPosition="right"></i>
+             tooltipPosition="right"
+             tooltipEvent="focus"
+             tabindex="0"></i>
         </span>
         <span class="total-value">
           <strong>{{ totalScore() }}</strong>

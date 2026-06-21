@@ -37,7 +37,7 @@
                 <div class="progress-track">
                     <div
                             class="progress-fill time"
-                            [class.exceeded]="usage()!.elapsedMinutes > sessionConfig()!.timeLimitMinutes"
+                            [class.exceeded]="usage()!.elapsedMinutes >= sessionConfig()!.timeLimitMinutes"
                             [style.width.%]="Math.min((usage()!.elapsedMinutes / sessionConfig()!.timeLimitMinutes) * 100, 100)">
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                 <div class="progress-track">
                     <div
                             class="progress-fill posts"
-                            [class.exceeded]="usage()!.seenPosts > sessionConfig()!.postLimit"
+                            [class.exceeded]="usage()!.seenPosts >= sessionConfig()!.postLimit"
                             [style.width.%]="Math.min((usage()!.seenPosts / sessionConfig()!.postLimit) * 100, 100)">
                     </div>
                 </div>

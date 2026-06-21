@@ -196,15 +196,7 @@ public class PostServiceImpl implements PostService {
 
       Set<Comment> comments =
           post.getComments().stream()
-              .filter(
-                  c ->
-                      c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-              .filter(
-                  c ->
-                      c.getParentComment() == null
-                          || (c.getParentComment().getUser() != null
-                              && !blockService.inBlockedRelationship(
-                                  user, c.getParentComment().getUser())))
+              .filter(c -> isVisibleCommentForUser(user, c))
               .collect(Collectors.toSet());
       post.setComments(comments);
     }
@@ -308,12 +300,44 @@ public class PostServiceImpl implements PostService {
         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
   }
 
+  private boolean isVisibleCommentForUser(User viewer, Comment comment) {
+    if (comment.getUser() == null || Boolean.TRUE.equals(comment.getIsRemoved())) {
+      return false;
+    }
+
+    if (comment.getUser().isSuspended()) {
+      return false;
+    }
+
+    if (blockService.inBlockedRelationship(viewer, comment.getUser())) {
+      return false;
+    }
+
+    Comment parent = comment.getParentComment();
+    if (parent == null) {
+      return true;
+    }
+
+    return parent.getUser() != null
+        && !Boolean.TRUE.equals(parent.getIsRemoved())
+        && !blockService.inBlockedRelationship(viewer, parent.getUser())
+        && !parent.getUser().isSuspended();
+  }
+
   @Override
   public DetailedPostResponse getPostById(String postId, String username) {
     Post post = this.fetchPost(postId);
     User user = this.fetchUser(username);
 
     if (Boolean.TRUE.equals(post.getIsRemoved())) {
+      throw new NotFoundException("Post", postId);
+    }
+
+    if (post.getUser() != null && post.getUser().isSuspended()) {
+      throw new NotFoundException("Post", postId);
+    }
+
+    if (post.getExternalAuthor() != null && post.getExternalAuthor().isSuspended()) {
       throw new NotFoundException("Post", postId);
     }
 
@@ -329,14 +353,7 @@ public class PostServiceImpl implements PostService {
 
     Set<Comment> comments =
         post.getComments().stream()
-            .filter(
-                c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-            .filter(
-                c ->
-                    c.getParentComment() == null
-                        || (c.getParentComment().getUser() != null
-                            && !blockService.inBlockedRelationship(
-                                user, c.getParentComment().getUser())))
+            .filter(c -> isVisibleCommentForUser(user, c))
             .collect(Collectors.toSet());
     post.setComments(comments);
 
@@ -359,13 +376,17 @@ public class PostServiceImpl implements PostService {
                         comment ->
                             reportService.wasReportedByUser(
                                 user, ContentTypeEnum.COMMENT, comment.getCommentId())));
-
     boolean sourceWasReported;
     if (post.getSource() != null) {
       sourceWasReported =
           reportService.wasReportedByUser(
               user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
     } else {
+      sourceWasReported = false;
+    }
+
+    if (post.getSource() != null && post.getSource().getIsRemoved()) {
+      post.setSource(null);
       sourceWasReported = false;
     }
     LabelContext ctx = labelingService.buildContext(user);

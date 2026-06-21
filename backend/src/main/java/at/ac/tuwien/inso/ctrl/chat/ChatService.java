@@ -926,9 +926,12 @@ public class ChatService {
     String profileUsername = externalPost || deletedOwner ? null : postOwner.getUsername();
     boolean publicPost = externalPost || post.isPublic();
     boolean removed = Boolean.TRUE.equals(post.getIsRemoved());
+    boolean suspended =
+        (post.getUser() != null && post.getUser().isSuspended())
+            || (post.getExternalAuthor() != null && post.getExternalAuthor().isSuspended());
     boolean canView = canViewPost(post, currentUser);
     String mediaRef = canView ? post.getMediaRef() : null;
-    String unavailableReason = removed ? "REMOVED" : canView ? null : "PRIVATE";
+    String unavailableReason = removed || suspended ? "REMOVED" : canView ? null : "PRIVATE";
 
     return new SharedPostResponse(
         shared.getSharedId(),
@@ -948,6 +951,14 @@ public class ChatService {
 
   private boolean canViewPost(Post post, User currentUser) {
     if (Boolean.TRUE.equals(post.getIsRemoved())) {
+      return false;
+    }
+
+    if (post.getUser() != null && post.getUser().isSuspended()) {
+      return false;
+    }
+
+    if (post.getExternalAuthor() != null && post.getExternalAuthor().isSuspended()) {
       return false;
     }
 
@@ -1125,6 +1136,10 @@ public class ChatService {
       return DELETED_USER_LABEL;
     }
 
+    if (user.isSuspended()) {
+      return DELETED_USER_LABEL;
+    }
+
     String name = trimToNull(user.getName());
     return name != null ? name : user.getUsername();
   }
@@ -1196,7 +1211,7 @@ public class ChatService {
   }
 
   private ChatParticipantResponse toParticipantResponse(User user) {
-    if (user.isDeleted()) {
+    if (user.isDeleted() || user.isSuspended()) {
       return new ChatParticipantResponse(user.getId(), DELETED_USER_LABEL, null, null, true);
     }
 
@@ -1219,6 +1234,7 @@ public class ChatService {
           activeMembers(chat).stream()
               .map(ChatMember::getUser)
               .filter(user -> !user.isDeleted())
+              .filter(user -> !user.isSuspended())
               .map(this::toParticipantResponse)
               .toList());
     }
@@ -1334,7 +1350,7 @@ public class ChatService {
     return chat.getMembers().stream()
         .map(ChatMember::getUser)
         .filter(user -> !user.getId().equals(currentUser.getId()))
-        .map(User::getUsername)
+        .map(this::formatDisplayName)
         .reduce((first, second) -> first + ", " + second)
         .orElse("Chat");
   }
@@ -1343,7 +1359,7 @@ public class ChatService {
     return chat.getMembers().stream()
         .map(ChatMember::getUser)
         .filter(user -> !user.getId().equals(currentUser.getId()))
-        .map(User::getUsername)
+        .map(this::formatDisplayName)
         .findFirst()
         .orElse("Chat");
   }

@@ -2,16 +2,23 @@
 .report-form {
   display: grid;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 .report-step__header {
   display: flex;
   gap: 1rem;
   align-items: start;
+  min-width: 0;
+}
+
+.report-step__header > div {
+  min-width: 0;
 }
 
 .report-step__header h2 {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .report-step__header p {
@@ -25,10 +32,14 @@
   align-items: center;
   width: 2.25rem;
   height: 2.25rem;
+  min-width: 2.25rem;
+  flex: 0 0 2.25rem;
+  aspect-ratio: 1;
   border-radius: 999px;
   background: #111827;
   color: #fff;
   font-weight: 700;
+  line-height: 1;
 }
 
 .post-preview {
@@ -37,12 +48,14 @@
   padding: 1rem 1.1rem;
   border-radius: 1rem;
   background: rgba(15, 23, 42, 0.04);
+  min-width: 0;
 }
 
 .post-preview-header {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .post-preview-info {
@@ -57,6 +70,9 @@
   font-weight: 700;
   color: var(--p-text-color);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .post-caption-preview {
@@ -96,10 +112,14 @@
   background: rgba(248, 250, 252, 0.9);
   color: #111827;
   font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .description-input {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.9rem 1rem;
   border: 1px solid rgba(203, 213, 225, 0.8);
   border-radius: 1rem;
@@ -145,6 +165,8 @@
 }
 
 .reason-btn {
+  width: 100%;
+  min-width: 0;
   padding: 0.9rem 1rem;
   border: 2px solid rgba(203, 213, 225, 0.8);
   border-radius: 1rem;
@@ -152,6 +174,7 @@
   color: #111827;
   font-weight: 500;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -174,10 +197,46 @@
 
 // ─── Mobile ───────────────────────────────────────────
 @media (max-width: 600px) {
+  .report-step,
+  .report-form {
+    gap: 1.15rem;
+  }
+
+  .report-step__header {
+    gap: 0.75rem;
+  }
+
+  .report-step__header h2 {
+    font-size: 1.35rem;
+    line-height: 1.15;
+  }
+
+  .report-step__header p {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .post-preview {
+    padding: 0.85rem;
+    border-radius: 0.8rem;
+  }
+
   .reason-buttons {
     grid-template-columns: 1fr;
   }
 
+  .report-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    p-button {
+      min-width: 0;
+    }
+  }
+}
+
+@media (max-width: 360px) {
   .report-actions {
     justify-content: stretch;
 
@@ -185,18 +244,29 @@
       flex: 1;
     }
   }
+
+  :host ::ng-deep .report-actions .p-button {
+    width: 100%;
+  }
 }
 
 // ─── Dialog size ───────────────
 :host ::ng-deep .report-dialog {
   width: min(56rem, 92vw);
+  max-width: calc(100vw - 2rem);
 
   @media (max-width: 600px) {
-    width: 92vw;
+    width: calc(100vw - 2rem);
     max-height: min(38rem, 85vh);
+
+    .p-dialog-header,
+    .p-dialog-content {
+      padding-inline: 1rem;
+    }
 
     .p-dialog-content {
       overflow-y: auto;
+      overflow-x: hidden;
       max-height: calc(min(38rem, 85vh) - 4rem);
     }
   }

@@ -339,6 +339,14 @@ $border: var(--border);
   color: var(--p-text-color);
 }
 
+.post-card--text-only .post-card__meta {
+  position: relative;
+  top: auto;
+  right: auto;
+  float: right;
+  margin: 0 0 0.35rem 0.65rem;
+}
+
 .post-visibility-badge {
   display: inline-grid;
   place-items: center;
@@ -359,12 +367,17 @@ $border: var(--border);
   -webkit-line-clamp: 4;
   line-height: 1.42;
   font-size: 0.95rem;
+  max-height: calc(1.42em * 4);
+  text-overflow: ellipsis;
+  color: var(--p-text-color);
+  -webkit-text-fill-color: currentColor;
 }
 
 .post-card--text-only .post-card__caption {
   align-self: start;
-  -webkit-line-clamp: 8;
   font-size: 0.95rem;
+  -webkit-line-clamp: 12;
+  max-height: calc(1.42em * 12);
 }
 
 :host ::ng-deep .post-card__caption :where(h2, h3, p, ul) {
@@ -389,6 +402,14 @@ $border: var(--border);
 :host ::ng-deep .post-card__caption p,
 :host ::ng-deep .post-card__caption li {
   overflow-wrap: anywhere;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+:host ::ng-deep .post-card__caption a[x-apple-data-detectors] {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 :host ::ng-deep .post-card__caption ul {
@@ -427,104 +448,6 @@ $border: var(--border);
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
-}
-
-.share-dialog-content {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.share-search {
-  width: 100%;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid $border;
-  border-radius: 0.5rem;
-  background: var(--p-content-background);
-  color: var(--p-text-color);
-  font: inherit;
-}
-
-.share-targets-list {
-  display: grid;
-  gap: 0.4rem;
-  max-height: min(22rem, 52vh);
-  overflow-y: auto;
-}
-
-.share-target-row {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) 2rem;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.7rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.share-target-row:hover {
-  border-color: $border;
-  background: var(--p-content-hover-background);
-}
-
-.share-avatar {
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  min-width: 2.5rem;
-  height: 2.5rem;
-  overflow: hidden;
-  border: 1px solid $border;
-  border-radius: 999px;
-  background: var(--p-content-hover-background);
-  color: var(--p-text-color);
-  font-weight: 700;
-}
-
-.share-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.share-target-copy {
-  display: grid;
-  gap: 0.05rem;
-  min-width: 0;
-}
-
-.share-target-copy strong,
-.share-target-copy span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.share-target-copy span {
-  color: var(--p-text-muted-color);
-  font-size: 0.8rem;
-}
-
-.share-target-kind {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  color: var(--p-text-muted-color);
-  background: var(--p-content-hover-background);
-}
-
-.share-empty {
-  margin: 0;
-  padding: 1rem;
-  color: var(--p-text-muted-color);
-  text-align: center;
 }
 
 @media (max-width: 900px) {
@@ -677,7 +600,7 @@ $border: var(--border);
 
   .my-posts-section {
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 1rem 0.75rem;
   }
 
   .my-posts-section__header {
@@ -713,5 +636,47 @@ $border: var(--border);
 
   .my-posts-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    gap: 0.9rem;
+  }
+
+  .post-card {
+    width: 100%;
+    min-height: 18rem;
+    border-radius: 0.7rem;
+  }
+
+  .post-card__body {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 0.75rem 0.85rem;
+  }
+
+  .post-card--text-only {
+    min-height: 14rem;
+  }
+
+  .post-card--text-only .post-card__body {
+    padding: 0.85rem;
+  }
+
+  .post-card__caption {
+    width: 100%;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .post-page {
+    padding-inline: 0.5rem;
+  }
+
+  .my-posts-section {
+    padding-inline: 0.35rem;
+  }
+
+  .post-card--text-only .post-card__body {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
   }
 }
