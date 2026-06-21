@@ -7,3 +7,41 @@
 :host ::ng-deep .p-tablist-tab-list {
   justify-content: center;
 }
+
+@media (max-width: 640px) {
+  .wrapper {
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  :host ::ng-deep .p-tablist,
+  :host ::ng-deep .p-tablist-content {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  :host ::ng-deep .p-tablist::-webkit-scrollbar,
+  :host ::ng-deep .p-tablist-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  :host ::ng-deep .p-tablist-tab-list {
+    justify-content: flex-start;
+    width: max-content;
+    min-width: 100%;
+    flex-wrap: nowrap;
+    padding-inline: 0.75rem;
+    scroll-padding-inline: 0.75rem;
+  }
+
+  :host ::ng-deep .p-tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding-inline: 0.95rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+}
