@@ -181,7 +181,8 @@
     <div class="post-user">
       @if (post.userDeleted) {
         <p-avatar
-          [image]="post.userProfilePic"
+          [image]="post.userProfilePic || undefined"
+          [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
           shape="circle"
           size="normal"
           [style]="{ width: '42px', height: '42px' }"
@@ -189,7 +190,8 @@
       } @else if (post.isExternal) {
         <a [href]="post.userProfileUrl" class="post-user-link" target="_blank" rel="noopener noreferrer">
           <p-avatar
-            [image]="post.userProfilePic"
+            [image]="post.userProfilePic || undefined"
+            [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
             shape="circle"
             size="normal"
             [style]="{ width: '42px', height: '42px' }"
@@ -198,7 +200,8 @@
       } @else {
         <a [routerLink]="['/profile', post.username]" class="post-user-link">
           <p-avatar
-            [image]="post.userProfilePic"
+            [image]="post.userProfilePic || undefined"
+            [label]="post.userProfilePic ? undefined : postAuthorInitial(post)"
             shape="circle"
             size="normal"
             [style]="{ width: '42px', height: '42px' }"

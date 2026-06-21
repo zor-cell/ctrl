@@ -31,6 +31,7 @@ import { PostDetailSourceComponent } from '../../../post/components/post-detail-
 import { PostStateService } from '../../../post/services/post-state.service';
 import { SessionStateService } from '../../../session/session-state.service';
 import { SourceResponse } from '../../../post/dto/PostResponse';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 
 @Component({
   selector: 'app-feed',
@@ -83,6 +84,10 @@ export class FeedComponent implements OnInit, OnDestroy {
   protected reportSourceDialogVisible = signal(false);
   protected selectedSourceForReport = signal<PostSource | null>(null);
   protected selectedPostForSourceReport = signal<Post | null>(null);
+
+  protected postAuthorInitial(post: Post | null | undefined): string {
+    return usernameInitial(post?.username);
+  }
   protected shareDialogVisible = signal(false);
   protected selectedPostForShare = signal<Post | null>(null);
 

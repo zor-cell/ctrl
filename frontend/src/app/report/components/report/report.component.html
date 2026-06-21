@@ -24,7 +24,8 @@
         <div class="post-preview">
           <div class="post-preview-header">
             <p-avatar
-              [image]="userProfilePic"
+              [image]="userProfilePic || undefined"
+              [label]="userProfilePic ? undefined : avatarInitial()"
               shape="circle"
               [style]="{ width: '42px', height: '42px' }"
             />
@@ -91,7 +92,8 @@
           <div class="post-preview">
             <div class="post-preview-header">
               <p-avatar
-                [image]="userProfilePic"
+                [image]="userProfilePic || undefined"
+                [label]="userProfilePic ? undefined : avatarInitial()"
                 shape="circle"
                 [style]="{ width: '42px', height: '42px' }"
               />
