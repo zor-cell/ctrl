@@ -171,6 +171,7 @@ describePasswordReset('Report source test', () => {
     reportCreatedSource();
 
     login(adminUser.username, adminUser.password);
+    cy.wait(3000)
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
     cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should('be.visible').click();
     cy.contains('Sources').should('be.visible').click();
@@ -186,6 +187,7 @@ describePasswordReset('Report source test', () => {
     reportCreatedSource();
 
     login(adminUser.username, adminUser.password);
+    cy.wait(3000)
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
     cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should('be.visible').click();
     cy.contains('Sources').should('be.visible').click();
@@ -211,6 +213,7 @@ describePasswordReset('Report source test', () => {
     reportCreatedSource();
 
     login(adminUser.username, adminUser.password);
+    cy.wait(3000)
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
     cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should('be.visible').click();
     cy.contains('Sources').should('be.visible').click();
@@ -240,7 +243,8 @@ describePasswordReset('Report source test', () => {
     createPostWithSource();
     reportCreatedSource();
 
-    login(adminUser.username, adminUser.password);
+    login(adminUser.username, adminUser.password)
+    cy.wait(3000)
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
     cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should('be.visible').click();
     cy.contains('Sources').should('be.visible').click();

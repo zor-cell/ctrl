@@ -196,18 +196,34 @@ public class PostServiceImpl implements PostService {
 
       Set<Comment> comments =
           post.getComments().stream()
-              .filter(
-                  c ->
-                      c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-              .filter(
-                  c ->
-                      c.getParentComment() == null
-                          || (c.getParentComment().getUser() != null
-                              && !blockService.inBlockedRelationship(
-                                  user, c.getParentComment().getUser())))
+              .filter(c -> isVisibleCommentForUser(user, c))
               .collect(Collectors.toSet());
       post.setComments(comments);
     }
+  }
+
+  private boolean isVisibleCommentForUser(User viewer, Comment comment) {
+    if (comment.getUser() == null || Boolean.TRUE.equals(comment.getIsRemoved())) {
+      return false;
+    }
+
+    if (comment.getUser().isSuspended()) {
+      return false;
+    }
+
+    if (blockService.inBlockedRelationship(viewer, comment.getUser())) {
+      return false;
+    }
+
+    Comment parent = comment.getParentComment();
+    if (parent == null) {
+      return true;
+    }
+
+    return parent.getUser() != null
+        && !Boolean.TRUE.equals(parent.getIsRemoved())
+        && !blockService.inBlockedRelationship(viewer, parent.getUser())
+        && !parent.getUser().isSuspended();
   }
 
   @Override
@@ -329,14 +345,7 @@ public class PostServiceImpl implements PostService {
 
     Set<Comment> comments =
         post.getComments().stream()
-            .filter(
-                c -> c.getUser() != null && !blockService.inBlockedRelationship(user, c.getUser()))
-            .filter(
-                c ->
-                    c.getParentComment() == null
-                        || (c.getParentComment().getUser() != null
-                            && !blockService.inBlockedRelationship(
-                                user, c.getParentComment().getUser())))
+            .filter(c -> isVisibleCommentForUser(user, c))
             .collect(Collectors.toSet());
     post.setComments(comments);
 
