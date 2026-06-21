@@ -57,7 +57,8 @@ public class AdminServiceIntegrationTest {
 
   @BeforeEach
   public void before() {
-    adminService = new AdminService(userRepository, gmailEmailService, templateEngine, reportService);
+    adminService =
+        new AdminService(userRepository, gmailEmailService, templateEngine, reportService);
     ReflectionTestUtils.setField(adminService, "requireEmailVerification", true);
     userToSuspend =
         User.builder()
