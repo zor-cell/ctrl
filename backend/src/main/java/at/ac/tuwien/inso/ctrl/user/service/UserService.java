@@ -211,6 +211,7 @@ public class UserService {
     emailVerificationRepository.deleteByUser_Id(userId);
     businessVerificationRepository.deleteByBusinessUser(user);
     algorithmRepository.deleteByUserId(userId);
+    reportRepository.deleteByUsernameReported(user);
 
     user.setUsername("deleted-user-" + userId);
     user.setEmail("deleted-" + userId + "@deleted.local");

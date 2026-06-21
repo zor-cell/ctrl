@@ -33,4 +33,6 @@ public interface ReportRepository extends JpaRepository<Report, String> {
 
   boolean existsReportByFromUserAndContentTypeAndContentId(
       User user, ContentTypeEnum type, String contentId);
+
+  void deleteByUsernameReported(User usernameReported);
 }
