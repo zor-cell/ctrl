@@ -8,6 +8,7 @@ import {filter, startWith, switchMap} from "rxjs";
 import {PrimeTemplate} from "primeng/api";
 import {Checkbox} from "primeng/checkbox";
 import {FormsModule} from "@angular/forms";
+import {NgClass} from "@angular/common";
 
 @Component({
   selector: 'app-limit-popup',
@@ -16,7 +17,8 @@ import {FormsModule} from "@angular/forms";
     Button,
     PrimeTemplate,
     Checkbox,
-    FormsModule
+    FormsModule,
+    NgClass
   ],
   templateUrl: './limit-popup.component.html',
   styleUrl: './limit-popup.component.scss',
