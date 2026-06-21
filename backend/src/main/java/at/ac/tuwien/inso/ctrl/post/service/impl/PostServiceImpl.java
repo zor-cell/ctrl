@@ -202,30 +202,6 @@ public class PostServiceImpl implements PostService {
     }
   }
 
-  private boolean isVisibleCommentForUser(User viewer, Comment comment) {
-    if (comment.getUser() == null || Boolean.TRUE.equals(comment.getIsRemoved())) {
-      return false;
-    }
-
-    if (comment.getUser().isSuspended()) {
-      return false;
-    }
-
-    if (blockService.inBlockedRelationship(viewer, comment.getUser())) {
-      return false;
-    }
-
-    Comment parent = comment.getParentComment();
-    if (parent == null) {
-      return true;
-    }
-
-    return parent.getUser() != null
-        && !Boolean.TRUE.equals(parent.getIsRemoved())
-        && !blockService.inBlockedRelationship(viewer, parent.getUser())
-        && !parent.getUser().isSuspended();
-  }
-
   @Override
   @Transactional(readOnly = true)
   public List<PostResponse> getProfilePostsForUser(String profileUsername, User viewer) {
