@@ -12,9 +12,15 @@
   border-radius: 0;
 }
 
+:host ::ng-deep .post-detail-dialog {
+  max-width: min(56rem, 92vw) !important;
+  width: min(56rem, 92vw) !important;
+}
+
 @media (max-width: 760px) {
   :host ::ng-deep .post-detail-dialog {
     width: min(24rem, calc(100vw - 1.5rem)) !important;
+    max-width: none !important;
     max-height: calc(100dvh - 1.5rem);
     border-radius: 1rem;
   }
