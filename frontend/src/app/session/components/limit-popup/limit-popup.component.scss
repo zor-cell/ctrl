@@ -31,3 +31,11 @@
   gap: 1rem;
 }
 
+.popup-actions.single-button p-button {
+  width: 100%;
+}
+
+.popup-actions.single-button ::ng-deep .p-button {
+  width: 100%;
+  justify-content: center;
+}
