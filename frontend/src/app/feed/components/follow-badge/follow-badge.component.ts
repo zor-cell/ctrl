@@ -28,7 +28,7 @@ export class FollowBadgeComponent {
   readonly isNotVerifiedAndUserAdmin = computed(() => {
     const isAdmin = this.authService.isAdmin();
     const profile = this.publicProfile();
-    const isVerified = profile ? (profile as any).isVerified : true;
+    const isVerified = profile ? profile.isVerified : true;
     return isAdmin && !isVerified;
   });
 
