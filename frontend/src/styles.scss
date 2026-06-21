@@ -86,9 +86,17 @@ Styles for global containers
   align-items: center;
 }
 
+.p-toast {
+  z-index: 10000 !important;
+}
+
 /* toast for mobile */
 @media screen and (max-width: 768px) {
   .p-toast.p-toast-top-right {
-    width: 90% !important;
+    top: calc(4.75rem + env(safe-area-inset-top, 0px)) !important;
+    right: 1rem !important;
+    left: 1rem !important;
+    width: auto !important;
+    max-width: calc(100vw - 2rem);
   }
 }
