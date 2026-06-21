@@ -20,11 +20,17 @@ describePasswordReset('Report comment test', () => {
     password: 'ctrl-test-admin-pw',
   };
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   let postCaption: string;
   let commentContent: string;
 
   function login(username: string, password: string) {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(username);
     cy.get('input[type="password"]').type(password);
     cy.get('button[type="submit"]').click();
@@ -63,7 +69,7 @@ describePasswordReset('Report comment test', () => {
     login(reportedUser.username, reportedUser.password);
 
     cy.visit('/post');
-    cy.contains('button', 'Weiter').should('be.visible').click();
+    cy.contains('button', 'Next').should('be.visible').click();
 
     cy.get('textarea')
       .should('be.visible')

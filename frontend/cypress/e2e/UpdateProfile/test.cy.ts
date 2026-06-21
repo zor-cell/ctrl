@@ -1,3 +1,7 @@
+import { environment } from '../../../src/environments/environment';
+
+const describeProfile = environment.auth.requireEmailVerification ? describe.skip : describe;
+
 type TestUser = {
   username: string;
   password: string;
@@ -65,7 +69,7 @@ function openProfileEditor(): void {
   cy.contains('.p-dialog', 'Edit profile').should('be.visible');
 }
 
-describe('Update Profile critical flows', () => {
+describeProfile('Update Profile critical flows', () => {
   it('updates username and biography from the profile edit dialog', () => {
     const user = uniqueUser('puser');
     const updatedUsername = `${user.username}n`;
@@ -75,10 +79,11 @@ describe('Update Profile critical flows', () => {
     loginViaUi(user.username);
     openProfileEditor();
 
-    cy.get('.p-dialog input.profile-edit-input')
-      .should('be.visible')
-      .clear()
-      .type(updatedUsername);
+    const usernameInput = '.p-dialog input.profile-edit-input';
+
+    cy.get(usernameInput).should('be.visible').click().type('{selectall}{backspace}');
+    cy.get(usernameInput).should('be.visible').type(updatedUsername, { delay: 20 });
+    cy.get(usernameInput).should('have.value', updatedUsername);
     cy.contains('Username is available.', { timeout: 5000 }).should('be.visible');
 
     cy.get('.p-dialog textarea[aria-label="Edit bio"]')

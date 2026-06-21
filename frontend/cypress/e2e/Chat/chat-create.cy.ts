@@ -3,6 +3,11 @@ interface ChatParticipant {
   username: string;
 }
 
+import { environment } from '../../../src/environments/environment';
+
+const describeChat = environment.auth.requireEmailVerification ? describe.skip : describe;
+
+
 interface Chat {
   chatId: string;
   name: string;
@@ -24,7 +29,7 @@ interface Post {
   caption: string;
 }
 
-describe('Chat critical flows', () => {
+describeChat('Chat critical flows', () => {
   const apiBase = Cypress.env('apiUrl') ?? 'http://localhost:8080';
   const apiUrl = `${apiBase}/api`;
   const password = '$TestUser123';

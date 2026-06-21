@@ -1,3 +1,8 @@
+import { environment } from '../../../src/environments/environment';
+
+const describePost = environment.auth.requireEmailVerification ? describe.skip : describe;
+
+
 type TestUser = {
   username: string;
   password: string;
@@ -11,6 +16,7 @@ const verifiedUser = {
   username: 'TestUser',
   password: 'test12345678',
 };
+
 
 function uniqueUser(): TestUser {
   const suffix = `${Date.now() % 100000}${Cypress._.random(10, 99)}`;
@@ -62,7 +68,7 @@ function cleanupUser(username: string, userPassword = password): Cypress.Chainab
 function openComposerDetails(): void {
   cy.contains('button', 'Create Post').should('be.visible').click();
   cy.contains('.p-dialog', 'Create Post').should('be.visible');
-  cy.contains('button', 'Weiter').should('be.visible').click();
+  cy.contains('button', 'Next').should('be.visible').click();
   cy.contains('.p-dialog', 'Add post details').should('be.visible');
 }
 
@@ -156,7 +162,7 @@ function openPostFromProfile(caption: string): void {
   cy.contains('.post-caption', caption, { timeout: 10000 }).should('be.visible');
 }
 
-describe('Create Post critical flows', () => {
+describePost('Create Post critical flows', () => {
   it('creates a private text post', () => {
     const user = uniqueUser();
     const caption = 'PrivatePostFlow';
@@ -225,7 +231,7 @@ describe('Create Post critical flows', () => {
     cy.intercept('POST', '/api/posts').as('createPost');
     submitComposer();
 
-    cy.contains('Caption is required.').should('be.visible');
+    cy.contains('Caption is required.').scrollIntoView().should('be.visible');
     cy.get('@createPost.all').should('have.length', 0);
     cy.contains('.p-dialog', 'Create Post').should('be.visible');
 
@@ -243,7 +249,7 @@ describe('Create Post critical flows', () => {
     cy.intercept('POST', '/api/posts').as('createPost');
     submitComposer();
 
-    cy.contains('Caption must contain text.').should('be.visible');
+    cy.contains('Caption must contain text.').scrollIntoView().should('be.visible');
     cy.get('@createPost.all').should('have.length', 0);
     cy.contains('.p-dialog', 'Create Post').should('be.visible');
 

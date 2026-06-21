@@ -36,6 +36,12 @@ describePasswordReset('Business Verification Tests', () => {
       });
   });
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   afterEach(function () {
     cy.deleteUser(testUser.username, testUser.password).then((res) => {
       expect(res.status).to.eq(204);
@@ -43,7 +49,7 @@ describePasswordReset('Business Verification Tests', () => {
   })
 
   it("User creates business verification, should display pending", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(testUser.username);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();
@@ -67,7 +73,7 @@ describePasswordReset('Business Verification Tests', () => {
   });
 
   it("User creates business verification, admin approves", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(testUser.username);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();
@@ -87,7 +93,7 @@ describePasswordReset('Business Verification Tests', () => {
 
     cy.contains("Verification pending")
 
-    cy.visit('/login')
+    logoutBeforeLogin();
 
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
@@ -104,7 +110,7 @@ describePasswordReset('Business Verification Tests', () => {
       .should("be.visible")
       .click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(testUser.username);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();
@@ -118,7 +124,7 @@ describePasswordReset('Business Verification Tests', () => {
   });
 
   it("User creates business verification, admin denies", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(testUser.username);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();
@@ -138,7 +144,7 @@ describePasswordReset('Business Verification Tests', () => {
 
     cy.contains("Verification pending")
 
-    cy.visit('/login')
+    logoutBeforeLogin();
 
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
@@ -155,7 +161,7 @@ describePasswordReset('Business Verification Tests', () => {
       .should("be.visible")
       .click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(testUser.username);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();

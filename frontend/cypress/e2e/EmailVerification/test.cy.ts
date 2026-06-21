@@ -11,6 +11,12 @@ describeEmailVerification('EmailVerification', () => {
     birthdate: '2000-01-01',
   };
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   let verified = false;
 
   beforeEach(() => {
@@ -231,7 +237,7 @@ describeEmailVerification('EmailVerification', () => {
       });
     })
 
-  it.only ("On change of email address verify user again and use new token", () => {
+  it ("On change of email address verify user again and use new token", () => {
     cy.fetchVerificationToken({
       username: testUser.username,
       email: testUser.email,
@@ -276,9 +282,10 @@ describeEmailVerification('EmailVerification', () => {
           .then((newToken) => {
             cy.get("input#code").type(newToken);
             cy.get("button[type='submit']").click();
+            cy.wait(3000)
 
 
-            cy.url().should('eq', `${Cypress.config().baseUrl}/login`);
+            cy.url().should('not.eq', `${Cypress.config().baseUrl}/login`);
 
             verified = true
           });

@@ -15,6 +15,12 @@ describePasswordReset("Report account test", () => {
   let reportingUser: TestUser;
   let suspended = false;
 
+  const logoutBeforeLogin = () => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit('/login');
+  };
+
   const adminUser = {
     username: 'admin',
     password: 'ctrl-test-admin-pw',
@@ -67,7 +73,7 @@ describePasswordReset("Report account test", () => {
   })
 
   it ("Reporting of account should display reporting flag", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -96,7 +102,7 @@ describePasswordReset("Report account test", () => {
   })
 
   it ("Reporting of account should display report in admin reporting panel", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -120,7 +126,7 @@ describePasswordReset("Report account test", () => {
       .trigger('change');
     cy.contains("button", "Submit Report").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -137,7 +143,7 @@ describePasswordReset("Report account test", () => {
   })
 
   it ("Reporting of account with dismiss action, should allow account to remain findable", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -161,7 +167,7 @@ describePasswordReset("Report account test", () => {
       .trigger('change');
     cy.contains("button", "Submit Report").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -178,10 +184,12 @@ describePasswordReset("Report account test", () => {
     cy.contains("button", "Dismiss").should("be.visible").click();
     cy.contains("button", "Yes").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
+
+    cy.wait(3000)
 
     cy.visit("/search/users")
     cy.get('input[type="text"]').should("be.visible").type(reportedUser.username);
@@ -189,7 +197,7 @@ describePasswordReset("Report account test", () => {
   })
 
   it ("Reporting of account with suspend action, should not allow account to remain findable", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -213,7 +221,7 @@ describePasswordReset("Report account test", () => {
       .trigger('change');
     cy.contains("button", "Submit Report").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -237,10 +245,12 @@ describePasswordReset("Report account test", () => {
 
     suspended = true;
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
+
+    cy.wait(3000)
 
     cy.visit("/search/users")
     cy.get('input[type="text"]').should("be.visible").type(reportedUser.username);
@@ -248,7 +258,7 @@ describePasswordReset("Report account test", () => {
   })
 
   it ("Reporting of account with suspend action, should prevent login", () => {
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportingUser.username);
     cy.get('input[type="password"]').type(reportingUser.password);
     cy.get('button[type="submit"]').click();
@@ -272,7 +282,7 @@ describePasswordReset("Report account test", () => {
       .trigger('change');
     cy.contains("button", "Submit Report").should("be.visible").click();
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(adminUser.username);
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
@@ -296,7 +306,7 @@ describePasswordReset("Report account test", () => {
 
     suspended = true;
 
-    cy.visit('/login');
+    logoutBeforeLogin();
     cy.get('input#username').type(reportedUser.username);
     cy.get('input[type="password"]').type(reportedUser.password);
     cy.get('button[type="submit"]').click();
