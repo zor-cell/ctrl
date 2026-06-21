@@ -1,4 +1,8 @@
-describe('Login Loaded', () => {
+import { environment } from '../../../src/environments/environment';
+
+const describeLogin = environment.auth.requireEmailVerification ? describe.skip : describe;
+
+describeLogin('Login Loaded', () => {
   const testUser = {
     username: 'testuserLoginNew',
     password: '$TestUser123',
@@ -12,15 +16,6 @@ describe('Login Loaded', () => {
       .register(testUser)
       .then((registerResponse) => {
         expect(registerResponse.status).to.eq(201);
-
-        return cy.fetchVerificationToken({
-          username: testUser.username,
-          email: testUser.email,
-        });
-      })
-      .then((token) => cy.verifyEmail(testUser.username, token))
-      .then((response) => {
-        expect(response.status).to.eq(200);
       });
   });
 

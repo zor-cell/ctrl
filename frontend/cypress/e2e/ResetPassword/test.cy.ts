@@ -1,4 +1,8 @@
-describe('Reset Email Tests', () => {
+import { environment } from '../../../src/environments/environment';
+
+const describePasswordReset = environment.auth.requireEmailVerification ? describe : describe.skip;
+
+describePasswordReset('Reset Email Tests', () => {
   const testUser = {
     username: 'testuserLoginNew',
     password: '$TestUser123',

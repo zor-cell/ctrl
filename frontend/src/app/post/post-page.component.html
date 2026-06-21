@@ -126,6 +126,7 @@
           <p-menu #publicProfileMenu [model]="publicProfileMenuItems()" [popup]="true" />
           <p-button
             icon="pi pi-ellipsis-v"
+            ariaLabel="Open public profile actions"
             severity="secondary"
             [rounded]="true"
             (onClick)="publicProfileMenu.toggle($event)"

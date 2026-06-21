@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import at.ac.tuwien.inso.ctrl.baseTest.TestConfig;
+import at.ac.tuwien.inso.ctrl.exception.InvalidRequestException;
 import at.ac.tuwien.inso.ctrl.exception.NotFoundException;
 import at.ac.tuwien.inso.ctrl.user.dto.FollowedResponse;
 import at.ac.tuwien.inso.ctrl.user.entity.FollowRelation;
@@ -164,6 +165,18 @@ public class FollowServiceIntegrationTest {
   }
 
   @Test
+  public void getFollowed_withBlankQuery_returnsAllFollowed() {
+    createFollow(currentUser, alpha);
+    createFollow(currentUser, beta);
+
+    List<FollowedResponse> followed = followService.getFollowed(currentUser, "   ");
+
+    assertEquals(2, followed.size());
+    assertTrue(followed.stream().anyMatch(f -> f.username().equals("alpha")));
+    assertTrue(followed.stream().anyMatch(f -> f.username().equals("beta")));
+  }
+
+  @Test
   public void getFollowed_withoutFollowes_returnsNone() {
     List<FollowedResponse> followed = followService.getFollowed(currentUser, null);
     assertTrue(followed.isEmpty());
@@ -244,6 +257,24 @@ public class FollowServiceIntegrationTest {
                         && f.getFollowed().getId().equals(alphaId))
             .count();
     assertEquals(1, count, "Should still have exactly one follow relation (idempotent)");
+  }
+
+  @Test
+  public void follow_withTargetYourself_returnsInvalidRequestException() {
+    InvalidRequestException exception =
+        assertThrowsExactly(
+            InvalidRequestException.class,
+            () -> followService.follow(currentUser, currentUser.getUsername()));
+    assertEquals("Cannot follow yourself", exception.getMessage());
+  }
+
+  @Test
+  public void follow_unverifiedTarget_returnsInvalidRequestException() {
+    InvalidRequestException exception =
+        assertThrowsExactly(
+            InvalidRequestException.class,
+            () -> followService.follow(currentUser, gamma.getUsername()));
+    assertEquals("Can only follow verified users", exception.getMessage());
   }
 
   // getFollowedIds()

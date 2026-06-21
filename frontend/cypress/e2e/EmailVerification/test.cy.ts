@@ -1,4 +1,8 @@
-describe('EmailVerification', () => {
+import { environment } from '../../../src/environments/environment';
+
+const describeEmailVerification = environment.auth.requireEmailVerification ? describe : describe.skip;
+
+describeEmailVerification('EmailVerification', () => {
   const testUser = {
     username: 'testuserLoginNew',
     password: '$TestUser123',

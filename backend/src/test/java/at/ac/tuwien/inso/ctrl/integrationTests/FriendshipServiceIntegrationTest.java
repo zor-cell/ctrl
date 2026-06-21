@@ -164,6 +164,18 @@ public class FriendshipServiceIntegrationTest {
   }
 
   @Test
+  public void getFriends_withBlankQuery_returnsAllFriends() {
+    createFriendship(currentUser, alpha);
+    createFriendship(currentUser, beta);
+
+    List<FriendResponse> friends = friendshipService.getFriends(currentUser, "   ");
+
+    assertEquals(2, friends.size());
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("alpha")));
+    assertTrue(friends.stream().anyMatch(f -> f.username().equals("beta")));
+  }
+
+  @Test
   public void getFriends_doesNotReturnOneWayFollows() {
     createFollow(currentUser, alpha);
     createFollow(beta, currentUser);
