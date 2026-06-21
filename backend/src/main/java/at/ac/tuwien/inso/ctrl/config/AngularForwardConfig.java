@@ -22,9 +22,7 @@ public class AngularForwardConfig implements WebMvcConfigurer {
     FileSystemResource index = new FileSystemResource(INDEX_PATH);
     if (!index.exists()) {
       log.error(
-          "FATAL: {} does not exist! Angular fallback routing will loop infinitely. "
-              + "Check Jib extraDirectories configuration.",
-          INDEX_PATH);
+          "FATAL: {} does not exist!  " + "Check Jib extraDirectories configuration.", INDEX_PATH);
     } else {
       log.info("Angular index.html found at {}", INDEX_PATH);
     }
@@ -34,7 +32,7 @@ public class AngularForwardConfig implements WebMvcConfigurer {
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
     registry
         .addResourceHandler("/**")
-        .addResourceLocations("file:/static/")
+        .addResourceLocations("file:/app/static/")
         .resourceChain(true)
         .addResolver(
             new PathResourceResolver() {
