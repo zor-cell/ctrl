@@ -3,7 +3,9 @@ import {Dialog} from 'primeng/dialog';
 import {Component, computed, inject, input, signal} from '@angular/core';
 import {RelationshipService} from '../../../user/relationship.service';
 import {UserService} from '../../../user/user.service';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, switchMap} from 'rxjs';
+import {AuthService} from '../../../auth/auth.service';
+import {toObservable, toSignal} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-follow-badge',
@@ -19,8 +21,29 @@ export class FollowBadgeComponent {
 
   private readonly rel = inject(RelationshipService);
   private readonly userService = inject(UserService);
+  private readonly authService = inject(AuthService);
   readonly busy = signal(false);
   readonly unfriendDialogVisible = signal(false);
+
+  readonly isNotVerifiedAndUserAdmin = computed(() => {
+    const isAdmin = this.authService.isAdmin();
+    const profile = this.publicProfile();
+    const isVerified = profile ? (profile as any).isVerified : true;
+    return isAdmin && !isVerified;
+  });
+
+  readonly hide = computed(() =>
+    this.isExternal() ||
+    this.username() === this.userService.user()?.username ||
+    this.isNotVerifiedAndUserAdmin()
+  );
+
+  private readonly publicProfile = toSignal(
+    toObservable(this.username).pipe(
+      switchMap(name => this.userService.getPublicProfile(name))
+    ),
+    { initialValue: null }
+  );
 
   requestUnfriend(): void {
     this.unfriendDialogVisible.set(true);
@@ -52,10 +75,6 @@ export class FollowBadgeComponent {
   readonly actionMode = computed(() => this.appearance() === 'action');
   readonly buttonStyleClass = computed(() =>
     this.actionMode() ? 'follow-btn follow-btn--action' : 'follow-btn'
-  );
-
-  readonly hide = computed(() =>
-    this.isExternal() || this.username() === this.userService.user()?.username
   );
 
   readonly status = computed((): string => {
@@ -97,4 +116,5 @@ export class FollowBadgeComponent {
       await firstValueFrom(this.rel.acceptFriendRequest(this.username()));
     } finally { this.busy.set(false); }
   }
+
 }
