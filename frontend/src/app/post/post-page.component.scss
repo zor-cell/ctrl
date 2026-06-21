@@ -577,16 +577,33 @@ $border: var(--border);
     margin-top: 0.35rem;
   }
 
+  // Icon-only buttons for public profile actions on mobile
+  :host ::ng-deep .post-profile-card--public .post-profile-card__actions p-button .p-button {
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+
+    .p-button-label {
+      display: none;
+    }
+
+    .p-button-icon {
+      margin: 0;
+    }
+  }
+
   :host ::ng-deep .post-profile-card__actions--owner > p-button .p-button {
     width: 100%;
     min-width: 0;
   }
 
   :host
-    ::ng-deep
-    .post-profile-card__actions--owner
-    > p-button:not(.post-profile-card__create-action)
-    .p-button {
+  ::ng-deep
+  .post-profile-card__actions--owner
+  > p-button:not(.post-profile-card__create-action)
+  .p-button {
     width: 2.75rem;
     height: 2.75rem;
   }

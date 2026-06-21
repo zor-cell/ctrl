@@ -114,6 +114,7 @@ export class PostPageComponent implements OnDestroy, OnInit {
   protected readonly loadingTopics = signal(false);
   protected readonly topicOptions = signal<TopicOption[]>([]);
   protected readonly friendActionBusy = signal(false);
+  protected readonly followActionBusy = signal(false);
   protected readonly shareDialogVisible = signal(false);
   protected readonly selectedPostForShare = signal<PostResponse | null>(null);
   @ViewChild(PostShareDialogComponent) private readonly shareDialog?: PostShareDialogComponent;
@@ -255,6 +256,15 @@ export class PostPageComponent implements OnDestroy, OnInit {
         this.directMediaUrl(post.mediaRef),
     };
   });
+
+  protected readonly publicProfileFollowStatus = computed<'NOT_FOLLOWING' | 'FOLLOWED'>(() => {
+    const username = this.profileActionUsername()?.toLowerCase();
+    if (!username || this.isOwnPublicProfile()) return 'NOT_FOLLOWING';
+    return this.rel.followed().some((f) => f.username.toLowerCase() === username)
+      ? 'FOLLOWED'
+      : 'NOT_FOLLOWING';
+  });
+
   protected readonly emptyPostsTitle = computed(() =>
     this.privatePostsHidden() ? 'Private posts are hidden' : 'No posts yet',
   );
@@ -413,32 +423,31 @@ export class PostPageComponent implements OnDestroy, OnInit {
       });
   }
 
-  protected removeProfileFriend(): void {
+  protected followProfile(): void {
     const username = this.profileActionUsername();
+    if (!username || this.followActionBusy()) return;
 
-    if (
-      !username ||
-      this.isOwnPublicProfile() ||
-      this.publicProfileFriendStatus() !== 'FRIEND' ||
-      this.friendActionBusy()
-    ) {
-      return;
-    }
-
-    this.friendActionBusy.set(true);
+    this.followActionBusy.set(true);
     this.rel
-      .unfriend(username)
-      .pipe(finalize(() => this.friendActionBusy.set(false)))
+      .follow(username)
+      .pipe(finalize(() => this.followActionBusy.set(false)))
       .subscribe({
-        next: () => {
-          this.setProfileFriendStatusOverride(username, 'NONE');
-          this.removePublicProfilePrivateAccess();
-          this.rel.loadFriends().subscribe();
-          this.notificationService.showSuccess(`Removed ${username} from friends`);
-        },
-        error: () => {
-          this.notificationService.showError('Failed to remove friend');
-        },
+        next: () => this.rel['eventBus'].followed(username),
+        error: () => this.notificationService.showError('Failed to follow user'),
+      });
+  }
+
+  protected unfollowProfile(): void {
+    const username = this.profileActionUsername();
+    if (!username || this.followActionBusy()) return;
+
+    this.followActionBusy.set(true);
+    this.rel
+      .unfollow(username)
+      .pipe(finalize(() => this.followActionBusy.set(false)))
+      .subscribe({
+        next: () => this.rel['eventBus'].unfollowed(),
+        error: () => this.notificationService.showError('Failed to unfollow user'),
       });
   }
 
