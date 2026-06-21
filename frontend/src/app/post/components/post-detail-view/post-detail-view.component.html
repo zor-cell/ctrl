@@ -61,7 +61,7 @@
       @if (isVideo(p.mediaUrl)) {
         <video [src]="p.mediaUrl" class="preview-image" controls playsinline preload="metadata"></video>
       } @else {
-        <img [src]="p.mediaUrl" [alt]="p.caption" class="preview-image" (load)="onImageLoad($event)" />
+        <img [src]="p.mediaUrl" alt="Could not load media." class="preview-image" (load)="onImageLoad($event)" />
       }
     </div>
   }
