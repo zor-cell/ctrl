@@ -27,7 +27,6 @@
         <h1>
           {{ username() }}
           @if (!canEditProfile()) {
-            <app-follow-badge [username]="username()" />
             @if (publicProfile()?.wasReportedByUser) {
               <p-tag
                 value="🚩"
