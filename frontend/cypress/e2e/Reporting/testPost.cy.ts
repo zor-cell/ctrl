@@ -200,8 +200,10 @@ describePasswordReset("Report post test", () => {
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+    cy.contains("Loading your posts").should('be.visible')
+    cy.contains("No posts yet").should('be.visible')
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
-    cy.contains("Reports").should("be.visible").click();
+    cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should("be.visible").click();
 
     cy.contains("This is a test post").should("be.visible")
     cy.contains("This is the reason for why this is reported").should("be.visible");
@@ -259,8 +261,10 @@ describePasswordReset("Report post test", () => {
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+    cy.contains("Loading your posts").should('be.visible')
+    cy.contains("No posts yet").should('be.visible')
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
-    cy.contains("Reports").should("be.visible").click();
+    cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should("be.visible").click();
 
     cy.contains("button", "Dismiss").should("be.visible").click();
     cy.contains("button", "Yes").should("be.visible").click();
@@ -327,8 +331,10 @@ describePasswordReset("Report post test", () => {
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+    cy.contains("Loading your posts").should('be.visible')
+    cy.contains("No posts yet").should('be.visible')
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
-    cy.contains("Reports").should("be.visible").click();
+    cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should("be.visible").click();
 
     cy.contains("button", "Actions").should("be.visible").click();
 
@@ -408,8 +414,10 @@ describePasswordReset("Report post test", () => {
     cy.get('input[type="password"]').type(adminUser.password);
     cy.get('button[type="submit"]').click();
     cy.url().should('eq', `${Cypress.config().baseUrl}/profile`);
+    cy.contains("Loading your posts").should('be.visible')
+    cy.contains("No posts yet").should('be.visible')
     cy.get('#pn_id_4_5 > :nth-child(1) > .p-ripple').click();
-    cy.contains("Reports").should("be.visible").click();
+    cy.get('#pn_id_4_5_0 > .p-menubar-item-content > .p-ripple').should("be.visible").click();
 
     cy.contains("button", "Actions").should("be.visible").click();
 

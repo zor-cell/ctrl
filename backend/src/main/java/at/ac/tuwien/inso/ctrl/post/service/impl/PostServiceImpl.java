@@ -359,13 +359,17 @@ public class PostServiceImpl implements PostService {
                         comment ->
                             reportService.wasReportedByUser(
                                 user, ContentTypeEnum.COMMENT, comment.getCommentId())));
-
     boolean sourceWasReported;
     if (post.getSource() != null) {
       sourceWasReported =
           reportService.wasReportedByUser(
               user, ContentTypeEnum.SOURCE, post.getSource().getSourceId());
     } else {
+      sourceWasReported = false;
+    }
+
+    if (post.getSource() != null && post.getSource().getIsRemoved()) {
+      post.setSource(null);
       sourceWasReported = false;
     }
     LabelContext ctx = labelingService.buildContext(user);
