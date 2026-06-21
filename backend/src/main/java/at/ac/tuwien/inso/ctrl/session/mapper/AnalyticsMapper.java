@@ -138,7 +138,6 @@ public class AnalyticsMapper {
         sessions.stream()
             .map(
                 s -> new SessionIntervalDto(s.getStart(), s.getStart().plusSeconds(s.getSeconds())))
-
             .toList();
 
     int timeBucketSizeInMinutes = 24 * 60 / TIME_BUCKETS_PER_DAY;
@@ -175,7 +174,8 @@ public class AnalyticsMapper {
           weekday = (weekday + 1) % 7;
         }
 
-      } while (i.endTime().toLocalTime().isAfter(buckets[weekday][startBucket].getStartTime()) && weekday <= i.endTime().getDayOfWeek().getValue() - 1);
+      } while (i.endTime().toLocalTime().isAfter(buckets[weekday][startBucket].getStartTime())
+          && weekday <= i.endTime().getDayOfWeek().getValue() - 1);
     }
     return buckets;
   }
