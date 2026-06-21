@@ -61,6 +61,7 @@ declare global {
         }>
       ): Chainable<string>;
       verifyEmail(username: string, token: string): Chainable<Cypress.Response<unknown>>;
+      createFriendship(username1: string, password1: string, username2: string, password2: string): Chainable<Cypress.Response<unknown>>;
       deleteUser(username: string, password: string): Chainable<Cypress.Response<unknown>>;
       fetchResetToken(
         overrides?: Partial<{
@@ -68,6 +69,7 @@ declare global {
           email: string;
         }>
       ): Chainable<string>;
+      createFollow(username1: string, password1: string, username2: string, password2: string): Chainable<Cypress.Response<unknown>>;
     }
   }
 }
@@ -225,6 +227,94 @@ Cypress.Commands.add('verifyEmail', (username: string, token: string) => {
       code: token,
     },
   });
+});
+
+Cypress.Commands.add("createFollow", (username1: string, password1: string, username2: string, password2: string) => {
+  return cy
+    .request({
+      method: 'POST',
+      url: '/api/auth/login',
+      failOnStatusCode: true,
+      body: {
+        username: username1,
+        password: password1,
+      },
+    })
+    .then((loginResponse) => {
+      console.log('fetchResetToken /api/auth/login response:', loginResponse);
+      const jwt1: string = loginResponse.body.token;
+      return cy.request({
+        method: "POST",
+        url: '/api/users/me/followed' + username2,
+        failOnStatusCode: true,
+        headers: {
+          Authorization: 'Bearer ' + jwt1,
+        },
+      })
+    })
+})
+
+Cypress.Commands.add("createFriendship", (username1: string, password1: string, username2: string, password2: string) => {
+  return cy
+    .request({
+      method: 'POST',
+      url: '/api/auth/login',
+      failOnStatusCode: true,
+      body: {
+        username: username1,
+        password: password1,
+      },
+    })
+    .then((loginResponse) => {
+      console.log('fetchResetToken /api/auth/login response:', loginResponse);
+      const jwt1: string = loginResponse.body.token;
+      return cy.request({
+        method: "POST",
+        url: '/api/users/me/friend-requests',
+        failOnStatusCode: true,
+        headers: {
+          Authorization: 'Bearer ' + jwt1,
+        },
+        body: {
+          toUsername: username2
+        }
+      })
+    })
+    .then((friendRequestResponse) => {
+      console.log('fetchResetToken /api/users/me/friend-requests response:', friendRequestResponse);
+      return friendRequestResponse;
+    })
+    .then(() => {
+      return cy.request({
+          method: 'POST',
+          url: '/api/auth/login',
+          failOnStatusCode: true,
+          body: {
+            username: username2,
+            password: password2,
+          },
+        })
+    })
+    .then((loginResponse) => {
+      console.log('fetchResetToken /api/auth/login response:', loginResponse);
+      const jwt2: string = loginResponse.body.token;
+      return cy.request({
+        method: "PATCH",
+        url: '/api/users/me/friend-requests/' + username1,
+        failOnStatusCode: true,
+        headers: {
+          Authorization: 'Bearer ' + jwt2,
+        },
+        body: {
+          action: "ACCEPT"
+        }
+      })
+    })
+    .then((friendRequestResponse) => {
+      console.log('fetchResetToken /api/users/me/friend-requests/username1 response:', friendRequestResponse);
+      return friendRequestResponse;
+    })
+
 });
 
 export {};

@@ -1279,7 +1279,7 @@ export class ChatPageComponent implements OnInit, OnDestroy {
   }
 
   protected sharedPostAuthorInitial(sharedPost: ParsedSharedPost): string {
-    return usernameInitial(this.sharedPostAuthorUsername(sharedPost.post));
+    return usernameInitial(this.sharedPostAuthorUsername(sharedPost.post) ?? 'unknown');
   }
 
   protected sharedPostAuthorAvatarUrl(sharedPost: ParsedSharedPost): string | null {

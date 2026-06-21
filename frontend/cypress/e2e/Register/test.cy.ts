@@ -1,3 +1,7 @@
+import { environment } from '../../../src/environments/environment';
+
+const itEmailVerification = environment.auth.requireEmailVerification ? it : it.skip;
+
 describe('Register', () => {
 
   const testUser = {
@@ -38,7 +42,7 @@ describe('Register', () => {
   afterEach(() => {
     if (!userWasCreated) return;
 
-    if (verified) {
+    if (verified || !environment.auth.requireEmailVerification) {
       return cy.deleteUser(testUser.username, testUser.password)
         .then(() => {
           userWasCreated = false;
@@ -57,7 +61,7 @@ describe('Register', () => {
   });
 
 
-  it("Register with new user, redirects to email-verification", () => {
+  itEmailVerification("Register with new user, redirects to email-verification", () => {
     cy.visit('/register');
 
     fillRegisterForm();
@@ -150,7 +154,7 @@ describe('Register', () => {
     });
   });
 
-  it("Register should generate token", () => {
+  itEmailVerification("Register should generate token", () => {
     cy.visit('/register');
     fillRegisterForm();
 

@@ -13,6 +13,7 @@ import {Message} from 'primeng/message';
 import {ContentTypeEnum, Report} from '../../dto/report';
 import {UserService} from '../../../user/user.service';
 import {getReportReason, ReportReason} from '../../dto/reportReasons';
+import { usernameInitial } from '../../../core/utils/username-initial.utils';
 
 @Component({
   selector: 'app-report',
@@ -54,6 +55,11 @@ export class ReportComponent implements OnInit, OnChanges {
   readonly ContentTypeEnum = ContentTypeEnum;
 
   reportReasons = signal<ReportReason[]>([]);
+
+  protected avatarInitial(): string {
+    return usernameInitial(this.username);
+  }
+
   ngOnInit() {
     this.initializeForm();
     this.userService.loadUser().subscribe();

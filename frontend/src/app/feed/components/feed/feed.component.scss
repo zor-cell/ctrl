@@ -120,23 +120,37 @@ $radius-sm:    10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 14px 16px;
+  min-width: 0;
 
   .post-user {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .post-user-link,
+  p-avatar {
+    flex: 0 0 auto;
   }
 
   .post-meta {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
 
   .post-username {
     font-size: 0.92rem;
     font-weight: 600;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .post-username--link {
@@ -160,11 +174,29 @@ $radius-sm:    10px;
   }
 }
 
+@media (max-width: 430px) {
+  .post-header {
+    gap: 0.5rem;
+    padding-inline: 12px;
+  }
+
+  .post-header-right {
+    gap: 4px;
+  }
+
+  .post-labels {
+    gap: 3px;
+  }
+}
+
 // ─── Header Right: Labels + Why Button ────────────────
 .post-header-right {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
 }
 
 // ─── Why Button ───────────────────────────────────────
@@ -197,14 +229,23 @@ $radius-sm:    10px;
   line-height: 1.55;
   margin: 0;
   white-space: pre-line;
+  color: var(--p-text-color);
+  -webkit-text-fill-color: currentColor;
+}
+
+.post-caption a[x-apple-data-detectors] {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 // ─── Labels ───────────────────────────────────────────
 .post-labels {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 4px;
+  flex: 0 0 auto;
 }
 
 :host ::ng-deep .post-label {
