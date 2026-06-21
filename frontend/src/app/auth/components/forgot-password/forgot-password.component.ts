@@ -34,13 +34,8 @@ export class ForgotPasswordComponent {
     const email = this.forgotPasswordForm.get('email')?.value || '';
     const request: ForgotPasswordRequest = { email: email }
 
-    this.passwordResetService.forgotPassword(request).subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        this.submited = false;
-      }
-    });
+    this.router.navigate(['/login']);
+
+    this.passwordResetService.forgotPassword(request).subscribe();
   }
 }
