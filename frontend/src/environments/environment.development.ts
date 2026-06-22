@@ -15,7 +15,7 @@ export const environment = {
     scope: 'openid profile'
   },
   auth: {
-    requireEmailVerification: false
+    requireEmailVerification: true
   },
   heartbeat: {
     interval: 10000 // 10 s in ms
