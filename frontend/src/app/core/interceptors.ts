@@ -50,7 +50,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err) => {
       //handle session limits
       if (
-        !silentErrorHandling &&
         err.status === 429 &&
         err.error?.errorCode === 'SESSION_LIMIT_EXCEEDED'
       ) {
@@ -58,7 +57,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return sessionState.userDecision$.pipe(
           take(1),
           switchMap((withSnooze) => {
-            console.log('fired', withSnooze);
             if (withSnooze) {
               //if user snoozed we want to fire the request again
               return next(req);
