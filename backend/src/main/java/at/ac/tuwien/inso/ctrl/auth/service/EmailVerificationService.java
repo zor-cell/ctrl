@@ -131,7 +131,7 @@ public class EmailVerificationService {
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
-                        "1Verification failed. User does not exist or Token is invalid"));
+                        "Verification failed. User does not exist or Token is invalid"));
 
     EmailVerification verification =
         emailVerificationRepository
@@ -139,7 +139,7 @@ public class EmailVerificationService {
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
-                        "2Verification failed. User does not exist or Token is invalid"));
+                        "Verification failed. User does not exist or Token is invalid"));
 
     if (verification.getCode().equals(emailVerificationRequest.code())
         && verification.getExpiryTime().isAfter(LocalDateTime.now())) {
@@ -149,7 +149,7 @@ public class EmailVerificationService {
       return new EmailVerificationResponse(true);
     } else {
       throw new InvalidEmailVerificationCodeException(
-          "3Verification failed. User does not exist or Token is invalid");
+          "Verification failed. User does not exist or Token is invalid");
     }
   }
 
