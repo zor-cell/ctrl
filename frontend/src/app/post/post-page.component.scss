@@ -572,7 +572,7 @@ $border: var(--border);
 
   .post-profile-card--public .post-profile-card__actions {
     grid-column: 1 / -1;
-    justify-content: center;
+    justify-content: flex-end;
     width: 100%;
     margin-top: 0.35rem;
   }
