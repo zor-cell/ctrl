@@ -1,7 +1,7 @@
 import { inject, effect, Injectable } from '@angular/core';
 import { AuthService } from '../../auth/auth.service';
 import { EMPTY, fromEvent, Observable, Subscription, catchError, switchMap, timer } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { SILENT_ERROR_CONTEXT } from '../interceptors';
 
@@ -42,14 +42,11 @@ export class SessionService {
     if (this.authService.isAuthenticated()) {
       this.heartbeat$ = timer(this.INTERVAL_MS, this.INTERVAL_MS)
         .pipe(
-          switchMap(() => this.sendHeartbeat()),
-          catchError((error: unknown) => {
-            if (error instanceof HttpErrorResponse) {
-              this.stopHeartbeat();
-            }
-
-            return EMPTY;
-          }),
+          switchMap(() => this.sendHeartbeat().pipe(
+              catchError(() => {
+                //dont do anything when error arises
+                return EMPTY;
+              }))),
         )
         .subscribe();
     }
