@@ -22,8 +22,8 @@ describePasswordReset("Report account test", () => {
   };
 
   const adminUser = {
-    username: 'admin',
-    password: 'ctrl-test-admin-pw',
+    username: Cypress.env("TEST_ADMIN"),
+    password: Cypress.env("TEST_ADMIN_PASSWORD"),
   };
 
   beforeEach(function () {

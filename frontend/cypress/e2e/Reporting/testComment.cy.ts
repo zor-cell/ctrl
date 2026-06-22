@@ -16,8 +16,8 @@ describePasswordReset('Report comment test', () => {
   let suspended = false;
 
   const adminUser = {
-    username: 'admin',
-    password: 'ctrl-test-admin-pw',
+    username: Cypress.env("TEST_ADMIN"),
+    password: Cypress.env("TEST_ADMIN_PASSWORD"),
   };
 
   const logoutBeforeLogin = () => {

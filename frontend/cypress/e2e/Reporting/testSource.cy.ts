@@ -15,8 +15,8 @@ describePasswordReset('Report source test', () => {
   let reportingUser: TestUser;
 
   const adminUser = {
-    username: 'admin',
-    password: 'ctrl-test-admin-pw',
+    username: Cypress.env("TEST_ADMIN"),
+    password: Cypress.env("TEST_ADMIN_PASSWORD"),
   };
 
   let sourceTitle: string;
